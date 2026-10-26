@@ -156,9 +156,11 @@ try {
   Write-Host "Created single initial commit."
 
   if ($CreateRemote) {
+    $owner = (gh api user --jq .login).Trim()
+    $fullName = "$owner/$RemoteName"
     gh repo create $RemoteName --public --source=. --remote=origin --push --description "Local AI content generation and review workbench"
-    gh repo edit $RemoteName --add-topic java --add-topic spring-boot --add-topic react --add-topic ai --add-topic local-first 2>$null
-    Write-Host "Pushed to public repo: $RemoteName"
+    gh repo edit $fullName --add-topic java --add-topic spring-boot --add-topic react --add-topic ai --add-topic local-first
+    Write-Host "Pushed to public repo: $fullName"
   } else {
     Write-Host "Remote not created. Example:"
     Write-Host "  cd `"$Dest`""
