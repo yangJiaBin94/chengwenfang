@@ -1,9 +1,8 @@
 # 课程公众号 / 配图逐步对照清单
 
-对照原版：`工作台python版本/backend/app/workflows/course_content_generation.py`、
-`content_generation.py`。
+对照历史实现中的课程公众号转换与配图流水线（不在本仓库）。
 
-Java 落点：`workbench-app/.../application/course/`。
+Java 落点：`workbench-mode-course/.../application/course/`。
 
 状态：`齐` = 行为对齐；`偏` = 结构不同但效果等价；`缺` = 需补齐。
 

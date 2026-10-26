@@ -69,7 +69,8 @@ $excludeDirs = @(
   "__pycache__",
   ".pytest_cache",
   ".mypy_cache",
-  ".ruff_cache"
+  ".ruff_cache",
+  "pg-mysql-cutover"
 )
 
 $excludeFiles = @(
@@ -79,7 +80,9 @@ $excludeFiles = @(
   "*.tsbuildinfo",
   "dev-*.log",
   "dev-*.err.log",
-  "dev-*.out.log"
+  "dev-*.out.log",
+  "import-initial-content.mjs",
+  "import-lesson-one.mjs"
 )
 
 $xd = @(); foreach ($d in $excludeDirs) { $xd += "/XD"; $xd += $d }
