@@ -78,7 +78,7 @@ docker compose --profile all ps
 
 | 服务 | 端口 | 用途 |
 |------|------|------|
-| mysql | `127.0.0.1:3306` | 库名 `workbench_v2`，用户 `workbench`，密码 `workbench_dev` |
+| mysql | `127.0.0.1:3306` | 库名 `workbench`，用户 `workbench`，密码 `workbench_dev` |
 | redis | `127.0.0.1:6379` | Job 租约等 |
 | searxng | `127.0.0.1:8080` | 热点聚合搜索 |
 | lightpanda | `127.0.0.1:9222` | JS 正文回退（容器名 `workbench-lightpanda`） |

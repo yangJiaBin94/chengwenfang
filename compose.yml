@@ -7,8 +7,8 @@ services:
   mysql:
     image: mysql:8.4
     environment:
-      # Must match application.yml datasource DB name (workbench_v2)
-      MYSQL_DATABASE: workbench_v2
+      # Must match application.yml datasource DB name
+      MYSQL_DATABASE: workbench
       MYSQL_USER: workbench
       MYSQL_PASSWORD: workbench_dev
       MYSQL_ROOT_PASSWORD: workbench_root

@@ -10,7 +10,7 @@ spring:
     name: workbench-app
   datasource:
     # 对应 compose.yml 中 mysql 服务
-    url: jdbc:mysql://127.0.0.1:3306/workbench_v2?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=utf8
+    url: jdbc:mysql://127.0.0.1:3306/workbench?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=utf8
     username: workbench
     password: workbench_dev
     driver-class-name: com.mysql.cj.jdbc.Driver

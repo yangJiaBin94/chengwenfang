@@ -28,6 +28,9 @@ Hard excludes (never copy):
 After copy, `default-themes.json` in the public tree is replaced by
 `default-themes.oss.json` (Demo Course / Demo Hot News).
 
+Public DB name is **`workbench`** (not private `workbench_v2`): export rewrites
+`compose.yml` / `application.yml` / README / `.env.example` accordingly.
+
 ## Ongoing sync
 
 1. Land features in private until stable

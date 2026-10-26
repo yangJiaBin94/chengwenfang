@@ -140,6 +140,24 @@ if (-not (Test-Path $exampleSettings)) {
 }
 Copy-Item -Force $exampleSettings $localSettings
 
+# Public edition uses DB name "workbench" (private may still use workbench_v2)
+$dbRewritePaths = @(
+  "compose.yml",
+  ".env.example",
+  "README.md",
+  "docs\AI从零搭建满血工作台.md",
+  "workbench-app\src\main\resources\application.yml"
+)
+foreach ($rel in $dbRewritePaths) {
+  $path = Join-Path $Dest $rel
+  if (-not (Test-Path $path)) { continue }
+  $text = Get-Content $path -Raw -Encoding UTF8
+  $updated = $text -replace 'workbench_v2', 'workbench'
+  if ($updated -ne $text) {
+    Set-Content -Path $path -Value $updated -Encoding UTF8 -NoNewline
+  }
+}
+
 # Sanity checks
 $leaks = @()
 if (Test-Path (Join-Path $Dest "content\learning-content")) { $leaks += "content/learning-content" }
