@@ -1,0 +1,34 @@
+{
+    "courseId": "<ID-1>",
+    "draft": "# 自定义草稿\n黄金自定义节点改写后的正文。",
+    "jobId": "<ID-4>",
+    "jobStatus": "succeeded",
+    "nodeRuns": [
+        {
+            "nodeKey": "n_start",
+            "sequenceNo": 1,
+            "status": "succeeded"
+        },
+        {
+            "nodeKey": "n_seed",
+            "sequenceNo": 2,
+            "status": "succeeded"
+        },
+        {
+            "nodeKey": "n_custom",
+            "sequenceNo": 3,
+            "status": "succeeded"
+        },
+        {
+            "nodeKey": "n_end",
+            "sequenceNo": 4,
+            "status": "succeeded"
+        }
+    ],
+    "workflowId": "<ID-3>",
+    "workflowRuns": [
+        {
+            "status": "succeeded"
+        }
+    ]
+}

@@ -1,0 +1,9 @@
+{
+  "ok": true,
+  "step": "asr",
+  "text": "黄金 ASR 文本：补充口播细节。",
+  "source": "asr",
+  "error": null,
+  "artifacts": {},
+  "durationSeconds": null
+}

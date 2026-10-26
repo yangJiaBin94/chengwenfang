@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2048" height="1152" viewBox="0 0 2048 1152" role="img" aria-label="Screenshot placeholder">
+  <rect width="2048" height="1152" fill="#f3f5f2"/>
+  <rect x="176" y="128" width="1696" height="896" rx="24" fill="#ffffff" stroke="#c8d0c6" stroke-width="4"/>
+  <rect x="176" y="128" width="1696" height="88" rx="24" fill="#e7ece5"/>
+  <circle cx="232" cy="172" r="13" fill="#d36b5d"/>
+  <circle cx="276" cy="172" r="13" fill="#d6a94b"/>
+  <circle cx="320" cy="172" r="13" fill="#5c9b72"/>
+  <rect x="430" y="159" width="760" height="26" rx="13" fill="#c9d1c7"/>
+  <rect x="520" y="390" width="1008" height="310" rx="20" fill="#edf1ec" stroke="#c8d0c6" stroke-width="3" stroke-dasharray="18 14"/>
+  <path d="M884 592l118-118 88 88 62-62 196 196H700l184-104z" fill="#aebbad"/>
+  <circle cx="1248" cy="472" r="42" fill="#8fa38e"/>
+  <text x="1024" y="790" text-anchor="middle" font-family="Arial, sans-serif" font-size="58" font-weight="700" fill="#344237">SCREENSHOT PLACEHOLDER</text>
+  <text x="1024" y="866" text-anchor="middle" font-family="Arial, sans-serif" font-size="34" fill="#667365">Replace with the real operation screenshot</text>
+</svg>

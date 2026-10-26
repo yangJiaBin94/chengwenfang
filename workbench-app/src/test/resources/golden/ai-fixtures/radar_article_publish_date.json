@@ -1,0 +1,13 @@
+{
+  "priority": 30,
+  "matchAny": [
+    "publishedAt",
+    "推断发布日期"
+  ],
+  "parser": "publish_date",
+  "content": {
+    "publishedAt": "2024-08-27",
+    "reason": "文头日期"
+  },
+  "scene": "radar_article_publish_date"
+}

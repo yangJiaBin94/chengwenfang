@@ -1,0 +1,13 @@
+{"seq":1,"eventType":"queued","step":"queued","progress":0,"message":"任务已创建"}
+{"seq":2,"eventType":"started","step":"started","progress":0,"message":"任务已开始"}
+{"seq":3,"eventType":"progress","step":"fetch_subtitle","progress":40,"message":"共1条 · 已完成0条 · 进行中 1 条 · 40%"}
+{"seq":4,"eventType":"progress","step":"fetch_subtitle","progress":40,"message":"共1条 · 已完成0条 · 进行中 1 条 · 40%"}
+{"seq":5,"eventType":"progress","step":"download_audio","progress":40,"message":"共1条 · 已完成0条 · 进行中 1 条 · 40%"}
+{"seq":6,"eventType":"progress","step":"convert_format","progress":40,"message":"共1条 · 已完成0条 · 进行中 1 条 · 40%"}
+{"seq":7,"eventType":"progress","step":"asr","progress":40,"message":"共1条 · 已完成0条 · 进行中 1 条 · 40%"}
+{"seq":8,"eventType":"progress","step":"download_video","progress":40,"message":"共1条 · 已完成0条 · 进行中 1 条 · 40%"}
+{"seq":9,"eventType":"progress","step":"extract_frames","progress":40,"message":"共1条 · 已完成0条 · 进行中 1 条 · 40%"}
+{"seq":10,"eventType":"progress","step":"vision_summarize","progress":40,"message":"共1条 · 已完成0条 · 进行中 1 条 · 40%"}
+{"seq":11,"eventType":"progress","step":"batch","progress":99,"message":"共1条 · 已完成1条 · 即将结束 · 99%"}
+{"seq":12,"eventType":"progress","step":"done","progress":100,"message":"解析结束：成功 1，失败 0"}
+{"seq":13,"eventType":"succeeded","step":"done","progress":100,"message":"任务已成功"}

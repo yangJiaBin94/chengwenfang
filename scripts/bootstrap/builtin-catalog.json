@@ -1,0 +1,1467 @@
+﻿{
+  "skills": [
+    {
+      "name": "工作台规则理解",
+      "description": "读取项目规范、完整课程路线、课程位置及相邻课程，为生成任务确定范围和衔接。",
+      "scope": "system",
+      "skillType": "capability",
+      "scene": "global",
+      "priority": 0,
+      "locked": true,
+      "systemInstructions": "这是工作台的上下文理解能力。AI 应根据当前作用判断是否使用其中规则：\n1. 生成或检查课程时，先读取主题、系列完整路线、当前课摘要、前一课和下一课；不要要求用户补充主题、学员、知识点、案例、时长或下一课。\n2. 当前课程严格匹配路线定位，不漏掉路线要求，不提前展开后续课程；前课内容只做必要承接，避免大段重复。\n3. 开头自然承接上一课，结尾自然引出下一课；生成最终标题后同步上一课课程版和公众号版的“下节课预告”。\n4. 同时遵守项目文章规范：关键概念用 Markdown 粗体；对话和引用使用中文双引号，不使用「」；正文不出现 //、->、——，分别改用｜、→或普通标点；首次出现的非中文产品名补充中文用途解释。\n5. “本课小结”必须位于“下节课预告”之前。插图提示词不受正文符号限制。\n\n\n以下为知识库原始规范完整快照，内容未经删减：\n\n## 公众号封面图生成\n\n- 比例：2.35:1（经典规格 900×383）\n- 提示词尾句：公众号封面品质，2.35:1比例 --v 6\n\n## 文章结构规范\n\n- 本课小结放在下节课预告前面\n\n## 文章格式规范\n\n- 引号使用：强调关键概念用 **粗体**，对话和引用用双引号。正文禁用「」，统一用 **粗体** 替代。\n- 代码符号：正文中不出现 //、-> 等编程符号，用 →、｜ 等中文分隔符替代。\n- 破折号：正文中不使用 —— 破折号，用逗号、句号或冒号替代。\n- 开篇产品名：首次出现的非中文产品名（如 ChatGPT、Midjourney）必须加括号解释，格式为 Name（做什么的AI）。\n- 以上规则仅约束文章正文，插图提示词不受限制。"
+    },
+    {
+      "name": "课程文章审校",
+      "description": "检查课程边界、知识准确性、零基础可读性、自然表达、公众号等量保留和格式。",
+      "scope": "system",
+      "skillType": "capability",
+      "scene": "global",
+      "priority": 0,
+      "locked": true,
+      "systemInstructions": "这是课程生成后的审校与自动修正能力。AI 应根据当前作用判断适用检查项，并直接修正问题：\n1. 从一个具体问题或生活场景建立直觉，再进入术语、公式和边界；公式前后说明它解决什么问题。术语首次出现时用白话解释。\n2. 检查事实、公式、数值、限定条件和类比边界，避免把“通常、可能、常用于”改成绝对结论。\n3. 检查自然表达：避免一句一段过多、模板化提问、连续同构句式、强行三点四步、讲解员过渡、抽象空话和重复启动同一案例。\n4. 去 AI 味不能删减定义、公式来源、推导、例题数据、验证、边界条件、常见疑问或课程衔接。\n5. 公众号版是等量改写，不是摘要。逐项保留课程版的知识点、公式来源、推导、例题数据、计算步骤、验证、边界条件和重要提醒。\n6. 作者人物与表达特色以可编辑的“作者风格” Skill 为准，审校不得用固定口吻覆盖用户配置。\n7. 发现问题后直接修正，再重新检查；不得只输出建议。\n\n\n以下为知识库原始规范完整快照，内容未经删减：\n\n---\nname: course-article-review\ndescription: 生成新的 AI 自学课程后自动使用本 skill 进行课程检查与优化；当用户说“检查xxx课程”“检查第x课”“检查课程文章”“检查公众号文章”“检查优化课程”等请求时，也必须使用本 skill。适用于检查课程是否符合学习路线、相邻课程衔接、零基础可读性、术语解释、知识准确性、插图适配、公众号版本转换、标题摘要和上一课预告同步。\n---\n\n# Course Article Review\n\n用于 AI 自学课程稿的检查、优化和公众号版本转换。目标是保证课程符合学习路线、适合零基础读者、与上下文课程自然衔接，并能稳定产出公众号文章版本。\n\n## 触发场景\n\n必须使用本 skill 的场景：\n\n1. 生成新的课程后，自动使用本 skill 对课程进行检查和优化。\n2. 用户说“检查xxx课程”“检查第x课”“检查课程文章”“检查公众号文章”“检查优化课程”等自然语言请求。\n3. 用户要求判断课程是否符合课程安排、是否适合零基础、是否有专业名词未解释、是否有知识错误或歧义、是否需要插图。\n4. 用户要求把课程转换为微信公众号文章版本，并生成标题、摘要、封面图提示词、上一课预告同步。\n\n## 输入材料\n\n执行前读取必要上下文：\n\n- 当前课程稿。\n- 学习路线文件，通常是 `原始资料/自创文章/AI自学/AI基础知识-学习路线.md`。\n- 相邻课程：上一课正文或公众号版，必要时读取下一系列第一课或路线说明。\n- 公众号文章样例，优先读取相近编号的公众号文章。\n- 项目 AGENTS.md 或用户提供的文章规范。\n\n## 生成课程时的写作步骤\n\n### 作者声音\n\n作者人物、语气和个人表达特色由工作台中可编辑的“作者风格” Skill 统一定义。本审校规则只检查自然表达与内容完整性，不覆盖作者在该 Skill 中保存的个人风格。\n\n生成新的课程稿或公众号文章时，除知识与结构要求外，必须同时执行自然表达检查：\n\n1. 先确定一个主要生活场景，让知识点跟着场景推进，避免导语预演一次、正文又重新启动同一个例子。\n2. 先写完整自然段，再按手机阅读需要适度分段。不要默认一句一段，也不要让所有段落长度趋同。\n3. 公式前后用具体问题解释，不连续使用“下面来看”“这就需要”“可以理解为”“把它翻成白话”等讲解员式过渡。\n4. 定义、例子和结论不必全部套用相同格式。避免每节都固定写成“提问 → 否定误解 → 给出定义 → 罗列三点 → 总结”。\n5. 优先写具体对象和动作，例如“正常促销邮件也会出现这个词”，少写“这类情况”“相关因素”“核心逻辑”等抽象占位表达。\n6. 完稿后单独执行一次去 AI 味复查，再进入知识准确性和格式复查。\n\n## 检查清单\n\n### 1. 课程安排匹配\n\n- 是否符合学习路线中该课的主题定位。\n- 是否越界讲了后续课程才应展开的内容。\n- 是否漏掉学习路线要求覆盖的关键点。\n- 是否与本系列定位一致，认知启蒙阶段不应过早进入公式、代码实现或工程细节。\n\n### 2. 相邻课程衔接\n\n- 开头是否自然承接上一课。\n- 结尾是否自然引出下一课或下一系列。\n- 上一课的“下节课预告”是否需要同步标题和主题。\n- 是否重复上一课已讲过的内容。必要重复只能作为简短回顾，不应大段重讲。\n\n### 3. 零基础可读性\n\n- “零基础”同时指 AI 零基础和编程零基础。除初中数学外，不默认读者了解 Python、命令行、开发环境、依赖安装、类、函数、变量、循环或代码缩进。\n- 每个专业名词首次出现时是否有白话解释。\n- 是否使用生活化例子建立直觉。\n- 是否避免一次引入过多抽象概念。\n- 段落是否短，单段只表达一个核心意思。\n- 是否避免“学术定义堆叠”，优先用比喻、场景和对比解释。\n- 首次出现代码时，是否明确说明代码语言、代码用途、运行位置、环境准备、执行顺序、预期输出和常见错误。\n- 代码是否保持可复制运行的完整格式，尤其不能破坏 Python 缩进、下划线、代码块边界和多行结构。\n- 如果一段代码单独运行不会产生可见结果，是否明确说明这一点，并给出最小验证方式。\n\n### 4. 自然表达与去 AI 味\n\n- 是否存在过于工整的固定结构，每节都以提问开头、否定误解、给出定义并列出三点。\n- 是否一句一段过多，造成均匀的短句鼓点；相邻短句能否合并为自然段。\n- 是否连续使用“先……再……”“不是……而是……”“不能只看……还要看……”等同构句式。\n- 是否滥用“这就是”“这就需要”“更重要的是”“核心思想仍然是”“可以浓缩成一句话”等模板过渡。\n- 是否把所有概念都做成加粗术语卡片或“术语：定义”的纵向列表。\n- 是否为了显得完整而强行罗列三点、四步或多个平行例子。\n- 是否重复解释正文已经讲清的内容，尤其是导语、知识地图和本课小结之间的重复。\n- 是否缺少具体对象、数字和动作，只剩抽象判断；能否用当前案例直接说明。\n- 语气是否始终像全知讲解员。允许适量使用“先别急”“问题就在这里”等自然表达，但不要刻意加入虚构的个人经历或情绪。\n- 去 AI 味不能以牺牲知识准确性为代价。公式、限定条件、医学或安全说明必须保留。\n\n### 5. 术语解释\n\n重点检查：\n\n- 英文缩写和产品名，如 CPU、GPU、API、PDF、ChatGPT。\n- AI 技术词，如 token、向量、矩阵、模型、参数、训练、推理、预训练、验证集、过拟合。\n- 编程词，如变量、条件、循环、函数、脚本、框架、自动化、工作流。\n\n处理方式：\n\n- 首次出现的非中文产品名按项目规范写成 `Name（做什么的AI）`。\n- 普通术语采用 `术语（白话解释）` 或下一句解释。\n- 不在当前课程展开的高阶术语，应降级表达或说明后续课程再展开。\n\n### 6. 知识准确性和歧义\n\n- 是否存在事实错误、过度绝对化、类比误导。\n- 是否把“通常”“可能”“可以理解为”写成了绝对结论。\n- 类比是否清楚边界，避免读者误以为类比就是定义。\n- 是否有表述容易造成误解，例如“循环一定直到满足条件才停止”，应改为“可以按次数重复，也可以在满足条件前重复”。\n\n### 7. 插图适配\n\n检查是否有内容适合用插图辅助理解：\n\n- 抽象流程：训练流程、任务拆解、输入输出链路。\n- 概念对比：CPU vs GPU、结构化 vs 非结构化、变量 vs 条件。\n- 层级关系：学习路线、模型结构、数据拆分。\n- 循环机制：训练循环、反馈循环、工作流循环。\n\n每个插图提示词必须：\n\n- 与文章具体内容一致。\n- 沿用项目统一风格，并以认知启蒙第3课《AI能吊打专家，却不如三岁小孩》的插图为视觉基准：深海蓝三维科技空间、Apple Keynote 风格、高端 SaaS 仪表盘美学、具有厚度和透视的悬浮玻璃结构、强霓虹边缘光与体积光、科技网格、粒子、环形能量轨道，以及蓝、青、绿、黄、橙、红的功能性色彩分区。\n- 正文插图遵守“一图一结论”，通常不超过三个主要信息区；“极简”只约束信息数量，不得削弱材质、光效、空间层次、色彩层级和系列视觉辨识度。\n- 封面必须有明确的中央视觉隐喻、立体空间纵深和较强视觉冲击力。生成后若呈现为扁平深蓝数据看板、普通二维图表或单一蓝色卡片，应判定为风格不一致并重新生成。\n- 标明比例，正文插图用 `16:9比例 --v 6`，公众号封面用 `公众号封面品质，2.35:1比例 --v 6`。\n- 避免真实人物、复杂背景、水印。\n\n### 8. 项目格式规范\n\n正文必须遵守：\n\n- 强调关键概念用 `**粗体**`。\n- 对话和引用用中文双引号。\n- 正文禁用 `「」`。\n- 正文不出现 `//`、`->`，使用 `→`、`｜` 等中文分隔符。\n- 正文不使用 `——` 破折号。\n- 本课小结必须放在下节课预告前。\n\n插图提示词不受正文符号限制。\n\n## 优化动作\n\n发现问题后直接优化课程稿，不只给建议。常见动作：\n\n- 补充术语解释。\n- 删除或压缩重复段落。\n- 修正不准确或绝对化表述。\n- 调整小节顺序，让学习坡度更平滑。\n- 增加插图提示词或改写不匹配的插图提示词。\n- 修正文字符号、标题层级和小结位置。\n- 合并没有独立信息的一句话段落，保留长短句变化。\n- 把模板过渡改成直接陈述、具体场景或自然转折。\n- 删除只为凑齐“三点”“四步”而存在的内容，不删除真正必要的操作步骤。\n- 压缩小结中对正文的逐项复述，只保留最容易混淆或最值得记住的结论。\n- 检查同一例子是否被重复启动，保留一次完整讲述即可。\n- 去除插图位置、插图提示词、图片引用和图片占位符后，课程原稿实际正文必须符合本次生成任务选择的字数范围。超过所选上限时优先删除重复解释、冗余铺垫和提前展开的下一课内容；若当前主题确实讲不完，应拆分课程路线，而不是压缩掉必要推理。\n\n## 公众号版本转换\n\n### 内容完整性原则\n\n公众号版本是课程稿的等量改写，不是压缩摘要或删节版。转换时必须保留课程稿中的全部知识内容，包括定义、公式来源、推导过程、例题数据、计算步骤、验证过程、边界条件、常见疑问、训练直觉和下一课衔接。只能调整标题、段落顺序、段落长度、排版、语气和表达方式，不能因为适配手机阅读而删除知识点或关键推理。\n\n生成后必须逐项对照课程版检查：每个知识点是否仍然出现，每个公式是否仍有来源和解释，每个例题是否保留完整数据与结论，课程版中的重要提醒和常见疑问是否被保留。若公众号版确实需要删减，必须先向用户说明并获得明确同意。\n\n去除插图提示词、图片引用和图片占位符后，公众号版本的实际正文同样必须符合本次生成任务选择的字数范围。转换时应通过压缩重复表达和调整段落结构控制篇幅，不能删掉课程原稿中的必要知识链路。\n\n当需要生成公众号文章版本时：\n\n1. 标题必须适合公众号传播，优先 15 到 22 个中文字符左右，核心钩子前置。\n2. 标题不要只是课程名，要有点击理由，但不能脱离文章内容。\n3. 生成简短摘要，放在文章开头元信息中。\n4. 课程版标题可保持课程体系标题；公众号版标题可更有传播性。\n5. 公众号文章目录为 `原始资料/自创文章/AI自学/公众号文章/`。\n6. 公众号版小节使用 `01｜`、`02｜` 这类编号格式，参考已有公众号文章。\n7. 公众号封面图提示词放在开头，正文插图可保留提示词或替换为图片引用，按用户要求执行。\n8. 生成公众号标题后，同步更新上一课公众号文章的下节课预告标题。\n\n## 输出要求\n\n最终回复应简洁说明：\n\n- 检查结论。\n- 已做的关键优化。\n- 生成或更新的文件路径。\n- 如果有未完成事项，明确说明原因。\n\n不要输出完整长文全文，除非用户明确要求。\n\n# 公众号排版规范\n\n> 适用于将认知启蒙系列 Markdown 原文转为公众号发布版本。\n\n## 标题\n\n- 去掉课程编号（如第N课），系列文章不显式编号\n- 标题与上篇预告中的下一篇预告保持一致\n- 使用简洁疑问句，如 AI到底是什么？\n\n## 摘要与封面\n\n- 每篇文章开头应有摘要（元信息 blockquote）和封面图提示词\n- 摘要包含：系列、难度、预计阅读、本课覆盖、学完收获\n- `系列/难度/预计阅读`、`本课覆盖`、`摘要`必须各自独立成行；三行之间各保留一个空引用行 `>`，禁止在公众号中渲染成连续的一段文字\n- 封面图用 ### 封面图：标题 格式，独立于正文插图\n\n## 章节编号\n\n- 中文序号 一二三 改为 01|02|03 格式\n- 所有正文教学章节的二级标题必须使用 `01｜`、`02｜`、`03｜` 这类连续编号格式\n- 仅“本课小结”和“下节课预告”使用固定的不编号标题；导语不要单独创建二级标题\n\n## 引号\n\n- 英文双引号改为中文直角引号\n\n## 分隔\n\n- 去掉所有 --- 水平分割线\n- 章节之间仅用空行分隔\n\n## 表格\n\n- Markdown 表格公众号不渲染，全部转为列表格式\n- 简单表格用加粗标签加冒号列表\n- 对比表格用箭头格式\n\n## 代码块\n\n- ASCII 示意图转为 blockquote 或插图提示词\n- 不使用 triple-backtick code fence，公众号不支持\n\n## 插图提示词\n\n- 统一格式：### 插图 N：标题 + blockquote 包裹提示词内容\n- 去掉插图位置、提示词、code fence、图片链接等冗余包装\n- 合适的内容段落优先转为插图提示词\n- 插图提示词统一使用「插图风格指南」中定义的风格\n\n## 小结与预告\n\n- 小结/预告标题加 emoji 前缀增加辨识度\n- 下节课预告列出要点，末尾附下一篇预告标题\n\n## 内容原则\n\n- 正文内容一字不改，只动标题、编号、标点、排版结构\n- 源文件保留不动，所有修改只输出到公众号文章目录"
+    },
+    {
+      "name": "图片生成与检查",
+      "description": "约束 gpt-image-2 的统一视觉风格、画面准确性、尺寸、文件和文章引用。",
+      "scope": "system",
+      "skillType": "capability",
+      "scene": "global",
+      "priority": 0,
+      "locked": true,
+      "systemInstructions": "这是工作台自有的图片生成与检查能力。仅在涉及课程封面、正文插图或图片资产时使用。\n\n图片规划：\n1. 封面作为独立资产规划，不能把第一张正文插图推断为封面。\n2. 从课程内容中选择真正需要视觉辅助的概念、流程、对比、层级或循环；不为凑数量生成重复装饰图。\n3. 一张图只表达一个主要结论，通常不超过三个信息区，并严格停留在当前课程边界内。\n4. 生成前确定用途、主体、构图、比例、可见文字、禁用元素、保存路径和文章插入位置。\n\n模型与尺寸：\n1. 使用图片 AI 配置中的 gpt-image-2，质量 high。\n2. 课程封面目标尺寸 2400x1024，正文插图目标尺寸 2048x1152。\n3. 输出为可解码的 PNG，文件名使用稳定、语义明确的英文短横线命名，不依赖历史课程编号。\n\n视觉规范：\n1. 使用深海蓝三维科技空间、Apple Keynote 风格和高端 SaaS 仪表盘美学。\n2. 主体应具有玻璃厚度、透视和空间纵深；避免用扁平二维数据看板代替主要视觉。\n3. 使用蓝、青、绿、黄、橙、红进行功能分区，避免整图被单一蓝色支配。\n4. 使用克制的霓虹边缘光、体积光、科技网格、粒子和环形轨道增强空间关系。\n5. 封面需要明确的中央视觉隐喻和冲击力；正文图优先准确表达知识关系。\n6. 避免真实人物、复杂无关背景、品牌水印、无意义英文和无关 UI 面板。\n\n提示词要求：\n1. 明确图片用途、唯一主要结论、主体、信息区、连接关系和阅读顺序。\n2. 明确色彩的功能含义、目标尺寸、必须出现的文字数字公式以及禁用内容。\n3. 要求无水印、不出现真实人物，中文文字准确清晰。\n\n生成后检查：\n1. 检查文件存在、文件非空、PNG 可解码、实际尺寸和比例正确。\n2. 检查主体没有被裁切，数字、公式、箭头、层级和因果关系与正文一致。\n3. 检查中文无乱码错字，画面具有三维厚度和空间纵深，没有混入后续课程内容。\n4. 文件损坏、尺寸错误、结论错误、文字错误、主体裁切、风格偏离或图片重复时，调整提示词并重新生成，不得登记为成功。\n\n回填与资产登记：\n1. 课程原稿保留图片位置和提示词，图片引用紧跟对应提示词。\n2. 公众号文章删除生产用提示词；封面固定放在顶部课程信息区之后，正文图放回对应知识段落。\n3. 配套图片视图展示本课程全部封面和正文图。\n4. 每张图片登记 name、path、articleId 和 articlePath，并检查 Markdown 引用、文件路径和数据库记录一致。\n5. 删除或替换图片时，同步更新课程原稿、公众号文章和资产记录，避免残留失效引用。"
+    },
+    {
+      "name": "课程策划与原稿生成",
+      "description": "定位课程范围，读取路线和相邻课程，设计结构并生成适合 AI 与编程零基础读者的完整原稿。",
+      "scope": "scene",
+      "skillType": "instruction",
+      "scene": "course_content_generation",
+      "priority": 10,
+      "locked": false,
+      "systemInstructions": "按以下顺序生成课程原稿：\n1. 根据完整路线确定当前系列、课次、主题、必须覆盖内容和不能提前展开的后续内容。\n2. 读取前一课正文和下一课路线摘要，确定开头承接与结尾预告。\n3. 设计教学结构：具体问题或生活场景 → 直觉 → 术语与必要公式 → 示例计算或验证 → 边界与常见疑问。\n4. 默认读者只有初中数学基础，同时没有 Python、命令行、开发环境和代码阅读经验。首次出现代码时，先说明代码语言与用途，再说明运行位置、环境准备、执行顺序、预期输出和常见错误；不得默认读者理解类、函数、变量、循环、依赖安装或代码缩进。\n5. 按当前节点绑定的“作者风格” Skill 生成完整 Markdown。关键概念加粗，专业术语首次出现时解释，不堆公式。代码必须使用带语言标识的 Markdown 代码块，保持可复制运行的缩进、下划线和多行结构；单独运行没有可见结果时，补充最小验证代码和预期结果。独立数学公式统一写成 Markdown 引用块，每行以“> ”开头，不使用裸露的方括号、\\[ \\] 或 $$ 公式块；同时去除 \\operatorname、\\frac 等 LaTeX 排版命令，改成普通函数名、括号和斜杠表达式。\n6. 去除插图位置、插图提示词、图片引用和图片占位符后，实际教学正文必须符合本次任务选择的字数范围；正文插图必须符合本次任务选择的数量范围且不包含封面。预计讲不完时收窄当前课边界，不得提前展开下一课；一图一结论，遵循统一三维科技视觉基准。\n7. 封面提示词必须要求标题完整位于中央 1:1 转发卡片安全区内，四周留出安全边距，不能被转发卡片裁切。\n8. 文末依次输出“本课小结”和“下节课预告”。完成后执行知识准确性、AI 与编程零基础可读性、自然表达和格式自检并直接修正。"
+    },
+    {
+      "name": "公众号文章转换",
+      "description": "将课程原稿等量改写为移动端文章，生成传播型标题、摘要并保留完整知识链路。",
+      "scope": "scene",
+      "skillType": "instruction",
+      "scene": "course_content_generation",
+      "priority": 20,
+      "locked": false,
+      "systemInstructions": "将已保存课程原稿转换为公众号版：\n1. 这是知识等量改写，不是摘要。保留全部定义、公式来源、推导、例题数据、计算、验证、边界条件、常见疑问和课程衔接。\n2. 标题不含课程编号，核心钩子前置且不脱离正文。主标题后固定输出系列、难度、预计阅读、本课覆盖和摘要；系列信息、本课覆盖、摘要各自独立成行，三行之间各保留一个空引用行“>”，随后紧接课程封面；所有正文教学二级标题必须按顺序使用“01｜”“02｜”等移动端编号，仅“本课小结”和“下节课预告”不编号。\n3. 调整段落长度、顺序和表达节奏，避免一句一段和模板化结构；不得为了手机阅读删掉关键推理。独立数学公式继续使用“> 公式”的 Markdown 引用块样式，并转换为不含 LaTeX 排版命令的普通可读表达式。\n4. 转换阶段保留插图提示词供后续统一生图；配图完成后删除公众号提示词和“插图 2”等提示标题，在原位置只留下图片引用。\n5. 删除水平分隔线、Markdown 表格和代码围栏，表格转成自然列表；保留“本课小结”在“下节课预告”之前。\n6. 去除插图提示词和图片引用后的公众号实际正文同样必须符合本次任务选择的字数范围；生成后与课程原稿逐项对照，知识覆盖明显不足时重新转换。"
+    },
+    {
+      "name": "配图规划",
+      "description": "合并课程版和公众号版插图需求，按统一风格一次生成封面及全部正文图片。",
+      "scope": "scene",
+      "skillType": "instruction",
+      "scene": "course_content_generation",
+      "priority": 30,
+      "locked": false,
+      "systemInstructions": "执行课程配图：\n1. 独立规划且只生成一张课程封面，封面不能由第一条正文提示词推断；正文图片数量以本次任务配置为准且不包含封面；再提取课程原稿与公众号版的全部正文插图需求，按语义去重，不得只处理第一张。\n2. 缺少必要配图时，根据文章中的抽象流程、概念对比、层级关系或循环机制补充提示词；每张图只表达一个主要结论。\n3. 所有提示词使用工作台统一的深海蓝三维科技视觉风格和多功能色分区，明确主体、构图、比例、禁用元素；封面标题必须完整落在中央 1:1 转发卡片安全区内。\n4. 每个正文插图先分类。真实软件界面、网站页面、安装配置步骤、菜单点击路径、终端或代码实际运行结果属于“操作截图”：不得调用 gpt-image-2 虚构界面，只写明截图对象、操作状态、需保留的信息和敏感信息遮挡要求，并插入系统默认截图占位图，供后续人工替换。概念图、流程图、结构图、对比图和视觉隐喻属于“生成图”，使用 gpt-image-2，正文图请求 2048x1152，质量 high。封面始终使用 gpt-image-2，尺寸 2400x1024。\n5. 成功后将封面、生成图或截图占位图插入课程对应提示词下方；公众号封面固定放在顶部课程信息区之后，正文图在相同位置替换提示词；截图占位同样计入本次正文配图数量，并明确保留后续人工替换语义。\n6. 单张失败时保留已成功图片和失败信息，允许只续跑失败图片。"
+    },
+    {
+      "name": "完稿规范",
+      "description": "对课程版、公众号版、图片、上一课预告和格式进行最终检查并修正。",
+      "scope": "scene",
+      "skillType": "instruction",
+      "scene": "course_content_generation",
+      "priority": 40,
+      "locked": false,
+      "systemInstructions": "完成全部生成后执行最终校验：\n1. 课程版和公众号版均非空且结构完整；公众号主标题后的系列、难度、预计阅读、本课覆盖和摘要齐全；“本课小结”位于“下节课预告”之前。\n2. 公众号版与课程版知识等量，不缺定义、公式、推导、例题、验证、边界和重要提醒。\n3. 课程版保留插图提示词且每个成功图片紧跟对应提示词；公众号版不得残留“提示词”、提示代码块或“插图 2”等提示标题，只保留图片引用。\n4. 检查关键概念粗体、中文双引号、产品名用途解释，并清除正文中的「」、//、->、——；独立数学公式必须使用“> 公式”的 Markdown 引用块样式，且不得残留 \\operatorname、\\frac 等 LaTeX 排版命令。\n5. 检查封面和正文图片均存在、可读取、尺寸和文章引用正确；公众号只能有一张 2400x1024 封面，且必须位于顶部课程信息区之后、首个正文小节之前；核对曲线、数字、公式与主要结论。\n6. 检查上一课课程版和公众号版的下节课预告已同步当前课最终标题。\n7. 发现可修正问题时直接修正并重新检查；无法自动修正时明确失败项，不能把不完整结果标为成功。"
+    },
+    {
+      "name": "作者风格",
+      "scene": "course_content_generation",
+      "scope": "scene",
+      "locked": false,
+      "priority": 5,
+      "skillType": "instruction",
+      "description": "定义课程原稿和公众号文章统一使用的人物形象、语气、表达习惯与个人特色。",
+      "systemInstructions": "# 作者风格：懂 AI 的年轻朋友\\n\\n所有课程稿和公众号文章默认使用同一个讲述者形象：28 岁左右的 AI 专家，专业知识扎实，面向零基础读者。说话平和、耐心、现代，不端着专家架子，也不采用家长、教授或训导者的口吻。\\n\\n- 把读者当作正在聊天的朋友。可以说“先别急着算”“问题在这里”“算到这里，停一下”，但不要命令读者“必须记住”或指责常见误解。\\n- 先说明问题卡在哪里，再用日常生活中的具体场景建立直觉，最后回到术语、公式与边界。例子必须真正帮助理解，不能只作装饰。\\n- 允许少量温和幽默，幽默来自场景与观察，不使用低俗表达、网络热梗或刻意装年轻的语气。\\n- 对读者的疑问先接住再解释，不制造优越感。避免“这么简单还不懂”“显然”“千万别犯这种错误”等带有教导情绪的表达。\\n- 保留作者判断，例如“这两个数长得像，但问的不是一件事”“公式没变，观察范围变了”。不要用空洞口号或拔高意义代替解释。\\n- 句子长短自然变化。解释可以慢一点，关键结论可以用短句收住。不要让所有段落都保持相同长度。\\n- 不刻意虚构个人经历，也不频繁使用“我认为”。个人特色来自观察角度、解释方式和节奏，不来自给自己贴专家标签。\\n\\n改写课程稿、生成公众号文章或修复文章时，只改变表达风格，不得因此删减定义、公式来源、推导过程、例题数据、验证、边界条件、常见疑问或课程衔接。"
+    },
+    {
+      "name": "热点作者风格",
+      "description": "面向热点资讯的个人化观察、行业推演和聊天式表达风格。",
+      "scope": "scene",
+      "skillType": "instruction",
+      "scene": "hot_news_article_generation",
+      "priority": 5,
+      "locked": false,
+      "systemInstructions": "这是热点资讯文章专用的作者风格。目标不是写成教材、训诫或普通科普，而是从 AI 资讯中找出值得讨论的变化，用温和、引导式的方式写成让人愿意读、愿意转发和愿意讨论的文章。\n\n作者定位：\n1. 以有远见、对 AI 有敏锐嗅觉的观察者身份写作。看到一个产品、模型、政策、融资、开源项目或行业动作时，邀请读者一起看：它可能改变什么、影响谁、为什么值得现在讨论。\n2. 关注 AI 对具体行业、职业分工、商业模式、科技发展和经济走势的潜在影响，也关注普通人能感知到的变化。\n3. 可以有自己的看法，但用商量、分享的口吻；分析从素材出发：我观察到什么 → 因此联想到什么 → 或许会影响谁。\n\n语气（硬性）：\n1. 温和友好、引导式：像跟熟悉的朋友聊近况，而不是上课训人。\n2. 禁止教学式强势表达，例如：「留给你的几个判断」「你必须先看」「记住这一点」「总参数排行榜是宣传材料，不是采购依据」这类盖棺定论口吻；可改成「不妨先看」「我更倾向这样理解」「可以当作一个信号」。\n3. 少用命令句与「盯住」「务必」「别被……骗了」；改用「可以留意」「如果你关心……或许会注意到」。\n4. 小标题也要温和，避免「留给你的…」「你该知道的…」「必看清单」式训诫标题。\n\n表达方式：\n1. 像在和一个对 AI 行业很敏感的朋友聊天一样写，语气自然、口语化、友好；别写成新闻通稿、周报、教材或维基百科。\n2. 先说最要紧的观察，再补原因。少用「值得关注的是」「这意味着」「从某种意义上说」这类缓冲句。\n3. 每段只围绕一个观察或想法，不要把文章切成整齐的「三点」「四步」教案。\n4. 标题和开头优先呈现冲突、变化、影响或读者关心的问题，但不要用恐吓或训诫开场。\n\n事实与推演边界：\n1. 不捏造事实。已确认事实说明「发生了什么」；个人判断说明「我怎么看」；推演说明「可能会怎样」。\n2. 假设须使用「可能」「也许」「我倾向于」等限定语。\n3. 不展示素材评分、可信度等级或内部审核术语。\n"
+    },
+    {
+      "name": "热点去AI味",
+      "description": "识别并去掉常见 AI 写作痕迹。",
+      "scope": "scene",
+      "skillType": "instruction",
+      "scene": "hot_news_article_generation",
+      "priority": 8,
+      "locked": false,
+      "systemInstructions": "生成与审校时主动去掉 AI 痕迹：\n1. 禁止空洞升华、万能排比、「在…的背景下」「赋能」「闭环」「底层逻辑」堆砌。\n2. 禁止整齐的三点四步、同构句式、一句一段灌水。\n3. 禁止「总而言之」「值得注意的是」开场后空转。\n4. 用具体观察和可感知场景替换抽象名词。\n5. 审校时若发现上述问题，直接改写后再输出，不要只列问题清单。\n"
+    },
+    {
+      "name": "热点文章骨架配图规范",
+      "description": "骨架阶段确定插图风格与可拼进提示词的生图硬性要求。",
+      "scope": "scene",
+      "skillType": "instruction",
+      "scene": "hot_news_article_generation",
+      "priority": 9,
+      "locked": false,
+      "systemInstructions": "你在拟定热点「文章骨架」时，必须按下列配图规范填写 illustrationStyle、coverBrief、imagePromptRequirements。\n后续成文只根据骨架字段写插图提示词；真正生图只执行提示词，不再另加画面约束。\n\n## 画面信息密度（主题可读、约 3～5 个信息元素）\n1. 封面必须一眼读出文章核心内容，并带点击欲望：看完应能用一句话说出「大概讲什么」。\n2. 禁止锁头、光点、几何块、通用机器人等与本篇论点无关的空装饰；禁止纯氛围科技底图。\n3. 用 3～5 个信息承载元素讲清关键对比/关系（数字差、前后反差、成本/能力跃迁等），层次清楚并留呼吸感。\n4. 如需文字，只用与主题直接相关的短标签（每个≤8字，全图≤3个）。\n\n## AI/科技选题硬性风格\n1. 必须具备明显科技感与未来感；主体用微立体/浅 3D（有体积、边缘光或柔和投影），禁止纯扁平剪贴画。\n2. 构图与隐喻要有创意变化，避免左右两色块+两个图标的单调模板。\n3. 材质可含玻璃、金属、能量流、芯片/节点网络等科技质感，但保持画面干净可读。\n\n## 字段填写要求\n1. illustrationStyle：一句话概括本篇插图风格（须体现科技立体/微立体/有创意；禁止只写「扁平」「极简」）。\n2. coverBrief：写清「封面如何一眼表达 coreThesis」——点明核心冲突/关键数字/对立关系，以及吸引点击的张力；具体到画面主元素，勿写空泛氛围词。\n3. imagePromptRequirements：把上述规范浓缩成 3～6 句中文硬性要求，须可直接拼进每条插图提示词；\n   结合本选题关键词举例（勿写通用空话）；覆盖封面主题可读、吸引点击、3～5 元素、科技立体、禁止空装饰。\n"
+    },
+    {
+      "name": "热点资讯原稿生成",
+      "description": "按文章骨架生成完整热点原稿。",
+      "scope": "scene",
+      "skillType": "instruction",
+      "scene": "hot_news_article_generation",
+      "priority": 10,
+      "locked": false,
+      "systemInstructions": "按工作台提供的文章骨架生成完整 Markdown 原稿：\n1. 必须覆盖 coreEvent、keyInsights、impacts、readerSignals。\n2. 跟随 narrativeShape 与 sectionPlan；architecture 用自然小标题，禁止“一、二、三”式大标题。\n3. 资料参考只作线索，不逐条复述。\n4. 正文字数符合 wordCountOption；插图提示词不计入字数。\n5. 关键概念用 Markdown 粗体；对话和引用用中文双引号，不使用「」；正文禁用 //、->、——。\n6. 像活人聊天：可有第一人称判断，句子长短参差；术语中文优先；禁止词典括注、「它不是 A，是 B」与通稿腔。\n7. 温和分享，不训诫：禁止「留给你的几个判断」「你必须…」等强势小标题；也不要硬套「不妨看看」类万能收尾。\n8. 必须写入并保留插图提示词：封面 1 个 + 与插图档匹配数量的正文插图；唯一权威格式为加粗「**插图位置：主题**」空一行后紧跟 ```text 围栏；禁止括号写法、裸「提示词：」行、引用块提示词或把生图描述写成正文段落。\n9. 每条插图提示词须遵循骨架的 illustrationStyle、coverBrief、imagePromptRequirements，把生图要素写进提示词正文；不要另起一套画面规范。\n10. 只输出可发布正文与插图提示词块，不输出提纲、建议或其它内部说明。\n"
+    },
+    {
+      "name": "热点文章审校",
+      "description": "审校热点原稿的事实边界、结构与文风。",
+      "scope": "scene",
+      "skillType": "instruction",
+      "scene": "hot_news_article_generation",
+      "priority": 15,
+      "locked": false,
+      "systemInstructions": "审校热点原稿：\n1. 检查是否交代事件、影响与读者信号；有无资讯流水账。\n2. 检查是否出现“一、二、三”式大标题与 AI 套话。\n3. 检查是否编造素材中没有的事实。\n4. 文风改到像真人聊天：删训诫腔，改掉词典括注与翻译腔，句子要有口气、有判断。\n5. 必须完整保留原稿中的标准插图提示词块（**插图位置：…** + ```text 围栏），不得删除或改写成括号/裸行/引用块。\n6. 检查关键概念粗体、中文双引号；清除正文「」、//、->、——（提示词围栏内不受限）。\n7. 若有问题，直接输出修订后的完整正文；若通过，原样输出完整正文。\n不要只输出检查清单。\n"
+    },
+    {
+      "name": "热点公众号转换",
+      "description": "将热点原稿转为可发布公众号成品。",
+      "scope": "scene",
+      "skillType": "instruction",
+      "scene": "hot_news_article_generation",
+      "priority": 20,
+      "locked": false,
+      "systemInstructions": "将已审校原稿改写为公众号成品：\n1. 不新增原稿没有的事实。\n2. 标题与开头突出冲突/变化/影响；段落适合移动端阅读。\n3. 像活人聊天：保留口语与个人判断；禁止词典括注、「它不是 A，是 B」与通稿腔。\n4. 原稿插图提示词已替换为占位：必须保留 [[HOT_NEWS_COVER]] 与 [[HOT_NEWS_IMAGE_N]]（N 从 1 起）。\n5. 不得输出“提示词”“插图位置”、提示代码块或“插图 2”等提示标题，只保留占位/后续图片引用。\n6. 禁止输出 Midjourney 参数（如 --v 6）或 Apple Keynote/深海蓝等生图描述正文段落。\n7. 关键概念保持粗体；对话和引用用中文双引号；正文禁用「」、//、->、——。\n"
+    },
+    {
+      "name": "图片生成与检查",
+      "description": "按原稿插图提示词生成热点封面与正文插图，校验尺寸与引用。",
+      "scope": "scene",
+      "skillType": "instruction",
+      "scene": "hot_news_article_generation",
+      "priority": 30,
+      "locked": false,
+      "systemInstructions": "热点生图执行规范（画面风格与信息密度已在骨架/提示词中写死，本阶段勿再发明新约束）：\n1. 封面尺寸 2400x1024；正文插图 2048x1152。\n2. 严格按原稿中保留的插图提示词生图；提示词已含主题元素与风格要求。\n3. 封面须优先保证「一眼读懂核心内容、吸引点击」：按提示词落实核心冲突/数字对比，勿退化成空装饰氛围图。\n4. 封面必出 1 张；正文插图张数按 imageCountOption：2-3→2，3-5→3，6-8→6（不含封面，至少 2 张）。\n5. 成功生图后：原稿保留提示词，并把图片 Markdown 紧插在对应提示词块下方；公众号用图片替换占位，不得残留提示词或“插图 N”提示标题。\n6. 生成后检查数量、路径与正文占位引用是否一致。\n"
+    },
+    {
+      "name": "热点主题搜索词生成",
+      "description": "主题创建时根据名称/说明/关注实体，总结用于元搜索的短关键词。",
+      "scope": "scene",
+      "skillType": "instruction",
+      "scene": "hot_news_article_generation",
+      "priority": 3,
+      "locked": false,
+      "systemInstructions": "你是资讯采集编辑。根据主题名称、说明与关注实体，生成用于元搜索的「短搜索词」。\n硬性规则：\n1. 只返回合法 JSON：{\"queries\":[\"词1\",\"词2\",...]}\n2. 生成 6～12 条；每条不超过 64 个汉字/字符；不要整段主题描述。\n3. 面向知识性、经验性、科普性资讯：机理、误区、指南、研究、生活干预、风险信号。\n4. 禁止电商/推销向：品牌旗舰、京东自营、礼盒、买哪个好、训练营招生、产品型号堆砌。\n5. 每条应是可直接搜索的短语（可含空格），不要用顿号把多个主题串成一条。\n"
+    },
+    {
+      "name": "热点主题GitHub查询串生成",
+      "description": "主题创建时根据名称/说明/搜索词，生成 GitHub Search 查询串。",
+      "scope": "scene",
+      "skillType": "instruction",
+      "scene": "hot_news_article_generation",
+      "priority": 3,
+      "locked": false,
+      "systemInstructions": "你是开源情报采集编辑。根据主题名称、说明与已有搜索词，生成一条可直接用于 GitHub Search API 的查询串。\n硬性规则：\n1. 只返回合法 JSON：{\"query\":\"...\"}\n2. query 为英文关键词为主，可用 OR / AND / 引号；长度不超过 200 字符。\n3. 面向开源仓库/项目检索，不要写成整段中文主题描述。\n4. 示例风格：AI OR LLM OR \"interview questions\" OR agent\n5. 禁止电商/推销向词；不要输出解释或 markdown 代码块以外的多余文字。\n"
+    },
+    {
+      "name": "热点主题来源渠道推荐",
+      "description": "来源管理：根据主题推荐可采集的权威 RSS / 网页 / 搜索渠道。",
+      "scope": "scene",
+      "skillType": "instruction",
+      "scene": "hot_news_article_generation",
+      "priority": 3,
+      "locked": false,
+      "systemInstructions": "你是资讯采集编辑。根据主题名称、说明与已有搜索词，推荐用于热点采集的来源渠道。\n硬性规则：\n1. 只返回合法 JSON：{\"channels\":[{\"name\":\"...\",\"type\":\"web|rss|searxng|github|tavily\",\"baseUrl\":\"...\",\"config\":{\"urls\":[],\"queries\":[],\"maxResults\":25,\"query\":\"\"}}]}\n2. 优先权威、可公开访问的站点；中文主题优先中文源，可少量补充英文权威源。\n3. 网页类型合并为至多 1 条，config.urls 最多 5 个且彼此不重复，baseUrl 取第一条；禁止推荐「已占用网页 URL」列表中的地址。\n4. RSS 每条一个真实 feed 地址；不要编造明显假域名；勿与已有来源重复。\n5. 若主题已有 searxng，不要再建议 searxng；否则可建议 1 条，queries 用主题搜索词（6～12 条）。\n6. GitHub / Tavily 仅在主题明显适合时建议；GitHub 的 baseUrl 用 https://api.github.com/search/repositories，query 放 config.query。\n7. 共建议至多 5 条渠道；每个主题已启用渠道上限 10，请勿超出剩余名额；不要输出解释或 markdown 以外的多余文字。\n"
+    },
+    {
+      "name": "热点文章事实速览",
+      "description": "将文章正文压缩为可入库的事实速览，不含原文。",
+      "scope": "scene",
+      "skillType": "instruction",
+      "scene": "hot_news_radar_collect",
+      "priority": 10,
+      "locked": false,
+      "systemInstructions": "你是资讯采集编辑。根据给定标题与正文，输出一段「事实速览」。\n硬性规则：\n1. 只写已确认事实与可核对要点，不编造、不升华、不写营销话术。\n2. 长度约 80～200 字；中文；可分 2～4 句。\n3. 优先：发生了什么、谁/什么产品或研究、关键数字或结论、对读者的直接含义。\n4. 不要输出标题、列表符号、JSON 或「速览：」前缀；只输出速览正文。\n5. 正文不足或无法抽取事实时，输出短句说明「信息不足，无法形成可靠速览」。\n"
+    },
+    {
+      "name": "热点文章发布日抽取",
+      "description": "从页面文本/日期候选片段中抽取文章发布或更新日期。",
+      "scope": "scene",
+      "skillType": "instruction",
+      "scene": "hot_news_radar_collect",
+      "priority": 12,
+      "locked": false,
+      "systemInstructions": "你是资讯采集编辑。根据标题与文本片段，判断该网页的发布（或最后更新）日期。\n硬性规则：\n1. 只根据给定文本判断；没有把握时必须返回空，禁止编造日期。\n2. 优先选择明确的发布时间（pubDate / datePublished / 文头「YYYY-MM-DD」等）；其次可选更新时间（upDate / dateModified）。\n3. 忽略版权年、侧栏推荐旧文日期、正文叙事中的历史日期、无上下文的孤立数字。\n4. 只返回合法 JSON：{\"publishedAt\":\"ISO日期或日期时间\"|null,\"reason\":\"不超过40字\"}\n5. publishedAt 示例：\"2024-08-27\" 或 \"2024-08-27T17:50:34\"；无法判断时 publishedAt 必须为 null。\n"
+    },
+    {
+      "name": "热点视频事实速览",
+      "description": "将视频字幕/口述要点压缩为可入库的事实速览。",
+      "scope": "scene",
+      "skillType": "instruction",
+      "scene": "hot_news_radar_collect",
+      "priority": 11,
+      "locked": false,
+      "systemInstructions": "你是资讯采集编辑。根据视频标题与字幕/口述文本，输出一段「事实速览」。\n硬性规则：\n1. 只保留可核对的事实与观点要点，去掉口播寒暄、关注引导、广告段。\n2. 长度约 80～200 字；中文；可分 2～4 句。\n3. 优先：主题主张、关键论据、数据或案例、明确结论。\n4. 不要输出标题、列表符号、JSON 或「速览：」前缀；只输出速览正文。\n5. 文本噪声过大或无法抽取事实时，输出短句说明「信息不足，无法形成可靠速览」。\n"
+    },
+    {
+      "name": "热点素材营销判定",
+      "description": "判定素材是否为硬广/招商/课程推销等营销内容。",
+      "scope": "scene",
+      "skillType": "instruction",
+      "scene": "hot_news_radar_collect",
+      "priority": 20,
+      "locked": false,
+      "systemInstructions": "你是资讯风控编辑。根据标题、事实速览与可选原文片段，判定是否为营销内容。\n判定为营销（marketing=true）的典型信号：\n1. 卖课/训练营/咨询引流、加微信、限时优惠、下单链接。\n2. 品牌软文、产品评测导购、明显带货话术。\n3. 以转化为主、几乎无可核对知识/资讯增量。\n非营销：行业新闻、研究报告解读、开源发布、政策/产品发布、知识科普（即使提到产品名）。\n只返回合法 JSON：{\"marketing\":true|false,\"reason\":\"不超过40字的原因\"}\n"
+    },
+    {
+      "name": "热点选题簇摘要合并",
+      "description": "将同一选题簇下多条事实速览合并为簇摘要。",
+      "scope": "scene",
+      "skillType": "instruction",
+      "scene": "hot_news_radar_collect",
+      "priority": 30,
+      "locked": false,
+      "systemInstructions": "你是选题编辑。给定同一选题簇的标题与多条成员事实速览，合并为一段簇摘要。\n硬性规则：\n1. 综合各方说法，标出共识与分歧（若有）；不编造未出现的事实。\n2. 长度约 100～220 字；中文；一段或两段即可。\n3. 不要罗列「来源1/来源2」；写成可读摘要。\n4. 不要输出 JSON 或「摘要：」前缀；只输出摘要正文。\n"
+    },
+    {
+      "name": "热点 AI 主题素材",
+      "description": "根据主题问卷生成若干条可选题的 AI 主题种子素材（不依赖外链抓取；条数由用户提示指定）。",
+      "scope": "scene",
+      "skillType": "instruction",
+      "scene": "hot_news_radar_collect",
+      "priority": 25,
+      "locked": false,
+      "systemInstructions": "你是面向内容创作者的选题编辑，不是搜索爬虫，也不是新闻稿写手。\n任务：根据给定「主题问卷」产出恰好 N 条今日可写的主题种子素材（N 由用户提示给出），供热点雷达补全/置顶展示。\n硬性规则：\n1. 只返回合法 JSON，不要 markdown、不要代码围栏、不要额外说明。\n2. JSON 结构必须为：\n{\"items\":[{\"title\":\"...\",\"summary\":\"...\",\"signals\":[\"...\"],\"angle\":\"...\"},...]}\n3. items 长度必须等于用户提示中的 N；各条 title 互不雷同，角度与切口尽量错开。\n4. title：一条可确认的今日写作选题，中文，不超过 40 字；贴合主题名称与主题说明；禁止空泛标题（如「AI 行业动态」「今日热点综述」）。\n5. summary：中文素材速览，约 120～220 字。须包含：可核对的近况/议题要点、为何值得写、建议切口。语气像编辑简报，不像营销文案。\n6. 禁止编造未在问卷中给出的具体数字、引语、机构名或外链；不确定处写「待核实」。\n7. 必须尊重「明确不做 / out_of_scope」边界；搜索词与关注实体只作方向提示，不要在正文中罗列关键词。\n8. signals：1～3 条短信号（每条不超过 16 字），突出写作角度或读者收益；angle：一句推荐切口（不超过 40 字）。\n9. 这是「主题种子素材」，不是伪造新闻；不得假装已有外链信源。\n10. 主题信息严重不足、无法形成可靠选题时：返回 {\"items\":[]}。\n"
+    }
+  ],
+  "workflows": [
+    {
+      "key": "course-content-generation",
+      "name": "生成课程内容",
+      "scene": "course_content_generation",
+      "releaseNotes": "规范主流程：原逻辑切段 14 节点",
+      "definition": {
+        "schemaVersion": "1",
+        "name": "生成课程内容",
+        "description": "课程内容生成规范主流程",
+        "scene": "course_content_generation",
+        "modeId": "",
+        "nodes": [
+          {
+            "id": "snapshot_context",
+            "key": "snapshot_context",
+            "typeKey": "snapshot_context",
+            "type": "snapshot_context",
+            "name": "加载工作流与课程上下文",
+            "label": "加载工作流与课程上下文",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 60,
+              "maxAttempts": 1,
+              "failurePolicy": "stop",
+              "modelType": "none"
+            },
+            "skillBindings": [
+              {
+                "skillId": "工作台规则理解",
+                "name": "工作台规则理解",
+                "priority": 10,
+                "enabled": true
+              }
+            ]
+          },
+          {
+            "id": "draft_opening",
+            "key": "draft_opening",
+            "typeKey": "draft_opening",
+            "type": "draft_opening",
+            "name": "原稿：开场与目标",
+            "label": "原稿：开场与目标",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 300,
+              "maxAttempts": 3,
+              "failurePolicy": "retry_then_stop",
+              "modelType": "text"
+            },
+            "skillBindings": [
+              {
+                "skillId": "课程策划与原稿生成",
+                "name": "课程策划与原稿生成",
+                "priority": 10,
+                "enabled": true
+              },
+              {
+                "skillId": "作者风格",
+                "name": "作者风格",
+                "priority": 20,
+                "enabled": true
+              },
+              {
+                "skillId": "工作台规则理解",
+                "name": "工作台规则理解",
+                "priority": 30,
+                "enabled": true
+              },
+              {
+                "skillId": "课程文章审校",
+                "name": "课程文章审校",
+                "priority": 40,
+                "enabled": true
+              }
+            ]
+          },
+          {
+            "id": "draft_core",
+            "key": "draft_core",
+            "typeKey": "draft_core",
+            "type": "draft_core",
+            "name": "原稿：核心原理",
+            "label": "原稿：核心原理",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 300,
+              "maxAttempts": 3,
+              "failurePolicy": "retry_then_stop",
+              "modelType": "text"
+            },
+            "skillBindings": [
+              {
+                "skillId": "课程策划与原稿生成",
+                "name": "课程策划与原稿生成",
+                "priority": 10,
+                "enabled": true
+              },
+              {
+                "skillId": "作者风格",
+                "name": "作者风格",
+                "priority": 20,
+                "enabled": true
+              },
+              {
+                "skillId": "工作台规则理解",
+                "name": "工作台规则理解",
+                "priority": 30,
+                "enabled": true
+              },
+              {
+                "skillId": "课程文章审校",
+                "name": "课程文章审校",
+                "priority": 40,
+                "enabled": true
+              }
+            ]
+          },
+          {
+            "id": "draft_example",
+            "key": "draft_example",
+            "typeKey": "draft_example",
+            "type": "draft_example",
+            "name": "原稿：案例与推导",
+            "label": "原稿：案例与推导",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 300,
+              "maxAttempts": 3,
+              "failurePolicy": "retry_then_stop",
+              "modelType": "text"
+            },
+            "skillBindings": [
+              {
+                "skillId": "课程策划与原稿生成",
+                "name": "课程策划与原稿生成",
+                "priority": 10,
+                "enabled": true
+              },
+              {
+                "skillId": "作者风格",
+                "name": "作者风格",
+                "priority": 20,
+                "enabled": true
+              },
+              {
+                "skillId": "工作台规则理解",
+                "name": "工作台规则理解",
+                "priority": 30,
+                "enabled": true
+              },
+              {
+                "skillId": "课程文章审校",
+                "name": "课程文章审校",
+                "priority": 40,
+                "enabled": true
+              },
+              {
+                "skillId": "配图规划",
+                "name": "配图规划",
+                "priority": 50,
+                "enabled": true
+              }
+            ]
+          },
+          {
+            "id": "draft_summary",
+            "key": "draft_summary",
+            "typeKey": "draft_summary",
+            "type": "draft_summary",
+            "name": "原稿：本课小结",
+            "label": "原稿：本课小结",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 180,
+              "maxAttempts": 3,
+              "failurePolicy": "retry_then_stop",
+              "modelType": "text"
+            },
+            "skillBindings": [
+              {
+                "skillId": "课程策划与原稿生成",
+                "name": "课程策划与原稿生成",
+                "priority": 10,
+                "enabled": true
+              },
+              {
+                "skillId": "作者风格",
+                "name": "作者风格",
+                "priority": 20,
+                "enabled": true
+              },
+              {
+                "skillId": "工作台规则理解",
+                "name": "工作台规则理解",
+                "priority": 30,
+                "enabled": true
+              },
+              {
+                "skillId": "课程文章审校",
+                "name": "课程文章审校",
+                "priority": 40,
+                "enabled": true
+              },
+              {
+                "skillId": "完稿规范",
+                "name": "完稿规范",
+                "priority": 50,
+                "enabled": true
+              }
+            ]
+          },
+          {
+            "id": "draft_preview",
+            "key": "draft_preview",
+            "typeKey": "draft_preview",
+            "type": "draft_preview",
+            "name": "原稿：下节课预告",
+            "label": "原稿：下节课预告",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 180,
+              "maxAttempts": 3,
+              "failurePolicy": "retry_then_stop",
+              "modelType": "text"
+            },
+            "skillBindings": [
+              {
+                "skillId": "课程策划与原稿生成",
+                "name": "课程策划与原稿生成",
+                "priority": 10,
+                "enabled": true
+              },
+              {
+                "skillId": "作者风格",
+                "name": "作者风格",
+                "priority": 20,
+                "enabled": true
+              },
+              {
+                "skillId": "工作台规则理解",
+                "name": "工作台规则理解",
+                "priority": 30,
+                "enabled": true
+              },
+              {
+                "skillId": "课程文章审校",
+                "name": "课程文章审校",
+                "priority": 40,
+                "enabled": true
+              },
+              {
+                "skillId": "完稿规范",
+                "name": "完稿规范",
+                "priority": 50,
+                "enabled": true
+              }
+            ]
+          },
+          {
+            "id": "review_draft",
+            "key": "review_draft",
+            "typeKey": "review_draft",
+            "type": "review_draft",
+            "name": "校验原稿",
+            "label": "校验原稿",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 180,
+              "maxAttempts": 1,
+              "failurePolicy": "stop",
+              "modelType": "text"
+            },
+            "skillBindings": [
+              {
+                "skillId": "课程文章审校",
+                "name": "课程文章审校",
+                "priority": 10,
+                "enabled": true
+              }
+            ]
+          },
+          {
+            "id": "wechat_conversion",
+            "key": "wechat_conversion",
+            "typeKey": "wechat_conversion",
+            "type": "wechat_conversion",
+            "name": "公众号等量转换",
+            "label": "公众号等量转换",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 300,
+              "maxAttempts": 1,
+              "failurePolicy": "stop",
+              "modelType": "text",
+              "progressStepKey": "generate_wechat"
+            },
+            "skillBindings": [
+              {
+                "skillId": "公众号文章转换",
+                "name": "公众号文章转换",
+                "priority": 10,
+                "enabled": true
+              },
+              {
+                "skillId": "作者风格",
+                "name": "作者风格",
+                "priority": 20,
+                "enabled": true
+              },
+              {
+                "skillId": "工作台规则理解",
+                "name": "工作台规则理解",
+                "priority": 30,
+                "enabled": true
+              },
+              {
+                "skillId": "课程文章审校",
+                "name": "课程文章审校",
+                "priority": 40,
+                "enabled": true
+              },
+              {
+                "skillId": "完稿规范",
+                "name": "完稿规范",
+                "priority": 50,
+                "enabled": true
+              }
+            ]
+          },
+          {
+            "id": "image_cover",
+            "key": "image_cover",
+            "typeKey": "image_cover",
+            "type": "image_cover",
+            "name": "课程封面生成",
+            "label": "课程封面生成",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 600,
+              "maxAttempts": 2,
+              "failurePolicy": "retry_then_stop",
+              "modelType": "image"
+            },
+            "skillBindings": [
+              {
+                "skillId": "图片生成与检查",
+                "name": "图片生成与检查",
+                "priority": 10,
+                "enabled": true
+              },
+              {
+                "skillId": "配图规划",
+                "name": "配图规划",
+                "priority": 20,
+                "enabled": true
+              }
+            ]
+          },
+          {
+            "id": "image_inline",
+            "key": "image_inline",
+            "typeKey": "image_inline",
+            "type": "image_inline",
+            "name": "正文插图生成",
+            "label": "正文插图生成",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 600,
+              "maxAttempts": 2,
+              "failurePolicy": "retry_then_stop",
+              "modelType": "image"
+            },
+            "skillBindings": [
+              {
+                "skillId": "图片生成与检查",
+                "name": "图片生成与检查",
+                "priority": 10,
+                "enabled": true
+              },
+              {
+                "skillId": "配图规划",
+                "name": "配图规划",
+                "priority": 20,
+                "enabled": true
+              }
+            ]
+          },
+          {
+            "id": "formula_style_validation",
+            "key": "formula_style_validation",
+            "typeKey": "formula_style_validation",
+            "type": "formula_style_validation",
+            "name": "公式格式检查",
+            "label": "公式格式检查",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 60,
+              "maxAttempts": 1,
+              "failurePolicy": "stop",
+              "modelType": "none"
+            },
+            "skillBindings": []
+          },
+          {
+            "id": "formula_expression_validation",
+            "key": "formula_expression_validation",
+            "typeKey": "formula_expression_validation",
+            "type": "formula_expression_validation",
+            "name": "公式可读性检查",
+            "label": "公式可读性检查",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 60,
+              "maxAttempts": 1,
+              "failurePolicy": "stop",
+              "modelType": "none"
+            },
+            "skillBindings": []
+          },
+          {
+            "id": "final_validation",
+            "key": "final_validation",
+            "typeKey": "final_validation",
+            "type": "final_validation",
+            "name": "最终一致性检查",
+            "label": "最终一致性检查",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 60,
+              "maxAttempts": 1,
+              "failurePolicy": "stop",
+              "modelType": "none"
+            },
+            "skillBindings": []
+          },
+          {
+            "id": "commit_version",
+            "key": "commit_version",
+            "typeKey": "commit_version",
+            "type": "commit_version",
+            "name": "保存课程版本",
+            "label": "保存课程版本",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 60,
+              "maxAttempts": 1,
+              "failurePolicy": "stop",
+              "modelType": "none",
+              "progressStepKey": "finalize"
+            },
+            "skillBindings": []
+          }
+        ],
+        "edges": [
+          {
+            "id": "e_snapshot_context_draft_opening",
+            "source": "snapshot_context",
+            "target": "draft_opening"
+          },
+          {
+            "id": "e_draft_opening_draft_core",
+            "source": "draft_opening",
+            "target": "draft_core"
+          },
+          {
+            "id": "e_draft_core_draft_example",
+            "source": "draft_core",
+            "target": "draft_example"
+          },
+          {
+            "id": "e_draft_example_draft_summary",
+            "source": "draft_example",
+            "target": "draft_summary"
+          },
+          {
+            "id": "e_draft_summary_draft_preview",
+            "source": "draft_summary",
+            "target": "draft_preview"
+          },
+          {
+            "id": "e_draft_preview_review_draft",
+            "source": "draft_preview",
+            "target": "review_draft"
+          },
+          {
+            "id": "e_review_draft_wechat_conversion",
+            "source": "review_draft",
+            "target": "wechat_conversion"
+          },
+          {
+            "id": "e_wechat_conversion_image_cover",
+            "source": "wechat_conversion",
+            "target": "image_cover"
+          },
+          {
+            "id": "e_image_cover_image_inline",
+            "source": "image_cover",
+            "target": "image_inline"
+          },
+          {
+            "id": "e_image_inline_formula_style_validation",
+            "source": "image_inline",
+            "target": "formula_style_validation"
+          },
+          {
+            "id": "e_formula_style_validation_formula_expression_validation",
+            "source": "formula_style_validation",
+            "target": "formula_expression_validation"
+          },
+          {
+            "id": "e_formula_expression_validation_final_validation",
+            "source": "formula_expression_validation",
+            "target": "final_validation"
+          },
+          {
+            "id": "e_final_validation_commit_version",
+            "source": "final_validation",
+            "target": "commit_version"
+          }
+        ]
+      }
+    },
+    {
+      "key": "hot-news-article-generation",
+      "name": "生成热点公众号文章",
+      "scene": "hot_news_article_generation",
+      "releaseNotes": "builtin skeleton-first hot-news article generation",
+      "definition": {
+        "schemaVersion": "1",
+        "name": "生成热点公众号文章",
+        "description": "热点公众号文章骨架优先生成工作流",
+        "scene": "hot_news_article_generation",
+        "modeId": "",
+        "nodes": [
+          {
+            "id": "hot_news_load_context",
+            "key": "hot_news_load_context",
+            "typeKey": "hot_news_load_context",
+            "type": "hot_news_load_context",
+            "name": "读取文章骨架与资料",
+            "label": "读取文章骨架与资料",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 60,
+              "maxAttempts": 1,
+              "failurePolicy": "stop",
+              "modelType": "none"
+            },
+            "skillBindings": []
+          },
+          {
+            "id": "hot_news_load_skills",
+            "key": "hot_news_load_skills",
+            "typeKey": "hot_news_load_skills",
+            "type": "hot_news_load_skills",
+            "name": "加载热点文章 Skill",
+            "label": "加载热点文章 Skill",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 60,
+              "maxAttempts": 1,
+              "failurePolicy": "stop",
+              "modelType": "text"
+            },
+            "skillBindings": [
+              {
+                "skillId": "热点作者风格",
+                "name": "热点作者风格",
+                "priority": 10,
+                "enabled": true
+              },
+              {
+                "skillId": "热点去AI味",
+                "name": "热点去AI味",
+                "priority": 20,
+                "enabled": true
+              },
+              {
+                "skillId": "热点资讯原稿生成",
+                "name": "热点资讯原稿生成",
+                "priority": 30,
+                "enabled": true
+              },
+              {
+                "skillId": "热点文章审校",
+                "name": "热点文章审校",
+                "priority": 40,
+                "enabled": true
+              },
+              {
+                "skillId": "热点公众号转换",
+                "name": "热点公众号转换",
+                "priority": 50,
+                "enabled": true
+              },
+              {
+                "skillId": "图片生成与检查",
+                "name": "图片生成与检查",
+                "priority": 60,
+                "enabled": true
+              }
+            ]
+          },
+          {
+            "id": "hot_news_prepare_facts",
+            "key": "hot_news_prepare_facts",
+            "typeKey": "hot_news_prepare_facts",
+            "type": "hot_news_prepare_facts",
+            "name": "整理资料线索为事实包",
+            "label": "整理资料线索为事实包",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 180,
+              "maxAttempts": 2,
+              "failurePolicy": "retry_then_stop",
+              "modelType": "text"
+            },
+            "skillBindings": [
+              {
+                "skillId": "热点作者风格",
+                "name": "热点作者风格",
+                "priority": 10,
+                "enabled": true
+              }
+            ]
+          },
+          {
+            "id": "hot_news_generate_draft",
+            "key": "hot_news_generate_draft",
+            "typeKey": "hot_news_generate_draft",
+            "type": "hot_news_generate_draft",
+            "name": "按骨架生成热点原稿",
+            "label": "按骨架生成热点原稿",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 300,
+              "maxAttempts": 3,
+              "failurePolicy": "retry_then_stop",
+              "modelType": "text"
+            },
+            "skillBindings": [
+              {
+                "skillId": "热点资讯原稿生成",
+                "name": "热点资讯原稿生成",
+                "priority": 10,
+                "enabled": true
+              },
+              {
+                "skillId": "热点作者风格",
+                "name": "热点作者风格",
+                "priority": 20,
+                "enabled": true
+              },
+              {
+                "skillId": "热点去AI味",
+                "name": "热点去AI味",
+                "priority": 30,
+                "enabled": true
+              }
+            ]
+          },
+          {
+            "id": "hot_news_review_draft",
+            "key": "hot_news_review_draft",
+            "typeKey": "hot_news_review_draft",
+            "type": "hot_news_review_draft",
+            "name": "审校热点原稿",
+            "label": "审校热点原稿",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 300,
+              "maxAttempts": 3,
+              "failurePolicy": "retry_then_stop",
+              "modelType": "text"
+            },
+            "skillBindings": [
+              {
+                "skillId": "热点文章审校",
+                "name": "热点文章审校",
+                "priority": 10,
+                "enabled": true
+              },
+              {
+                "skillId": "热点去AI味",
+                "name": "热点去AI味",
+                "priority": 20,
+                "enabled": true
+              }
+            ]
+          },
+          {
+            "id": "hot_news_generate_wechat",
+            "key": "hot_news_generate_wechat",
+            "typeKey": "hot_news_generate_wechat",
+            "type": "hot_news_generate_wechat",
+            "name": "生成公众号文章",
+            "label": "生成公众号文章",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 300,
+              "maxAttempts": 3,
+              "failurePolicy": "retry_then_stop",
+              "modelType": "text"
+            },
+            "skillBindings": [
+              {
+                "skillId": "热点公众号转换",
+                "name": "热点公众号转换",
+                "priority": 10,
+                "enabled": true
+              },
+              {
+                "skillId": "热点作者风格",
+                "name": "热点作者风格",
+                "priority": 20,
+                "enabled": true
+              },
+              {
+                "skillId": "热点去AI味",
+                "name": "热点去AI味",
+                "priority": 30,
+                "enabled": true
+              }
+            ]
+          },
+          {
+            "id": "hot_news_review_wechat",
+            "key": "hot_news_review_wechat",
+            "typeKey": "hot_news_review_wechat",
+            "type": "hot_news_review_wechat",
+            "name": "审校公众号文章",
+            "label": "审校公众号文章",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 300,
+              "maxAttempts": 3,
+              "failurePolicy": "retry_then_stop",
+              "modelType": "text"
+            },
+            "skillBindings": [
+              {
+                "skillId": "热点文章审校",
+                "name": "热点文章审校",
+                "priority": 10,
+                "enabled": true
+              },
+              {
+                "skillId": "热点公众号转换",
+                "name": "热点公众号转换",
+                "priority": 20,
+                "enabled": true
+              },
+              {
+                "skillId": "热点去AI味",
+                "name": "热点去AI味",
+                "priority": 30,
+                "enabled": true
+              }
+            ]
+          },
+          {
+            "id": "hot_news_plan_images",
+            "key": "hot_news_plan_images",
+            "typeKey": "hot_news_plan_images",
+            "type": "hot_news_plan_images",
+            "name": "确认配套图片计划",
+            "label": "确认配套图片计划",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 60,
+              "maxAttempts": 1,
+              "failurePolicy": "stop",
+              "modelType": "none"
+            },
+            "skillBindings": []
+          },
+          {
+            "id": "hot_news_generate_images",
+            "key": "hot_news_generate_images",
+            "typeKey": "hot_news_generate_images",
+            "type": "hot_news_generate_images",
+            "name": "生成配套图片",
+            "label": "生成配套图片",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 600,
+              "maxAttempts": 2,
+              "failurePolicy": "retry_then_stop",
+              "modelType": "image"
+            },
+            "skillBindings": [
+              {
+                "skillId": "图片生成与检查",
+                "name": "图片生成与检查",
+                "priority": 10,
+                "enabled": true
+              }
+            ]
+          },
+          {
+            "id": "hot_news_validate_images",
+            "key": "hot_news_validate_images",
+            "typeKey": "hot_news_validate_images",
+            "type": "hot_news_validate_images",
+            "name": "检查图片数量与引用",
+            "label": "检查图片数量与引用",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 60,
+              "maxAttempts": 1,
+              "failurePolicy": "stop",
+              "modelType": "none"
+            },
+            "skillBindings": []
+          },
+          {
+            "id": "hot_news_final_validation",
+            "key": "hot_news_final_validation",
+            "typeKey": "hot_news_final_validation",
+            "type": "hot_news_final_validation",
+            "name": "最终完整性检查",
+            "label": "最终完整性检查",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 60,
+              "maxAttempts": 1,
+              "failurePolicy": "stop",
+              "modelType": "none"
+            },
+            "skillBindings": []
+          },
+          {
+            "id": "hot_news_commit_version",
+            "key": "hot_news_commit_version",
+            "typeKey": "hot_news_commit_version",
+            "type": "hot_news_commit_version",
+            "name": "保存热点文章版本",
+            "label": "保存热点文章版本",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 60,
+              "maxAttempts": 1,
+              "failurePolicy": "stop",
+              "modelType": "none"
+            },
+            "skillBindings": []
+          }
+        ],
+        "edges": [
+          {
+            "id": "e_hot_news_load_context_hot_news_load_skills",
+            "source": "hot_news_load_context",
+            "target": "hot_news_load_skills"
+          },
+          {
+            "id": "e_hot_news_load_skills_hot_news_prepare_facts",
+            "source": "hot_news_load_skills",
+            "target": "hot_news_prepare_facts"
+          },
+          {
+            "id": "e_hot_news_prepare_facts_hot_news_generate_draft",
+            "source": "hot_news_prepare_facts",
+            "target": "hot_news_generate_draft"
+          },
+          {
+            "id": "e_hot_news_generate_draft_hot_news_review_draft",
+            "source": "hot_news_generate_draft",
+            "target": "hot_news_review_draft"
+          },
+          {
+            "id": "e_hot_news_review_draft_hot_news_generate_wechat",
+            "source": "hot_news_review_draft",
+            "target": "hot_news_generate_wechat"
+          },
+          {
+            "id": "e_hot_news_generate_wechat_hot_news_review_wechat",
+            "source": "hot_news_generate_wechat",
+            "target": "hot_news_review_wechat"
+          },
+          {
+            "id": "e_hot_news_review_wechat_hot_news_plan_images",
+            "source": "hot_news_review_wechat",
+            "target": "hot_news_plan_images"
+          },
+          {
+            "id": "e_hot_news_plan_images_hot_news_generate_images",
+            "source": "hot_news_plan_images",
+            "target": "hot_news_generate_images"
+          },
+          {
+            "id": "e_hot_news_generate_images_hot_news_validate_images",
+            "source": "hot_news_generate_images",
+            "target": "hot_news_validate_images"
+          },
+          {
+            "id": "e_hot_news_validate_images_hot_news_final_validation",
+            "source": "hot_news_validate_images",
+            "target": "hot_news_final_validation"
+          },
+          {
+            "id": "e_hot_news_final_validation_hot_news_commit_version",
+            "source": "hot_news_final_validation",
+            "target": "hot_news_commit_version"
+          }
+        ]
+      }
+    },
+    {
+      "key": "hot-news-radar-collect",
+      "name": "热点雷达采集",
+      "scene": "hot_news_radar_collect",
+      "releaseNotes": "builtin sync radar collect: fetch enrich candidate-filter cluster ai-theme-seed rank",
+      "definition": {
+        "schemaVersion": "1",
+        "name": "热点雷达采集",
+        "description": "热点雷达同步采集：获取→解析速览→素材筛选→成簇→AI主题素材→Top10",
+        "scene": "hot_news_radar_collect",
+        "modeId": "",
+        "nodes": [
+          {
+            "id": "radar_load_context",
+            "key": "radar_load_context",
+            "typeKey": "radar_load_context",
+            "type": "radar_load_context",
+            "name": "读取采集上下文",
+            "label": "读取采集上下文",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 60,
+              "maxAttempts": 1,
+              "failurePolicy": "stop",
+              "modelType": "none"
+            },
+            "skillBindings": []
+          },
+          {
+            "id": "radar_load_skills",
+            "key": "radar_load_skills",
+            "typeKey": "radar_load_skills",
+            "type": "radar_load_skills",
+            "name": "加载采集 Skill",
+            "label": "加载采集 Skill",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 60,
+              "maxAttempts": 1,
+              "failurePolicy": "stop",
+              "modelType": "text"
+            },
+            "skillBindings": [
+              {
+                "skillId": "热点文章事实速览",
+                "name": "热点文章事实速览",
+                "priority": 10,
+                "enabled": true
+              },
+              {
+                "skillId": "热点文章发布日抽取",
+                "name": "热点文章发布日抽取",
+                "priority": 20,
+                "enabled": true
+              },
+              {
+                "skillId": "热点视频事实速览",
+                "name": "热点视频事实速览",
+                "priority": 30,
+                "enabled": true
+              },
+              {
+                "skillId": "热点素材营销判定",
+                "name": "热点素材营销判定",
+                "priority": 40,
+                "enabled": true
+              },
+              {
+                "skillId": "热点选题簇摘要合并",
+                "name": "热点选题簇摘要合并",
+                "priority": 50,
+                "enabled": true
+              }
+            ]
+          },
+          {
+            "id": "radar_fetch_channels",
+            "key": "radar_fetch_channels",
+            "typeKey": "radar_fetch_channels",
+            "type": "radar_fetch_channels",
+            "name": "获取渠道资源",
+            "label": "获取渠道资源",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 600,
+              "maxAttempts": 1,
+              "failurePolicy": "stop",
+              "modelType": "none"
+            },
+            "skillBindings": []
+          },
+          {
+            "id": "radar_enrich_summarize",
+            "key": "radar_enrich_summarize",
+            "typeKey": "radar_enrich_summarize",
+            "type": "radar_enrich_summarize",
+            "name": "解析与事实速览",
+            "label": "解析与事实速览",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 900,
+              "maxAttempts": 1,
+              "failurePolicy": "stop",
+              "modelType": "text"
+            },
+            "skillBindings": [
+              {
+                "skillId": "热点文章事实速览",
+                "name": "热点文章事实速览",
+                "priority": 10,
+                "enabled": true
+              },
+              {
+                "skillId": "热点文章发布日抽取",
+                "name": "热点文章发布日抽取",
+                "priority": 20,
+                "enabled": true
+              },
+              {
+                "skillId": "热点视频事实速览",
+                "name": "热点视频事实速览",
+                "priority": 30,
+                "enabled": true
+              }
+            ]
+          },
+          {
+            "id": "radar_candidate_filter",
+            "key": "radar_candidate_filter",
+            "typeKey": "radar_candidate_filter",
+            "type": "radar_candidate_filter",
+            "name": "素材筛选",
+            "label": "素材筛选",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 600,
+              "maxAttempts": 1,
+              "failurePolicy": "stop",
+              "modelType": "text"
+            },
+            "skillBindings": [
+              {
+                "skillId": "热点素材营销判定",
+                "name": "热点素材营销判定",
+                "priority": 10,
+                "enabled": true
+              }
+            ]
+          },
+          {
+            "id": "radar_persist_cluster",
+            "key": "radar_persist_cluster",
+            "typeKey": "radar_persist_cluster",
+            "type": "radar_persist_cluster",
+            "name": "落库与成簇",
+            "label": "落库与成簇",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 600,
+              "maxAttempts": 1,
+              "failurePolicy": "stop",
+              "modelType": "text"
+            },
+            "skillBindings": [
+              {
+                "skillId": "热点选题簇摘要合并",
+                "name": "热点选题簇摘要合并",
+                "priority": 10,
+                "enabled": true
+              }
+            ]
+          },
+          {
+            "id": "radar_ai_theme_seed",
+            "key": "radar_ai_theme_seed",
+            "typeKey": "radar_ai_theme_seed",
+            "type": "radar_ai_theme_seed",
+            "name": "AI 主题素材",
+            "label": "AI 主题素材",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 180,
+              "maxAttempts": 1,
+              "failurePolicy": "stop",
+              "modelType": "text"
+            },
+            "skillBindings": [
+              {
+                "skillId": "热点 AI 主题素材",
+                "name": "热点 AI 主题素材",
+                "priority": 10,
+                "enabled": true
+              }
+            ]
+          },
+          {
+            "id": "radar_score_top10",
+            "key": "radar_score_top10",
+            "typeKey": "radar_score_top10",
+            "type": "radar_score_top10",
+            "name": "评分取 Top10",
+            "label": "评分取 Top10",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 120,
+              "maxAttempts": 1,
+              "failurePolicy": "stop",
+              "modelType": "none"
+            },
+            "skillBindings": []
+          },
+          {
+            "id": "radar_finalize",
+            "key": "radar_finalize",
+            "typeKey": "radar_finalize",
+            "type": "radar_finalize",
+            "name": "完成采集收尾",
+            "label": "完成采集收尾",
+            "enabled": true,
+            "config": {
+              "timeoutSeconds": 60,
+              "maxAttempts": 1,
+              "failurePolicy": "stop",
+              "modelType": "none"
+            },
+            "skillBindings": []
+          }
+        ],
+        "edges": [
+          {
+            "id": "e_radar_load_context_radar_load_skills",
+            "source": "radar_load_context",
+            "target": "radar_load_skills"
+          },
+          {
+            "id": "e_radar_load_skills_radar_fetch_channels",
+            "source": "radar_load_skills",
+            "target": "radar_fetch_channels"
+          },
+          {
+            "id": "e_radar_fetch_channels_radar_enrich_summarize",
+            "source": "radar_fetch_channels",
+            "target": "radar_enrich_summarize"
+          },
+          {
+            "id": "e_radar_enrich_summarize_radar_candidate_filter",
+            "source": "radar_enrich_summarize",
+            "target": "radar_candidate_filter"
+          },
+          {
+            "id": "e_radar_candidate_filter_radar_persist_cluster",
+            "source": "radar_candidate_filter",
+            "target": "radar_persist_cluster"
+          },
+          {
+            "id": "e_radar_persist_cluster_radar_ai_theme_seed",
+            "source": "radar_persist_cluster",
+            "target": "radar_ai_theme_seed"
+          },
+          {
+            "id": "e_radar_ai_theme_seed_radar_score_top10",
+            "source": "radar_ai_theme_seed",
+            "target": "radar_score_top10"
+          },
+          {
+            "id": "e_radar_score_top10_radar_finalize",
+            "source": "radar_score_top10",
+            "target": "radar_finalize"
+          }
+        ]
+      }
+    }
+  ],
+  "layoutThemes": [
+    {
+      "key": "mdnice-ziyun-optima",
+      "name": "mdnice · 紫韵 Optima",
+      "type": "custom",
+      "config": {
+        "fontSize": 16,
+        "textColor": "#5a5a5a",
+        "fontFamily": "Optima, PingFangSC-regular, serif",
+        "lineHeight": 1.8,
+        "mutedColor": "#5a5a5a",
+        "accentColor": "#fbf9fd",
+        "imageMargin": 20,
+        "imageRadius": 0,
+        "contentWidth": 609,
+        "headingColor": "#111111",
+        "primaryColor": "#9654b5",
+        "headingRadius": "0 0 40px",
+        "headingWeight": 700,
+        "headingDisplay": "inline-block",
+        "headingPadding": "0 30px 0 15px",
+        "rootBackground": "#ffffff",
+        "headingFontSize": 24,
+        "inlineCodeColor": "#9654b5",
+        "paragraphMargin": 10,
+        "headingTextColor": "#ffffff",
+        "paragraphPadding": 8,
+        "paragraphSpacing": 16,
+        "headingBackground": "#212122",
+        "headingLineHeight": 2.4,
+        "blockquoteTextColor": "#000000",
+        "inlineCodeBackground": "rgba(27,31,35,0.05)",
+        "blockquoteBorderColor": "#9654b5",
+        "blockquoteBorderWidth": 3,
+        "subheadingBorderColor": "#f44336"
+      },
+      "status": "enabled",
+      "versionNo": 4,
+      "description": "",
+      "schemaVersion": 1
+    }
+  ]
+}

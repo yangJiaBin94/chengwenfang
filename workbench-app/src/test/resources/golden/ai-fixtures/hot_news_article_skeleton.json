@@ -1,0 +1,55 @@
+{
+  "priority": 20,
+  "matchAny": [
+    "拟定「文章骨架」",
+    "配图规范 Skill"
+  ],
+  "parser": "skeleton",
+  "content": {
+    "workingTitle": "Beam 发布",
+    "scope": "只谈开源模型",
+    "coreThesis": "后训练进入新阶段",
+    "coreEvent": "Beam 发布",
+    "keyInsights": [
+      "洞察一",
+      "洞察二"
+    ],
+    "impacts": [
+      "影响一"
+    ],
+    "readerSignals": [
+      "信号一"
+    ],
+    "narrativeShape": "冲突推进",
+    "sectionPlan": [
+      "开场",
+      "收束"
+    ],
+    "illustrationStyle": "对照示意图",
+    "coverBrief": "Beam 发布冲突感封面",
+    "imagePromptRequirements": "无文字水印",
+    "recommendedWordCountOption": "2500-4000",
+    "recommendedImageCountOption": "3-5",
+    "architecture": [
+      "事实",
+      "影响"
+    ],
+    "flow": [
+      "开场",
+      "收束"
+    ],
+    "modules": [
+      {
+        "name": "事实",
+        "purpose": "交代",
+        "keyPoints": [
+          "发布"
+        ]
+      }
+    ],
+    "referenceHints": [
+      "CSDN 简报"
+    ]
+  },
+  "scene": "hot_news_article_skeleton"
+}

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel>
+  <title>Golden Feed</title>
+  <link>https://example.com</link>
+  <item>
+    <title>Golden RSS Headline About Model Release</title>
+    <link>https://example.com/golden-rss-a</link>
+    <pubDate>Tue, 21 Oct 2025 08:00:00 GMT</pubDate>
+    <description>seed summary for golden radar</description>
+  </item>
+</channel></rss>

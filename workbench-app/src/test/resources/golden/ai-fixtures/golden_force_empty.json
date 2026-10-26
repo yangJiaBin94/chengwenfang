@@ -1,0 +1,10 @@
+{
+  "priority": 1,
+  "matchAny": [
+    "GOLDEN_FORCE_EMPTY_AI"
+  ],
+  "parser": "text",
+  "forceEmpty": true,
+  "content": "",
+  "scene": "golden_force_empty"
+}

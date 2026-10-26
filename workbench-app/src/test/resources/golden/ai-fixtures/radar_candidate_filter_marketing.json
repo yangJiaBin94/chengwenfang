@@ -1,0 +1,13 @@
+{
+  "priority": 30,
+  "matchAny": [
+    "事实速览：",
+    "原文摘录"
+  ],
+  "parser": "marketing",
+  "content": {
+    "marketing": false,
+    "reason": "知识讲解无引流"
+  },
+  "scene": "radar_candidate_filter_marketing"
+}

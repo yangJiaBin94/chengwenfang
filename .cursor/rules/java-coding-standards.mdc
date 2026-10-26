@@ -1,0 +1,52 @@
+---
+description: Java/TS 编码规范：禁止魔法值、类型化 DTO、中文注释、DDD 与可扩展设计
+alwaysApply: true
+---
+
+# Workbench 编码规范（强制）
+
+与 [`docs/代码结构与注释规范.md`](docs/代码结构与注释规范.md)、[`.cursor/skills/workbench-cola-architecture/SKILL.md`](.cursor/skills/workbench-cola-architecture/SKILL.md) 一并遵守。本规则强调下列强制项。
+
+## 1. 禁止魔法值
+
+- 业务字符串比较（节点 typeKey、scene、status、skill 名、状态机键）**禁止**写成 `"xxx".equals(value)` / `case "xxx"` 散落业务逻辑。
+- 闭集用 `facade.enums.*`（`getValue()` / `from()` / `matches()`）；开集用 `facade.constant.*` 常量类（同类常量集中一个类，如 `HotNewsWorkflowKeys`、`JobTypes`）。
+- Switch / if 优先调用枚举方法（`isCommit(typeKey)`、`LEAN_NODE_KEYS`），不要复制字面量。
+
+## 2. 注释
+
+- 类、类属性、实体字段、方法均须中文 JavaDoc（public/private 方法含 `@param` / `@return`）。
+- 关键方法调用处、分支、持久化/外部调用前写一行中文注释说明意图。
+- 注释只写业务意图；**不要**写「对齐原版 Python」等对照来源字样。
+
+## 3. 类型化优先，少用 Map / JSONObject
+
+- 固定结构参数/状态/行数据用普通类（`facade.dto.*` 或 `application` 下 model），禁止 `Map.put("title", …)` 长期流转。
+- JSON 列：POJO + `JSONUtil`；读出即反序列化为类型。
+- 仅开放结构（工作流图草稿、真正动态 JSON）可用 `Map` / `FlexiblePayload`，并在边界尽快收窄为类型。
+
+## 4. 命名
+
+- 类、方法、变量、参数用有含义的英语单词；禁止无语境单字母（`a`/`p`/`v`/`e`/`m`/`tmp`/`obj`）。
+- 循环可用 `index`；异常可用 `ignored` / `exception`；lambda 按元素语义命名。
+
+## 5. 优先用 Hutool，禁止自造通用工具方法
+
+- 字符串判空/默认值用 `StrUtil.isBlank` / `isNotBlank` / `nullToEmpty` / `blankToDefault` / `firstNonBlank`。
+- 对象判空用 `ObjectUtil`；集合用 `CollUtil`；类型转换用 `Convert`；JSON 用 `JSONUtil`。
+- **禁止**再写 `private static boolean blank(String)`、`nullToEmpty(String)`、`firstNonBlank(...)` 等与 Hutool 重复的私有工具方法。
+
+## 6. DDD / 可扩展 / 设计模式
+
+- 遵守 COLA 模块与 Facade 边界；业务规则不进 Controller。
+- 可预见扩展点用策略/多态（如节点处理器 `HotNewsNodeHandler`），避免巨型 switch 写死全部分支。
+- 继承与组合优先表达变化；不要为「当前一种实现」硬编码整条流水线结构。
+
+## 7. 改代码时自检
+
+1. 是否新增了裸字符串业务键？应进 enum/constant。  
+2. 是否新增了固定结构 Map？应建类。  
+3. 新类型/方法/字段是否有中文注释？  
+4. 命名是否可读？是否可用策略/多态拆分？  
+5. 是否又写了 Hutool 已有的 blank/判空工具方法？应删掉改用 Hutool。  
+

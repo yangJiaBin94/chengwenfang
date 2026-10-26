@@ -1,0 +1,41 @@
+{
+    "articleId": "<ID-3>",
+    "failedJobId": "<ID-4>",
+    "notifications": [
+        {
+            "level": "success",
+            "message": "任务已成功完成",
+            "metadata": {
+                "articleId": "<ID-3>",
+                "documentId": "<ID-5>",
+                "jobType": "hot_news_article_generation",
+                "topicId": "<ID-1>"
+            },
+            "title": "热点文章生成完成：Melatonin myth: does bedtime supplement really fix insomnia",
+            "type": "hot_news_generation_succeeded"
+        },
+        {
+            "level": "error",
+            "message": "任务没有完成，请打开执行轨迹查看失败步骤后重新执行。",
+            "metadata": {
+                "articleId": "<ID-3>",
+                "documentId": "<ID-5>",
+                "jobType": "hot_news_article_rewrite",
+                "topicId": "<ID-1>"
+            },
+            "title": "热点文章改写失败：Melatonin myth: does bedtime supplement really fix insomnia",
+            "type": "job_terminal_failed"
+        },
+        {
+            "level": "success",
+            "message": "雷达采集已完成",
+            "metadata": {
+                "jobType": "hot_news_fetch",
+                "themeId": "<ID-6>"
+            },
+            "title": "雷达采集完成：黄金睡眠热点",
+            "type": "job_terminal_succeeded"
+        }
+    ],
+    "themeId": "<ID-6>"
+}

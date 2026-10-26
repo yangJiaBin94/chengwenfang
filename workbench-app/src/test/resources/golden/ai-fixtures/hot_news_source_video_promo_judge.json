@@ -1,0 +1,13 @@
+{
+  "priority": 25,
+  "matchAny": [
+    "内容风控编辑",
+    "knowledge|marketing"
+  ],
+  "parser": "promo_judge",
+  "content": {
+    "intent": "knowledge",
+    "reason": "科普讲解睡眠机制，非带货"
+  },
+  "scene": "hot_news_source_video_promo_judge"
+}

@@ -1,0 +1,3 @@
+# Optional helpers for cutover scripts
+psycopg2-binary>=2.9.9
+PyMySQL>=1.1.0

@@ -1,0 +1,17 @@
+{
+  "priority": 15,
+  "matchAny": [
+    "黄金自定义节点",
+    "请输出 actions JSON"
+  ],
+  "parser": "adhoc_actions",
+  "content": {
+    "actions": [
+      {
+        "op": "write_draft",
+        "content": "# 自定义草稿\n黄金自定义节点改写后的正文。"
+      }
+    ]
+  },
+  "scene": "adhoc"
+}

@@ -1,0 +1,61 @@
+# Frontend
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Java
+target/
+bin/
+*.iml
+.idea/
+.settings/
+.classpath
+.project
+.factorypath
+
+# Runtime / local data (not source)
+.workbench/
+.workbench-it/
+workbench-app/.workbench-golden/
+workbench-app/hotnews/
+workbench-app/renders/
+workbench-app/repairs/
+workbench-app/works/
+workbench-app/video-transcripts/
+workbench-app/workflow-artifacts/
+# Same dirs if process cwd is repo root
+/hotnews/
+/renders/
+/repairs/
+/works/
+/video-transcripts/
+/workflow-artifacts/
+# One-off P6.4 extract scripts (not product)
+scripts/_p64_*.py
+
+# Python-era leftovers (safe to ignore if reappear)
+.tmp-pytest*/
+.pytest-tmp*/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+*.py[cod]
+
+# Env / logs
+.env
+.env.*
+!.env.example
+dev-*.log
+dev-*.err.log
+dev-*.out.log
+
+# Agent session scratch (do not commit)
+task_plan.md
+findings.md
+progress.md
+.comment-symbols.txt
+
+# Local scratch / decompiled refs
+dev/
+

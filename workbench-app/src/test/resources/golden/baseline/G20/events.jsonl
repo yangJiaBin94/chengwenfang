@@ -1,0 +1,6 @@
+{"seq":1,"eventType":"queued","step":"queued","progress":0,"message":"任务已创建"}
+{"seq":2,"eventType":"started","step":"started","progress":0,"message":"任务已开始"}
+{"seq":3,"eventType":"progress","step":"snapshot_context","progress":5,"message":"读取并快照课程上下文"}
+{"seq":4,"eventType":"progress","step":"graph_finalize","progress":90,"message":"汇总工作流结果"}
+{"seq":5,"eventType":"progress","step":"done","progress":100,"message":"课程内容生成完成"}
+{"seq":6,"eventType":"succeeded","step":"done","progress":100,"message":"任务已成功"}

@@ -1,0 +1,11 @@
+{
+  "ok": true,
+  "step": "download_audio",
+  "text": "",
+  "source": null,
+  "error": null,
+  "artifacts": {
+    "audio_path": "audio.m4a"
+  },
+  "durationSeconds": null
+}

@@ -1,0 +1,17 @@
+Workbench (local-writer-workbench)
+Copyright 2026 yangJiaBin94
+
+This product is licensed under the Apache License, Version 2.0.
+See the LICENSE file in the project root.
+
+Third-party runtime dependencies (not part of this source tree) include,
+among others:
+
+- Lightpanda browser (AGPL-3.0): optional Docker sidecar for JS page
+  extraction. This project invokes it as an unmodified external process /
+  container; it is not distributed as a derivative work of Lightpanda.
+- SearXNG: optional local metasearch service via Docker Compose.
+- MySQL, Redis, and other images listed in compose.yml under their
+  respective upstream licenses.
+- npm and Maven dependencies declared in package.json / pom.xml under
+  their respective licenses.

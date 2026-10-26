@@ -1,0 +1,9 @@
+{
+  "priority": 10,
+  "matchAny": [
+    "Reply with OK"
+  ],
+  "content": "OK",
+  "parser": "text",
+  "scene": "connection_test"
+}

@@ -1,0 +1,10 @@
+{
+    "articleId": "<ID-3>",
+    "images": [
+        {
+            "kind": "cover",
+            "prompt": "golden cover diagram for lesson",
+            "sequenceNo": 1
+        }
+    ]
+}

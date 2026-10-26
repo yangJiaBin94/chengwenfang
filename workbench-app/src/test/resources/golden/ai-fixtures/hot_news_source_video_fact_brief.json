@@ -1,0 +1,10 @@
+{
+  "priority": 25,
+  "matchAny": [
+    "供热点选题引用",
+    "无可引用事实"
+  ],
+  "content": "信源视频事实速览：深度睡眠有助于巩固记忆，并说明褪黑素补充的常见误区与可核对要点。",
+  "parser": "text",
+  "scene": "hot_news_source_video_fact_brief"
+}

@@ -1,0 +1,9 @@
+{
+  "priority": 15,
+  "matchAny": [
+    "请修复以下热点文章"
+  ],
+  "parser": "text",
+  "content": "# 标题有效文章\n\n## 背景说明\n这是一段足够长的正文内容，用来通过最小长度检查，并避免空段落阻断。读者可以据此判断事件影响。\n\n## 影响分析\n读者可以据此判断事件影响，并找到可执行的下一步。保持事实不变，只整理结构。\n\n## 来源整理\n1. Example News - 原始报道 - https://example.com/source\n",
+  "scene": "hot_news_review_repair"
+}

@@ -1,0 +1,45 @@
+{
+  "priority": 20,
+  "matchAny": [
+    "固定五维量表",
+    "writability"
+  ],
+  "parser": "research_item_score",
+  "content": {
+    "items": [
+      {
+        "id": "0",
+        "dimensions": [
+          {
+            "key": "relevance",
+            "score": 8,
+            "reason": "直接相关"
+          },
+          {
+            "key": "credibility",
+            "score": 7,
+            "reason": "权威媒体"
+          },
+          {
+            "key": "freshness",
+            "score": 6,
+            "reason": "近一周"
+          },
+          {
+            "key": "independence",
+            "score": 5,
+            "reason": "补充视角"
+          },
+          {
+            "key": "writability",
+            "score": 5,
+            "reason": "可作背景"
+          }
+        ],
+        "recommendUse": "priority",
+        "riskNote": ""
+      }
+    ]
+  },
+  "scene": "hot_news_research_item_score"
+}

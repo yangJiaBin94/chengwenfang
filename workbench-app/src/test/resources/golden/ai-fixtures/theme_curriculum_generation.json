@@ -1,0 +1,31 @@
+{
+  "priority": 20,
+  "matchAny": [
+    "routeNarrative",
+    "theme_curriculum"
+  ],
+  "parser": "curriculum",
+  "content": {
+    "schemaVersion": 1,
+    "routeNarrative": "从入门到实践的学习路线",
+    "series": [
+      {
+        "tempId": "s1",
+        "name": "基础系列",
+        "sortOrder": 1,
+        "positioning": "打底",
+        "lessons": [
+          {
+            "lessonNo": 1,
+            "title": "第一课",
+            "summary": "概览",
+            "learningOutcomes": [
+              "能复述概念"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "scene": "theme_curriculum_generation"
+}

@@ -1,0 +1,7 @@
+{"seq":1,"eventType":"queued","step":"queued","progress":0,"message":"任务已创建"}
+{"seq":2,"eventType":"started","step":"started","progress":0,"message":"任务已开始"}
+{"seq":3,"eventType":"progress","step":"load_theme","progress":10,"message":"读取主题问卷"}
+{"seq":4,"eventType":"progress","step":"model","progress":40,"message":"调用模型生成课表"}
+{"seq":5,"eventType":"progress","step":"save","progress":90,"message":"写入课表草案"}
+{"seq":6,"eventType":"progress","step":"done","progress":100,"message":"课表草案已就绪"}
+{"seq":7,"eventType":"succeeded","step":"done","progress":100,"message":"任务已成功"}

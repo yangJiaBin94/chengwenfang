@@ -1,0 +1,18 @@
+{
+  "priority": 20,
+  "matchAny": [
+    "事实核验编辑",
+    "\"relevant\""
+  ],
+  "parser": "relevance",
+  "content": {
+    "items": [
+      {
+        "id": "0",
+        "relevant": true,
+        "reason": "同一公司财报"
+      }
+    ]
+  },
+  "scene": "hot_news_topic_research_relevance"
+}

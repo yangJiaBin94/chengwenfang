@@ -1,0 +1,6 @@
+# 热点资料池视频转写 CLI 依赖（Python 3.11+）
+# 另需系统已安装 ffmpeg，且在 PATH 中可执行（见同目录 README.md）。
+yt-dlp>=2024.1.0
+openai-whisper>=20231117
+Pillow>=10.0.0
+numpy>=1.26.0

@@ -1,0 +1,145 @@
+{
+    "acceptedCandidate": {
+        "content": "# 标题有效文章\n\n## 背景说明\n这是一段足够长的正文内容，用来通过最小长度检查，并避免空段落阻断。读者可以据此判断事件影响。\n\n## 影响分析\n读者可以据此判断事件影响，并找到可执行的下一步。保持事实不变，只整理结构。\n\n## 来源整理\n1. Example News - 原始报道 - https://example.com/source",
+        "diffSummary": "热点文章内容 AI 修复",
+        "issueIdsJson": "[]",
+        "status": "accepted"
+    },
+    "article": {
+        "content": "# 标题有效文章\n\n## 背景说明\n这是一段足够长的正文内容，用来通过最小长度检查，并避免空段落阻断。读者可以据此判断事件影响。\n\n## 影响分析\n读者可以据此判断事件影响，并找到可执行的下一步。保持事实不变，只整理结构。\n\n## 来源整理\n1. Example News - 原始报道 - https://example.com/source",
+        "currentVersionNo": 3,
+        "status": "ready"
+    },
+    "articleId": "<ID-7>",
+    "decision": {
+        "ok": true,
+        "reviewId": "<ID-8>",
+        "status": "approved"
+    },
+    "latestReview": {
+        "blockingFailed": true,
+        "decisionComment": "黄金基线人工通过",
+        "decisionStatus": "approved",
+        "failedCount": 5,
+        "items": [
+            {
+                "blocking": true,
+                "code": "ARTICLE_MARKDOWN_VALID",
+                "repairable": true,
+                "severity": "blocking",
+                "status": "passed"
+            },
+            {
+                "blocking": true,
+                "code": "ARTICLE_MIN_LENGTH",
+                "repairable": true,
+                "severity": "blocking",
+                "status": "failed"
+            },
+            {
+                "blocking": true,
+                "code": "ARTICLE_SECTIONS",
+                "repairable": true,
+                "severity": "blocking",
+                "status": "failed"
+            },
+            {
+                "blocking": true,
+                "code": "ARTICLE_STRUCTURE",
+                "repairable": false,
+                "severity": "blocking",
+                "status": "passed"
+            },
+            {
+                "blocking": true,
+                "code": "ARTICLE_TITLE",
+                "repairable": true,
+                "severity": "blocking",
+                "status": "failed"
+            },
+            {
+                "blocking": true,
+                "code": "IMAGE_REFERENCE",
+                "repairable": true,
+                "severity": "blocking",
+                "status": "passed"
+            },
+            {
+                "blocking": true,
+                "code": "LINK_REFERENCE_VALID",
+                "repairable": true,
+                "severity": "blocking",
+                "status": "passed"
+            },
+            {
+                "blocking": true,
+                "code": "NO_EMPTY_BLOCK",
+                "repairable": true,
+                "severity": "blocking",
+                "status": "failed"
+            },
+            {
+                "blocking": true,
+                "code": "NO_INTERNAL_LEAK",
+                "repairable": true,
+                "severity": "blocking",
+                "status": "passed"
+            },
+            {
+                "blocking": true,
+                "code": "REVIEW_SNAPSHOT_COMPLETE",
+                "repairable": false,
+                "severity": "blocking",
+                "status": "passed"
+            },
+            {
+                "blocking": false,
+                "code": "SOURCE_DUPLICATE",
+                "repairable": true,
+                "severity": "info",
+                "status": "passed"
+            },
+            {
+                "blocking": true,
+                "code": "SOURCE_METADATA",
+                "repairable": true,
+                "severity": "blocking",
+                "status": "passed"
+            },
+            {
+                "blocking": true,
+                "code": "SOURCE_PRESENT",
+                "repairable": false,
+                "severity": "blocking",
+                "status": "failed"
+            }
+        ],
+        "status": "failed"
+    },
+    "rejectedCandidate": {
+        "content": "# 标题有效文章\n\n## 背景说明\n这是一段足够长的正文内容，用来通过最小长度检查，并避免空段落阻断。读者可以据此判断事件影响。\n\n## 影响分析\n读者可以据此判断事件影响，并找到可执行的下一步。保持事实不变，只整理结构。\n\n## 来源整理\n1. Example News - 原始报道 - https://example.com/source",
+        "diffSummary": "热点文章内容 AI 修复",
+        "issueIdsJson": "[\"SOURCE_DUPLICATE\"]",
+        "status": "rejected"
+    },
+    "reviewId": "<ID-8>",
+    "themeId": "<ID-9>",
+    "topicId": "<ID-1>",
+    "versions": [
+        {
+            "reason": "Hot news wechat update",
+            "source": "manual_edit",
+            "versionNo": 3
+        },
+        {
+            "reason": "Hot news paired commit",
+            "source": "ai_generation",
+            "versionNo": 2
+        },
+        {
+            "reason": "Hot news article document baseline",
+            "source": "baseline",
+            "versionNo": 1
+        }
+    ]
+}

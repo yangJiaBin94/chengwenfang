@@ -1,0 +1,94 @@
+{
+    "afterAudit": {
+        "issues": [
+            {
+                "code": "OPENING_SUMMARY_COMPLETE",
+                "message": "开头 10 行未同时识别到系列、本课覆盖和课程摘要。",
+                "severity": "warn"
+            },
+            {
+                "code": "SUMMARY_PREVIEW_ORDER",
+                "message": "未确认“小结在下节课预告前”的顺序。",
+                "severity": "warn"
+            },
+            {
+                "code": "IMAGE_ASSETS_PRESENT",
+                "message": "当前从页面同步到 0 张图片，但缺少结构化 imageAssets。",
+                "severity": "fail"
+            },
+            {
+                "code": "IMAGE_METADATA_COMPLETE",
+                "message": "存在图片资产缺少名称、路径或所属文章 ID。",
+                "severity": "warn"
+            },
+            {
+                "code": "ARTICLE_IMAGE_REFERENCE",
+                "message": "文章中未识别到图片引用。",
+                "severity": "warn"
+            }
+        ],
+        "passed": 13,
+        "score": 54
+    },
+    "articleId": "<ID-2>",
+    "beforeAudit": {
+        "issues": [
+            {
+                "code": "OPENING_SUMMARY_COMPLETE",
+                "message": "开头 10 行未同时识别到系列、本课覆盖和课程摘要。",
+                "severity": "warn"
+            },
+            {
+                "code": "FORBIDDEN_SYMBOL",
+                "message": "发现 ->，需要替换为公众号规范写法。",
+                "severity": "fail"
+            },
+            {
+                "code": "IMAGE_ASSETS_PRESENT",
+                "message": "当前从页面同步到 0 张图片，但缺少结构化 imageAssets。",
+                "severity": "fail"
+            },
+            {
+                "code": "IMAGE_METADATA_COMPLETE",
+                "message": "存在图片资产缺少名称、路径或所属文章 ID。",
+                "severity": "warn"
+            },
+            {
+                "code": "ARTICLE_IMAGE_REFERENCE",
+                "message": "文章中未识别到图片引用。",
+                "severity": "warn"
+            }
+        ],
+        "passed": 13,
+        "score": 43
+    },
+    "content": "## 修复后正文\n围绕本课主题展开讲解，给出可执行步骤与边界说明，帮助读者完成最小实践。围绕本课主题展开讲解，给出可执行步骤与边界说明，帮助读者完成最小实践。围绕本课主题展开讲解，给出可执行步骤与边界说明，帮助读者完成最小实践。围绕本课主题展开讲解，给出可执行步骤与边界说明，帮助读者完成最小实践。围绕本课主题展开讲解，给出可执行步骤与边界说明，帮助读者完成最小实践。围绕本课主题展开讲解，给出可执行步骤与边界说明，帮助读者完成最小实践。围绕本课主题展开讲解，给出可执行步骤与边界说明，帮助读者完成最小实践。围绕本课主题展开讲解，给出可执行步骤与边界说明，帮助读者完成最小实践。",
+    "courseId": "<ID-4>",
+    "jobId": "<ID-3>",
+    "repairOutput": {
+        "addedCodes": [
+        ],
+        "afterScore": 54,
+        "beforeScore": 43,
+        "resolvedCodes": [
+            "FORBIDDEN_SYMBOL"
+        ]
+    },
+    "versions": [
+        {
+            "reason": "AI article repair",
+            "source": "article_repair",
+            "versionNo": 3
+        },
+        {
+            "reason": "Snapshot before article repair",
+            "source": "repair_before",
+            "versionNo": 2
+        },
+        {
+            "reason": "手动编辑",
+            "source": "manual_edit",
+            "versionNo": 1
+        }
+    ]
+}

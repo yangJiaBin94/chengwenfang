@@ -1,0 +1,9 @@
+{
+  "priority": 15,
+  "matchAny": [
+    "请输出本节点 Markdown 内容"
+  ],
+  "content": "# 黄金 LLM 初稿\n这是供自定义节点改写的原稿正文，包含可执行步骤与边界说明。",
+  "parser": "text",
+  "scene": "llm_text"
+}

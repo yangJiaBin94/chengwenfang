@@ -1,0 +1,12 @@
+# Profile：仅课程 — 关掉热点重依赖 CLI（视频解析 / Lightpanda）
+# 启动：--spring.profiles.active=course-only
+# 仍需 MySQL、Redis、JDK；正文 Trafilatura 可按需自装，课程主流程不依赖。
+
+workbench:
+  environment: course-only
+  video-transcript:
+    enabled: false
+  article-content:
+    # 课程成文不走雷达瀑布；关闭浏览器回退以少装 Docker 依赖
+    browser-enabled: false
+    trafilatura-enabled: false

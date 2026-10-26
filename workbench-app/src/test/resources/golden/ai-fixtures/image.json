@@ -1,0 +1,9 @@
+{
+  "endpoint": "images",
+  "priority": 10,
+  "matchAny": [],
+  "matchPath": "/v1/images/generations",
+  "b64Json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+  "parser": "image",
+  "scene": "image"
+}

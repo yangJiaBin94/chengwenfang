@@ -1,0 +1,32 @@
+{
+    "job": {
+        "output": {
+            "ok": true,
+            "parsed": 1,
+            "total": 1
+        },
+        "progress": 100,
+        "status": "succeeded",
+        "type": "hot_news_video_parse"
+    },
+    "jobId": "<ID-4>",
+    "nodeRuns": [
+    ],
+    "researchItems": [
+        {
+            "kind": "manual",
+            "mediaLabel": "视频",
+            "score": 67,
+            "summary": "视频语音摘要：讲者梳理发布会要点与时间线，结论偏向产品能力边界说明。",
+            "title": "英伟达押注 Reflection",
+            "url": "http://localhost:<PORT>/golden/video/watch?v=golden-sleep",
+            "videoContentKind": "visual",
+            "videoDurationSeconds": 120,
+            "videoParseStatus": "succeeded",
+            "videoParseStep": "vision_summarize"
+        }
+    ],
+    "themeId": "<ID-5>",
+    "topicId": "<ID-1>",
+    "videoItemId": "<ID-3>"
+}

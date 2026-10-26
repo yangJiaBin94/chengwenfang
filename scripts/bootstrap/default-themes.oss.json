@@ -1,0 +1,140 @@
+{
+  "courseTheme": {
+    "id": "theme-demo-course",
+    "code": "demo_course",
+    "name": "Demo Course",
+    "description": "Minimal sample theme for first-run bootstrap (no lesson bodies).",
+    "briefing": {
+      "schema_version": 1,
+      "step": 7,
+      "naming": {
+        "name": "Demo Course",
+        "description": "Minimal sample theme for first-run bootstrap (no lesson bodies).",
+        "code": "demo_course",
+        "domain": "general",
+        "domain_custom": ""
+      },
+      "audience": {
+        "readers": ["zero_basis"],
+        "readers_note": "",
+        "prerequisites": ["none"],
+        "time_budget": "system_1_2m"
+      },
+      "goals": {
+        "outcomes": ["Walk through the course UI with a sample route"],
+        "success_criteria": "understand"
+      },
+      "scope": {
+        "must_cover": ["Getting started"],
+        "out_of_scope": [],
+        "difficulty_curve": "easy_to_hard"
+      },
+      "structure": {
+        "series_count_pref": "custom",
+        "series_count_custom": 1,
+        "lessons_per_series_pref": "custom",
+        "lessons_per_series_custom": 2,
+        "need_overview_lessons": false,
+        "lesson_forms": ["concept"]
+      },
+      "expression": {
+        "tone": "companion",
+        "length": "standard",
+        "boundaries": ""
+      }
+    },
+    "curriculumDraft": {
+      "schemaVersion": 1,
+      "routeNarrative": "A tiny demo route so the UI has something to show after seed import.",
+      "series": [
+        {
+          "tempId": "s1",
+          "name": "Getting started",
+          "sortOrder": 1,
+          "positioning": "Sample series with two empty lesson shells.",
+          "lessons": [
+            {
+              "lessonNo": 1,
+              "title": "Welcome",
+              "summary": "Open the course detail page and explore tabs.",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 2,
+              "title": "Generate when ready",
+              "summary": "Configure AI keys in Settings, then run generation.",
+              "learningOutcomes": []
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "hotNewsTheme": {
+    "id": "theme-demo-hotnews",
+    "code": "demo_hotnews",
+    "name": "Demo Hot News",
+    "description": "Minimal sample hot-news theme for bootstrap (no topics).",
+    "briefing": {
+      "schema_version": 1,
+      "step": 7,
+      "naming": {
+        "name": "Demo Hot News",
+        "description": "Minimal sample hot-news theme for bootstrap (no topics).",
+        "code": "demo_hotnews",
+        "domain": "general"
+      },
+      "audience": {
+        "readers": ["creator"],
+        "content_stance": "deep_analysis"
+      },
+      "value_filters": {
+        "worth_writing": ["actionable"]
+      },
+      "scope": {
+        "must_watch": ["open source", "AI tools"],
+        "out_of_scope": "rumors",
+        "locale": "zh"
+      },
+      "radar": {
+        "search_queries": ["open source AI", "developer tools"],
+        "github_query": "",
+        "seed_channels": ["searxng"]
+      },
+      "scoring_rubric": {
+        "version": 1,
+        "dimensions": [
+          {
+            "key": "heat",
+            "label": "热度",
+            "description": "话题热度与传播面",
+            "weight": 25
+          },
+          {
+            "key": "novelty",
+            "label": "新意",
+            "description": "信息增量与差异化",
+            "weight": 25
+          },
+          {
+            "key": "actionability",
+            "label": "可写性",
+            "description": "是否适合写成稿",
+            "weight": 25
+          },
+          {
+            "key": "credibility",
+            "label": "可信度",
+            "description": "来源可靠与可核实",
+            "weight": 25
+          }
+        ],
+        "scoreGuidance": "按四维打分后加权"
+      },
+      "expression": {
+        "tone": "chatty",
+        "boundaries": ""
+      }
+    }
+  }
+}

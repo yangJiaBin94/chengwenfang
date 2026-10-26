@@ -1,0 +1,123 @@
+{
+    "conflicts": [
+    ],
+    "job": {
+        "progress": 100,
+        "status": "succeeded",
+        "type": "hot_news_topic_research"
+    },
+    "jobId": "<ID-3>",
+    "nodeRuns": [
+    ],
+    "researchItems": [
+        {
+            "kind": "web",
+            "mediaLabel": "文章",
+            "score": 67,
+            "scoreDetails": {
+                "dimensions": [
+                    {
+                        "key": "relevance",
+                        "label": "相关性",
+                        "reason": "直接相关",
+                        "score": 8,
+                        "weight": 30
+                    },
+                    {
+                        "key": "credibility",
+                        "label": "可信度",
+                        "reason": "权威媒体",
+                        "score": 7,
+                        "weight": 30
+                    },
+                    {
+                        "key": "freshness",
+                        "label": "时效性",
+                        "reason": "近一周",
+                        "score": 6,
+                        "weight": 15
+                    },
+                    {
+                        "key": "independence",
+                        "label": "独立性",
+                        "reason": "补充视角",
+                        "score": 5,
+                        "weight": 15
+                    },
+                    {
+                        "key": "writability",
+                        "label": "可写性",
+                        "reason": "可作背景",
+                        "score": 5,
+                        "weight": 10
+                    }
+                ],
+                "recommendUse": "priority",
+                "riskNote": "",
+                "rubricVersion": 1
+            },
+            "sourceLabel": "网页检索",
+            "summary": "原标题：Golden Article Title\n摘要",
+            "title": "英伟达押注 Reflection",
+            "url": "http://localhost:<PORT>/golden/article/sample?from=github"
+        },
+        {
+            "kind": "source",
+            "mediaLabel": "文章",
+            "score": 67,
+            "scoreDetails": {
+                "dimensions": [
+                    {
+                        "key": "relevance",
+                        "label": "相关性",
+                        "reason": "直接相关",
+                        "score": 8,
+                        "weight": 30
+                    },
+                    {
+                        "key": "credibility",
+                        "label": "可信度",
+                        "reason": "权威媒体",
+                        "score": 7,
+                        "weight": 30
+                    },
+                    {
+                        "key": "freshness",
+                        "label": "时效性",
+                        "reason": "近一周",
+                        "score": 6,
+                        "weight": 15
+                    },
+                    {
+                        "key": "independence",
+                        "label": "独立性",
+                        "reason": "补充视角",
+                        "score": 5,
+                        "weight": 15
+                    },
+                    {
+                        "key": "writability",
+                        "label": "可写性",
+                        "reason": "可作背景",
+                        "score": 5,
+                        "weight": 10
+                    }
+                ],
+                "recommendUse": "priority",
+                "riskNote": "",
+                "rubricVersion": 1
+            },
+            "sourceLabel": "热点原始来源",
+            "summary": "",
+            "title": "Melatonin myth: does bedtime supplement really fix insomnia",
+            "url": "http://localhost:<PORT>/golden/article/sample?from=searxng"
+        }
+    ],
+    "researchRuns": [
+        {
+            "status": "succeeded"
+        }
+    ],
+    "themeId": "<ID-4>",
+    "topicId": "<ID-1>"
+}

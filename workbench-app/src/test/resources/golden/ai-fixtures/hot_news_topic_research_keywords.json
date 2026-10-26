@@ -1,0 +1,17 @@
+{
+  "priority": 20,
+  "matchAny": [
+    "热点选题资料检索助手",
+    "disambiguation"
+  ],
+  "parser": "keyword_plan",
+  "content": {
+    "subject": "Apple Inc",
+    "keywords": [
+      "Apple Inc",
+      "Apple 公司"
+    ],
+    "disambiguation": "苹果公司，不是水果"
+  },
+  "scene": "hot_news_topic_research_keywords"
+}

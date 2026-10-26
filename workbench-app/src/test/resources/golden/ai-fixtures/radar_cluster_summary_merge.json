@@ -1,0 +1,10 @@
+{
+  "priority": 30,
+  "matchAny": [
+    "成员速览",
+    "选题标题："
+  ],
+  "content": "Merged topic brief: sleep research and melatonin coverage align on memory restoration and common supplement myths with checkable claims.",
+  "parser": "text",
+  "scene": "radar_cluster_summary_merge"
+}

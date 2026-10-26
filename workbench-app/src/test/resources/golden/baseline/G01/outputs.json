@@ -1,0 +1,97 @@
+{
+    "briefingJson": "{\"audience\":{\"prerequisites\":[\"none\"],\"readers\":[\"zero_basis\"],\"readers_note\":\"\",\"time_budget\":\"system_1_2m\"},\"expression\":{\"boundaries\":\"\",\"length\":\"standard\",\"tone\":\"companion\"},\"goals\":{\"outcomes\":[\"能复述核心概念\"],\"success_criteria\":\"understand\"},\"naming\":{\"code\":\"g01_golden_theme\",\"description\":\"G01 课表生成基线\",\"domain\":\"ai_intro\",\"domain_custom\":\"\",\"name\":\"黄金课表主题\"},\"radar\":{\"search_queries\":[]},\"schema_version\":1,\"scope\":{\"difficulty_curve\":\"easy_to_hard\",\"must_cover\":[\"基础概念\"],\"out_of_scope\":[]},\"step\":7,\"structure\":{\"lesson_forms\":[\"concept\",\"practice\"],\"lessons_per_series_pref\":\"3_5\",\"need_overview_lessons\":true,\"series_count_pref\":\"3_5\"}}",
+    "commit": {
+        "courseCount": 1,
+        "seriesCount": 1,
+        "status": "enabled",
+        "themeId": "<ID-4>"
+    },
+    "curriculumDraft": {
+        "routeNarrative": "从入门到实践的学习路线",
+        "schemaVersion": 1,
+        "series": [
+            {
+                "lessons": [
+                    {
+                        "learningOutcomes": [
+                            "能复述概念"
+                        ],
+                        "lessonNo": 1,
+                        "summary": "概览",
+                        "title": "第一课"
+                    }
+                ],
+                "name": "基础系列",
+                "positioning": "打底",
+                "sortOrder": 1,
+                "tempId": "s1"
+            }
+        ]
+    },
+    "defaultsJson": "{\"length\":\"standard\",\"lessonForms\":[\"concept\",\"practice\"],\"tone\":\"companion\",\"wordCountOption\":\"2000-4000\"}",
+    "route": {
+        "routeNarrative": "从入门到实践的学习路线",
+        "series": [
+            {
+                "id": "<ID-6>",
+                "lessons": [
+                    {
+                        "articleWords": 0,
+                        "currentDraftArticleId": "<ID-2>",
+                        "currentDraftDocumentId": "<ID-2>",
+                        "currentWechatArticleId": "<ID-3>",
+                        "currentWechatDocumentId": "<ID-3>",
+                        "draftWords": 0,
+                        "id": "<ID-5>",
+                        "imageAssets": [
+                        ],
+                        "imagePublicPaths": [
+                        ],
+                        "images": 0,
+                        "lesson": "第 1 课",
+                        "lessonNo": 1,
+                        "metadata": {
+                            "learningOutcomes": [
+                                "能复述概念"
+                            ],
+                            "seriesPositioning": "打底"
+                        },
+                        "progress": 0,
+                        "published": false,
+                        "reviewScore": 0,
+                        "series": "基础系列",
+                        "seriesId": "<ID-6>",
+                        "status": "素材已准备",
+                        "summary": "概览",
+                        "themeId": "<ID-4>",
+                        "title": "第一课",
+                        "updatedAt": "<TS>"
+                    }
+                ],
+                "name": "基础系列",
+                "positioning": "打底",
+                "sortOrder": 1
+            }
+        ],
+        "themeCode": "g01_golden_theme",
+        "themeId": "<ID-4>",
+        "themeName": "黄金课表主题"
+    },
+    "theme": {
+        "code": "g01_golden_theme",
+        "completedCount": 0,
+        "courseCount": 1,
+        "createdVia": "wizard",
+        "curriculumDraftJson": "{\"schemaVersion\":1,\"routeNarrative\":\"从入门到实践的学习路线\",\"series\":[{\"tempId\":\"s1\",\"name\":\"基础系列\",\"sortOrder\":1,\"positioning\":\"打底\",\"lessons\":[{\"lessonNo\":1,\"title\":\"第一课\",\"summary\":\"概览\",\"learningOutcomes\":[\"能复述概念\"]}]}]}",
+        "description": "G01 课表生成基线",
+        "generateJobId": "<ID-1>",
+        "id": "<ID-4>",
+        "modeCode": "course_system",
+        "modeId": "course_system",
+        "modeName": "课程体系教学模式",
+        "name": "黄金课表主题",
+        "routeNarrative": "从入门到实践的学习路线",
+        "seriesCount": 1,
+        "status": "enabled"
+    }
+}

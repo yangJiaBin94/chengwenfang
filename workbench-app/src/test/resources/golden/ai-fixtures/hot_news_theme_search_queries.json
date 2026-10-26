@@ -1,0 +1,18 @@
+{
+  "priority": 20,
+  "matchAny": [
+    "短搜索词"
+  ],
+  "parser": "queries",
+  "content": {
+    "queries": [
+      "睡眠机制",
+      "褪黑素误区",
+      "深度睡眠指南",
+      "咖啡因影响睡眠",
+      "午睡时长研究",
+      "失眠风险信号"
+    ]
+  },
+  "scene": "hot_news_theme_search_queries"
+}

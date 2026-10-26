@@ -1,0 +1,108 @@
+{
+    "fetchRuns": [
+        {
+            "dedupedItems": 0,
+            "newItems": 2,
+            "status": "succeeded",
+            "totalItems": 2
+        }
+    ],
+    "items": [
+        {
+            "title": "Sleep mechanism study: how deep sleep restores memory",
+            "url": "http://localhost:<PORT>/golden/article/sample?from=rss"
+        },
+        {
+            "title": "Melatonin myth: does bedtime supplement really fix insomnia",
+            "url": "http://localhost:<PORT>/golden/article/sample?from=searxng"
+        }
+    ],
+    "job": {
+        "output": {
+        },
+        "progress": 100,
+        "status": "succeeded",
+        "type": "hot_news_fetch"
+    },
+    "jobId": "<ID-1>",
+    "nodeRuns": [
+        {
+            "nodeKey": "radar_load_context",
+            "sequenceNo": 1,
+            "status": "succeeded"
+        },
+        {
+            "nodeKey": "radar_load_skills",
+            "sequenceNo": 2,
+            "status": "succeeded"
+        },
+        {
+            "nodeKey": "radar_fetch_channels",
+            "sequenceNo": 3,
+            "status": "succeeded"
+        },
+        {
+            "nodeKey": "radar_enrich_summarize",
+            "sequenceNo": 4,
+            "status": "succeeded"
+        },
+        {
+            "nodeKey": "radar_candidate_filter",
+            "sequenceNo": 5,
+            "status": "succeeded"
+        },
+        {
+            "nodeKey": "radar_persist_cluster",
+            "sequenceNo": 6,
+            "status": "succeeded"
+        },
+        {
+            "nodeKey": "radar_ai_theme_seed",
+            "sequenceNo": 7,
+            "status": "succeeded"
+        },
+        {
+            "nodeKey": "radar_score_top10",
+            "sequenceNo": 8,
+            "status": "succeeded"
+        },
+        {
+            "nodeKey": "radar_finalize",
+            "sequenceNo": 9,
+            "status": "succeeded"
+        }
+    ],
+    "themeId": "<ID-2>",
+    "topics": [
+        {
+            "heatScore": 73,
+            "mediaTypes": [
+                "文章"
+            ],
+            "radarRank": 1,
+            "status": "discovered",
+            "title": "Melatonin myth: does bedtime supplement really fix insomnia",
+            "writingScore": 0
+        },
+        {
+            "heatScore": 73,
+            "mediaTypes": [
+                "文章"
+            ],
+            "radarRank": 2,
+            "status": "discovered",
+            "title": "Sleep mechanism study: how deep sleep restores memory",
+            "writingScore": 0
+        },
+        {
+            "heatScore": 40,
+            "mediaTypes": [
+            ],
+            "originKind": "ai_theme_seed",
+            "radarRank": 3,
+            "status": "discovered",
+            "title": "开源模型评测口径为何又变了",
+            "writingScore": 0
+        }
+    ]
+}

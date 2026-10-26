@@ -1,0 +1,22 @@
+{
+    "com.workbench.content.facade.constant.ContentModeIds.COURSE_SYSTEM": "a0fd33ca0a6fa16e33464b48850e64cce8c5ad6d4dafe3dd5bee6060962eb900",
+    "com.workbench.mode.course.application.prompt.CoursePrompts.AUTHOR_PREAMBLE": "2a94af1e5f09d96b0de1b7869de04f97be2e650a1a2855b54879e557d7521e31",
+    "com.workbench.mode.course.application.prompt.CoursePrompts.WRITING_RULES": "88be3e8d601fa0128a2a8a0655a9a69a10af33035af58083dd43eb35cbeb08a3",
+    "com.workbench.mode.hotnews.application.TopicBriefSourceService.EVIDENCE_REVIEWER_SYSTEM": "bbc5e661e106c6dcd8dc6dd186454c2fcba3c710fb4d8e71a60c93eaf077f073",
+    "com.workbench.mode.hotnews.application.prompt.ArticleSkeletonPrompts.SKELETON_SYSTEM": "97bb8827b26b20fbf492b5d4585a7532119427302e5797b940ce0e19e4e2e2c7",
+    "com.workbench.mode.hotnews.application.prompt.HotNewsWritingPrompts.AUTHOR_PREAMBLE": "857b0c6088b34a0594b622e9cfba8fd22ff536add112bd1c76a7ab2ecbac449e",
+    "com.workbench.mode.hotnews.application.prompt.HotNewsWritingPrompts.WRITING_RULES": "83efe0fe646470b2539258b71bcb84a419556354237db9b259e581ec041cd724",
+    "com.workbench.mode.hotnews.application.prompt.ResearchItemScorePrompts.SYSTEM_PROMPT": "16f5ebd022ccb83daa476c31b04081fdd1f558ec29d752efa970818ee4086197",
+    "com.workbench.mode.hotnews.application.prompt.ResearchKeywordPrompts.KEYWORD_SYSTEM": "439c1e6de95d4a444eab4ddc4e43d7fef6c566072ce148aab346c9352c091a72",
+    "com.workbench.mode.hotnews.application.prompt.ResearchRelevancePrompts.RELEVANCE_SYSTEM": "59139226d0c6bcbb823407bd91eaa31e80d28ab8cf4f36d776f3b96d6ff4b08c",
+    "com.workbench.mode.hotnews.application.prompt.ResearchTranslatePrompts.TRANSLATE_SYSTEM": "15f1601be3f4ecdaad395e40a56602232b29015920ff060fd59ec34739dc346e",
+    "com.workbench.mode.hotnews.application.prompt.SourceVideoPrompts.FACT_SYSTEM": "d47d4d587810bebcbbab6b971429aab0f2c7dec60b3c9f5dcaa3fb76c888b064",
+    "com.workbench.mode.hotnews.application.prompt.SourceVideoPrompts.PROMO_SYSTEM": "f40a0c6e8fc7be75dd4133f72bdbdd6af82e3148887e309719f4f2f5eb78dced",
+    "com.workbench.mode.hotnews.application.prompt.ThemeScoringRubricPrompts.SYSTEM_PROMPT": "6a3fbe8947a7202d5ce4754c11f63eae6df119e0e7c7e5787713dd345f3e0dfe",
+    "com.workbench.mode.hotnews.application.prompt.TopicEditorialPrompts.SYSTEM_PROMPT": "b5214cfac020b70475cc2bda1bdaa09e4e118319b690e09360429f0dede40919",
+    "com.workbench.mode.hotnews.application.prompt.TopicWritingScorePrompts.SYSTEM_PROMPT": "77d9e30993eff786077e405cbac525ffed3676af8fbcaff6fb02573f81cf2e7f",
+    "com.workbench.mode.hotnews.application.prompt.VideoSpeechPrompts.SUMMARIZE_SYSTEM": "b3f2d2bc70405c8a469f81b0fd66ea8033a3b4844ba72ca45654c0b302d987a8",
+    "com.workbench.mode.hotnews.application.prompt.VideoVisionPrompts.VISION_SUMMARIZE_SYSTEM": "65a2529af66dd53b13718852185ccc6c56196d8f2f518de977755523a6135baf",
+    "com.workbench.publishing.facade.constant.LayoutThemeKeys.TYPE_SYSTEM": "bbc5e661e106c6dcd8dc6dd186454c2fcba3c710fb4d8e71a60c93eaf077f073",
+    "com.workbench.skill.facade.constant.CourseSkillNames.WORKBENCH_RULES": "2011a7c9d140c7c72231ce6610e632a43199d62548841151619f2637d9ede622"
+}

@@ -1,0 +1,10 @@
+{
+  "priority": 30,
+  "matchAny": [
+    "口播/字幕",
+    "视频事实速览"
+  ],
+  "content": "视频口播事实速览：讲者介绍产品发布要点与时间线，未出现明显推销话术。",
+  "parser": "text",
+  "scene": "radar_video_fact_brief"
+}

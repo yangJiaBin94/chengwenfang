@@ -1,0 +1,12 @@
+{
+  "priority": 20,
+  "matchAny": [
+    "GitHub Search",
+    "开源情报采集编辑"
+  ],
+  "parser": "github_query",
+  "content": {
+    "query": "AI OR LLM OR agent"
+  },
+  "scene": "hot_news_theme_github_query"
+}

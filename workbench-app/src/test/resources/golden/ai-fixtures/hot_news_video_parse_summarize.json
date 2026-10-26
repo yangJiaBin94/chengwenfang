@@ -1,0 +1,10 @@
+{
+  "priority": 30,
+  "matchAny": [
+    "视频标题：",
+    "原文："
+  ],
+  "content": "视频语音摘要：讲者梳理发布会要点与时间线，结论偏向产品能力边界说明。",
+  "parser": "text",
+  "scene": "hot_news_video_parse_summarize"
+}

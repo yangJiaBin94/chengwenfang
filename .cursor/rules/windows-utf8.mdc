@@ -1,0 +1,18 @@
+---
+description: Windows 下终端与 Agent Shell 统一 UTF-8，避免中文乱码
+alwaysApply: true
+---
+
+# Windows UTF-8 控制台
+
+在本仓库用 Shell 跑 Maven / Java / Python 前，若当前是 Windows PowerShell，先加载编码脚本（同一会话只需一次）：
+
+```powershell
+. .\scripts\use-utf8.ps1
+```
+
+效果：`chcp 65001`、控制台 UTF-8、以及 `JAVA_TOOL_OPTIONS`（stdout/stderr/file.encoding=UTF-8）。
+
+- 不要改回 GBK 来“迁就”乱码；项目约定 UTF-8
+- `.mvn/jvm.config` 禁止写 `#` 注释（会被当成 JVM 参数）
+- Debug 应用请用带 UTF-8 `vmArgs` 的 launch 配置，或先开「PowerShell UTF-8」终端再启动

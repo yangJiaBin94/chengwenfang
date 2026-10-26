@@ -1,0 +1,33 @@
+{"seq":1,"eventType":"queued","step":"queued","progress":0,"message":"任务已创建"}
+{"seq":2,"eventType":"started","step":"started","progress":0,"message":"任务已开始"}
+{"seq":3,"eventType":"progress","step":"graph_execute","progress":15,"message":"执行雷达采集工作流"}
+{"seq":4,"eventType":"progress","step":"radar_fetch_channels","progress":12,"message":"正在并行采集 3 个渠道…"}
+{"seq":5,"eventType":"progress","step":"radar_fetch_channels","progress":19,"message":"渠道 1/3「<CHANNEL>」收录 <N> 条 · 累计候选 <N> 条"}
+{"seq":6,"eventType":"progress","step":"radar_fetch_channels","progress":25,"message":"渠道 2/3「<CHANNEL>」收录 <N> 条 · 累计候选 <N> 条"}
+{"seq":7,"eventType":"progress","step":"radar_fetch_channels","progress":32,"message":"渠道 3/3「<CHANNEL>」收录 <N> 条 · 累计候选 <N> 条"}
+{"seq":8,"eventType":"progress","step":"radar_fetch_channels","progress":32,"message":"正在剔除已选题重复素材…"}
+{"seq":9,"eventType":"progress","step":"radar_fetch_channels","progress":33,"message":"正在探测候选链接是否可直接打开…"}
+{"seq":10,"eventType":"progress","step":"radar_fetch_channels","progress":33,"message":"直连探测 2/2，不可达 0"}
+{"seq":11,"eventType":"progress","step":"radar_fetch_channels","progress":35,"message":"获取完成：共获取 3 条（文章 3，视频 0），过滤掉 1 条（文章 1，视频 0，其中已选题去重 0、直连不可达 0），传递下一步 2 条（文章 2，视频 0）"}
+{"seq":12,"eventType":"progress","step":"radar_enrich_summarize","progress":40,"message":"已解析 0/2（文章 0/2，视频 0/0）"}
+{"seq":13,"eventType":"progress","step":"radar_enrich_summarize","progress":70,"message":"解析完成：共 2 条（文章 2/2，视频 0/0），成功 2，弃用 0"}
+{"seq":14,"eventType":"progress","step":"radar_candidate_filter","progress":72,"message":"素材筛选：参与 2 条…"}
+{"seq":15,"eventType":"progress","step":"radar_candidate_filter","progress":74,"message":"素材筛选：规则过滤 2 / 2，待 AI 营销判定 2 条"}
+{"seq":16,"eventType":"progress","step":"radar_candidate_filter","progress":75,"message":"素材筛选：AI 营销判定 0 / 2…"}
+{"seq":17,"eventType":"progress","step":"radar_candidate_filter","progress":77,"message":"素材筛选：AI 营销判定 2 / 2"}
+{"seq":18,"eventType":"progress","step":"radar_candidate_filter","progress":78,"message":"素材筛选：参与 2 条，弃用拦截 0 条，通过保留 2 条"}
+{"seq":19,"eventType":"progress","step":"radar_persist_cluster","progress":80,"message":"落库成簇：参与 2 条…"}
+{"seq":20,"eventType":"progress","step":"radar_persist_cluster","progress":86,"message":"落库成簇：参与 2 条，合并成簇 2 个"}
+{"seq":21,"eventType":"progress","step":"radar_ai_theme_seed","progress":88,"message":"正在生成 AI 主题素材…"}
+{"seq":22,"eventType":"progress","step":"radar_ai_theme_seed","progress":88,"message":"正在生成 AI 主题素材（需 8 条）…"}
+{"seq":23,"eventType":"progress","step":"radar_ai_theme_seed","progress":88,"message":"AI 主题素材去重后不足，第 1 次补生成（还需 7 条）…"}
+{"seq":24,"eventType":"progress","step":"radar_ai_theme_seed","progress":88,"message":"AI 主题素材去重后不足，第 2 次补生成（还需 7 条）…"}
+{"seq":25,"eventType":"progress","step":"radar_ai_theme_seed","progress":90,"message":"AI 主题素材去重补全未满：收下 1/8（补生成 2/2 次后放弃；本批共 3 条）"}
+{"seq":26,"eventType":"progress","step":"radar_score_top10","progress":91,"message":"正在按主题量表 AI 评分…"}
+{"seq":27,"eventType":"progress","step":"radar_score_top10","progress":93,"message":"AI 写作评分 1/3"}
+{"seq":28,"eventType":"progress","step":"radar_score_top10","progress":95,"message":"AI 写作评分 2/3"}
+{"seq":29,"eventType":"progress","step":"radar_score_top10","progress":97,"message":"AI 写作评分 3/3"}
+{"seq":30,"eventType":"progress","step":"radar_score_top10","progress":98,"message":"评分完成 3 条，已标记 Top10：3 条"}
+{"seq":31,"eventType":"progress","step":"graph_finalize","progress":90,"message":"汇总采集结果"}
+{"seq":32,"eventType":"progress","step":"done","progress":100,"message":"雷达采集完成"}
+{"seq":33,"eventType":"succeeded","step":"done","progress":100,"message":"任务已成功"}

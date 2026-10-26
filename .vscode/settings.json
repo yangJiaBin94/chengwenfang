@@ -1,0 +1,54 @@
+{
+  "files.encoding": "utf8",
+  "files.autoGuessEncoding": false,
+  "java.jdt.ls.lombokSupport.enabled": true,
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "java.compile.nullAnalysis.mode": "disabled",
+  "java.autobuild.enabled": true,
+  "java.import.maven.enabled": true,
+  "java.import.gradle.enabled": false,
+  "java.configuration.maven.userSettings": "${workspaceFolder}/.mvn/settings.xml",
+  "maven.terminal.customEnv": [
+    {
+      "environmentVariable": "MAVEN_OPTS",
+      "value": "-Dfile.encoding=UTF-8"
+    }
+  ],
+  "java.debug.settings.forceBuildBeforeLaunch": true,
+  "java.configuration.runtimes": [
+    {
+      "name": "JavaSE-21",
+      "path": "C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.12.101-hotspot",
+      "default": true
+    }
+  ],
+  "java.jdt.ls.java.home": "C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.12.101-hotspot",
+  "java.project.resourceFilters": [
+    "node_modules",
+    "\\.git",
+    "bin",
+    "\\.workbench"
+  ],
+  "files.exclude": {
+    "**/bin": true
+  },
+  "java.debug.settings.vmArgs": "-Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8 -Dsun.jnu.encoding=UTF-8",
+  "terminal.integrated.env.windows": {
+    "JAVA_TOOL_OPTIONS": "-Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8 -Dsun.jnu.encoding=UTF-8",
+    "PYTHONIOENCODING": "utf-8",
+    "PYTHONUTF8": "1"
+  },
+  "terminal.integrated.profiles.windows": {
+    "PowerShell UTF-8": {
+      "source": "PowerShell",
+      "icon": "terminal-powershell",
+      "args": [
+        "-NoExit",
+        "-Command",
+        ". '${workspaceFolder}/scripts/use-utf8.ps1'"
+      ]
+    }
+  },
+  "terminal.integrated.defaultProfile.windows": "PowerShell UTF-8",
+  "java.jdt.ls.vmargs": "-XX:+UseParallelGC -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -Dsun.zip.disableMemoryMapping=true -Xmx4G -Xms100m -Xlog:disable"
+}

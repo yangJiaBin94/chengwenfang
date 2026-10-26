@@ -1,0 +1,32 @@
+{
+  "name": "workbench",
+  "private": true,
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-java.ps1",
+    "dev:frontend": "vite --host 127.0.0.1",
+    "dev:api": "mvn -pl workbench-app -am -DskipTests package && java -jar workbench-app/target/workbench-app-0.1.0-SNAPSHOT.jar",
+    "build": "tsc -b && vite build",
+    "test": "vitest run",
+    "test:backend": "mvn -pl workbench-app -am test",
+    "preview": "vite preview --host 127.0.0.1"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^5.1.1",
+    "lucide-react": "^0.562.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.7"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "jsdom": "^30.0.1",
+    "vitest": "^4.1.10"
+  }
+}

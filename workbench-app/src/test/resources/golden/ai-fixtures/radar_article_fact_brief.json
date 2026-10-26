@@ -1,0 +1,10 @@
+{
+  "priority": 30,
+  "matchAny": [
+    "根据给定标题与正文，输出一段「事实速览」",
+    "不要输出标题、列表符号、JSON 或「速览：」前缀"
+  ],
+  "content": "Sleep research shows deep sleep consolidates memory; the brief also covers common melatonin misconceptions with checkable findings for clustering and scoring.",
+  "parser": "text",
+  "scene": "radar_article_fact_brief"
+}

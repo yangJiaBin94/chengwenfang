@@ -1,0 +1,109 @@
+{
+    "channels": [
+        {
+            "baseUrl": "https://example.com/feed.xml",
+            "enabled": true,
+            "name": "示例RSS",
+            "type": "rss"
+        },
+        {
+            "baseUrl": "https://api.github.com/search/repositories",
+            "enabled": true,
+            "name": "GitHub 搜索",
+            "type": "github"
+        },
+        {
+            "baseUrl": "http://127.0.0.1:<PORT>",
+            "enabled": true,
+            "name": "SearXNG 搜索",
+            "type": "searxng"
+        }
+    ],
+    "commit": {
+        "channelCount": 2,
+        "seededChannelTypes": [
+            "searxng",
+            "github"
+        ],
+        "status": "enabled"
+    },
+    "generatedChannels": {
+        "created": [
+            {
+                "baseUrl": "https://example.com/feed.xml",
+                "config": {
+                    "dateField": "",
+                    "maxResults": 25,
+                    "queries": [
+                    ],
+                    "query": "",
+                    "searchDepth": "",
+                    "sort": "",
+                    "topic": "",
+                    "urls": [
+                    ]
+                },
+                "createdAt": "<TS>",
+                "credentialConfigured": false,
+                "enabled": true,
+                "id": "<ID-1>",
+                "name": "示例RSS",
+                "themeId": "<ID-2>",
+                "type": "rss",
+                "updatedAt": "<TS>"
+            }
+        ],
+        "fromAi": true,
+        "skipped": [
+        ]
+    },
+    "githubSuggest": {
+        "fromAi": true,
+        "query": "AI OR LLM OR agent"
+    },
+    "rubricSuggest": {
+        "fromAi": true,
+        "rubric": {
+            "dimensions": [
+                {
+                    "description": "是否贴合主题读者",
+                    "key": "theme_fit",
+                    "label": "主题契合",
+                    "weight": 34
+                },
+                {
+                    "description": "是否值得深写",
+                    "key": "depth",
+                    "label": "可挖深度",
+                    "weight": 33
+                },
+                {
+                    "description": "一手与权威",
+                    "key": "source_trust",
+                    "label": "来源可信",
+                    "weight": 33
+                }
+            ],
+            "scoreGuidance": "依据来源域名判断可信度，避免纯热度维度",
+            "version": 1
+        }
+    },
+    "searchSuggest": {
+        "fromAi": true,
+        "queries": [
+            "睡眠机制",
+            "褪黑素误区",
+            "深度睡眠指南",
+            "咖啡因影响睡眠",
+            "午睡时长研究",
+            "失眠风险信号"
+        ]
+    },
+    "theme": {
+        "code": "g08_golden_theme",
+        "modeId": "hot_news",
+        "name": "黄金睡眠热点",
+        "status": "enabled"
+    },
+    "themeId": "<ID-2>"
+}

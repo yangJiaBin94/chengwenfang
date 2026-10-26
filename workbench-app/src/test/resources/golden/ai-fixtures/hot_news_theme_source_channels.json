@@ -1,0 +1,24 @@
+{
+  "priority": 20,
+  "matchAny": [
+    "已占用网页 URL",
+    "推荐用于热点采集的来源渠道"
+  ],
+  "parser": "channels",
+  "content": {
+    "channels": [
+      {
+        "name": "示例RSS",
+        "type": "rss",
+        "baseUrl": "https://example.com/feed.xml",
+        "config": {
+          "urls": [],
+          "queries": [],
+          "maxResults": 25,
+          "query": ""
+        }
+      }
+    ]
+  },
+  "scene": "hot_news_theme_source_channels"
+}

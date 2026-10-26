@@ -1,0 +1,94 @@
+# SearXNG 本地实例配置（compose 只读挂载到 /etc/searxng/settings.yml）。
+# 改此文件后执行：docker compose --profile searxng up -d --force-recreate searxng
+#
+# 策略：
+# - 国内引擎永久开启（360 / 夸克 / B站 / 百度 / Bing …）
+# - 海外视频引擎保持开启（YouTube 等）；整次搜索由 max_request_timeout 封顶，超时后其余结果仍返回
+# - 易拖垮整次搜索的海外网页引擎关闭（google cse / brave / duckduckgo / reuters …）
+# 完整选项：https://docs.searxng.org/admin/settings/settings.html
+use_default_settings: true
+
+general:
+  instance_name: "Workbench SearXNG"
+
+search:
+  safe_search: 0
+  autocomplete: ""
+  default_lang: "auto"
+  formats:
+    - html
+    - json
+
+server:
+  # 本地开发用随机密钥；勿提交到生产公开实例
+  secret_key: "d7a2fff0dd307d1736483fde6b5003f2"
+  limiter: false
+  image_proxy: false
+
+ui:
+  static_use_hash: true
+
+outgoing:
+  # 未单独声明 timeout 的引擎，单次 HTTP 用这个值。
+  request_timeout: 6.0
+  # 整次搜索的等待上限。不设时会取「被选中引擎里最大的 timeout」。
+  # 360search 默认 timeout=20，会把同一次搜索里的 YouTube 等也拖满 20 秒，
+  # 与工作台客户端 20 秒读超时撞车，表现为 Read timed out。
+  max_request_timeout: 6.0
+
+engines:
+  # —— 关闭：海外网页检索（国内易长时间超时）——
+  - name: google cse
+    disabled: true
+  - name: google news
+    disabled: true
+  - name: brave
+    disabled: true
+  - name: brave.news
+    disabled: true
+  - name: duckduckgo
+    disabled: true
+  - name: duckduckgo news
+    disabled: true
+  - name: reuters
+    disabled: true
+  - name: wikipedia
+    disabled: true
+  - name: wikidata
+    disabled: true
+  - name: yahoo
+    disabled: true
+  - name: qwant
+    disabled: true
+  - name: startpage
+    disabled: true
+  - name: mojeek
+    disabled: true
+
+  # —— 开启：国内引擎 ——
+  - name: 360search
+    disabled: false
+    # 引擎自带 timeout=20，必须压到与 max_request_timeout 相同，否则会抬高整次搜索等待
+    timeout: 6.0
+  - name: quark
+    disabled: false
+  - name: bilibili
+    disabled: false
+  - name: baidu
+    disabled: false
+  - name: baidu kaifa
+    disabled: false
+  - name: bing
+    disabled: false
+  - name: bing news
+    disabled: false
+  - name: sogou
+    disabled: false
+
+  # —— 开启：海外视频（能拿到就用；超时记 unresponsive，不阻断其它引擎）——
+  - name: youtube
+    disabled: false
+  - name: google videos
+    disabled: false
+  - name: dailymotion
+    disabled: false

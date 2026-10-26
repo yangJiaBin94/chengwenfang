@@ -1,0 +1,22 @@
+{
+    "articleId": "<ID-3>",
+    "connectionTest": {
+        "message": "连接成功，已取得 access_token（有效约 7200 秒）",
+        "ok": true
+    },
+    "pushResult": {
+        "mediaId": "DRAFT_MEDIA_GOLDEN",
+        "title": "黄金睡眠推送稿",
+        "updatedExisting": false,
+        "uploadedImageCount": 1
+    },
+    "settings": {
+        "accountName": "黄金基线公众号",
+        "appId": "wx_golden_app",
+        "appSecretConfigured": true,
+        "defaultAuthor": "基线作者",
+        "lastDraftMediaId": "DRAFT_MEDIA_GOLDEN",
+        "lastPushedAt": "<TS>"
+    },
+    "themeId": "<ID-4>"
+}

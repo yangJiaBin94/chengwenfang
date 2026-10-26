@@ -1,0 +1,11 @@
+{
+  "ok": true,
+  "step": "download_video",
+  "text": "",
+  "source": null,
+  "error": null,
+  "artifacts": {
+    "video_path": "video.mp4"
+  },
+  "durationSeconds": null
+}

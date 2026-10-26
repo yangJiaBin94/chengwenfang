@@ -1,0 +1,10 @@
+{"seq":1,"eventType":"queued","step":"queued","progress":0,"message":"任务已创建"}
+{"seq":2,"eventType":"started","step":"started","progress":0,"message":"任务已开始"}
+{"seq":3,"eventType":"progress","step":"graph_execute","progress":15,"message":"执行热点成文工作流"}
+{"seq":4,"eventType":"progress","step":"hot_news_generate_images","progress":75,"message":"正在生成配图 1/4 张"}
+{"seq":5,"eventType":"progress","step":"hot_news_generate_images","progress":80,"message":"正在生成配图 2/4 张"}
+{"seq":6,"eventType":"progress","step":"hot_news_generate_images","progress":85,"message":"正在生成配图 3/4 张"}
+{"seq":7,"eventType":"progress","step":"hot_news_generate_images","progress":90,"message":"正在生成配图 4/4 张"}
+{"seq":8,"eventType":"progress","step":"graph_finalize","progress":90,"message":"汇总工作流结果"}
+{"seq":9,"eventType":"progress","step":"done","progress":100,"message":"热点文章生成完成"}
+{"seq":10,"eventType":"succeeded","step":"done","progress":100,"message":"任务已成功"}

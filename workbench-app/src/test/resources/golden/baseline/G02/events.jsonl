@@ -1,0 +1,24 @@
+{"seq":1,"eventType":"queued","step":"queued","progress":0,"message":"任务已创建"}
+{"seq":2,"eventType":"started","step":"started","progress":0,"message":"任务已开始"}
+{"seq":3,"eventType":"progress","step":"snapshot_context","progress":5,"message":"读取并快照课程上下文"}
+{"seq":4,"eventType":"progress","step":"snapshot_context","progress":5,"message":"加载工作流与课程上下文"}
+{"seq":5,"eventType":"progress","step":"draft_opening","progress":15,"message":"原稿：开场与目标"}
+{"seq":6,"eventType":"progress","step":"draft_core","progress":25,"message":"原稿：核心原理"}
+{"seq":7,"eventType":"progress","step":"draft_example","progress":35,"message":"原稿：案例与推导"}
+{"seq":8,"eventType":"progress","step":"draft_summary","progress":42,"message":"原稿：本课小结"}
+{"seq":9,"eventType":"progress","step":"draft_preview","progress":48,"message":"原稿：下节课预告"}
+{"seq":10,"eventType":"progress","step":"review_draft","progress":52,"message":"校验原稿"}
+{"seq":11,"eventType":"progress","step":"generate_wechat","progress":60,"message":"公众号等量转换"}
+{"seq":12,"eventType":"progress","step":"wechat_chunk:1","progress":70,"message":"正在转换公众号文章（第 1/1 段）"}
+{"seq":13,"eventType":"progress","step":"review_wechat","progress":72,"message":"审校公众号文章字数与等量性"}
+{"seq":14,"eventType":"progress","step":"image_cover","progress":75,"message":"课程封面生成"}
+{"seq":15,"eventType":"progress","step":"image_cover","progress":78,"message":"正在生成第 1/3 张配图"}
+{"seq":16,"eventType":"progress","step":"image_inline","progress":82,"message":"正在生成第 2/3 张配图"}
+{"seq":17,"eventType":"progress","step":"image_inline","progress":85,"message":"正在生成第 3/3 张配图"}
+{"seq":18,"eventType":"progress","step":"formula_style_validation","progress":90,"message":"公式格式检查"}
+{"seq":19,"eventType":"progress","step":"formula_expression_validation","progress":92,"message":"公式可读性检查"}
+{"seq":20,"eventType":"progress","step":"final_validation","progress":94,"message":"最终一致性检查"}
+{"seq":21,"eventType":"progress","step":"finalize","progress":96,"message":"保存课程版本"}
+{"seq":22,"eventType":"progress","step":"graph_finalize","progress":90,"message":"汇总工作流结果"}
+{"seq":23,"eventType":"progress","step":"done","progress":100,"message":"课程内容生成完成"}
+{"seq":24,"eventType":"succeeded","step":"done","progress":100,"message":"任务已成功"}

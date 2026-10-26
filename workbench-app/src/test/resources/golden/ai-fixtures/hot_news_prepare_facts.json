@@ -1,0 +1,34 @@
+{
+  "priority": 15,
+  "matchAny": [
+    "已确认可用事实包"
+  ],
+  "parser": "json_object",
+  "content": {
+    "coreEvent": "睡眠机制争论再起",
+    "timeline": [
+      "T0 公众讨论升温",
+      "T1 证据复盘"
+    ],
+    "entities": [
+      "褪黑素",
+      "睡眠节律"
+    ],
+    "numbers": [
+      "剂量边界需个案判断"
+    ],
+    "impacts": [
+      "读者误把补剂当万能解"
+    ],
+    "boundaries": [
+      "不替代医疗建议"
+    ],
+    "assumptions": [
+      "读者有基础健康常识"
+    ],
+    "sourceHints": [
+      "雷达英文简报"
+    ]
+  },
+  "scene": "hot_news_prepare_facts"
+}

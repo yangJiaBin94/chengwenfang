@@ -1,0 +1,41 @@
+{
+    "articleId": "<ID-2>",
+    "content": "# 黄金工作台\n\n第一版正文",
+    "courseId": "<ID-4>",
+    "humanReview": {
+        "comment": "g07 final",
+        "status": "approved"
+    },
+    "layout": {
+        "articleVersionNo": 3,
+        "options": {
+        },
+        "themeVersionId": "theme-v1"
+    },
+    "restoredContent": "# 黄金工作台\n\n第一版正文",
+    "snapshots": [
+        {
+            "articleVersionNo": 3,
+            "htmlLength": 660,
+            "htmlSha256": "<ID-3>",
+            "themeVersionId": "theme-v1"
+        }
+    ],
+    "versions": [
+        {
+            "reason": "Restored from version 1",
+            "source": "restore",
+            "versionNo": 3
+        },
+        {
+            "reason": "g07-v2",
+            "source": "manual_edit",
+            "versionNo": 2
+        },
+        {
+            "reason": "g07-v1",
+            "source": "manual_edit",
+            "versionNo": 1
+        }
+    ]
+}

@@ -1,0 +1,18 @@
+{
+  "priority": 15,
+  "matchAny": [
+    "你是中文 AI 科技资讯编辑",
+    "适合热点雷达阅读的中文标题"
+  ],
+  "parser": "topic_translation",
+  "content": {
+    "translations": [
+      {
+        "id": "t1",
+        "title": "睡眠机制研究：深度睡眠如何修复记忆",
+        "summary": "来自科研资讯的睡眠机制综述：深度睡眠如何巩固记忆，并对褪黑素相关争议给出事实速览。"
+      }
+    ]
+  },
+  "scene": "hot_news_topic_translation"
+}

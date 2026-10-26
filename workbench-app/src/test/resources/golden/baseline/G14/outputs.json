@@ -1,0 +1,63 @@
+{
+    "briefs": [
+        {
+            "articleType": "hot_news",
+            "sourceSnapshot": [
+                {
+                    "role": "evidence",
+                    "title": "Melatonin myth: does bedtime supplement really fix insomnia",
+                    "url": "http://localhost:<PORT>/golden/article/sample?from=searxng"
+                }
+            ],
+            "status": "confirmed",
+            "title": "Melatonin myth: does bedtime supplement really fix insomnia"
+        },
+        {
+            "articleType": "hot_news",
+            "sourceSnapshot": [
+                {
+                    "role": "evidence",
+                    "title": "Melatonin myth: does bedtime supplement really fix insomnia",
+                    "url": "http://localhost:<PORT>/golden/article/sample?from=searxng"
+                }
+            ],
+            "status": "draft",
+            "title": "Beam 发布"
+        }
+    ],
+    "skeleton": {
+        "architecture": [
+            "事实",
+            "影响"
+        ],
+        "coreEvent": "Beam 发布",
+        "coreThesis": "后训练进入新阶段",
+        "coverBrief": "Beam 发布冲突感封面",
+        "flow": [
+            "开场",
+            "收束"
+        ],
+        "illustrationStyle": "对照示意图",
+        "impacts": [
+            "影响一"
+        ],
+        "keyInsights": [
+            "洞察一",
+            "洞察二"
+        ],
+        "narrativeShape": "冲突推进",
+        "readerSignals": [
+            "信号一"
+        ],
+        "recommendedImageCountOption": "3-5",
+        "recommendedWordCountOption": "2500-4000",
+        "scope": "只谈开源模型",
+        "sectionPlan": [
+            "开场",
+            "收束"
+        ],
+        "workingTitle": "Beam 发布"
+    },
+    "themeId": "<ID-3>",
+    "topicId": "<ID-1>"
+}

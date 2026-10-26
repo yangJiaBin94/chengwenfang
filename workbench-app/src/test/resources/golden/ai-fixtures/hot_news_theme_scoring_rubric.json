@@ -1,0 +1,32 @@
+{
+  "priority": 20,
+  "matchAny": [
+    "写作价值评分量表",
+    "内容选题主编"
+  ],
+  "parser": "scoring_rubric",
+  "content": {
+    "dimensions": [
+      {
+        "key": "theme_fit",
+        "label": "主题契合",
+        "description": "是否贴合主题读者",
+        "weight": 34
+      },
+      {
+        "key": "depth",
+        "label": "可挖深度",
+        "description": "是否值得深写",
+        "weight": 33
+      },
+      {
+        "key": "source_trust",
+        "label": "来源可信",
+        "description": "一手与权威",
+        "weight": 33
+      }
+    ],
+    "scoreGuidance": "依据来源域名判断可信度，避免纯热度维度"
+  },
+  "scene": "hot_news_theme_scoring_rubric"
+}

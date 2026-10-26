@@ -1,0 +1,17 @@
+{"seq":1,"eventType":"queued","step":"queued","progress":0,"message":"任务已创建"}
+{"seq":2,"eventType":"started","step":"started","progress":0,"message":"任务已开始"}
+{"seq":3,"eventType":"progress","step":"review","progress":20,"message":"Running rule review"}
+{"seq":4,"eventType":"progress","step":"review","progress":90,"message":"Rule review finished"}
+{"seq":5,"eventType":"review_done","step":"review","progress":95,"message":"Rule review completed"}
+{"seq":6,"eventType":"succeeded","step":"done","progress":100,"message":"任务已成功"}
+{"seq":1,"eventType":"queued","step":"queued","progress":0,"message":"任务已创建"}
+{"seq":2,"eventType":"started","step":"started","progress":0,"message":"任务已开始"}
+{"seq":3,"eventType":"progress","step":"repair","progress":30,"message":"调用模型修复"}
+{"seq":4,"eventType":"progress","step":"revalidate","progress":80,"message":"记录修复候选"}
+{"seq":5,"eventType":"progress","step":"revalidate","progress":100,"message":"修复候选已就绪"}
+{"seq":6,"eventType":"succeeded","step":"done","progress":100,"message":"任务已成功"}
+{"seq":1,"eventType":"queued","step":"queued","progress":0,"message":"任务已创建"}
+{"seq":2,"eventType":"started","step":"started","progress":0,"message":"任务已开始"}
+{"seq":3,"eventType":"progress","step":"revalidate","progress":50,"message":"复检文章审核"}
+{"seq":4,"eventType":"progress","step":"revalidate","progress":100,"message":"复检完成"}
+{"seq":5,"eventType":"succeeded","step":"done","progress":100,"message":"任务已成功"}

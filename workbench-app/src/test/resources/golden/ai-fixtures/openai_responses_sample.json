@@ -1,0 +1,10 @@
+{
+  "endpoint": "responses",
+  "priority": 15,
+  "matchAny": [
+    "RESPONSES_PROTOCOL_PROBE"
+  ],
+  "content": "responses-ok",
+  "parser": "text",
+  "scene": "openai_responses_sample"
+}

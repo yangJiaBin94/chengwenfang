@@ -1,0 +1,31 @@
+{
+  "priority": 30,
+  "matchAny": [
+    "editorReason",
+    "recommendUse"
+  ],
+  "parser": "writing_score",
+  "content": {
+    "dimensions": [
+      {
+        "key": "theme_fit",
+        "score": 8,
+        "reason": "贴合"
+      },
+      {
+        "key": "depth",
+        "score": 7,
+        "reason": "可挖"
+      },
+      {
+        "key": "source_trust",
+        "score": 7,
+        "reason": "来源尚可"
+      }
+    ],
+    "editorReason": "值得跟进",
+    "recommendUse": "lead",
+    "riskNote": ""
+  },
+  "scene": "hot_news_topic_writing_score"
+}

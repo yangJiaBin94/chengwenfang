@@ -1,0 +1,11 @@
+{
+  "ok": true,
+  "step": "convert_format",
+  "text": "",
+  "source": null,
+  "error": null,
+  "artifacts": {
+    "wav_path": "audio.wav"
+  },
+  "durationSeconds": null
+}

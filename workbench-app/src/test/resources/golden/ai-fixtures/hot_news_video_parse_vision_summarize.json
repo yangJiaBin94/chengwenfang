@@ -1,0 +1,10 @@
+{
+  "priority": 30,
+  "matchAny": [
+    "关键帧",
+    "视觉摘要"
+  ],
+  "content": "关键帧视觉摘要：画面出现产品界面与数据图表，未见明显广告贴片。",
+  "parser": "text",
+  "scene": "hot_news_video_parse_vision_summarize"
+}

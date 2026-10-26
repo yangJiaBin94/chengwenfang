@@ -1,0 +1,76 @@
+# 本地依赖：
+#   仅库：docker compose up -d
+#   全部容器依赖（库 + SearXNG + Lightpanda）：docker compose --profile all up -d --wait
+#   单项：--profile searxng / --profile lightpanda
+services:
+  # 业务主库；账号与 application.yml 中 datasource 保持一致
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: workbench
+      MYSQL_USER: workbench
+      MYSQL_PASSWORD: workbench_dev
+      MYSQL_ROOT_PASSWORD: workbench_root
+      TZ: UTC
+    ports:
+      # 宿主机 3306 → 容器 3306
+      - "3306:3306"
+    command:
+      # utf8mb4 + UTC，与 Java Instant / Flyway 一致
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+00:00
+    volumes:
+      # 命名卷持久化数据目录，容器重建后数据仍在
+      - workbench-mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-pworkbench_root"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  # Job 租约 / 限流等（Redisson）；未挂卷，重建后数据清空
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # 可选：本地聚合搜索（热点来源类型 SearXNG）。未启动不影响工作台其它功能。
+  # settings.yml 只读挂载：国内引擎永久开启（360/夸克/B站/百度等），改配置后 --force-recreate。
+  searxng:
+    profiles: ["searxng", "all"]
+    image: docker.io/searxng/searxng:latest
+    ports:
+      - "8080:8080"
+    environment:
+      # 默认单 worker 时，多路并行搜索易排队后客户端 Read timed out
+      GRANIAN_WORKERS: "2"
+      GRANIAN_BLOCKING_THREADS: "4"
+    volumes:
+      - ./deploy/searxng/settings.yml:/etc/searxng/settings.yml:ro
+      - workbench-searxng-cache:/var/cache/searxng
+    restart: unless-stopped
+
+  # 可选：轻量无头浏览器（CDP :9222）。Trafilatura 失败后可渲染 JS 页再抽正文。
+  # 官方镜像 AGPL-3.0；未改源码仅作 sidecar。默认关闭遥测。
+  # Windows 无原生二进制，用本容器；docker exec 调 fetch --dump。
+  lightpanda:
+    profiles: ["lightpanda", "all"]
+    image: lightpanda/browser:nightly
+    container_name: workbench-lightpanda
+    ports:
+      # 仅本机；供 CDP / 排障，正文抽取默认走 docker exec fetch
+      - "127.0.0.1:9222:9222"
+    environment:
+      LIGHTPANDA_DISABLE_TELEMETRY: "true"
+    restart: unless-stopped
+
+# Compose 命名卷声明（与上方 mysql.volumes 对应）
+volumes:
+  workbench-mysql:
+  workbench-searxng-cache:

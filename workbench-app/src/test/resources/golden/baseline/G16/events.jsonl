@@ -1,0 +1,5 @@
+{"seq":1,"eventType":"queued","step":"queued","progress":0,"message":"任务已创建"}
+{"seq":2,"eventType":"started","step":"started","progress":0,"message":"任务已开始"}
+{"seq":3,"eventType":"progress","step":"rewrite","progress":40,"message":"改写热点文章"}
+{"seq":4,"eventType":"progress","step":"completed","progress":100,"message":"改写完成"}
+{"seq":5,"eventType":"succeeded","step":"done","progress":100,"message":"任务已成功"}

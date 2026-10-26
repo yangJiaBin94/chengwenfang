@@ -1,0 +1,26 @@
+{
+    "items": [
+        {
+            "contentIntent": "knowledge",
+            "lifecycleStatus": "ready",
+            "mediaType": "video",
+            "summary": "信源视频事实速览：深度睡眠有助于巩固记忆，并说明褪黑素补充的常见误区与可核对要点。",
+            "title": "Sleep mechanism video: deep rest and melatonin",
+            "url": "http://localhost:<PORT>/golden/video/watch?v=g13-source"
+        }
+    ],
+    "job": {
+        "output": {
+            "discarded": 0,
+            "ok": true,
+            "ready": 1
+        },
+        "progress": 100,
+        "status": "succeeded",
+        "type": "hot_news_source_video_parse"
+    },
+    "jobId": "<ID-1>",
+    "nodeRuns": [
+    ],
+    "themeId": "<ID-2>"
+}

@@ -1,0 +1,18 @@
+{
+  "priority": 20,
+  "matchAny": [
+    "中文资讯编辑",
+    "中文标题"
+  ],
+  "parser": "research_translate",
+  "content": {
+    "items": [
+      {
+        "id": "0",
+        "title": "英伟达押注 Reflection",
+        "summary": "摘要"
+      }
+    ]
+  },
+  "scene": "hot_news_topic_research_translate"
+}

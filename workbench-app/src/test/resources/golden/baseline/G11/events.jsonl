@@ -1,0 +1,7 @@
+{"seq":1,"eventType":"queued","step":"queued","progress":0,"message":"任务已创建"}
+{"seq":2,"eventType":"started","step":"started","progress":0,"message":"任务已开始"}
+{"seq":3,"eventType":"progress","step":"research_search","progress":20,"message":"检索选题来源"}
+{"seq":4,"eventType":"progress","step":"research_extract","progress":45,"message":"提取证据"}
+{"seq":5,"eventType":"progress","step":"research_analyze","progress":70,"message":"分析调研条目"}
+{"seq":6,"eventType":"progress","step":"research_finished","progress":100,"message":"选题调研完成"}
+{"seq":7,"eventType":"succeeded","step":"done","progress":100,"message":"任务已成功"}

@@ -1,0 +1,11 @@
+{
+  "ok": true,
+  "step": "fetch_subtitle",
+  "text": "黄金字幕正文：讲者介绍产品发布要点与时间线。",
+  "source": "subtitle",
+  "error": null,
+  "artifacts": {
+    "subtitle_path": "subs.vtt"
+  },
+  "durationSeconds": null
+}
