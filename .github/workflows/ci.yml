@@ -32,8 +32,9 @@ jobs:
         run: cp .mvn/settings.xml.example .mvn/settings.xml
       # Unit tests only; WorkbenchIT / Testcontainers suites run locally with Docker.
       # argLine applies to Surefire forked JVM (Mockito inline mock maker on JDK 21+).
+      # Fingerprint goldens hash source/catalog bytes and flake on CRLF vs LF across OSes.
       - name: Maven test (exclude IT)
         run: >
           mvn -B -pl workbench-app -am test
-          -Dsurefire.excludes=**/WorkbenchIT.java,**/*IT.java,**/*IT$*.java
+          -Dsurefire.excludes=**/WorkbenchIT.java,**/*IT.java,**/*IT$*.java,**/golden/fingerprint/**
           -DargLine=-XX:+EnableDynamicAgentLoading
