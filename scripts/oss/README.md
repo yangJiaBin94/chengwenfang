@@ -20,7 +20,9 @@ powershell -ExecutionPolicy Bypass -File .\scripts\oss\export-to-public.ps1 -Des
 Hard excludes (never copy):
 
 - `content/learning-content`, `public/content`, `public/data/workbench-data.json`
-- `docs/refactor-v2`, `.mvn/settings.xml`, `.git`, build/runtime dirs
+- `docs/refactor-v2`, `docs/cutover*.md`, `scripts/pg-mysql-cutover`
+- `scripts/import-*.mjs` (personal knowledge-base importers)
+- `.mvn/settings.xml`, `.git`, build/runtime dirs
 
 After copy, `default-themes.json` in the public tree is replaced by
 `default-themes.oss.json` (Demo Course / Demo Hot News).

@@ -82,7 +82,9 @@ $excludeFiles = @(
   "dev-*.err.log",
   "dev-*.out.log",
   "import-initial-content.mjs",
-  "import-lesson-one.mjs"
+  "import-lesson-one.mjs",
+  "cutover-pg-to-mysql.md",
+  "cutover.md"
 )
 
 $xd = @(); foreach ($d in $excludeDirs) { $xd += "/XD"; $xd += $d }
