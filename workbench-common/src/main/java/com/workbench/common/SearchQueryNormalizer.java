@@ -31,37 +31,44 @@ public final class SearchQueryNormalizer {
       return List.of();
     }
     Set<String> unique = new LinkedHashSet<>();
+    // 先收已是短词的条目，避免超长粘贴大纲抢先占满 MAX_QUERIES
     for (String item : raw) {
       if (item == null) {
         continue;
       }
       String text = item.trim();
-      if (text.isEmpty()) {
+      if (text.isEmpty() || text.length() > MAX_QUERY_CHARS) {
         continue;
       }
-      if (text.length() <= MAX_QUERY_CHARS) {
-        unique.add(text);
-      } else {
-        // 长段按分隔符拆开，只保留仍可检索的短词
-        for (String atom : ATOM_SPLIT.split(text)) {
-          String part = atom == null ? "" : atom.trim();
-          if (part.isEmpty() || part.length() > MAX_QUERY_CHARS) {
-            continue;
-          }
-          // 句号结尾的大纲残片去掉句号
-          if (part.endsWith("。") || part.endsWith(".")) {
-            part = part.substring(0, part.length() - 1).trim();
-          }
-          if (!part.isEmpty() && part.length() <= MAX_QUERY_CHARS) {
-            unique.add(part);
-          }
-          if (unique.size() >= MAX_QUERIES) {
-            return new ArrayList<>(unique);
-          }
-        }
-      }
+      unique.add(text);
       if (unique.size() >= MAX_QUERIES) {
-        break;
+        return new ArrayList<>(unique);
+      }
+    }
+    for (String item : raw) {
+      if (item == null) {
+        continue;
+      }
+      String text = item.trim();
+      if (text.length() <= MAX_QUERY_CHARS) {
+        continue;
+      }
+      // 长段按分隔符拆开，只保留仍可检索的短词
+      for (String atom : ATOM_SPLIT.split(text)) {
+        String part = atom == null ? "" : atom.trim();
+        if (part.isEmpty() || part.length() > MAX_QUERY_CHARS) {
+          continue;
+        }
+        // 句号结尾的大纲残片去掉句号
+        if (part.endsWith("。") || part.endsWith(".")) {
+          part = part.substring(0, part.length() - 1).trim();
+        }
+        if (!part.isEmpty() && part.length() <= MAX_QUERY_CHARS) {
+          unique.add(part);
+        }
+        if (unique.size() >= MAX_QUERIES) {
+          return new ArrayList<>(unique);
+        }
       }
     }
     return new ArrayList<>(unique);
