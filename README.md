@@ -100,7 +100,7 @@ docker compose --profile all up -d --wait
 
 | 服务 | 镜像 | 端口 | 作用 |
 |------|------|------|------|
-| mysql | `mysql:8.4` | `3306` | 主库（`workbench` / `workbench_dev`） |
+| mysql | `mysql:8.4` | `3306` | 主库 `workbench_v2`（用户 `workbench` / 密码 `workbench_dev`） |
 | redis | `redis:7` | `6379` | Job 租约等 |
 | searxng | `searxng/searxng` | `8080` | 热点聚合搜索（来源管理里配置） |
 | lightpanda | `lightpanda/browser:nightly` | `127.0.0.1:9222` | JS 页正文回退（`docker exec`） |
