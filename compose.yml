@@ -1,4 +1,4 @@
-﻿# 本地依赖：
+# 本地依赖：
 #   仅库：docker compose up -d
 #   全部容器依赖（库 + SearXNG + Lightpanda）：docker compose --profile all up -d --wait
 #   单项：--profile searxng / --profile lightpanda

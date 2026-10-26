@@ -1,4 +1,4 @@
-﻿package com.chengwenfang.app.support;
+package com.chengwenfang.app.support;
 
 import static org.awaitility.Awaitility.await;
 

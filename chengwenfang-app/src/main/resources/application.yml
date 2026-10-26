@@ -1,4 +1,4 @@
-﻿# 默认配置（开发环境）。启动：mvn -pl chengwenfang-app -am spring-boot:run
+# 默认配置（开发环境）。启动：mvn -pl chengwenfang-app -am spring-boot:run
 
 server:
   # 仅本机监听，避免开发机对外暴露
