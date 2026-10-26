@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.2.0 https://maven.apache.org/xsd/settings-1.2.0.xsd">
+  <!--
+    Optional: copy to ~/.m2/settings.xml or pass -s .mvn/settings.xml
+    Do not commit a copy that contains a machine-specific localRepository path.
+  -->
+  <mirrors>
+    <mirror>
+      <id>aliyun</id>
+      <name>aliyun for maven</name>
+      <url>https://maven.aliyun.com/repository/public</url>
+      <mirrorOf>*</mirrorOf>
+    </mirror>
+  </mirrors>
+</settings>

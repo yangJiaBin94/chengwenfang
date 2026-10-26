@@ -36,7 +36,7 @@
 |------|------|------|
 | Docker Desktop（含 Compose） | MySQL / Redis / SearXNG / Lightpanda | 容器依赖见下方「一条命令」 |
 | JDK 21、Maven | 跑后端 | 与父 POM `java.version=21` 一致 |
-| Node.js（建议 20 LTS+） | 跑 Vite 前端 | |
+| Node.js（建议 22 LTS+） | 跑 Vite 前端 | jsdom/vitest 需 Node 22+ |
 | Python 3.11+ | 正文抽取、视频解析 CLI | Java 用 `ProcessBuilder` 调本机 venv，**不能**只靠 Docker |
 | ffmpeg（在 PATH 中） | 视频解析抽音频 / 抽帧 | 同上，须装在跑 Java 的机器上 |
 

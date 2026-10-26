@@ -126,18 +126,28 @@ if (Test-Path $pubData) {
   Remove-Item -Force $pubData
 }
 
-# Never ship machine-local Maven settings
+# Never ship machine-local Maven settings; public gets mirror-only example as settings.xml
+# so .mvn/maven.config (-s .mvn/settings.xml) works in CI and for contributors
 $localSettings = Join-Path $Dest ".mvn\settings.xml"
+$exampleSettings = Join-Path $Dest ".mvn\settings.xml.example"
 if (Test-Path $localSettings) {
   Remove-Item -Force $localSettings
 }
+if (-not (Test-Path $exampleSettings)) {
+  throw "Missing .mvn/settings.xml.example after export"
+}
+Copy-Item -Force $exampleSettings $localSettings
 
 # Sanity checks
 $leaks = @()
 if (Test-Path (Join-Path $Dest "content\learning-content")) { $leaks += "content/learning-content" }
 if (Test-Path (Join-Path $Dest "docs\refactor-v2")) { $leaks += "docs/refactor-v2" }
-if (Test-Path (Join-Path $Dest ".mvn\settings.xml")) { $leaks += ".mvn/settings.xml" }
 if (Test-Path (Join-Path $Dest "public\data\workbench-data.json")) { $leaks += "public/data/workbench-data.json" }
+# settings.xml must exist (copied from example) and must not contain a drive-local repository path
+$shippedSettings = Get-Content (Join-Path $Dest ".mvn\settings.xml") -Raw -ErrorAction SilentlyContinue
+if ($shippedSettings -match '(?i)localRepository|>[A-Za-z]:\\') {
+  $leaks += ".mvn/settings.xml(local path)"
+}
 if ($leaks.Count -gt 0) {
   throw "Export still contains forbidden paths: $($leaks -join ', ')"
 }

@@ -12,7 +12,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          # jsdom 30 + undici need Node 22+ (Node 20 hits markAsUncloneable)
+          node-version: "22"
           cache: npm
       - run: npm ci
       - run: npm test
@@ -26,6 +27,9 @@ jobs:
           distribution: temurin
           java-version: "21"
           cache: maven
+      # .mvn/maven.config uses -s .mvn/settings.xml; public tree ships example only
+      - name: Materialize Maven settings
+        run: cp .mvn/settings.xml.example .mvn/settings.xml
       # Unit tests only; WorkbenchIT / Testcontainers suites run locally with Docker
       - name: Maven test (exclude IT)
         run: >
