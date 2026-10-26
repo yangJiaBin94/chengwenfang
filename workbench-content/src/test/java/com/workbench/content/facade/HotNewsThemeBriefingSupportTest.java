@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.workbench.common.BusinessException;
 import com.workbench.content.facade.constant.HotNewsThemeSeedChannelKeys;
+import com.workbench.content.facade.dto.view.ScoringRubricDimensionView;
+import com.workbench.content.facade.dto.view.ScoringRubricView;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,7 +25,7 @@ class HotNewsThemeBriefingSupportTest {
     radar.put("search_queries", List.of());
     BusinessException exception =
         assertThrows(BusinessException.class, () -> HotNewsThemeBriefingSupport.assertReadyToCommit(briefing));
-    assertTrue(exception.getMessage().contains("搜索关键词"));
+    assertTrue(exception.getMessage().contains("短关键词"));
   }
 
   @Test
@@ -36,6 +38,7 @@ class HotNewsThemeBriefingSupportTest {
     Map<String, Object> briefing = new LinkedHashMap<>();
     briefing.put("naming", naming);
     briefing.put("radar", radar);
+    putValidRubric(briefing);
     assertDoesNotThrow(() -> HotNewsThemeBriefingSupport.assertReadyToCommit(briefing));
   }
 
@@ -91,6 +94,30 @@ class HotNewsThemeBriefingSupportTest {
     briefing.put("scope", scope);
     briefing.put("radar", radar);
     briefing.put("expression", expression);
+    putValidRubric(briefing);
     return briefing;
+  }
+
+  /** 写入启用门禁所需的合法评分量表。 */
+  private static void putValidRubric(Map<String, Object> briefing) {
+    ScoringRubricSupport.writeInto(
+        briefing,
+        ScoringRubricView.builder()
+            .version(1)
+            .dimensions(List.of(
+                dim("theme_fit", "主题契合", "契合度", 40),
+                dim("audience_payoff", "读者收益", "收益", 35),
+                dim("angle_potential", "成文切入", "切入", 25)))
+            .build());
+  }
+
+  private static ScoringRubricDimensionView dim(
+      String key, String label, String description, int weight) {
+    return ScoringRubricDimensionView.builder()
+        .key(key)
+        .label(label)
+        .description(description)
+        .weight(weight)
+        .build();
   }
 }
