@@ -10,7 +10,7 @@
 
 ### 2.1 数据库配置
 
-- 默认数据库固定为 `.workbench/workbench.db`。
+- 默认数据库固定为 `.chengwenfang/workbench.db`。
 - `Settings.database_url` 通过属性拼接 SQLite URL，不能由环境变量直接覆盖。
 - SQLAlchemy 创建引擎时固定传入 `check_same_thread=False`。
 - 每个连接固定执行 `foreign_keys`、`WAL`、`busy_timeout` 三项 SQLite PRAGMA。
@@ -88,12 +88,12 @@ services:
     environment:
       POSTGRES_DB: workbench
       POSTGRES_USER: workbench
-      POSTGRES_PASSWORD: workbench_dev
+      POSTGRES_PASSWORD: chengwenfang_dev
       TZ: UTC
     ports:
       - "5432:5432"
     volumes:
-      - workbench-postgres:/var/lib/postgresql/data
+      - chengwenfang-postgres:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U workbench -d workbench"]
       interval: 5s
@@ -108,11 +108,11 @@ services:
 新增：
 
 ```env
-WORKBENCH_DATABASE_URL=postgresql+psycopg://workbench:password@127.0.0.1:5432/workbench
-WORKBENCH_DATABASE_POOL_SIZE=10
-WORKBENCH_DATABASE_MAX_OVERFLOW=20
-WORKBENCH_DATABASE_POOL_TIMEOUT=30
-WORKBENCH_WORKER_CONCURRENCY=3
+CHENGWENFANG_DATABASE_URL=postgresql+psycopg://workbench:password@127.0.0.1:5432/workbench
+CHENGWENFANG_DATABASE_POOL_SIZE=10
+CHENGWENFANG_DATABASE_MAX_OVERFLOW=20
+CHENGWENFANG_DATABASE_POOL_TIMEOUT=30
+CHENGWENFANG_WORKER_CONCURRENCY=3
 ```
 
 `Settings` 将 `database_url` 改为真正可配置字段。仅当变量未提供且运行测试时，才允许显式传入 SQLite URL。
@@ -219,7 +219,7 @@ backend/scripts/migrate_sqlite_to_postgres.py
 参数：
 
 ```text
---source sqlite+pysqlite:///.../.workbench/workbench.db
+--source sqlite+pysqlite:///.../.chengwenfang/workbench.db
 --target postgresql+psycopg://...
 --verify-only
 --truncate-target
@@ -263,7 +263,7 @@ backend/scripts/migrate_sqlite_to_postgres.py
 迁移完成后自动输出报告：
 
 ```text
-.workbench/migration-reports/postgresql-migration-YYYYMMDD-HHmmss.json
+.chengwenfang/migration-reports/postgresql-migration-YYYYMMDD-HHmmss.json
 ```
 
 校验内容：
@@ -391,7 +391,7 @@ cd ..
 2. 复制 SQLite 文件并计算 SHA-256。
 3. 对 PostgreSQL 执行迁移到 head。
 4. 执行数据导入与完整校验。
-5. 切换 `WORKBENCH_DATABASE_URL`。
+5. 切换 `CHENGWENFANG_DATABASE_URL`。
 6. 先启动 API 并进行只读冒烟检查。
 7. 再启动单 Worker验证任务领取。
 8. 最后增加到目标 Worker数量。
@@ -424,7 +424,7 @@ cd ..
 - 正式环境强制 TLS 或位于可信内网。
 - 应用账号不使用 PostgreSQL 超级用户。
 - 迁移报告不得包含 API Key、文章敏感配置或数据库密码。
-- 备份文件和迁移日志位于 `.workbench`，不得提交 Git。
+- 备份文件和迁移日志位于 `.chengwenfang`，不得提交 Git。
 
 ## 17. 测试计划
 

@@ -27,7 +27,7 @@
     "node_modules",
     "\\.git",
     "bin",
-    "\\.workbench"
+    "\\.chengwenfang"
   ],
   "files.exclude": {
     "**/bin": true

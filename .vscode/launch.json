@@ -3,10 +3,10 @@
   "configurations": [
     {
       "type": "java",
-      "name": "WorkbenchApplication",
+      "name": "ChengwenfangApplication",
       "request": "launch",
-      "mainClass": "com.workbench.app.WorkbenchApplication",
-      "projectName": "workbench-app",
+      "mainClass": "com.chengwenfang.app.ChengwenfangApplication",
+      "projectName": "chengwenfang-app",
       "cwd": "${workspaceFolder}",
       "console": "internalConsole",
       "shortenCommandLine": "argfile",
@@ -14,14 +14,14 @@
     },
     {
       "type": "java",
-      "name": "WorkbenchApplication (with maven prebuild)",
+      "name": "ChengwenfangApplication (with maven prebuild)",
       "request": "launch",
-      "mainClass": "com.workbench.app.WorkbenchApplication",
-      "projectName": "workbench-app",
+      "mainClass": "com.chengwenfang.app.ChengwenfangApplication",
+      "projectName": "chengwenfang-app",
       "cwd": "${workspaceFolder}",
       "console": "internalConsole",
       "shortenCommandLine": "argfile",
-      "preLaunchTask": "maven-compile-workbench",
+      "preLaunchTask": "maven-compile-chengwenfang",
       "vmArgs": "-Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8 -Dsun.jnu.encoding=UTF-8"
     }
   ]

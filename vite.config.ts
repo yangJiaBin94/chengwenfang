@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-// Keep frontend development on a fixed local origin and proxy all business APIs to Java workbench-app.
+// Keep frontend development on a fixed local origin and proxy all business APIs to Java chengwenfang-app.
 export default defineConfig({
   plugins: [react()],
   server: {

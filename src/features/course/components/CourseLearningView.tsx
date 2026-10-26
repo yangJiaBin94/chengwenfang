@@ -101,7 +101,7 @@ export type CourseLearningViewProps = {
   setSelectedId: any,
   setSelectedThemeId: any,
   setThemePickerOpen: any,
-  setWorkbenchRefreshKey: any,
+  setChengwenfangRefreshKey: any,
   showNotice: any,
   submitHumanReview: any,
   syncedImages: any,
@@ -156,7 +156,7 @@ export function CourseLearningView({
   setSelectedId,
   setSelectedThemeId,
   setThemePickerOpen,
-  setWorkbenchRefreshKey,
+  setChengwenfangRefreshKey,
   showNotice,
   submitHumanReview,
   syncedImages,
@@ -197,7 +197,7 @@ export function CourseLearningView({
                 className="ghost-button"
                 disabled={loadState === "loading"}
                 onClick={() =>
-                  setWorkbenchRefreshKey((current) => current + 1)
+                  setChengwenfangRefreshKey((current) => current + 1)
                 }
               >
                 <RefreshCcw size={15} />

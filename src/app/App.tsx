@@ -9,11 +9,11 @@ import { AppDialog } from "./appShellUi";
 import { DashboardPage } from "../features/dashboard/pages/DashboardPage";
 import { RecycleBinPage } from "../features/recycle-bin/pages/RecycleBinPage";
 import { AppSidebar } from "./AppSidebar";
-import { useWorkbenchApp } from "./workbench/useWorkbenchApp";
+import { useChengwenfangApp } from "./chengwenfang/useChengwenfangApp";
 import { retryFailedJob } from "../shared/api/jobs";
 
 export function App() {
-  const bag = useWorkbenchApp();
+  const bag = useChengwenfangApp();
   const {
     data,
     setData,
@@ -108,8 +108,8 @@ export function App() {
     setCollapsedGroups,
     loadState,
     setLoadState,
-    workbenchRefreshKey,
-    setWorkbenchRefreshKey,
+    chengwenfangRefreshKey,
+    setChengwenfangRefreshKey,
     courseContent,
     setCourseContent,
     articleVersions,
@@ -229,7 +229,7 @@ export function App() {
           <header className="topbar">
             <div>
               <div className="eyebrow">
-                {loadState === "ready" ? "Content Studio" : "Workbench Demo"}
+                {loadState === "ready" ? "Content Studio" : "Chengwenfang Demo"}
               </div>
               <h1>
                 {activeNav === "dashboard" || activeNav === "settings"
@@ -407,7 +407,7 @@ export function App() {
                   setContentThemes={setContentThemes}
                   setDeletedThemes={setDeletedThemes}
                   themeDeletedNotice={themeDeletedNotice}
-                  setWorkbenchRefreshKey={setWorkbenchRefreshKey}
+                  setChengwenfangRefreshKey={setChengwenfangRefreshKey}
                   workspaceFallback={{
                     themeId: data.workspace.themeId,
                     modeId: data.workspace.modeId,

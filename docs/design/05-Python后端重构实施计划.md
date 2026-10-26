@@ -36,7 +36,7 @@
 - 记录当前前端页面截图。
 - 记录当前 API 行为。
 - 导出当前 SQLite 数据库结构。
-- 备份 `.workbench/workbench.db`。
+- 备份 `.chengwenfang/workbench.db`。
 - 建立前端关键交互回归清单。
 
 验收：
@@ -89,7 +89,7 @@
 工作：
 
 - 创建课程、文章和版本表。
-- 导入 `workbench-data.json` 和内容目录。
+- 导入 `chengwenfang-data.json` 和内容目录。
 - 迁移浏览器本地编辑和版本。
 - 实现文章读取、编辑、恢复和版本列表 API。
 - 前端改为从 API 读取文章和版本。
@@ -228,7 +228,7 @@
 - 删除浏览器业务主存储。
 - FastAPI 托管 `dist`。
 
-实现状态：已完成。人工审核已迁移到 `human_reviews`，每条决定绑定当前文章版本；正文编辑、恢复和 AI 修复后旧决定自动失效。前端已通过 FastAPI API 读写审核，旧 `workbench-review:*` 键仅用于一次性迁移，迁移成功后删除。
+实现状态：已完成。人工审核已迁移到 `human_reviews`，每条决定绑定当前文章版本；正文编辑、恢复和 AI 修复后旧决定自动失效。前端已通过 FastAPI API 读写审核，旧 `chengwenfang-review:*` 键仅用于一次性迁移，迁移成功后删除。
 
 验收：
 

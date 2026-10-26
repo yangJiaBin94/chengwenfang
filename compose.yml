@@ -1,4 +1,4 @@
-# 本地依赖：
+﻿# 本地依赖：
 #   仅库：docker compose up -d
 #   全部容器依赖（库 + SearXNG + Lightpanda）：docker compose --profile all up -d --wait
 #   单项：--profile searxng / --profile lightpanda
@@ -7,11 +7,11 @@ services:
   mysql:
     image: mysql:8.4
     environment:
-      # Must match application.yml datasource DB name
-      MYSQL_DATABASE: workbench
-      MYSQL_USER: workbench
-      MYSQL_PASSWORD: workbench_dev
-      MYSQL_ROOT_PASSWORD: workbench_root
+      # Must match application.yml datasource DB name (chengwenfang)
+      MYSQL_DATABASE: chengwenfang
+      MYSQL_USER: chengwenfang
+      MYSQL_PASSWORD: chengwenfang_dev
+      MYSQL_ROOT_PASSWORD: chengwenfang_root
       TZ: UTC
     ports:
       # 宿主机 3306 → 容器 3306
@@ -23,9 +23,9 @@ services:
       - --default-time-zone=+00:00
     volumes:
       # 命名卷持久化数据目录，容器重建后数据仍在
-      - workbench-mysql:/var/lib/mysql
+      - chengwenfang-mysql:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-pworkbench_root"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-pchengwenfang_root"]
       interval: 5s
       timeout: 5s
       retries: 30
@@ -54,7 +54,7 @@ services:
       GRANIAN_BLOCKING_THREADS: "4"
     volumes:
       - ./deploy/searxng/settings.yml:/etc/searxng/settings.yml:ro
-      - workbench-searxng-cache:/var/cache/searxng
+      - chengwenfang-searxng-cache:/var/cache/searxng
     restart: unless-stopped
 
   # 可选：轻量无头浏览器（CDP :9222）。Trafilatura 失败后可渲染 JS 页再抽正文。
@@ -63,7 +63,7 @@ services:
   lightpanda:
     profiles: ["lightpanda", "all"]
     image: lightpanda/browser:nightly
-    container_name: workbench-lightpanda
+    container_name: chengwenfang-lightpanda
     ports:
       # 仅本机；供 CDP / 排障，正文抽取默认走 docker exec fetch
       - "127.0.0.1:9222:9222"
@@ -73,5 +73,5 @@ services:
 
 # Compose 命名卷声明（与上方 mysql.volumes 对应）
 volumes:
-  workbench-mysql:
-  workbench-searxng-cache:
+  chengwenfang-mysql:
+  chengwenfang-searxng-cache:

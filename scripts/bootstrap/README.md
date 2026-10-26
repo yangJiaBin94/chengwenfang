@@ -7,7 +7,7 @@
 MySQL 已启动（`docker compose up -d`）之后、日常使用之前，执行一次：
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap\Initialize-WorkbenchSeed.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap\Initialize-ChengwenfangSeed.ps1
 ```
 
 脚本会以 `bootstrap-seed` 配置启动一次后端：先跑 Flyway 建表，再导入 `builtin-catalog.json`，然后进程退出。
@@ -17,7 +17,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap\Initialize-Workbenc
 需要用仓库种子覆盖这些内置行时（会新增一版已发布工作流，并重写对应 Skill 正文）：
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap\Initialize-WorkbenchSeed.ps1 -Force
+powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap\Initialize-ChengwenfangSeed.ps1 -Force
 ```
 
 ## 种子里有什么
@@ -42,7 +42,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap\Initialize-Workbenc
 - 若只刷新三条内置工作流图、保留现有 Skill 正文，可运行：
 
 ```text
-java ... com.workbench.skill.bootstrap.ExportBuiltinCatalog scripts/bootstrap/builtin-catalog.json
+java ... com.chengwenfang.skill.bootstrap.ExportBuiltinCatalog scripts/bootstrap/builtin-catalog.json
 ```
 
 需要覆盖库内已改过的内置行时，再执行初始化脚本的 `-Force`。
@@ -53,11 +53,11 @@ java ... com.workbench.skill.bootstrap.ExportBuiltinCatalog scripts/bootstrap/bu
 
 | Profile | 含义 | 启动示例 |
 |---------|------|----------|
-| `course-only` | 关掉视频解析与 Lightpanda / Trafilatura；适合只跑课程成文 | `mvn -pl workbench-app -am spring-boot:run -Dspring-boot.run.profiles=course-only` |
+| `course-only` | 关掉视频解析与 Lightpanda / Trafilatura；适合只跑课程成文 | `mvn -pl chengwenfang-app -am spring-boot:run -Dspring-boot.run.profiles=course-only` |
 | `hotnews-full` | 打开雷达正文瀑布 + 资料池视频解析 | 同上，profiles=`hotnews-full` |
 
-对应文件：`workbench-app/src/main/resources/application-course-only.yml`、`application-hotnews-full.yml`。
+对应文件：`chengwenfang-app/src/main/resources/application-course-only.yml`、`application-hotnews-full.yml`。
 
 **满血热点**仍须按仓库 README 装好 `article-extract` / `video-transcript` venv（及可选 Lightpanda）。CLI 未就绪时相关 Job 会失败并写中文错误，不会静默用占位正文。
 
-Worker 并发（与 Profile 无关）：`worker-concurrency` 为全局上限；`worker-text/image/fetch-concurrency` 为分类型槽，防止出图 / Whisper 饿死短任务。指标见 Actuator `GET /actuator/metrics`（如 `workbench.jobs`、`workbench.jobs.lease.reclaim`、`workbench.jobs.duration`）。
+Worker 并发（与 Profile 无关）：`worker-concurrency` 为全局上限；`worker-text/image/fetch-concurrency` 为分类型槽，防止出图 / Whisper 饿死短任务。指标见 Actuator `GET /actuator/metrics`（如 `chengwenfang.jobs`、`chengwenfang.jobs.lease.reclaim`、`chengwenfang.jobs.duration`）。

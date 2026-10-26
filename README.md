@@ -1,4 +1,4 @@
-# Workbench
+﻿# Chengwenfang
 
 本地个人内容生产工作台：课程体系（学习素材 → 原稿 / 公众号文）与热点资讯（雷达 → 选题资料 → 成文），数据落本机。
 
@@ -28,7 +28,7 @@
 | 基础设施 | MySQL 8.4、Redis 7（见 `compose.yml`） |
 | 构建 | Maven 多模块（`pom.xml`）+ npm（`package.json`） |
 
-分层约定（COLA 思路）：Adapter（HTTP / Job）→ Application 编排 → 领域 Facade → Infrastructure。详见 [`.cursor/skills/workbench-cola-architecture/SKILL.md`](.cursor/skills/workbench-cola-architecture/SKILL.md)、[`docs/代码结构与注释规范.md`](docs/代码结构与注释规范.md)。
+分层约定（COLA 思路）：Adapter（HTTP / Job）→ Application 编排 → 领域 Facade → Infrastructure。详见 [`.cursor/skills/chengwenfang-cola-architecture/SKILL.md`](.cursor/skills/chengwenfang-cola-architecture/SKILL.md)、[`docs/代码结构与注释规范.md`](docs/代码结构与注释规范.md)。
 
 ## 环境要求（本机）
 
@@ -100,7 +100,7 @@ docker compose --profile all up -d --wait
 
 | 服务 | 镜像 | 端口 | 作用 |
 |------|------|------|------|
-| mysql | `mysql:8.4` | `3306` | 主库 `workbench`（用户 `workbench` / 密码 `workbench_dev`） |
+| mysql | `mysql:8.4` | `3306` | 主库 `chengwenfang`（用户 `chengwenfang` / 密码 `chengwenfang_dev`） |
 | redis | `redis:7` | `6379` | Job 租约等 |
 | searxng | `searxng/searxng` | `8080` | 热点聚合搜索（来源管理里配置） |
 | lightpanda | `lightpanda/browser:nightly` | `127.0.0.1:9222` | JS 页正文回退（`docker exec`） |
@@ -157,7 +157,7 @@ npm install
 **首次部署还要导入 Skill、内置工作流与排版主题**（只做一次；已有数据会跳过，不会覆盖你改过的提示词）：
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap\Initialize-WorkbenchSeed.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap\Initialize-ChengwenfangSeed.ps1
 ```
 
 脚本会用 `bootstrap-seed` 配置启动一次后端：Flyway 建表并导入 `scripts/bootstrap/builtin-catalog.json`，然后退出。未导入就日常启动时，日志会报「基础配置缺失」并提示上述命令，进程仍会起来。说明见 [`scripts/bootstrap/README.md`](scripts/bootstrap/README.md)。
@@ -166,7 +166,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap\Initialize-Workbenc
 
 ```powershell
 # 终端 1：后端 http://127.0.0.1:8001
-mvn -pl workbench-app -am spring-boot:run
+mvn -pl chengwenfang-app -am spring-boot:run
 
 # 终端 2：前端 http://127.0.0.1:5173（/api 代理到 8001）
 npm run dev:frontend
@@ -193,7 +193,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\start-java.ps1 -AllDeps
 | http://127.0.0.1:8001/swagger-ui.html | API 文档（开发；`prod` 关闭） |
 | http://127.0.0.1:8001/v3/api-docs | OpenAPI JSON |
 
-库表由 Flyway 在后端启动时迁移。内置 Skill / 工作流不随启动写入，见上方 bootstrap 脚本。IDE Debug：用 `WorkbenchApplication` launch（已带 UTF-8 `vmArgs`）。
+库表由 Flyway 在后端启动时迁移。内置 Skill / 工作流不随启动写入，见上方 bootstrap 脚本。IDE Debug：用 `ChengwenfangApplication` launch（已带 UTF-8 `vmArgs`）。
 
 ### 5. 首次使用配置
 
@@ -218,22 +218,22 @@ powershell -ExecutionPolicy Bypass -File .\scripts\start-java.ps1 -AllDeps
 
 ```text
 workbench/
-├── workbench-app/              # 启动入口：adapter.web / adapter.worker / application.*
-├── workbench-common/           # ApiResult、异常、分页、ErrorCodes 等
-├── workbench-infra/            # WorkbenchProperties、存储路径等
-├── workbench-file/             # 文件元数据与本地存储
-├── workbench-job/              # 异步任务、租约、事件
-├── workbench-ai/               # 文本 / 图像 / 多模态
-├── workbench-crawler/          # 采集、搜索、正文抽取门面
-├── workbench-content/          # 主题、课程、文章版本
-├── workbench-hot-news/         # 热点主题、雷达、选题、资料池
-├── workbench-skill-workflow/   # Skill、工作流图
-├── workbench-notification/   # 站内通知（P2 迁入）
-├── workbench-quality/        # 审核与修复（P2 迁入）
-├── workbench-publishing/     # 排版主题、渲染快照、公众号
-├── workbench-sourcing/       # 采集与信源（P2 迁入）
-├── workbench-mode-course/    # 课程模式（P2 迁入）
-├── workbench-mode-hotnews/   # 热点模式（P2 迁入）
+├── chengwenfang-app/              # 启动入口：adapter.web / adapter.worker / application.*
+├── chengwenfang-common/           # ApiResult、异常、分页、ErrorCodes 等
+├── chengwenfang-infra/            # ChengwenfangProperties、存储路径等
+├── chengwenfang-file/             # 文件元数据与本地存储
+├── chengwenfang-job/              # 异步任务、租约、事件
+├── chengwenfang-ai/               # 文本 / 图像 / 多模态
+├── chengwenfang-crawler/          # 采集、搜索、正文抽取门面
+├── chengwenfang-content/          # 主题、课程、文章版本
+├── chengwenfang-hot-news/         # 热点主题、雷达、选题、资料池
+├── chengwenfang-skill-workflow/   # Skill、工作流图
+├── chengwenfang-notification/   # 站内通知（P2 迁入）
+├── chengwenfang-quality/        # 审核与修复（P2 迁入）
+├── chengwenfang-publishing/     # 排版主题、渲染快照、公众号
+├── chengwenfang-sourcing/       # 采集与信源（P2 迁入）
+├── chengwenfang-mode-course/    # 课程模式（P2 迁入）
+├── chengwenfang-mode-hotnews/   # 热点模式（P2 迁入）
 ├── src/ public/ index.html     # React 前端（Vite）
 ├── content/                    # 学习内容资源
 ├── contracts/                  # API / SSE 契约
@@ -245,9 +245,9 @@ workbench/
 └── package.json
 ```
 
-业务 / 平台模块分包：`facade` → `application` → `domain` → `infrastructure`。`workbench-app` 用 `adapter.web` / `adapter.worker` 接 HTTP 与 Job，业务规则不进 Controller。
+业务 / 平台模块分包：`facade` → `application` → `domain` → `infrastructure`。`chengwenfang-app` 用 `adapter.web` / `adapter.worker` 接 HTTP 与 Job，业务规则不进 Controller。
 
-运行时目录 `.workbench/`（已 gitignore）。文件元数据在表 `stored_files`，业务表存 `file_id`；下载：`GET /api/files/{fileId}`。学习内容同步：`POST /api/migrations/sync-learning-content`。
+运行时目录 `.chengwenfang/`（已 gitignore）。文件元数据在表 `stored_files`，业务表存 `file_id`；下载：`GET /api/files/{fileId}`。学习内容同步：`POST /api/migrations/sync-learning-content`。
 
 ## 依赖补充说明
 
@@ -263,13 +263,13 @@ workbench/
 
 - Lightpanda 镜像 AGPL-3.0，本仓未改源码；不用于绕过验证码 / 登录墙；`skip-hosts` 仍走摘要。  
 - 开发 `crawler-allow-loopback=true` 允许采本机 SearXNG；生产请自行关闭（`application-prod.yml` 未自动关）。  
-- 配置项：`workbench.article-content.*`、`workbench.video-transcript.*`、`workbench.ai-vision-timeout-seconds`。
+- 配置项：`chengwenfang.article-content.*`、`chengwenfang.video-transcript.*`、`chengwenfang.ai-vision-timeout-seconds`。
 
 ## 测试
 
 ```powershell
 . .\scripts\use-utf8.ps1   # Windows 建议
-mvn -pl workbench-app -am test
+mvn -pl chengwenfang-app -am test
 npm test
 ```
 

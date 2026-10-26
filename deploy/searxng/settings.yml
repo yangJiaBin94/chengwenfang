@@ -9,7 +9,7 @@
 use_default_settings: true
 
 general:
-  instance_name: "Workbench SearXNG"
+  instance_name: "Chengwenfang SearXNG"
 
 search:
   safe_search: 0

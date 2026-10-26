@@ -215,7 +215,7 @@ export type RepairResponseData = {
   finishedAt: string;
 };
 
-/** Native publishing theme exposed by the workbench. */
+/** Native publishing theme exposed by the chengwenfang. */
 export type LayoutThemeData = {
   id: string;
   key: string;
@@ -366,7 +366,7 @@ export async function createPublishingSnapshot(
 }
 
 /** Load the course index and dashboard metrics. */
-export async function loadWorkbenchData<T>(themeId?: string) {
+export async function loadChengwenfangData<T>(themeId?: string) {
   const path = themeId
     ? `/api/themes/${encodeURIComponent(themeId)}/courses`
     : "/api/courses";
@@ -818,7 +818,7 @@ export async function resetHumanReview(articleId: string, documentId?: string | 
 export async function migrateLegacyHumanReviews(courses: Array<{ id: string }>) {
   const entries: Array<{ courseId: string; status: "approved" | "rejected"; comment: string; reviewedAt?: string }> = [];
   for (const course of courses) {
-    const key = `workbench-review:${course.id}`;
+    const key = `chengwenfang-review:${course.id}`;
     const stored = window.localStorage.getItem(key);
     if (!stored) continue;
     try {
@@ -854,12 +854,12 @@ export async function repairArticle(
     body: JSON.stringify(documentId ? { documentId } : {}),
   });
   const job = await readPayload<JobData>(response);
-  window.localStorage.setItem(`workbench-active-repair:${articleId}`, job.id);
+  window.localStorage.setItem(`chengwenfang-active-repair:${articleId}`, job.id);
   await waitForBackgroundJob(job.id, onProgress);
   const result = await readPayload<RepairResponseData>(
     await fetch(`/api/jobs/${encodeURIComponent(job.id)}/result`, { cache: "no-store" })
   );
-  window.localStorage.removeItem(`workbench-active-repair:${articleId}`);
+  window.localStorage.removeItem(`chengwenfang-active-repair:${articleId}`);
   return result;
 }
 
@@ -869,7 +869,7 @@ export async function resumeArticleRepair(
   onProgress?: (event: JobEventData) => void,
   onStarted?: () => void,
 ) {
-  const key = `workbench-active-repair:${articleId}`;
+  const key = `chengwenfang-active-repair:${articleId}`;
   const jobId = window.localStorage.getItem(key);
   if (!jobId) return null;
   try {
@@ -1061,12 +1061,12 @@ export async function migrateLegacyBrowserContent(courses: LegacyCourse[]) {
 
   for (const course of courses) {
     for (const kind of ["draft", "article"] as const) {
-      const prefix = `workbench-content:${course.id}:`;
+      const prefix = `chengwenfang-content:${course.id}:`;
       const suffix = `:${kind}`;
       const candidates = storageKeys
         .filter((key) => key.startsWith(prefix) && key.endsWith(suffix))
         .sort();
-      const expected = `workbench-content:${course.id}:${course.contentHash ?? "nohash"}:${kind}`;
+      const expected = `chengwenfang-content:${course.id}:${course.contentHash ?? "nohash"}:${kind}`;
       const selected = candidates.includes(expected) ? expected : candidates.at(-1);
       if (selected) {
         const entry = entryFor(course.id, kind);
@@ -1084,7 +1084,7 @@ export async function migrateLegacyBrowserContent(courses: LegacyCourse[]) {
       }
     }
 
-    const versionKey = `workbench-versions:${course.id}`;
+    const versionKey = `chengwenfang-versions:${course.id}`;
     const storedVersions = window.localStorage.getItem(versionKey);
     if (storedVersions) {
       try {

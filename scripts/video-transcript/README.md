@@ -17,7 +17,7 @@ python -m video_transcript --url <视频URL> --work-dir <目录> --step fetch_su
 步骤：`probe_duration` | `fetch_subtitle` | `download_audio` | `convert_format` | `asr` | `download_video` | `extract_frames`  
 stdout 输出一行 JSON：`ok` / `step` / `text` / `source` / `error` / `artifacts`；`probe_duration` 另含 `durationSeconds`。
 
-时长上限由 Java 配置 `workbench.video-transcript.max-duration-minutes` 控制（默认 30；`<=0` 不限制），在下载/ASR 前跳过超长视频。
+时长上限由 Java 配置 `chengwenfang.video-transcript.max-duration-minutes` 控制（默认 30；`<=0` 不限制），在下载/ASR 前跳过超长视频。
 
 抽帧相关参数（可由 Java 透传）：
 
@@ -57,9 +57,9 @@ python -c "import whisper, PIL, numpy; print('ok')"
 
 ## 工作目录产物（供重试）
 
-`.workbench/video-transcript/{itemId}/` 下可能出现：`subtitle.vtt` / `raw.txt` / `audio.mp3` / `video.mp4` / `frames/` / `frames_manifest.json` 等。
+`.chengwenfang/video-transcript/{itemId}/` 下可能出现：`subtitle.vtt` / `raw.txt` / `audio.mp3` / `video.mp4` / `frames/` / `frames_manifest.json` 等。
 
-默认保留 **3 天**（`workbench.video-transcript.work-dir-retain-days`）：应用**启动时清理一次**，之后**每小时**再扫一次，删除目录内最新文件时间已超期的条目目录。重试时若本地产物已不在，会自动回退步骤并重新下载。
+默认保留 **3 天**（`chengwenfang.video-transcript.work-dir-retain-days`）：应用**启动时清理一次**，之后**每小时**再扫一次，删除目录内最新文件时间已超期的条目目录。重试时若本地产物已不在，会自动回退步骤并重新下载。
 
 ## 抽帧规则摘要
 

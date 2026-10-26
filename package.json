@@ -1,5 +1,5 @@
 {
-  "name": "workbench",
+  "name": "chengwenfang",
   "private": true,
   "version": "0.1.0",
   "license": "Apache-2.0",
@@ -10,10 +10,10 @@
   "scripts": {
     "dev": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-java.ps1",
     "dev:frontend": "vite --host 127.0.0.1",
-    "dev:api": "mvn -pl workbench-app -am -DskipTests package && java -jar workbench-app/target/workbench-app-0.1.0-SNAPSHOT.jar",
+    "dev:api": "mvn -pl chengwenfang-app -am -DskipTests package && java -jar chengwenfang-app/target/chengwenfang-app-0.1.0-SNAPSHOT.jar",
     "build": "tsc -b && vite build",
     "test": "vitest run",
-    "test:backend": "mvn -pl workbench-app -am test",
+    "test:backend": "mvn -pl chengwenfang-app -am test",
     "preview": "vite preview --host 127.0.0.1"
   },
   "dependencies": {

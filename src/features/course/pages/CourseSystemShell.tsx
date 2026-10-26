@@ -106,7 +106,7 @@ export type CourseSystemShellProps = {
   setContentThemes: Dispatch<SetStateAction<ContentThemeData[]>>;
   setDeletedThemes: Dispatch<SetStateAction<ContentThemeData[]>>;
   themeDeletedNotice: string;
-  setWorkbenchRefreshKey: Dispatch<SetStateAction<number>>;
+  setChengwenfangRefreshKey: Dispatch<SetStateAction<number>>;
   workspaceFallback: {
     themeId: string;
     modeId: string;
@@ -191,7 +191,7 @@ export function CourseSystemShell({
   setContentThemes,
   setDeletedThemes,
   themeDeletedNotice,
-  setWorkbenchRefreshKey,
+  setChengwenfangRefreshKey,
   workspaceFallback,
   courseGroups,
   metricsFallback,
@@ -262,7 +262,7 @@ export function CourseSystemShell({
                     void navigate(
                       `/modes/course-system/themes/${themePathSlug(theme.code)}/route`,
                     );
-                    setWorkbenchRefreshKey((key) => key + 1);
+                    setChengwenfangRefreshKey((key) => key + 1);
                   }}
                 />
               )}
@@ -478,7 +478,7 @@ export function CourseSystemShell({
                 setSelectedId={setSelectedId}
                 setSelectedThemeId={setSelectedThemeId}
                 setThemePickerOpen={setThemePickerOpen}
-                setWorkbenchRefreshKey={setWorkbenchRefreshKey}
+                setChengwenfangRefreshKey={setChengwenfangRefreshKey}
                 showNotice={showNotice}
                 submitHumanReview={submitHumanReview}
                 syncedImages={syncedImages}

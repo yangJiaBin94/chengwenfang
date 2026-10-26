@@ -1,16 +1,16 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>com.workbench</groupId>
-  <artifactId>workbench-parent</artifactId>
+  <groupId>com.chengwenfang</groupId>
+  <artifactId>chengwenfang-parent</artifactId>
   <version>0.1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
-  <name>workbench-parent</name>
-  <url>https://github.com/yangJiaBin94/local-writer-workbench</url>
-  <description>Local AI content generation and review workbench</description>
+  <name>chengwenfang-parent</name>
+  <url>https://github.com/yangJiaBin94/chengwenfang</url>
+  <description>成文坊 / Chengwenfang — local self-media content workbench</description>
 
   <licenses>
     <license>
@@ -28,27 +28,27 @@
   </developers>
 
   <scm>
-    <url>https://github.com/yangJiaBin94/local-writer-workbench</url>
-    <connection>scm:git:https://github.com/yangJiaBin94/local-writer-workbench.git</connection>
-    <developerConnection>scm:git:https://github.com/yangJiaBin94/local-writer-workbench.git</developerConnection>
+    <url>https://github.com/yangJiaBin94/chengwenfang</url>
+    <connection>scm:git:https://github.com/yangJiaBin94/local-writer-chengwenfang.git</connection>
+    <developerConnection>scm:git:https://github.com/yangJiaBin94/local-writer-chengwenfang.git</developerConnection>
   </scm>
 
   <modules>
-    <module>workbench-common</module>
-    <module>workbench-infra</module>
-    <module>workbench-file</module>
-    <module>workbench-job</module>
-    <module>workbench-ai</module>
-    <module>workbench-crawler</module>
-    <module>workbench-skill-workflow</module>
-    <module>workbench-content</module>
-    <module>workbench-sourcing</module>
-    <module>workbench-mode-hotnews</module>
-    <module>workbench-quality</module>
-    <module>workbench-notification</module>
-    <module>workbench-publishing</module>
-    <module>workbench-mode-course</module>
-    <module>workbench-app</module>
+    <module>chengwenfang-common</module>
+    <module>chengwenfang-infra</module>
+    <module>chengwenfang-file</module>
+    <module>chengwenfang-job</module>
+    <module>chengwenfang-ai</module>
+    <module>chengwenfang-crawler</module>
+    <module>chengwenfang-skill-workflow</module>
+    <module>chengwenfang-content</module>
+    <module>chengwenfang-sourcing</module>
+    <module>chengwenfang-mode-hotnews</module>
+    <module>chengwenfang-quality</module>
+    <module>chengwenfang-notification</module>
+    <module>chengwenfang-publishing</module>
+    <module>chengwenfang-mode-course</module>
+    <module>chengwenfang-app</module>
   </modules>
 
   <properties>
@@ -83,73 +83,73 @@
         <scope>import</scope>
       </dependency>
       <dependency>
-        <groupId>com.workbench</groupId>
-        <artifactId>workbench-common</artifactId>
+        <groupId>com.chengwenfang</groupId>
+        <artifactId>chengwenfang-common</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.workbench</groupId>
-        <artifactId>workbench-infra</artifactId>
+        <groupId>com.chengwenfang</groupId>
+        <artifactId>chengwenfang-infra</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.workbench</groupId>
-        <artifactId>workbench-file</artifactId>
+        <groupId>com.chengwenfang</groupId>
+        <artifactId>chengwenfang-file</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.workbench</groupId>
-        <artifactId>workbench-job</artifactId>
+        <groupId>com.chengwenfang</groupId>
+        <artifactId>chengwenfang-job</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.workbench</groupId>
-        <artifactId>workbench-ai</artifactId>
+        <groupId>com.chengwenfang</groupId>
+        <artifactId>chengwenfang-ai</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.workbench</groupId>
-        <artifactId>workbench-crawler</artifactId>
+        <groupId>com.chengwenfang</groupId>
+        <artifactId>chengwenfang-crawler</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.workbench</groupId>
-        <artifactId>workbench-skill-workflow</artifactId>
+        <groupId>com.chengwenfang</groupId>
+        <artifactId>chengwenfang-skill-workflow</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.workbench</groupId>
-        <artifactId>workbench-content</artifactId>
+        <groupId>com.chengwenfang</groupId>
+        <artifactId>chengwenfang-content</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.workbench</groupId>
-        <artifactId>workbench-mode-hotnews</artifactId>
+        <groupId>com.chengwenfang</groupId>
+        <artifactId>chengwenfang-mode-hotnews</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.workbench</groupId>
-        <artifactId>workbench-publishing</artifactId>
+        <groupId>com.chengwenfang</groupId>
+        <artifactId>chengwenfang-publishing</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.workbench</groupId>
-        <artifactId>workbench-notification</artifactId>
+        <groupId>com.chengwenfang</groupId>
+        <artifactId>chengwenfang-notification</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.workbench</groupId>
-        <artifactId>workbench-quality</artifactId>
+        <groupId>com.chengwenfang</groupId>
+        <artifactId>chengwenfang-quality</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.workbench</groupId>
-        <artifactId>workbench-sourcing</artifactId>
+        <groupId>com.chengwenfang</groupId>
+        <artifactId>chengwenfang-sourcing</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.workbench</groupId>
-        <artifactId>workbench-mode-course</artifactId>
+        <groupId>com.chengwenfang</groupId>
+        <artifactId>chengwenfang-mode-course</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

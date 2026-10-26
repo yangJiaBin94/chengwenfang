@@ -4,7 +4,7 @@
 对比直连剥文 / Jina / Trafilatura / Lightpanda 成功率（只读抽样，不进业务流水线）。
 
 用法：
-  python scripts/article-extract/compare_sources.py --csv .workbench/reports/xxx.csv --limit 20
+  python scripts/article-extract/compare_sources.py --csv .chengwenfang/reports/xxx.csv --limit 20
   # 需先：docker compose --profile lightpanda up -d
   python scripts/article-extract/compare_sources.py --csv ... --limit 10
 """
@@ -128,7 +128,7 @@ def main() -> int:
         default="docker-exec",
         choices=("docker-exec", "binary"),
     )
-    parser.add_argument("--docker-container", default="workbench-lightpanda")
+    parser.add_argument("--docker-container", default="chengwenfang-lightpanda")
     parser.add_argument("--lightpanda-timeout", type=float, default=45.0)
     args = parser.parse_args()
     csv_path = Path(args.csv)

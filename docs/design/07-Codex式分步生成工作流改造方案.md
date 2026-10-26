@@ -869,7 +869,7 @@ worker 重启后不再把课程任务从起点重新运行，而是：
 
 增加后端配置：
 
-`WORKBENCH_COURSE_WORKFLOW_VERSION=agent_v2`
+`CHENGWENFANG_COURSE_WORKFLOW_VERSION=agent_v2`
 
 可选值：
 

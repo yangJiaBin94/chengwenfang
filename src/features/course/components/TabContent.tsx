@@ -328,7 +328,7 @@ export function TabContent({
     if (tab !== "review" || !articleId || resumedRepair.current === articleId)
       return;
     resumedRepair.current = articleId;
-    if (!window.localStorage.getItem(`workbench-active-repair:${articleId}`))
+    if (!window.localStorage.getItem(`chengwenfang-active-repair:${articleId}`))
       return;
     const backup = content.article || course.articleExcerpt || "";
     resumeArticleRepair(

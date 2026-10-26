@@ -239,7 +239,7 @@ def fetch_one(base: str, query: str, categories: str, time_range: str, timeout: 
         }
     )
     url = f"{base.rstrip('/')}/search?{params}"
-    req = urllib.request.Request(url, headers={"User-Agent": "Workbench-SearXNG-Funnel/1.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": "Chengwenfang-SearXNG-Funnel/1.0"})
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         return json.loads(resp.read().decode("utf-8", errors="replace"))
 
@@ -528,7 +528,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=25.0)
     parser.add_argument("--pause", type=float, default=0.35)
     parser.add_argument("--theme-name", default=DEFAULT_THEME_NAME)
-    parser.add_argument("--out", default=".workbench/reports")
+    parser.add_argument("--out", default=".chengwenfang/reports")
     parser.add_argument("--blocks-file", default="", help="每行：搜索词|网站")
     parser.add_argument("--queries-file", default="")
     args = parser.parse_args()

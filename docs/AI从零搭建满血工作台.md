@@ -21,7 +21,7 @@
 3. **Windows 终端**：跑 Maven / Java / Python 前执行一次：  
    `. .\scripts\use-utf8.ps1`  
 4. **禁止**：改 git config；把 API Key 写进仓库；对生产库 `docker compose down -v`（会删数据）除非用户明确要求。  
-5. **不要编造**：账号密码、端口以 `compose.yml` + `workbench-app/src/main/resources/application.yml` 为准。  
+5. **不要编造**：账号密码、端口以 `compose.yml` + `chengwenfang-app/src/main/resources/application.yml` 为准。  
 6. **满血 ≠ 把 Java/Whisper 打进 Docker**：当前架构是宿主机跑应用，Compose 只提供 mysql/redis/searxng/lightpanda。  
 7. 某步失败：停在该阶段，报告命令、完整错误、已确认的环境信息，再问用户如何继续。
 
@@ -78,16 +78,16 @@ docker compose --profile all ps
 
 | 服务 | 端口 | 用途 |
 |------|------|------|
-| mysql | `127.0.0.1:3306` | 库名 `workbench`，用户 `workbench`，密码 `workbench_dev` |
+| mysql | `127.0.0.1:3306` | 库名 `chengwenfang_private`，用户 `workbench`，密码 `chengwenfang_dev` |
 | redis | `127.0.0.1:6379` | Job 租约等 |
 | searxng | `127.0.0.1:8080` | 热点聚合搜索 |
-| lightpanda | `127.0.0.1:9222` | JS 正文回退（容器名 `workbench-lightpanda`） |
+| lightpanda | `127.0.0.1:9222` | JS 正文回退（容器名 `chengwenfang-lightpanda`） |
 
 可选探测：
 
 ```powershell
 curl.exe -s "http://127.0.0.1:8080/search?q=test&format=json" | Select-Object -First 1
-docker ps --filter "name=workbench-lightpanda"
+docker ps --filter "name=chengwenfang-lightpanda"
 ```
 
 **验收 B**：`--wait` 成功退出；`ps` 中四服务均在跑。若仅需课程、不要热点容器，可用 `docker compose up -d --wait`（非满血，须告知用户）。
@@ -160,7 +160,7 @@ npm install
 ```powershell
 cd $ROOT
 . .\scripts\use-utf8.ps1
-mvn -pl workbench-app -am spring-boot:run
+mvn -pl chengwenfang-app -am spring-boot:run
 ```
 
 等到日志出现 Tomcat / Spring 启动完成（端口 `8001`）。
@@ -206,7 +206,7 @@ curl.exe -s -o NUL -w "%{http_code}" http://127.0.0.1:5173
 内置 Skill 与三条工作流不在启动时从代码写入。阶段 E 验收通过后执行一次：
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap\Initialize-WorkbenchSeed.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap\Initialize-ChengwenfangSeed.ps1
 ```
 
 未执行时，再次启动后端日志会出现「基础配置缺失」及上述命令；进程不因此退出。详见 [`scripts/bootstrap/README.md`](../scripts/bootstrap/README.md)。
@@ -240,7 +240,7 @@ AI **不能**代替用户填写真实密钥。完成后请用户：
 2. Compose 四服务状态  
 3. 两个 Python venv 是否就绪、ffmpeg 是否在 PATH  
 4. 后端 health、前端 URL  
-5. 是否已执行 `scripts/bootstrap/Initialize-WorkbenchSeed.ps1`（未执行则生成用的 Skill/工作流不在库里）  
+5. 是否已执行 `scripts/bootstrap/Initialize-ChengwenfangSeed.ps1`（未执行则生成用的 Skill/工作流不在库里）  
 6. 仍待用户完成的设置项（API Key、SearXNG 来源）  
 7. 常用停止命令：`.\scripts\stop-java.ps1`；`docker compose --profile all stop`  
 
@@ -251,9 +251,9 @@ AI **不能**代替用户填写真实密钥。完成后请用户：
 | 现象 | 排查 |
 |------|------|
 | Flyway / 连不上库 | `docker compose ps`；是否跳过了 `--wait`；端口 3306 是否被占用 |
-| 日志「基础配置缺失」 | 执行 `.\scripts\bootstrap\Initialize-WorkbenchSeed.ps1`；不要指望启动自动灌 Skill |
+| 日志「基础配置缺失」 | 执行 `.\scripts\bootstrap\Initialize-ChengwenfangSeed.ps1`；不要指望启动自动灌 Skill |
 | `npm run dev` 找不到 powershell | 用阶段 E1，或安装 PowerShell 7 |
-| 正文抽取失败 | 查 `scripts/article-extract/.venv`；Lightpanda：`docker ps` 是否有 `workbench-lightpanda` |
+| 正文抽取失败 | 查 `scripts/article-extract/.venv`；Lightpanda：`docker ps` 是否有 `chengwenfang-lightpanda` |
 | 视频解析失败 | `ffmpeg -version`；video-transcript venv；设置里是否配置 Vision |
 | SearXNG 超时 / 空结果 | 见 `deploy/searxng/settings.yml`；勿只依赖 SearXNG，可加 RSS 等 |
 | 中文日志乱码 | 重新 `. .\scripts\use-utf8.ps1` 后再起 Java |

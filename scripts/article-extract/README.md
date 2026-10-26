@@ -27,7 +27,7 @@ python -m venv .venv
 docker compose --profile lightpanda up -d
 ```
 
-2. 试跑（`docker exec` 进 `workbench-lightpanda` 容器执行 `fetch --dump html`）：
+2. 试跑（`docker exec` 进 `chengwenfang-lightpanda` 容器执行 `fetch --dump html`）：
 
 ```powershell
 .\.venv\Scripts\python.exe -m article_extract --url "https://quotes.toscrape.com/js/" --via lightpanda
@@ -48,7 +48,7 @@ python -m article_extract --url "https://quotes.toscrape.com/js/" --via lightpan
 ## 来源对比抽样
 
 ```powershell
-.\.venv\Scripts\python.exe compare_sources.py --csv .workbench/reports/xxx.csv --limit 10
+.\.venv\Scripts\python.exe compare_sources.py --csv .chengwenfang/reports/xxx.csv --limit 10
 # 未起容器时：
 .\.venv\Scripts\python.exe compare_sources.py --csv ... --skip-lightpanda
 ```

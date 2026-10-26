@@ -1,0 +1,48 @@
+# 黄金基线专用配置：降低并行与外部依赖不确定性（由 AllScenariosGoldenIT 激活）
+# 叠在 test profile 之上使用：@ActiveProfiles({"test", "golden"})
+
+chengwenfang:
+  environment: golden
+  worker-enabled: true
+  worker-concurrency: 1
+  worker-text-concurrency: 1
+  worker-image-concurrency: 1
+  worker-fetch-concurrency: 1
+  worker-poll-seconds: 0.15
+  worker-lease-seconds: 60
+  # 每个场景可再覆盖为独立 runtime-dir
+  runtime-dir: .chengwenfang-golden
+  article-content:
+    jina-enabled: false
+    trafilatura-enabled: true
+    browser-enabled: false
+  article-extract:
+    enabled: true
+  video-transcript:
+    enabled: true
+  wechat-mp:
+    api-base: http://127.0.0.1:9
+  executor:
+    # 渠道抓取线程池须 >1：FetchChannels 在池内跑渠道，SearXNG 策略仍会向同池提交子查询，
+    # 池大小=1 时会自死锁。
+    channel-fetch:
+      core-pool-size: 4
+      max-pool-size: 8
+      queue-capacity: 100
+      thread-name-prefix: golden-channel-
+    radar-article-enrich:
+      core-pool-size: 2
+      max-pool-size: 4
+      queue-capacity: 64
+      thread-name-prefix: golden-radar-article-
+    radar-video-enrich:
+      core-pool-size: 1
+      max-pool-size: 2
+      queue-capacity: 32
+      thread-name-prefix: golden-radar-video-
+
+logging:
+  level:
+    root: WARN
+    com.chengwenfang: INFO
+    com.chengwenfang.app.golden: INFO

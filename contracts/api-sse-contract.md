@@ -45,7 +45,7 @@ event: {event.eventType}
 data: {"id","eventType","step","progress","message","payload","createdAt"}
 ```
 
-- Poll interval: `WORKBENCH_SSE_POLL_SECONDS` (default 0.5)
+- Poll interval: `CHENGWENFANG_SSE_POLL_SECONDS` (default 0.5)
 - Close when job terminal and no pending events
 
 ### JobResponse

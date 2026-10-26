@@ -3,9 +3,9 @@ description: Java/TS 编码规范：禁止魔法值、类型化 DTO、中文注�
 alwaysApply: true
 ---
 
-# Workbench 编码规范（强制）
+# Chengwenfang 编码规范（强制）
 
-与 [`docs/代码结构与注释规范.md`](docs/代码结构与注释规范.md)、[`.cursor/skills/workbench-cola-architecture/SKILL.md`](.cursor/skills/workbench-cola-architecture/SKILL.md) 一并遵守。本规则强调下列强制项。
+与 [`docs/代码结构与注释规范.md`](docs/代码结构与注释规范.md)、[`.cursor/skills/chengwenfang-cola-architecture/SKILL.md`](.cursor/skills/chengwenfang-cola-architecture/SKILL.md) 一并遵守。本规则强调下列强制项。
 
 ## 1. 禁止魔法值
 

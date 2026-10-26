@@ -2,9 +2,9 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "maven-compile-workbench",
+      "label": "maven-compile-chengwenfang",
       "type": "shell",
-      "command": "${workspaceFolder}/scripts/maven-compile-workbench.ps1",
+      "command": "${workspaceFolder}/scripts/maven-compile-chengwenfang.ps1",
       "options": {
         "cwd": "${workspaceFolder}",
         "shell": {

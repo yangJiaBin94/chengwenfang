@@ -19,9 +19,9 @@ Defaults that matter:
 ## Secrets
 
 - Put real keys only in the settings UI or local `.env` (never commit them)
-- Rotate `WORKBENCH_SECRET_KEY` away from the development default before storing
+- Rotate `CHENGWENFANG_SECRET_KEY` away from the development default before storing
   production credentials
-- Do not paste database dumps, `.workbench/` trees, or screenshots that show
+- Do not paste database dumps, `.chengwenfang/` trees, or screenshots that show
   secrets into Issues or PRs
 
 ## Reporting a vulnerability

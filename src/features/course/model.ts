@@ -6,7 +6,7 @@ import {
   Image,
   MonitorCheck,
 } from "lucide-react";
-/** Course production states displayed throughout the workbench. */
+/** Course production states displayed throughout the chengwenfang. */
 export type CourseStatus =
   | "素材已准备"
   | "原稿已生成"
@@ -100,7 +100,7 @@ export type ImageAsset = {
 };
 
 /** Complete dashboard payload returned by the backend. */
-export type WorkbenchData = {
+export type ChengwenfangData = {
   workspace: {
     name: string;
     moduleName: string;

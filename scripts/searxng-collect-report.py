@@ -5,7 +5,7 @@
 
 用法：
   python scripts/searxng-collect-report.py
-  python scripts/searxng-collect-report.py --base http://127.0.0.1:8080 --out .workbench/reports
+  python scripts/searxng-collect-report.py --base http://127.0.0.1:8080 --out .chengwenfang/reports
 
 默认使用「中老年身心健康」主题当前 SearXNG 种子词；可用 --queries-file 覆盖。
 输出：HTML 静态报告 + CSV（Excel 可直接打开）。
@@ -103,7 +103,7 @@ def fetch_one(base: str, query: str, categories: str, timeout: float) -> dict:
     url = f"{base.rstrip('/')}/search?{params}"
     req = urllib.request.Request(
         url,
-        headers={"User-Agent": "Workbench-SearXNG-Report/1.0"},
+        headers={"User-Agent": "Chengwenfang-SearXNG-Report/1.0"},
     )
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         body = resp.read().decode("utf-8", errors="replace")
@@ -308,7 +308,7 @@ def main() -> int:
     parser.add_argument("--pause", type=float, default=0.4, help="词与词之间间隔秒")
     parser.add_argument(
         "--out",
-        default=".workbench/reports",
+        default=".chengwenfang/reports",
         help="输出目录（相对仓库根或绝对路径）",
     )
     parser.add_argument(

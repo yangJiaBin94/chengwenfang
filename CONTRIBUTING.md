@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping improve Workbench. Please keep changes focused and local-first.
+Thanks for helping improve Chengwenfang. Please keep changes focused and local-first.
 
 ## Prerequisites
 
@@ -19,8 +19,8 @@ Thanks for helping improve Workbench. Please keep changes focused and local-firs
 ```powershell
 docker compose up -d --wait
 npm install
-powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap\Initialize-WorkbenchSeed.ps1
-mvn -pl workbench-app -am spring-boot:run
+powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap\Initialize-ChengwenfangSeed.ps1
+mvn -pl chengwenfang-app -am spring-boot:run
 # other terminal
 npm run dev:frontend
 ```
@@ -29,7 +29,7 @@ npm run dev:frontend
 
 ```powershell
 npm test
-mvn -pl workbench-app -am test
+mvn -pl chengwenfang-app -am test
 ```
 
 Integration tests that need Docker/Testcontainers may be skipped in CI; run them
@@ -42,7 +42,7 @@ locally when you change persistence or HTTP adapters.
 - Prefer Apache-2.0 compatible contributions (by submitting a PR you agree your
   contribution is under the same license)
 - Match existing COLA module boundaries and Chinese JavaDoc conventions in
-  `docs/代码结构与注释规范.md` and `.cursor/skills/workbench-cola-architecture/`
+  `docs/代码结构与注释规范.md` and `.cursor/skills/chengwenfang-cola-architecture/`
 - Keep diffs small; explain *why* in the PR description
 
 ## Dual-repo note

@@ -4,13 +4,14 @@
   Export a clean Apache-2.0 public tree (no private git history / course content).
 
 .DESCRIPTION
-  Copies the private workbench working tree into a sibling (or -Dest) directory,
+  Copies the private Chengwenfang tree into a sibling (or -Dest) directory,
   applying the hard exclude list from the open-source migration plan.
   Replaces default-themes.json with the demo seed (default-themes.oss.json).
+  Rewrites private DB name chengwenfang_private → public chengwenfang.
   Optionally git init + single commit + push to a new/existing public remote.
 
 .PARAMETER Dest
-  Destination directory. Default: ../local-writer-workbench next to this repo.
+  Destination directory. Default: ../chengwenfang next to this repo.
 
 .PARAMETER InitGit
   After export, git init and create one commit if Dest is not already a git repo.
@@ -19,20 +20,20 @@
   With -InitGit: gh repo create --public and push (requires gh auth).
 
 .PARAMETER RemoteName
-  GitHub repo name under the authenticated user. Default: local-writer-workbench
+  GitHub repo name under the authenticated user. Default: chengwenfang
 #>
 param(
   [string]$Dest = "",
   [switch]$InitGit,
   [switch]$CreateRemote,
-  [string]$RemoteName = "local-writer-workbench"
+  [string]$RemoteName = "chengwenfang"
 )
 
 $ErrorActionPreference = "Stop"
 
 $PrivateRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 if (-not $Dest) {
-  $Dest = Join-Path (Split-Path $PrivateRoot -Parent) "local-writer-workbench"
+  $Dest = Join-Path (Split-Path $PrivateRoot -Parent) "chengwenfang"
 }
 
 Write-Host "Private: $PrivateRoot"
@@ -54,11 +55,11 @@ $excludeDirs = @(
   "node_modules",
   "target",
   "dist",
-  ".workbench",
-  ".workbench-it",
+  ".chengwenfang",
+  ".chengwenfang-it",
   "dev",
   # NOTE: do NOT exclude bare name "hotnews" — it matches package dir
-  # com/workbench/mode/hotnews and empties workbench-mode-hotnews sources.
+  # com/chengwenfang/mode/hotnews and empties chengwenfang-mode-hotnews sources.
   # Runtime dirs hotnews/renders/... are gitignored and usually absent from the tree.
   "renders",
   "repairs",
@@ -78,7 +79,7 @@ $excludeDirs = @(
 $excludeFiles = @(
   ".env",
   "settings.xml",
-  "workbench-data.json",
+  "chengwenfang-data.json",
   "*.tsbuildinfo",
   "dev-*.log",
   "dev-*.err.log",
@@ -93,7 +94,7 @@ $xd = @(); foreach ($d in $excludeDirs) { $xd += "/XD"; $xd += $d }
 $xf = @(); foreach ($f in $excludeFiles) { $xf += "/XF"; $xf += $f }
 
 # /E copy subdirs including empty; /NFL /NDL quieter; /NJH /NJS; exit codes 0-7 OK
-$robolog = Join-Path $env:TEMP "workbench-oss-export.log"
+$robolog = Join-Path $env:TEMP "chengwenfang-oss-export.log"
 $args = @($PrivateRoot, $Dest, "/E", "/COPY:DAT", "/R:1", "/W:1", "/NFL", "/NDL", "/NJH", "/NJS", "/NP", "/LOG:$robolog") + $xd + $xf
 Write-Host "Running robocopy (log: $robolog)..."
 & robocopy @args
@@ -123,7 +124,7 @@ $pubContent = Join-Path $Dest "public\content"
 if (Test-Path $pubContent) {
   Remove-Item -Recurse -Force $pubContent
 }
-$pubData = Join-Path $Dest "public\data\workbench-data.json"
+$pubData = Join-Path $Dest "public\data\chengwenfang-data.json"
 if (Test-Path $pubData) {
   Remove-Item -Force $pubData
 }
@@ -140,19 +141,20 @@ if (-not (Test-Path $exampleSettings)) {
 }
 Copy-Item -Force $exampleSettings $localSettings
 
-# Public edition uses DB name "workbench" (private may still use workbench_v2)
+# Public edition uses DB name "chengwenfang" (private uses chengwenfang_private)
 $dbRewritePaths = @(
   "compose.yml",
   ".env.example",
   "README.md",
   "docs\AI从零搭建满血工作台.md",
-  "workbench-app\src\main\resources\application.yml"
+  "chengwenfang-app\src\main\resources\application.yml",
+  "chengwenfang-app\src\test\java\com\chengwenfang\app\support\ChengwenfangIT.java"
 )
 foreach ($rel in $dbRewritePaths) {
   $path = Join-Path $Dest $rel
   if (-not (Test-Path $path)) { continue }
   $text = Get-Content $path -Raw -Encoding UTF8
-  $updated = $text -replace 'workbench_v2', 'workbench'
+  $updated = $text.Replace('chengwenfang_private_it', 'chengwenfang_it').Replace('chengwenfang_private', 'chengwenfang')
   if ($updated -ne $text) {
     Set-Content -Path $path -Value $updated -Encoding UTF8 -NoNewline
   }
@@ -162,10 +164,10 @@ foreach ($rel in $dbRewritePaths) {
 $leaks = @()
 if (Test-Path (Join-Path $Dest "content\learning-content")) { $leaks += "content/learning-content" }
 if (Test-Path (Join-Path $Dest "docs\refactor-v2")) { $leaks += "docs/refactor-v2" }
-if (Test-Path (Join-Path $Dest "public\data\workbench-data.json")) { $leaks += "public/data/workbench-data.json" }
-# settings.xml must exist (copied from example) and must not contain a drive-local repository path
+if (Test-Path (Join-Path $Dest "public\data\chengwenfang-data.json")) { $leaks += "public/data/chengwenfang-data.json" }
+# settings.xml must exist (copied from example) and must not bind a drive-local <localRepository>
 $shippedSettings = Get-Content (Join-Path $Dest ".mvn\settings.xml") -Raw -ErrorAction SilentlyContinue
-if ($shippedSettings -match '(?i)localRepository|>[A-Za-z]:\\') {
+if ($shippedSettings -match '(?i)<localRepository>\s*[A-Za-z]:\\') {
   $leaks += ".mvn/settings.xml(local path)"
 }
 if ($leaks.Count -gt 0) {
@@ -193,7 +195,7 @@ try {
   if ($CreateRemote) {
     $owner = (gh api user --jq .login).Trim()
     $fullName = "$owner/$RemoteName"
-    gh repo create $RemoteName --public --source=. --remote=origin --push --description "Local AI content generation and review workbench"
+    gh repo create $RemoteName --public --source=. --remote=origin --push --description "成文坊 / Chengwenfang — local self-media content workbench"
     gh repo edit $fullName --add-topic java --add-topic spring-boot --add-topic react --add-topic ai --add-topic local-first
     Write-Host "Pushed to public repo: $fullName"
   } else {

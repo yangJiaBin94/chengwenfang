@@ -700,7 +700,7 @@ def step_extract_frames(
 
 def main(argv: list[str] | None = None) -> int:
     configure_stdio_utf8()
-    parser = argparse.ArgumentParser(description="Workbench video transcript step runner")
+    parser = argparse.ArgumentParser(description="Chengwenfang video transcript step runner")
     parser.add_argument("--url", required=True, help="视频页面 URL")
     parser.add_argument("--work-dir", required=True, help="产物目录")
     parser.add_argument("--step", required=True, choices=STEPS, help="执行步骤")

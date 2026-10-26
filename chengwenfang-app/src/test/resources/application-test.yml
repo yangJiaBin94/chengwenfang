@@ -1,0 +1,30 @@
+# 集成测试 / IT 专用配置（src/test/resources）
+# 由测试侧覆盖 datasource 等；此处只放与生产差异项
+
+server:
+  address: 127.0.0.1
+
+spring:
+  main:
+    # IT 中可注册替身 Bean 覆盖正式实现
+    allow-bean-definition-overriding: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+chengwenfang:
+  environment: test
+  # 与开发目录隔离，避免污染本地 .chengwenfang
+  runtime-dir: .chengwenfang-it
+  # 缩短轮询/租约，加快 Job / SSE 相关用例
+  worker-poll-seconds: 0.15
+  worker-lease-seconds: 30
+  worker-concurrency: 2
+  sse-poll-seconds: 0.1
+  # 允许爬虫访问环回（WireMock 等）
+  crawler-allow-loopback: true
+
+logging:
+  level:
+    root: WARN
+    com.chengwenfang: INFO

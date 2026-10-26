@@ -165,7 +165,7 @@ def _build_lightpanda_command(
                 "未找到 lightpanda 可执行文件；请安装或改用 docker-exec 模式"
             )
         return [binary, *fetch_args]
-    container = (docker_container or "workbench-lightpanda").strip()
+    container = (docker_container or "chengwenfang-lightpanda").strip()
     docker_bin = shutil.which("docker")
     if not docker_bin:
         raise FileNotFoundError("未找到 docker；请安装 Docker 或改用 binary 模式")
@@ -176,7 +176,7 @@ def lightpanda_extract_url(
     url: str,
     *,
     mode: str = "docker-exec",
-    docker_container: str = "workbench-lightpanda",
+    docker_container: str = "chengwenfang-lightpanda",
     executable: str = "lightpanda",
     timeout_seconds: float = 45.0,
 ) -> dict:
@@ -264,7 +264,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--docker-container",
-        default="workbench-lightpanda",
+        default="chengwenfang-lightpanda",
         help="docker-exec 容器名",
     )
     parser.add_argument(
