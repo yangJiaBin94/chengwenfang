@@ -36,7 +36,7 @@
 - 记录当前前端页面截图。
 - 记录当前 API 行为。
 - 导出当前 SQLite 数据库结构。
-- 备份 `.chengwenfang/workbench.db`。
+- 备份 `.chengwenfang/chengwenfang.db`。
 - 建立前端关键交互回归清单。
 
 验收：

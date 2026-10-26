@@ -388,7 +388,7 @@ export function useChengwenfangPart7(s: Record<string, any>) {
   async function removeCourseImage(src: string) {
     const match = src.match(/^\/api\/images\/([^/?#]+)/);
     if (!match) {
-      setTaskMessage("这不是工作台生成的图片，无法在此删除。");
+      setTaskMessage("这不是成文坊生成的图片，无法在此删除。");
       return;
     }
     if (

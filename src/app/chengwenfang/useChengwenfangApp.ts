@@ -8,7 +8,7 @@ import { useChengwenfangPart6 } from "./useChengwenfangPart6";
 import { useChengwenfangPart7 } from "./useChengwenfangPart7";
 import { useChengwenfangPart8 } from "./useChengwenfangPart8";
 
-/** 组合各分段 hook，返回工作台会话袋（供布局壳解构）。 */
+/** 组合各分段 hook，返回成文坊会话袋（供布局壳解构）。 */
 export function useChengwenfangApp(): Record<string, any> {
   let session: Record<string, any> = useChengwenfangPart0();
   session = useChengwenfangPart1(session);

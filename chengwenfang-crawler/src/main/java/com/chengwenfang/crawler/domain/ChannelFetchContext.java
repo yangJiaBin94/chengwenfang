@@ -58,7 +58,7 @@ public class ChannelFetchContext {
   }
 
   /**
-   * @return User-Agent，缺省工作台爬虫标识
+   * @return User-Agent，缺省成文坊爬虫标识
    */
   public String resolveUserAgent() {
     return userAgent == null || userAgent.isBlank()

@@ -440,7 +440,7 @@ export async function testWechatMpConnection(
  * @param body 推送参数
  */
 export async function pushWechatMpDraft(body: {
-  /** 工作台文章 ID；用于同文复推覆盖同一公众号草稿。 */
+  /** 成文坊文章 ID；用于同文复推覆盖同一公众号草稿。 */
   articleId: string;
   /** 统一文档 ID（公众号轨）；有则后端优先写入下游。 */
   documentId?: string | null;

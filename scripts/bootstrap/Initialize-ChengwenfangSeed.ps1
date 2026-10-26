@@ -1,5 +1,6 @@
 # Import scripts/bootstrap/builtin-catalog.json (+ default-themes.json) into local MySQL.
-# Requires Docker MySQL. Starts backend once with bootstrap-seed (Flyway + import) then exits.
+# 使用 application.yml 的库配置（默认库名 chengwenfang、Redis database=0；与另一实例并存时可改端口 / Redis DB）。
+# Requires Docker MySQL 已就绪。Starts backend once with bootstrap-seed (Flyway + import) then exits.
 # Existing same-name Skills / published workflows are skipped unless -Force.
 param(
     [switch]$Force

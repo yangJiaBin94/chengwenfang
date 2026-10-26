@@ -16,7 +16,7 @@ public class OpenApiConfig {
     return new OpenAPI()
         .info(new Info()
             .title("Chengwenfang API")
-            .description("内容创作工作台后端接口（OpenAPI 3 / Swagger UI）")
+            .description("内容创作成文坊后端接口（OpenAPI 3 / Swagger UI）")
             .version("0.1.0")
             .contact(new Contact().name("Chengwenfang")));
   }

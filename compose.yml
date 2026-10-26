@@ -14,7 +14,7 @@ services:
       MYSQL_ROOT_PASSWORD: chengwenfang_root
       TZ: UTC
     ports:
-      # 宿主机 3306 → 容器 3306
+      # 宿主机 3306 → 容器 3306（与私有实例共用宿主机 MySQL 时勿再 up 本服务）
       - "3306:3306"
     command:
       # utf8mb4 + UTC，与 Java Instant / Flyway 一致
@@ -34,6 +34,7 @@ services:
   redis:
     image: redis:7
     ports:
+      # 宿主机 6379 → 容器 6379（与私有实例共用宿主机 Redis 时勿再 up 本服务）
       - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -41,7 +42,7 @@ services:
       timeout: 3s
       retries: 20
 
-  # 可选：本地聚合搜索（热点来源类型 SearXNG）。未启动不影响工作台其它功能。
+  # 可选：本地聚合搜索（热点来源类型 SearXNG）。未启动不影响成文坊其它功能。
   # settings.yml 只读挂载：国内引擎永久开启（360/夸克/B站/百度等），改配置后 --force-recreate。
   searxng:
     profiles: ["searxng", "all"]

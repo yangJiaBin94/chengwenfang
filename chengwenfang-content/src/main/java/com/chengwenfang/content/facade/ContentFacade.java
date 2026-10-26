@@ -50,7 +50,7 @@ public interface ContentFacade {
   /** 列出全部课程（按系列排序）。 */
   List<CourseView> listCourses();
 
-  /** 组装工作台首页数据（主题、课程列表与进度指标）。 */
+  /** 组装成文坊首页数据（主题、课程列表与进度指标）。 */
   ChengwenfangDataView chengwenfangData(String themeId);
 
   /** 列出可用教学模式（课程体系 / 热点资讯）。 */

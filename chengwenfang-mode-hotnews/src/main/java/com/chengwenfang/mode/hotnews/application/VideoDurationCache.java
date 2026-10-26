@@ -22,7 +22,7 @@ public class VideoDurationCache {
   /** 同进程内 URL → 时长秒数缓存（避免配额裁剪与解析各探测一次）。 */
   private final ConcurrentHashMap<String, Double> durationSecondsCache = new ConcurrentHashMap<>();
 
-  /** 工作台配置。 */
+  /** 成文坊配置。 */
   private final ChengwenfangProperties properties;
   /** CLI 子进程执行接缝。 */
   private final VideoTranscriptCliRunner cliRunner;

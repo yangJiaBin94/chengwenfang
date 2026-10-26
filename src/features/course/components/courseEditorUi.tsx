@@ -232,7 +232,7 @@ export function EditableMarkdown({
           <div className="editor-footer">
             <p>
               {saveError ||
-                "点击保存后会写入工作台数据库。新增 Markdown 图片后，配套图片会同步更新。"}
+                "点击保存后会写入成文坊数据库。新增 Markdown 图片后，配套图片会同步更新。"}
             </p>
             <button
               className="ghost-button"

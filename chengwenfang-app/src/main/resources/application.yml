@@ -1,15 +1,15 @@
 # 默认配置（开发环境）。启动：mvn -pl chengwenfang-app -am spring-boot:run
 
 server:
-  # 仅本机监听，避免开发机对外暴露
+  # 仅本机监听，避免开发机对外暴露。默认 8001；与另一实例并存时可设环境变量 SERVER_PORT=8002
   address: 127.0.0.1
-  port: 8001
+  port: ${SERVER_PORT:8001}
 
 spring:
   application:
     name: chengwenfang-app
   datasource:
-    # 对应 compose.yml 中 mysql 服务
+    # 默认库名 chengwenfang（compose 会创建）。与另一实例共用同一 MySQL 时保持库名不同即可
     url: jdbc:mysql://127.0.0.1:3306/chengwenfang?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=utf8
     username: chengwenfang
     password: chengwenfang_dev
@@ -20,8 +20,10 @@ spring:
     locations: classpath:db/migration
   data:
     redis:
+      # 默认 database=0。与另一实例共用同一 Redis 时可设 SPRING_DATA_REDIS_DATABASE=1
       host: 127.0.0.1
       port: 6379
+      database: ${SPRING_DATA_REDIS_DATABASE:0}
   jackson:
     # API JSON 使用 camelCase；时间写 ISO 字符串而非时间戳
     property-naming-strategy: LOWER_CAMEL_CASE
@@ -37,7 +39,7 @@ mybatis-plus:
       # 主键由业务侧赋值（如 Ids.newId()），非数据库自增
       id-type: input
 
-# 工作台自定义配置（ChengwenfangProperties）
+# 成文坊自定义配置（ChengwenfangProperties）
 chengwenfang:
   app-name: chengwenfang-backend
   app-version: 0.1.0

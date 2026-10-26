@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class VideoTranscriptPipeline {
-  /** 工作台配置。 */
+  /** 成文坊配置。 */
   private final ChengwenfangProperties properties;
   /** CLI 子进程执行接缝。 */
   private final VideoTranscriptCliRunner cliRunner;

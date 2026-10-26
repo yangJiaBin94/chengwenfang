@@ -435,7 +435,7 @@ export function useChengwenfangPart6(s: Record<string, any>) {
         (event) => setTaskMessage(event.message),
         preferCourseDocumentId(documentId, articleId),
       );
-      setTaskMessage("内容生成完成，正在刷新工作台。");
+      setTaskMessage("内容生成完成，正在刷新成文坊。");
       setChengwenfangRefreshKey((current) => current + 1);
       setActiveTab(kind === "course_draft" ? "draft" : "article");
     } catch (error) {

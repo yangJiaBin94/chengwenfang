@@ -11,7 +11,12 @@ public class WebConfig implements WebMvcConfigurer {
   @Override
   public void addCorsMappings(CorsRegistry registry) {
     registry.addMapping("/api/**")
-        .allowedOrigins("http://127.0.0.1:5173", "http://localhost:5173")
+        // 5173 默认开发端口；5174 用于与另一实例并存（-BesidePrivate）
+        .allowedOrigins(
+            "http://127.0.0.1:5173",
+            "http://localhost:5173",
+            "http://127.0.0.1:5174",
+            "http://localhost:5174")
         .allowedMethods("*")
         .allowedHeaders("*")
         .exposedHeaders("Last-Event-ID");

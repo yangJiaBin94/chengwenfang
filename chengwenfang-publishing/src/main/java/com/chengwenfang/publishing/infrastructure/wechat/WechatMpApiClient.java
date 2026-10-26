@@ -28,7 +28,7 @@ public class WechatMpApiClient {
   /** 换取稳定版 access_token 的超时（毫秒）。 */
   private static final int TIMEOUT_MS = 30_000;
 
-  /** 工作台配置（含 wechat-mp.api-base）。 */
+  /** 成文坊配置（含 wechat-mp.api-base）。 */
   private final ChengwenfangProperties properties;
 
   /**

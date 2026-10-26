@@ -1,11 +1,11 @@
 {
     "com.chengwenfang.content.facade.constant.ContentModeIds.COURSE_SYSTEM": "a0fd33ca0a6fa16e33464b48850e64cce8c5ad6d4dafe3dd5bee6060962eb900",
-    "com.chengwenfang.mode.course.application.prompt.CoursePrompts.AUTHOR_PREAMBLE": "2a94af1e5f09d96b0de1b7869de04f97be2e650a1a2855b54879e557d7521e31",
+    "com.chengwenfang.mode.course.application.prompt.CoursePrompts.AUTHOR_PREAMBLE": "ae4b8aa54286fc3a4983fc9bf80bf2669de3b25e12c9e62ae109719f1f875df2",
     "com.chengwenfang.mode.course.application.prompt.CoursePrompts.WRITING_RULES": "88be3e8d601fa0128a2a8a0655a9a69a10af33035af58083dd43eb35cbeb08a3",
     "com.chengwenfang.mode.hotnews.application.TopicBriefSourceService.EVIDENCE_REVIEWER_SYSTEM": "bbc5e661e106c6dcd8dc6dd186454c2fcba3c710fb4d8e71a60c93eaf077f073",
     "com.chengwenfang.mode.hotnews.application.generation.radarcollect.RadarCollectAiSupport.THEME_BATCH_SYSTEM": "5bdc594579439257ed6bceb5090dbbd65b8d1d5f5139a7d524617e022f5e4d97",
     "com.chengwenfang.mode.hotnews.application.prompt.ArticleSkeletonPrompts.SKELETON_SYSTEM": "8a3d521fdb9cb80961f52aef2863900f4f1b31903deea925aa21daf6912406f0",
-    "com.chengwenfang.mode.hotnews.application.prompt.HotNewsWritingPrompts.AUTHOR_PREAMBLE": "857b0c6088b34a0594b622e9cfba8fd22ff536add112bd1c76a7ab2ecbac449e",
+    "com.chengwenfang.mode.hotnews.application.prompt.HotNewsWritingPrompts.AUTHOR_PREAMBLE": "c7cb4a640d7a56e1fe12c3c2e85f4ee9b9c8dfc67e55675be1b52b3472e5bf0b",
     "com.chengwenfang.mode.hotnews.application.prompt.HotNewsWritingPrompts.WRITING_RULES": "83efe0fe646470b2539258b71bcb84a419556354237db9b259e581ec041cd724",
     "com.chengwenfang.mode.hotnews.application.prompt.ResearchItemScorePrompts.SYSTEM_PROMPT": "57ef44a7237d65ceeee2e7463b888a4f5e8d2f10cf234243e03045901c5537fc",
     "com.chengwenfang.mode.hotnews.application.prompt.ResearchKeywordPrompts.KEYWORD_SYSTEM": "62600e52f24295cd492d1cb642de53e4b8c828278ac7796d7e409e34dda7c095",
@@ -19,5 +19,6 @@
     "com.chengwenfang.mode.hotnews.application.prompt.VideoSpeechPrompts.SUMMARIZE_SYSTEM": "b3f2d2bc70405c8a469f81b0fd66ea8033a3b4844ba72ca45654c0b302d987a8",
     "com.chengwenfang.mode.hotnews.application.prompt.VideoVisionPrompts.VISION_SUMMARIZE_SYSTEM": "65a2529af66dd53b13718852185ccc6c56196d8f2f518de977755523a6135baf",
     "com.chengwenfang.publishing.facade.constant.LayoutThemeKeys.TYPE_SYSTEM": "bbc5e661e106c6dcd8dc6dd186454c2fcba3c710fb4d8e71a60c93eaf077f073",
-    "com.chengwenfang.skill.facade.constant.CourseSkillNames.CHENGWENFANG_RULES": "2011a7c9d140c7c72231ce6610e632a43199d62548841151619f2637d9ede622"
+    "com.chengwenfang.skill.facade.constant.CourseSkillNames.CHENGWENFANG_RULES": "b6a1b1eb90204d48c705dced7ff64433d13cc20cdf998c8aa9ef5ab148fd9c94",
+    "com.chengwenfang.skill.facade.constant.CourseSkillNames.LEGACY_RULES": "2011a7c9d140c7c72231ce6610e632a43199d62548841151619f2637d9ede622"
 }

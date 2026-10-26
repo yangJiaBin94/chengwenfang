@@ -27,7 +27,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * 课程内容视图：工作台首页、正文、媒资读写。
+ * 课程内容视图：成文坊首页、正文、媒资读写。
  */
 @Service
 @RequiredArgsConstructor
@@ -48,11 +48,11 @@ public class CourseContentViewService {
   private final ContentViewMapper views;
   /** 主题可见性。 */
   private final ThemeVisibilityGuard visibility;
-  /** 课次列表（工作台聚合）。 */
+  /** 课次列表（成文坊聚合）。 */
   private final CourseLessonService lessons;
 
   /**
-   * 组装工作台首页数据：主题、课程列表与进度指标。
+   * 组装成文坊首页数据：主题、课程列表与进度指标。
    *
    * @param themeId 主题 id/code；空则用默认课程体系主题
    * @return 含 workspace、courses、metrics 的聚合视图
@@ -80,7 +80,7 @@ public class CourseContentViewService {
     }
 
     ChengwenfangWorkspaceView workspace = ChengwenfangWorkspaceView.builder()
-        .name("工作台")
+        .name("成文坊")
         .moduleName("自学课程及自媒体内容生成")
         .topicName(theme.getName())
         .topicSlug(String.valueOf(theme.getCode()).replace('_', '-'))

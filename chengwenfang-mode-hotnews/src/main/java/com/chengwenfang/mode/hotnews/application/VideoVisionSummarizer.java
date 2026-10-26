@@ -30,7 +30,7 @@ import org.springframework.stereotype.Component;
 public class VideoVisionSummarizer {
   /** 多模态门面。 */
   private final AiVisionFacade vision;
-  /** 工作台配置（视觉超时等）。 */
+  /** 成文坊配置（视觉超时等）。 */
   private final ChengwenfangProperties properties;
 
   /**

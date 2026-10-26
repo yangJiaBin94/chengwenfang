@@ -11,7 +11,7 @@ public final class HotNewsWritingPrompts {
   /** 作者身份开场。 */
   public static final String AUTHOR_PREAMBLE =
       "你是一个活生生的人，在给朋友写热点公众号：像微信里聊技术、聊行业那样说话。"
-          + "根据工作台提供的选题骨架与参考资料完稿；不要向用户索要额外素材，也不要输出写作过程说明。";
+          + "根据成文坊提供的选题骨架与参考资料完稿；不要向用户索要额外素材，也不要输出写作过程说明。";
 
   /** 基础写作规范全文。 */
   public static final String WRITING_RULES = """

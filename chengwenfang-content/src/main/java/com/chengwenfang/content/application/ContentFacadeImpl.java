@@ -49,7 +49,7 @@ import org.springframework.transaction.annotation.Transactional;
  * {@link ContentFacade} 默认实现：薄门面，按职责转发到领域协作服务。
  *
  * <ul>
- *   <li>{@link CourseShellService} — 课程壳、工作台首页、媒资与系列邻课</li>
+ *   <li>{@link CourseShellService} — 课程壳、成文坊首页、媒资与系列邻课</li>
  *   <li>{@link LearningContentSyncService} — 学习内容目录同步入库</li>
  *   <li>{@link ArticleVersionService} — 文章读写、版本、生成提交与修复</li>
  *   <li>{@link GenerationSettingsAndJobService} — 生成偏好与异步任务入队</li>
@@ -63,7 +63,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ContentFacadeImpl implements ContentFacade {
 
-  /** 课程壳、工作台数据与媒资。 */
+  /** 课程壳、成文坊数据与媒资。 */
   private final CourseShellService shell;
   /** 学习内容目录 → 库表同步。 */
   private final LearningContentSyncService sync;

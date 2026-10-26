@@ -22,7 +22,7 @@ public class CrawlerUrlGuard {
 
   /**
    * @param redisson   Redis 客户端
-   * @param properties 工作台配置
+   * @param properties 成文坊配置
    */
   public CrawlerUrlGuard(RedissonClient redisson, ChengwenfangProperties properties) {
     this.redisson = redisson;

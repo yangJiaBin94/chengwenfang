@@ -57,7 +57,7 @@ public final class SkillBindingIds {
     String globalOrSystem = null;
     String otherNonHotNews = null;
     for (SkillView skill : all) {
-      if (skill == null || !name.equals(skill.getName()) || StrUtil.isBlank(skill.getId())) {
+      if (skill == null || StrUtil.isBlank(skill.getId()) || !skillNameMatches(name, skill.getName())) {
         continue;
       }
       String scene = StrUtil.nullToEmpty(skill.getScene());
@@ -108,11 +108,30 @@ public final class SkillBindingIds {
       if (skill == null) {
         continue;
       }
-      if (skillName.equals(skill.getName())
+      if (skillNameMatches(skillName, skill.getName())
           && workflowScene.equals(StrUtil.nullToEmpty(skill.getScene()))) {
         return skill.getId();
       }
     }
     return null;
+  }
+
+  /**
+   * 判断库内 Skill 名是否匹配目标名（含「工作台规则理解」→「成文坊规则理解」别名）。
+   *
+   * @param wanted   期望名称（通常为常量新名）
+   * @param actual   库内名称
+   * @return 是否视为同一 Skill
+   */
+  static boolean skillNameMatches(String wanted, String actual) {
+    if (StrUtil.isBlank(wanted) || StrUtil.isBlank(actual)) {
+      return false;
+    }
+    if (wanted.equals(actual)) {
+      return true;
+    }
+    // 课程规则 Skill：新旧名互通，避免迁移窗口内绑定失败
+    return CourseSkillNames.CHENGWENFANG_RULES.equals(wanted)
+        && CourseSkillNames.LEGACY_RULES.equals(actual);
   }
 }

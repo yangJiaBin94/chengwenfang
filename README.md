@@ -1,8 +1,8 @@
 # Chengwenfang
 
-本地个人内容生产工作台：课程体系（学习素材 → 原稿 / 公众号文）与热点资讯（雷达 → 选题资料 → 成文），数据落本机。
+本地个人内容生产成文坊：课程体系（学习素材 → 原稿 / 公众号文）与热点资讯（雷达 → 选题资料 → 成文），数据落本机。
 
-**License:** [Apache-2.0](LICENSE) · **Security:** 本机专用、[无鉴权](SECURITY.md)，请勿对公网暴露 · **Content:** 本仓库不附带个人课程正文，仅含 bootstrap 演示主题（见 [`content/README.md`](content/README.md)）
+**License:** [Apache-2.0](LICENSE) · **Conduct:** [Code of Conduct](CODE_OF_CONDUCT.md) · **Security:** 本机专用、[无鉴权](SECURITY.md)，请勿对公网暴露 · **Changelog:** [CHANGELOG.md](CHANGELOG.md) · **Content:** 本仓库不附带个人课程正文，仅含 bootstrap 演示主题（见 [`content/README.md`](content/README.md)）
 
 技术形态：**Java 21 模块化单体**（Spring Boot 3.3）+ **React / Vite** 前端。无登录、无多人协作（个人本机使用）。
 
@@ -66,11 +66,11 @@ ffmpeg -version
 
 把下面这份手册交给 AI（Cursor / Codex 等），让它按阶段探测、安装依赖并启动到可访问为止：
 
-**[`docs/AI从零搭建满血工作台.md`](docs/AI从零搭建满血工作台.md)**
+**[`docs/AI从零搭建满血成文坊.md`](docs/AI从零搭建满血成文坊.md)**
 
 可对 AI 直接说：
 
-> 请阅读并严格执行仓库内 `docs/AI从零搭建满血工作台.md`，从零搭建满血工作台（Docker 全依赖 + Python CLI + ffmpeg + 前后端），每步验收后再继续，直到 `http://127.0.0.1:8001/api/health` 与 `http://127.0.0.1:5173` 可访问；API Key 留给我在设置页填写。
+> 请阅读并严格执行仓库内 `docs/AI从零搭建满血成文坊.md`，从零搭建满血成文坊（Docker 全依赖 + Python CLI + ffmpeg + 前后端），每步验收后再继续，直到 `http://127.0.0.1:8001/api/health` 与 `http://127.0.0.1:5173` 可访问；API Key 留给我在设置页填写。
 
 人工逐步操作见下一节「快速开始」。
 
@@ -182,9 +182,23 @@ powershell -ExecutionPolicy Bypass -File .\scripts\start-java.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\start-java.ps1 -AllDeps
 
 # 其它：-OpenBrowser  -SkipCompose
+
+# 与本机另一成文坊实例并存（后端 8002 / 前端 5174 / Redis DB 1，共用 MySQL:3306）：
+powershell -ExecutionPolicy Bypass -File .\scripts\start-java.ps1 -BesidePrivate -SkipCompose
 ```
 
 首次请先完成步骤 3 的 `npm install`（脚本不会替你装前端依赖）。
+
+### 与另一实例并存（可选）
+
+默认端口为 **8001 / 5173**，Redis **database=0**，适合单独跑本仓库。若本机已有另一套成文坊占用上述端口，可：
+
+| 方式 | 做法 |
+|------|------|
+| 一键脚本 | `.\scripts\start-java.ps1 -BesidePrivate`（可加 `-SkipCompose` 共用已有 MySQL/Redis） |
+| 环境变量 | `SERVER_PORT=8002`、`SPRING_DATA_REDIS_DATABASE=1`、`VITE_DEV_PORT=5174`、`VITE_API_PROXY=http://127.0.0.1:8002` |
+
+MySQL 仍用 `127.0.0.1:3306`，库名保持 **`chengwenfang`**（另一实例若用 `chengwenfang_private` 即可共存）。SearXNG / Lightpanda 也可共用已有容器。
 
 | 地址 | 用途 |
 |------|------|
@@ -217,7 +231,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\start-java.ps1 -AllDeps
 ## 目录与模块
 
 ```text
-workbench/
+chengwenfang/
 ├── chengwenfang-app/              # 启动入口：adapter.web / adapter.worker / application.*
 ├── chengwenfang-common/           # ApiResult、异常、分页、ErrorCodes 等
 ├── chengwenfang-infra/            # ChengwenfangProperties、存储路径等
@@ -277,7 +291,7 @@ npm test
 
 | 路径 | 内容 |
 |------|------|
-| [`docs/AI从零搭建满血工作台.md`](docs/AI从零搭建满血工作台.md) | **给 AI 的从零满血部署手册**（见「快速开始（AI 方式）」） |
+| [`docs/AI从零搭建满血成文坊.md`](docs/AI从零搭建满血成文坊.md) | **给 AI 的从零满血部署手册**（见「快速开始（AI 方式）」） |
 | [`docs/design/01-产品需求文档.md`](docs/design/01-产品需求文档.md) | 产品定位 |
 | [`docs/design/02-技术架构方案.md`](docs/design/02-技术架构方案.md) | 技术架构 |
 | [`docs/代码结构与注释规范.md`](docs/代码结构与注释规范.md) | 分层与注释 |

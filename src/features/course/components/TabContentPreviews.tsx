@@ -34,7 +34,7 @@ export function TabContentPreviews(props: any) {
           </p>
         )}
         {course.draftPath && (
-          <blockquote>工作台副本：{course.draftPath}</blockquote>
+          <blockquote>成文坊副本：{course.draftPath}</blockquote>
         )}
       </div>
     );
@@ -68,7 +68,7 @@ export function TabContentPreviews(props: any) {
           </p>
         )}
         {course.wechatPath && (
-          <p className="file-path">工作台副本：{course.wechatPath}</p>
+          <p className="file-path">成文坊副本：{course.wechatPath}</p>
         )}
       </div>
     );

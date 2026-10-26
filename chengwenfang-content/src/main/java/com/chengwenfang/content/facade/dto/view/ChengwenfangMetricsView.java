@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/** 工作台进度指标。 */
+/** 成文坊进度指标。 */
 @Data
 @Builder
 @NoArgsConstructor

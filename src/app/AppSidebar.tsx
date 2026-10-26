@@ -64,7 +64,7 @@ export function AppSidebar({
               <Layers3 size={22} />
             </div>
             <div>
-              <div className="brand-title">工作台</div>
+              <div className="brand-title">成文坊</div>
               <div className="brand-subtitle">本地内容生产系统</div>
             </div>
           </div>

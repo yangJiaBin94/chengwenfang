@@ -18,6 +18,7 @@ import com.chengwenfang.publishing.facade.constant.BuiltinLayoutThemeKeys;
 import com.chengwenfang.skill.facade.SkillBindingIds;
 import com.chengwenfang.skill.facade.SkillFacade;
 import com.chengwenfang.skill.facade.WorkflowFacade;
+import com.chengwenfang.skill.facade.constant.CourseSkillNames;
 import com.chengwenfang.skill.facade.dto.request.SkillSaveRequest;
 import com.chengwenfang.skill.facade.dto.request.WorkflowDraftSaveRequest;
 import com.chengwenfang.skill.facade.dto.request.WorkflowPublishRequest;
@@ -104,6 +105,13 @@ public class BuiltinSeedImporter implements ApplicationRunner {
    */
   void importCatalog(Path catalogFile) throws Exception {
     JsonNode root = objectMapper.readTree(catalogFile.toFile());
+    // 先迁旧 Skill 名，避免后续按新名 upsert 再插一行
+    if (skills.migrateLegacyRulesSkillName()) {
+      log.info(
+          "Skill 名称已同步：{} → {}",
+          CourseSkillNames.LEGACY_RULES,
+          CourseSkillNames.CHENGWENFANG_RULES);
+    }
     int skillCreated = 0;
     int skillSkipped = 0;
     JsonNode skillNodes = root.path("skills");
@@ -306,6 +314,14 @@ public class BuiltinSeedImporter implements ApplicationRunner {
     String scene = text(skillNode, "scene");
     SkillView existing = findLiveSkill(name, scene);
     if (existing != null && !force) {
+      // 命中旧名别名时只改名，不覆盖用户已改的指令正文
+      if (!name.equals(existing.getName())) {
+        skills.updateSkillById(
+            existing.getId(),
+            SkillSaveRequest.builder().name(name).build());
+        log.info("已将 Skill 旧名「{}」改为「{}」 scene={}", existing.getName(), name, scene);
+        return true;
+      }
       log.info("跳过已有 Skill name={} scene={}", name, scene);
       return false;
     }
@@ -441,13 +457,32 @@ public class BuiltinSeedImporter implements ApplicationRunner {
   }
 
   /**
-   * 查找未删除且同名同场景的 Skill。
+   * 查找未删除且同名同场景的 Skill；规则 Skill 额外认旧名「工作台规则理解」。
    *
    * @param name  名称
    * @param scene 场景
    * @return 视图；无则 null
    */
   private SkillView findLiveSkill(String name, String scene) {
+    SkillView exact = findLiveSkillExact(name, scene);
+    if (exact != null) {
+      return exact;
+    }
+    // 种子已是新名时，仍要落到旧名行以便改名而非重复创建
+    if (CourseSkillNames.CHENGWENFANG_RULES.equals(name)) {
+      return findLiveSkillExact(CourseSkillNames.LEGACY_RULES, scene);
+    }
+    return null;
+  }
+
+  /**
+   * 按精确名称与场景查找未删除 Skill。
+   *
+   * @param name  名称
+   * @param scene 场景
+   * @return 视图；无则 null
+   */
+  private SkillView findLiveSkillExact(String name, String scene) {
     for (SkillView skill : skills.listSkills()) {
       if (skill == null) {
         continue;

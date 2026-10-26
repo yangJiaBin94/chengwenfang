@@ -33,7 +33,7 @@ outgoing:
   request_timeout: 6.0
   # 整次搜索的等待上限。不设时会取「被选中引擎里最大的 timeout」。
   # 360search 默认 timeout=20，会把同一次搜索里的 YouTube 等也拖满 20 秒，
-  # 与工作台客户端 20 秒读超时撞车，表现为 Read timed out。
+  # 与成文坊客户端 20 秒读超时撞车，表现为 Read timed out。
   max_request_timeout: 6.0
 
 engines:

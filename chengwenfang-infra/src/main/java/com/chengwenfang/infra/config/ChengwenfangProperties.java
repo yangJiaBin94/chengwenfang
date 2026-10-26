@@ -6,7 +6,7 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * 工作台全局配置（{@code chengwenfang.*}）：运行目录、Worker 调度、爬虫与搜索等。
+ * 成文坊全局配置（{@code chengwenfang.*}）：运行目录、Worker 调度、爬虫与搜索等。
  */
 @Data
 @ConfigurationProperties(prefix = "chengwenfang")
@@ -167,7 +167,7 @@ public class ChengwenfangProperties {
     private int workDirRetainDays = 3;
   }
 
-  /** 工作台线程池配置组。 */
+  /** 成文坊线程池配置组。 */
   @Data
   public static class ExecutorSettings {
     /** 渠道抓取 fan-out / 多 query 并行池。 */

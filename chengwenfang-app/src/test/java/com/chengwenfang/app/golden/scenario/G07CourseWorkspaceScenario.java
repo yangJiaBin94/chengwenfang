@@ -46,7 +46,7 @@ public final class G07CourseWorkspaceScenario implements GoldenScenario {
       api.putJson(
           "/api/articles/" + articleId,
           Map.of(
-              "content", "# 黄金工作台\n\n第一版正文",
+              "content", "# 黄金成文坊\n\n第一版正文",
               "source", "manual_edit",
               "reason", "g07-v1"));
       List<Map<String, Object>> versionsAfterV1 =
@@ -56,7 +56,7 @@ public final class G07CourseWorkspaceScenario implements GoldenScenario {
       api.putJson(
           "/api/articles/" + articleId,
           Map.of(
-              "content", "# 黄金工作台\n\n第二版正文（将被恢复覆盖）",
+              "content", "# 黄金成文坊\n\n第二版正文（将被恢复覆盖）",
               "source", "manual_edit",
               "reason", "g07-v2"));
 

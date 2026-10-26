@@ -18,9 +18,9 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class WechatMpImageBytesResolver {
-  /** 工作台文件下载路径。 */
+  /** 成文坊文件下载路径。 */
   private static final Pattern FILES_PATH = Pattern.compile("/api/files/([0-9a-fA-F\\-]{36})");
-  /** 工作台旧版图片路径。 */
+  /** 成文坊旧版图片路径。 */
   private static final Pattern IMAGES_PATH = Pattern.compile("/api/images/([0-9a-fA-F\\-]{36})");
   /** 远程下载超时。 */
   private static final int REMOTE_TIMEOUT_MS = 30_000;

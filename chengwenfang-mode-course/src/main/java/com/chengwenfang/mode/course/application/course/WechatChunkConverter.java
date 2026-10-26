@@ -70,7 +70,7 @@ public class WechatChunkConverter {
         progress.onChunk(index, total, "wechat_chunk:" + index);
       }
       String positionRule = index == 1
-          ? "这是第一段，请生成适合公众号阅读的主标题；课程信息区和封面由工作台统一组装，不要自行生成。"
+          ? "这是第一段，请生成适合公众号阅读的主标题；课程信息区和封面由成文坊统一组装，不要自行生成。"
           : "这是续写段落，不要新增主标题，不要重复前文。";
       String userPrompt = """
           请将下面课程原稿的第 %d/%d 段转换为公众号 Markdown。%s

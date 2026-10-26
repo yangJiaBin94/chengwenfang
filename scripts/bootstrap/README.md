@@ -4,7 +4,7 @@
 
 ## 何时执行
 
-MySQL 已启动（`docker compose up -d`）之后、日常使用之前，执行一次：
+MySQL 已启动之后、日常使用之前，执行一次（库名见 `application.yml`，默认 `chengwenfang`；与私有实例共用宿主机 MySQL 时勿再起本仓 mysql 容器，确保库已创建即可）：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap\Initialize-ChengwenfangSeed.ps1

@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class RawHtmlFetchClient {
-  /** 工作台配置。 */
+  /** 成文坊配置。 */
   private final ChengwenfangProperties properties;
 
   /**

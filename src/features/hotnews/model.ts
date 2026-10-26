@@ -86,7 +86,7 @@ export const SEARCH_ENGINE_FORM_META: Record<
   [ChannelType.SEARXNG]: {
     fixedName: "SearXNG 搜索",
     description:
-      "开源元搜索引擎，可本地 Docker 部署。工作台按查询词请求其实例 JSON API，再把结果写入热点素材流水线；无需 API Key。",
+      "开源元搜索引擎，可本地 Docker 部署。成文坊按查询词请求其实例 JSON API，再把结果写入热点素材流水线；无需 API Key。",
     docsUrl: "https://docs.searxng.org/",
     docsLabel: "SearXNG 官方文档",
     defaultBaseUrl: SEARXNG_DEFAULT_INSTANCE_URL,

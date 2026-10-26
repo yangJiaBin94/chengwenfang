@@ -6,8 +6,13 @@ package com.chengwenfang.skill.facade.constant;
 public final class CourseSkillNames {
   private CourseSkillNames() {}
 
-  /** 工作台规则理解。 */
-  public static final String CHENGWENFANG_RULES = "工作台规则理解";
+  /** 成文坊规则理解。 */
+  public static final String CHENGWENFANG_RULES = "成文坊规则理解";
+  /**
+   * 旧版 Skill 名「工作台规则理解」。
+   * <p>启动与 bootstrap 时迁到 {@link #CHENGWENFANG_RULES}，绑定解析亦认此别名。
+   */
+  public static final String LEGACY_RULES = "工作台规则理解";
   /** 课程文章审校。 */
   public static final String COURSE_REVIEW = "课程文章审校";
   /** 图片生成与检查。 */

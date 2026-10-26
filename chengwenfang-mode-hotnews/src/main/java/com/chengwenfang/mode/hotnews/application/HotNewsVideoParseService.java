@@ -53,7 +53,7 @@ public class HotNewsVideoParseService {
   private final JobFacade jobs;
   /** 字幕/时长能力开关与探测。 */
   private final VideoTranscriptService videoTranscriptService;
-  /** 工作台配置（单批上限等）。 */
+  /** 成文坊配置（单批上限等）。 */
   private final ChengwenfangProperties chengwenfangProperties;
   /** 资料池并行解析线程池。 */
   private final Executor radarVideoEnrichExecutor;
@@ -69,7 +69,7 @@ public class HotNewsVideoParseService {
   /**
    * @param jobs                     任务门面
    * @param videoTranscriptService   视频字幕/时长
-   * @param chengwenfangProperties      工作台配置
+   * @param chengwenfangProperties      成文坊配置
    * @param radarVideoEnrichExecutor 视频并行解析线程池
    * @param topics                   选题协作
    * @param researchItemStrategy     资料池策略

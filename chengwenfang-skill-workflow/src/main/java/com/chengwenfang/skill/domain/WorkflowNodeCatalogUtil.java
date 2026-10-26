@@ -232,7 +232,7 @@ public final class WorkflowNodeCatalogUtil {
     return WorkflowNodeTypeView.builder()
         .key(key)
         .name(name)
-        .description("由工作台内置执行器完成" + name)
+        .description("由成文坊内置执行器完成" + name)
         .category(category)
         .modelType(modelType)
         .executorVersion("1.0")

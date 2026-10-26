@@ -31,7 +31,7 @@ public class AiImageClient {
 
   /** 提供商配置表读写。 */
   private final AiProviderConfigMapper configMapper;
-  /** 工作台配置：图像上游超时等。 */
+  /** 成文坊配置：图像上游超时等。 */
   private final ChengwenfangProperties properties;
   /** 密钥列加解密。 */
   private final SecretCipher secretCipher;

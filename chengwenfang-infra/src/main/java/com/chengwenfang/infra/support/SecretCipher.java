@@ -36,7 +36,7 @@ public class SecretCipher {
   /**
    * 使用全局配置中的主密钥构造。
    *
-   * @param properties 工作台配置
+   * @param properties 成文坊配置
    */
   @Autowired
   public SecretCipher(ChengwenfangProperties properties) {

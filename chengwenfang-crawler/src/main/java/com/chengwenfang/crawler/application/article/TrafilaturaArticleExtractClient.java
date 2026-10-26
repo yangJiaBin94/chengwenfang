@@ -29,7 +29,7 @@ public class TrafilaturaArticleExtractClient implements TrafilaturaArticleExtrac
   /** Python 模块名。 */
   private static final String MODULE_NAME = "article_extract";
 
-  /** 工作台配置。 */
+  /** 成文坊配置。 */
   private final ChengwenfangProperties properties;
 
   /**

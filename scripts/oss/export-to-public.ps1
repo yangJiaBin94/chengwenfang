@@ -146,7 +146,7 @@ $dbRewritePaths = @(
   "compose.yml",
   ".env.example",
   "README.md",
-  "docs\AI从零搭建满血工作台.md",
+  "docs\AI从零搭建满血成文坊.md",
   "chengwenfang-app\src\main\resources\application.yml",
   "chengwenfang-app\src\test\java\com\chengwenfang\app\support\ChengwenfangIT.java"
 )
@@ -195,7 +195,7 @@ try {
   if ($CreateRemote) {
     $owner = (gh api user --jq .login).Trim()
     $fullName = "$owner/$RemoteName"
-    gh repo create $RemoteName --public --source=. --remote=origin --push --description "成文坊 / Chengwenfang — local self-media content workbench"
+    gh repo create $RemoteName --public --source=. --remote=origin --push --description "成文坊 / Chengwenfang — local self-media content studio"
     gh repo edit $fullName --add-topic java --add-topic spring-boot --add-topic react --add-topic ai --add-topic local-first
     Write-Host "Pushed to public repo: $fullName"
   } else {

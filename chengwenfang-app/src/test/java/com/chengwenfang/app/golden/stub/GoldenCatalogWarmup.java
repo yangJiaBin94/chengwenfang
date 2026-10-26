@@ -227,7 +227,7 @@ public class GoldenCatalogWarmup implements ApplicationRunner {
         "热点资讯原稿生成",
         "hot_news_article_generation",
         """
-            按工作台提供的文章骨架生成完整 Markdown 原稿：
+            按成文坊提供的文章骨架生成完整 Markdown 原稿：
             1. 必须覆盖 coreEvent、keyInsights、impacts、readerSignals。
             2. 跟随 narrativeShape 与 sectionPlan；architecture 用自然小标题，禁止“一、二、三”式大标题。
             3. 资料参考只作线索，不逐条复述。

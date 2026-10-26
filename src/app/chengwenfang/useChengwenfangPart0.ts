@@ -111,7 +111,7 @@ export function useChengwenfangPart0() {
   // Dashboard state: selected course, active navigation, and visible detail tab.
   const [data, setData] = useState<ChengwenfangData>({
     workspace: {
-      name: "工作台",
+      name: "成文坊",
       moduleName: "自学课程及自媒体内容生成",
       topicName: "0 基础 AI 自学",
       topicSlug: "ai-basics",

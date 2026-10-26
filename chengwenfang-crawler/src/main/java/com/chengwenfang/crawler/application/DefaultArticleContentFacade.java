@@ -31,7 +31,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class DefaultArticleContentFacade implements ArticleContentFacade {
-  /** 工作台配置。 */
+  /** 成文坊配置。 */
   private final ChengwenfangProperties properties;
   /** Jina 客户端。 */
   private final JinaArticleContentClient jinaClient;

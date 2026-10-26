@@ -50,7 +50,7 @@ public class EnrichSummarizeRadarNodeHandler implements RadarCollectNodeHandler 
    * @param enrichSupport              解析支持
    * @param videoTranscript            视频转录（时长探测）
    * @param jobs                       任务门面
-   * @param properties                 工作台配置
+   * @param properties                 成文坊配置
    * @param radarArticleEnrichExecutor 文章解析池
    * @param radarVideoEnrichExecutor   视频解析池
    */

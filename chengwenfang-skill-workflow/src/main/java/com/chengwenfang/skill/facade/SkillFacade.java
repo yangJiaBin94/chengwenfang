@@ -33,6 +33,14 @@ public interface SkillFacade {
   /** 删除（或软删）Skill。 */
   void deleteSkill(String id);
 
+  /**
+   * 将库内旧名「工作台规则理解」迁到「成文坊规则理解」。
+   * <p>新名已存在则软删旧名行；仅旧名存在则改名，并顺带把指令正文里的「工作台」换成「成文坊」。
+   *
+   * @return 是否写入了库（改名或软删）
+   */
+  boolean migrateLegacyRulesSkillName();
+
   /** 列出可绑定的工作流节点目录。 */
   List<SkillWorkflowNodeView> listWorkflowNodes();
 

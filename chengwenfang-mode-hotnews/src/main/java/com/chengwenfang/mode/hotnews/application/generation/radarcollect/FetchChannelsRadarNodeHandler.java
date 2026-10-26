@@ -57,7 +57,7 @@ public class FetchChannelsRadarNodeHandler implements RadarCollectNodeHandler {
    * @param fetchFacade          抓取门面
    * @param channelFetchExecutor 渠道并行执行器
    * @param jobs                 任务门面
-   * @param properties           工作台配置
+   * @param properties           成文坊配置
    * @param searchQueryDiagnose  搜索词×网站诊断
    * @param videoTranscript      视频解析门面（时长探测）
    * @param articleContent       文章正文门面（直连探测）

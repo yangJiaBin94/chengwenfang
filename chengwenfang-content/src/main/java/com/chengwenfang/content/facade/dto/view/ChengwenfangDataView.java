@@ -7,7 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/** 工作台首页聚合数据。 */
+/** 成文坊首页聚合数据。 */
 @Data
 @Builder
 @NoArgsConstructor

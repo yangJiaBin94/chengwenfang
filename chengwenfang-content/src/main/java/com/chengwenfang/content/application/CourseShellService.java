@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 课程壳与工作台聚合：列表、正文、媒资、壳创建、生命周期与系列邻居（门面，委派到课次/正文协作类）。
+ * 课程壳与成文坊聚合：列表、正文、媒资、壳创建、生命周期与系列邻居（门面，委派到课次/正文协作类）。
  */
 @Service
 @RequiredArgsConstructor
@@ -45,7 +45,7 @@ public class CourseShellService {
   }
 
   /**
-   * 组装工作台首页数据：主题、课程列表与进度指标。
+   * 组装成文坊首页数据：主题、课程列表与进度指标。
    *
    * @param themeId 主题 id/code；空则用默认课程体系主题
    * @return 含 workspace、courses、metrics 的聚合视图

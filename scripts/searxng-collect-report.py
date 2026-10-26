@@ -302,7 +302,7 @@ def main() -> int:
     parser.add_argument(
         "--categories",
         default="general,videos",
-        help="与工作台一致的 categories",
+        help="与成文坊一致的 categories",
     )
     parser.add_argument("--timeout", type=float, default=25.0, help="单次请求超时秒")
     parser.add_argument("--pause", type=float, default=0.4, help="词与词之间间隔秒")

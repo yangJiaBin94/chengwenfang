@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class WechatMpDraftPushRequest {
   /**
-   * 工作台文章 ID；有值时同文复推覆盖已绑定的公众号草稿。
+   * 成文坊文章 ID；有值时同文复推覆盖已绑定的公众号草稿。
    */
   private String articleId;
   /** 统一文档 ID（公众号轨）；空则服务端按 articleId 兜底。 */
@@ -29,6 +29,6 @@ public class WechatMpDraftPushRequest {
   private String digest;
   /** 作者；空则用配置中的默认作者。 */
   private String author;
-  /** 封面图资源地址（工作台相对路径或绝对 URL）；空则取正文第一张图。 */
+  /** 封面图资源地址（成文坊相对路径或绝对 URL）；空则取正文第一张图。 */
   private String coverSrc;
 }

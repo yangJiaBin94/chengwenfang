@@ -102,7 +102,7 @@ export function LayoutThemeTransfer() {
   return (
     <div className="layout-theme-transfer">
       <span>
-        {message || "仅接受工作台受控 JSON 字段，不导入 CSS 或脚本。"}
+        {message || "仅接受成文坊受控 JSON 字段，不导入 CSS 或脚本。"}
       </span>
       <button className="secondary-button" onClick={() => void exportThemes()}>
         <Download size={15} />

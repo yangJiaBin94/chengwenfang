@@ -13,7 +13,9 @@ import com.chengwenfang.skill.domain.entity.SkillNodeBindingEntity;
 import com.chengwenfang.skill.domain.entity.WorkflowDefinitionEntity;
 import com.chengwenfang.skill.domain.entity.WorkflowVersionSkillBindingEntity;
 import com.chengwenfang.skill.facade.SkillFacade;
+import com.chengwenfang.skill.facade.constant.CourseSkillNames;
 import com.chengwenfang.skill.facade.constant.HotNewsWorkflowKeys;
+import com.chengwenfang.skill.facade.constant.SkillSceneKeys;
 import com.chengwenfang.skill.facade.dto.view.SkillApplicationView;
 import com.chengwenfang.skill.facade.dto.view.SkillNodeBindingView;
 import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
@@ -208,6 +210,66 @@ public class SkillFacadeImpl implements SkillFacade {
     entity.setUpdatedAt(LocalDateTime.now());
     skillMapper.updateById(entity);
     log.info("软删除技能 id={}", id);
+  }
+
+  /**
+   * 将同场景下旧名 {@link CourseSkillNames#LEGACY_RULES} 迁到
+   * {@link CourseSkillNames#CHENGWENFANG_RULES}。
+   *
+   * @return 是否发生写库
+   */
+  @Override
+  @Transactional
+  public boolean migrateLegacyRulesSkillName() {
+    String legacyName = CourseSkillNames.LEGACY_RULES;
+    String canonicalName = CourseSkillNames.CHENGWENFANG_RULES;
+    String scene = SkillSceneKeys.GLOBAL;
+    SkillEntity legacy = findActiveByNameAndScene(legacyName, scene);
+    if (legacy == null) {
+      return false;
+    }
+    SkillEntity canonical = findActiveByNameAndScene(canonicalName, scene);
+    LocalDateTime now = LocalDateTime.now();
+    // 新名已在：软删旧名，避免体检与绑定歧义
+    if (canonical != null) {
+      legacy.setDeletedAt(now);
+      legacy.setUpdatedAt(now);
+      skillMapper.updateById(legacy);
+      log.info("已软删重复旧 Skill name={} id={}（保留 id={}）", legacyName, legacy.getId(), canonical.getId());
+      return true;
+    }
+    // 仅旧名：改名，并同步指令正文中的产品称呼
+    legacy.setName(canonicalName);
+    if (StrUtil.isNotBlank(legacy.getSystemInstructions())
+        && legacy.getSystemInstructions().contains("工作台")) {
+      legacy.setSystemInstructions(legacy.getSystemInstructions().replace("工作台", "成文坊"));
+    }
+    if (StrUtil.isNotBlank(legacy.getTaskInstructions())
+        && legacy.getTaskInstructions().contains("工作台")) {
+      legacy.setTaskInstructions(legacy.getTaskInstructions().replace("工作台", "成文坊"));
+    }
+    if (StrUtil.isNotBlank(legacy.getDescription()) && legacy.getDescription().contains("工作台")) {
+      legacy.setDescription(legacy.getDescription().replace("工作台", "成文坊"));
+    }
+    legacy.setUpdatedAt(now);
+    skillMapper.updateById(legacy);
+    log.info("已将 Skill 旧名「{}」改为「{}」 id={}", legacyName, canonicalName, legacy.getId());
+    return true;
+  }
+
+  /**
+   * 按名称与场景查找未删除 Skill。
+   *
+   * @param name  名称
+   * @param scene 场景
+   * @return 实体；无则 null
+   */
+  private SkillEntity findActiveByNameAndScene(String name, String scene) {
+    return skillMapper.selectOne(new LambdaQueryWrapper<SkillEntity>()
+        .isNull(SkillEntity::getDeletedAt)
+        .eq(SkillEntity::getName, name)
+        .eq(SkillEntity::getScene, scene)
+        .last("LIMIT 1"));
   }
 
   /**

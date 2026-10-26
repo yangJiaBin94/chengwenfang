@@ -34,7 +34,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 课程与教学模式相关 HTTP 接口：模式列表、工作台聚合、课程详情/正文、生成任务与偏好。
+ * 课程与教学模式相关 HTTP 接口：模式列表、成文坊聚合、课程详情/正文、生成任务与偏好。
  */
 @Tag(name = "课程", description = "教学模式、课程详情与内容生成")
 @Slf4j
@@ -64,25 +64,25 @@ public class CourseController {
   }
 
   /**
-   * 工作台首页课程聚合数据（默认主题）。
+   * 成文坊首页课程聚合数据（默认主题）。
    *
-   * @return 含 workspace、courses、metrics 的工作台视图
+   * @return 含 workspace、courses、metrics 的成文坊视图
    */
   @GetMapping("/courses")
-  @Operation(summary = "工作台首页课程聚合数据")
+  @Operation(summary = "成文坊首页课程聚合数据")
   public ApiResult<ChengwenfangDataView> courses() {
     // themeId=null 时走默认课程体系主题
     return ApiResult.ok(content.chengwenfangData(null));
   }
 
   /**
-   * 按主题返回工作台聚合数据。
+   * 按主题返回成文坊聚合数据。
    *
    * @param themeId 主题 id 或 code
-   * @return 指定主题下的工作台视图（热点主题可无课程列表）
+   * @return 指定主题下的成文坊视图（热点主题可无课程列表）
    */
   @GetMapping("/themes/{themeId}/courses")
-  @Operation(summary = "按主题返回工作台数据")
+  @Operation(summary = "按主题返回成文坊数据")
   public ApiResult<ChengwenfangDataView> themeCourses(@PathVariable String themeId) {
     return ApiResult.ok(content.chengwenfangData(themeId));
   }

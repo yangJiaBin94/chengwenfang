@@ -5,13 +5,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/** 工作台工作区信息。 */
+/** 成文坊工作区信息。 */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class ChengwenfangWorkspaceView {
-  /** 工作台名称。 */
+  /** 成文坊名称。 */
   private String name;
 
   /** 模块名称。 */

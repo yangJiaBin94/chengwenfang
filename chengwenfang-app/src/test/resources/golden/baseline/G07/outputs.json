@@ -1,6 +1,6 @@
 {
     "articleId": "<ID-2>",
-    "content": "# 黄金工作台\n\n第一版正文",
+    "content": "# 黄金成文坊\n\n第一版正文",
     "courseId": "<ID-4>",
     "humanReview": {
         "comment": "g07 final",
@@ -12,7 +12,7 @@
         },
         "themeVersionId": "theme-v1"
     },
-    "restoredContent": "# 黄金工作台\n\n第一版正文",
+    "restoredContent": "# 黄金成文坊\n\n第一版正文",
     "snapshots": [
         {
             "articleVersionNo": 3,

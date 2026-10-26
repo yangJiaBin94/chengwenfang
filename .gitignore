@@ -17,6 +17,12 @@ bin/
 .chengwenfang/
 .chengwenfang-it/
 chengwenfang-app/.chengwenfang-golden/
+# 旧运行时目录名（改名后残留，勿再入库）
+.workbench/
+.workbench-it/
+chengwenfang-app/.workbench/
+chengwenfang-app/.workbench-it/
+chengwenfang-app/.workbench-golden/
 chengwenfang-app/hotnews/
 chengwenfang-app/renders/
 chengwenfang-app/repairs/
@@ -49,6 +55,12 @@ __pycache__/
 dev-*.log
 dev-*.err.log
 dev-*.out.log
+*.log
+*.log.err
+vite-*.log
+vite-*.log.err
+chengwenfang-app/boot-*.log
+chengwenfang-app/boot-*.log.err
 
 # Agent session scratch (do not commit)
 task_plan.md

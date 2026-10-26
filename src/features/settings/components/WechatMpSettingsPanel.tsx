@@ -170,7 +170,7 @@ export function WechatMpSettingsPanel() {
           <h2>公众号配置</h2>
           <p>
             填写 AppID / AppSecret，将排版文章推送到公众号草稿箱。请先在公众平台将本机出口 IP
-            加入白名单；工作台只负责推送草稿，正式发布请到公众平台完成。
+            加入白名单；成文坊只负责推送草稿，正式发布请到公众平台完成。
           </p>
         </div>
       </div>
@@ -281,7 +281,7 @@ export function WechatMpSettingsPanel() {
             <ul>
               <li>AppSecret 只存后端数据库，列表接口不回传明文</li>
               <li>留空保存时保持原密钥不变，避免误覆盖</li>
-              <li>工作台不支持直接群发，仅写入草稿箱</li>
+              <li>成文坊不支持直接群发，仅写入草稿箱</li>
             </ul>
           </section>
           <section>

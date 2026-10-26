@@ -19,7 +19,7 @@ public class InfraConfig {
   /**
    * 渠道抓取专用线程池（Handler fan-out 与搜索策略多 query 共用）。
    *
-   * @param properties 工作台配置
+   * @param properties 成文坊配置
    * @return 可注入的 {@link Executor}
    */
   @Bean(name = "channelFetchExecutor", destroyMethod = "shutdown")
@@ -38,7 +38,7 @@ public class InfraConfig {
   /**
    * 雷达文章解析线程池（拉正文 + AI 速览）。
    *
-   * @param properties 工作台配置
+   * @param properties 成文坊配置
    * @return 可注入的 {@link Executor}
    */
   @Bean(name = "radarArticleEnrichExecutor", destroyMethod = "shutdown")
@@ -57,7 +57,7 @@ public class InfraConfig {
   /**
    * 雷达视频解析线程池（字幕/ASR，与文章池隔离，避免占满文章槽位）。
    *
-   * @param properties 工作台配置
+   * @param properties 成文坊配置
    * @return 可注入的 {@link Executor}
    */
   @Bean(name = "radarVideoEnrichExecutor", destroyMethod = "shutdown")

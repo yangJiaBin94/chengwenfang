@@ -22,7 +22,7 @@ class HotNewsWorkspaceApiIT extends ChengwenfangIT {
     jdbc.update(
         "INSERT INTO themes (id, mode_code, code, name, status, sort_order, created_via, created_at, updated_at) "
             + "VALUES (?,?,?,?,?,?,?,UTC_TIMESTAMP(3),UTC_TIMESTAMP(3))",
-        themeId, "hot_news", "ws-" + themeId, "工作台主题", "enabled", 0, "test");
+        themeId, "hot_news", "ws-" + themeId, "成文坊主题", "enabled", 0, "test");
 
     Map<String, Object> created = putJson("/api/hot-news/channels", Map.of(
         "id", channelId,
@@ -51,18 +51,18 @@ class HotNewsWorkspaceApiIT extends ChengwenfangIT {
     jdbc.update(
         "INSERT INTO hotnews_topics (id, theme_id, title, summary, status, heat_score, writing_score, confidence_score, created_at, updated_at) "
             + "VALUES (?,?,?,?,?,?,?,?,UTC_TIMESTAMP(3),UTC_TIMESTAMP(3))",
-        topicId, themeId, "工作台编辑选题", "summary", "candidate", 1, 1, 1);
+        topicId, themeId, "成文坊编辑选题", "summary", "candidate", 1, 1, 1);
     String briefId = UUID.randomUUID().toString();
     jdbc.update(
         "INSERT INTO hotnews_briefs (id, topic_id, theme_id, status, title, created_at, updated_at) "
             + "VALUES (?,?,?,?,?,UTC_TIMESTAMP(3),UTC_TIMESTAMP(3))",
-        briefId, topicId, themeId, "confirmed", "工作台编辑选题");
+        briefId, topicId, themeId, "confirmed", "成文坊编辑选题");
     String articleId = UUID.randomUUID().toString();
     seedHotNewsArticleDocuments(
         articleId,
         topicId,
         briefId,
-        "工作台编辑选题",
+        "成文坊编辑选题",
         "e3b0c442",
         0,
         "ready",

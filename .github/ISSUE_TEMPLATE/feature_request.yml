@@ -1,0 +1,28 @@
+name: Feature request
+description: Suggest an enhancement that fits local-first use
+title: "[feat] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Prefer changes that keep Chengwenfang **local-first** (no required cloud login / multi-tenant auth).
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What friction does this solve for a single local user?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Concrete behavior or UI/API sketch.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Optional — workarounds or other designs.

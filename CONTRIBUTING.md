@@ -4,7 +4,7 @@ Thanks for helping improve Chengwenfang. Please keep changes focused and local-f
 
 ## Prerequisites
 
-- JDK 21, Maven, Node.js 20+, Docker Desktop (Compose)
+- JDK 21, Maven, Node.js 22+ (see `package.json` engines), Docker Desktop (Compose)
 - On Windows PowerShell, load UTF-8 before Maven/Java:
 
 ```powershell
@@ -35,6 +35,10 @@ mvn -pl chengwenfang-app -am test
 Integration tests that need Docker/Testcontainers may be skipped in CI; run them
 locally when you change persistence or HTTP adapters.
 
+## Code of Conduct
+
+Participation is governed by [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+
 ## Pull requests
 
 - Do **not** commit personal learning content under `content/learning-content/`,
@@ -44,6 +48,8 @@ locally when you change persistence or HTTP adapters.
 - Match existing COLA module boundaries and Chinese JavaDoc conventions in
   `docs/代码结构与注释规范.md` and `.cursor/skills/chengwenfang-cola-architecture/`
 - Keep diffs small; explain *why* in the PR description
+- Use the PR template checklist; update [CHANGELOG.md](CHANGELOG.md) under
+  `[Unreleased]` for user-visible changes
 
 ## Dual-repo note
 

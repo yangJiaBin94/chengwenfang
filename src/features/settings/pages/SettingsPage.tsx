@@ -253,7 +253,7 @@ export function AiSettingsPage({
               <span className="section-kicker">Provider Configuration</span>
               <h2>AI 供应商配置</h2>
               <p>
-                文本、图片与多模态使用独立供应商。工作台会根据处理场景自动选择对应
+                文本、图片与多模态使用独立供应商。成文坊会根据处理场景自动选择对应
                 AI，不混用配置。
               </p>
             </div>

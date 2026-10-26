@@ -38,7 +38,7 @@ public class JobMetrics {
       this.leaseReclaimCounter = null;
       return;
     }
-    // 存量：每次 scrape 查库，单机工作台可接受
+    // 存量：每次 scrape 查库，单机成文坊可接受
     Gauge.builder("chengwenfang.jobs", this, metrics -> metrics.countByStatus(JobStatus.PENDING))
         .tag("status", JobStatus.PENDING.getValue())
         .description("当前 pending 任务数")

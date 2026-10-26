@@ -10,7 +10,7 @@
   <packaging>pom</packaging>
   <name>chengwenfang-parent</name>
   <url>https://github.com/yangJiaBin94/chengwenfang</url>
-  <description>成文坊 / Chengwenfang — local self-media content workbench</description>
+  <description>成文坊 / Chengwenfang — local self-media content studio</description>
 
   <licenses>
     <license>
@@ -29,8 +29,8 @@
 
   <scm>
     <url>https://github.com/yangJiaBin94/chengwenfang</url>
-    <connection>scm:git:https://github.com/yangJiaBin94/local-writer-chengwenfang.git</connection>
-    <developerConnection>scm:git:https://github.com/yangJiaBin94/local-writer-chengwenfang.git</developerConnection>
+    <connection>scm:git:https://github.com/yangJiaBin94/chengwenfang.git</connection>
+    <developerConnection>scm:git:https://github.com/yangJiaBin94/chengwenfang.git</developerConnection>
   </scm>
 
   <modules>
