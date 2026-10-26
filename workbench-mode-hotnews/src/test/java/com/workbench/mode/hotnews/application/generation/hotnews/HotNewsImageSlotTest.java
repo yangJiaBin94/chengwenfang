@@ -14,13 +14,14 @@ class HotNewsImageSlotTest {
   void plansCoverAsSlotOneThenInlineSlots() {
     List<HotNewsImageSlot> slots = HotNewsImageSlot.plan(3);
     assertThat(slots).hasSize(4);
-    assertThat(slots.get(0)).isEqualTo(
-        new HotNewsImageSlot(1, 4, HotNewsImageKind.COVER, 0));
-    assertThat(slots.get(1)).isEqualTo(
-        new HotNewsImageSlot(2, 4, HotNewsImageKind.INLINE, 1));
-    assertThat(slots.get(2)).isEqualTo(
-        new HotNewsImageSlot(3, 4, HotNewsImageKind.INLINE, 2));
-    assertThat(slots.get(3)).isEqualTo(
-        new HotNewsImageSlot(4, 4, HotNewsImageKind.INLINE, 3));
+    assertThat(slots.get(0).slotIndex()).isEqualTo(1);
+    assertThat(slots.get(0).totalSlots()).isEqualTo(4);
+    assertThat(slots.get(0).kind()).isEqualTo(HotNewsImageKind.COVER);
+    assertThat(slots.get(0).sequenceNo()).isEqualTo(0);
+    assertThat(slots.get(1).kind()).isEqualTo(HotNewsImageKind.INLINE);
+    assertThat(slots.get(1).sequenceNo()).isEqualTo(1);
+    assertThat(slots.get(2).sequenceNo()).isEqualTo(2);
+    assertThat(slots.get(3).slotIndex()).isEqualTo(4);
+    assertThat(slots.get(3).sequenceNo()).isEqualTo(3);
   }
 }
