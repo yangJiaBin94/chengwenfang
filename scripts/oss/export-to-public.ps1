@@ -57,7 +57,9 @@ $excludeDirs = @(
   ".workbench",
   ".workbench-it",
   "dev",
-  "hotnews",
+  # NOTE: do NOT exclude bare name "hotnews" — it matches package dir
+  # com/workbench/mode/hotnews and empties workbench-mode-hotnews sources.
+  # Runtime dirs hotnews/renders/... are gitignored and usually absent from the tree.
   "renders",
   "repairs",
   "works",
