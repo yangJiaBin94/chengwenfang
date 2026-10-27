@@ -144,12 +144,23 @@ export async function requestTextAi(request: TextRequest) {
   return payload.text.trim();
 }
 
-/** Perform a real provider request using the current settings form values. */
+/** Perform a real provider request using the current settings form values (not DB). */
 export async function testAiConnection(config: AiProviderConfig, kind: AiSettingsKind) {
   const response = await fetch(`/api/settings/ai/${kind}/test`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ config }),
+    body: JSON.stringify({
+      config: {
+        name: config.name,
+        model: config.model,
+        baseUrl: config.baseUrl,
+        protocol: kind === "image" ? "openai_chat" : toBackendProtocol(config.protocol),
+        apiKey: config.apiKey,
+        timeoutSeconds: config.timeoutSeconds,
+        enabled: config.enabled,
+        imageQuality: config.imageQuality,
+      },
+    }),
   });
   const payload = await unwrapApiResult<{
     preview?: string;

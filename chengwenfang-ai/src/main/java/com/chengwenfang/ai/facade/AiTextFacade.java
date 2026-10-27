@@ -1,6 +1,7 @@
 package com.chengwenfang.ai.facade;
 
 import com.chengwenfang.ai.facade.dto.request.AiSettingsUpdateRequest;
+import com.chengwenfang.ai.facade.dto.request.ProviderConfigPatch;
 import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
 import com.chengwenfang.ai.facade.dto.view.AiSettingsView;
 import com.chengwenfang.ai.facade.dto.view.ConnectionTestResult;
@@ -22,11 +23,12 @@ public interface AiTextFacade {
   AiSettingsView updateSettings(AiSettingsUpdateRequest request);
 
   /**
-   * 对指定 kind 做连通性探测并记录 model_call。
+   * 用前端表单草稿对指定 kind 做连通性探测并记录 model_call；不落库。
    *
-   * @param kind {@code text}、{@code image} 或 {@code vision}
+   * @param kind  {@code text}、{@code image} 或 {@code vision}
+   * @param patch 页面当前填写值；apiKey 空白时回落已保存密钥
    */
-  ConnectionTestResult testConnection(String kind);
+  ConnectionTestResult testConnection(String kind, ProviderConfigPatch patch);
 
   /** 文本补全。 */
   TextCompleteResult completeText(TextCompleteRequest request);

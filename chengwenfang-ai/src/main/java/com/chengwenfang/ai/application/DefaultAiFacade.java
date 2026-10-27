@@ -110,28 +110,31 @@ public class DefaultAiFacade implements AiTextFacade, AiImageFacade, AiVisionFac
   }
 
   /**
-   * 对指定 kind 做连通性探测，并写入一条 connection_test 场景的 model_call。
+   * 用前端表单草稿做连通性探测（不落库），并写入一条 connection_test 场景的 model_call。
    *
-   * @param kind 提供商类型字符串，取值 {@code text} / {@code image} / {@code vision}（大小写不敏感）
+   * @param kind  提供商类型字符串，取值 {@code text} / {@code image} / {@code vision}（大小写不敏感）
+   * @param patch 页面当前填写值；null 时仅用库中已保存配置；apiKey 空白回落已保存密钥
    * @return 探测成功结果：图像侧返回真实图片，文本/多模态侧带模型回复预览
    * @throws BusinessException 配置缺失、上游失败或未知 kind 时抛出（失败也会记 model_call）
    */
   @Override
-  public ConnectionTestResult testConnection(String kind) {
+  public ConnectionTestResult testConnection(String kind, ProviderConfigPatch patch) {
     // 将前端传入的 kind 解析为枚举，非法值直接抛错
     AiProviderKind providerKind = AiProviderKind.from(kind);
-    log.info("AI 连通性测试 kind={}", providerKind.getValue());
-    // 加载对应配置行，供后续调用与审计关联
-    AiProviderConfigEntity cfg = requireKind(providerKind);
+    log.info("AI 连通性测试 kind={} draft={}", providerKind.getValue(), patch != null);
+    // 合并表单草稿与库中密钥（仅密钥可回落），供本次探测使用，不写回数据库
+    AiProviderConfigEntity cfg = resolveTestConfig(providerKind, patch);
     // 记录开始时间，用于计算耗时
     long start = System.currentTimeMillis();
     try {
       if (providerKind == AiProviderKind.IMAGE) {
         // 与旧版一致：真实请求图像上游，生成一张最小测试图
-        ImageGenerateResult result = generate(ImageGenerateRequest.builder()
-            .prompt("纯白背景，中央一个绿色圆点，无文字，简洁扁平风格。")
-            .dryRun(false)
-            .build());
+        ImageGenerateResult result = imageClient.generate(
+            cfg,
+            ImageGenerateRequest.builder()
+                .prompt("纯白背景，中央一个绿色圆点，无文字，简洁扁平风格。")
+                .dryRun(false)
+                .build());
         if (StrUtil.isBlank(result.getB64Json()) && StrUtil.isBlank(result.getUrl())) {
           throw new BusinessException(ErrorCodes.IMAGE_FAILED, "图片连接测试未返回图片", 502);
         }
@@ -145,19 +148,21 @@ public class DefaultAiFacade implements AiTextFacade, AiImageFacade, AiVisionFac
             .build();
       }
       if (providerKind == AiProviderKind.VISION) {
-        // 多模态：发一张最小 PNG + 短提示，验证模型支持看图
-        VisionCompleteResult vision = complete(VisionCompleteRequest.builder()
-            .scene(ModelCallScenes.CONNECTION_TEST)
-            .prompt("Reply with OK")
-            .images(List.of(VisionImagePart.builder()
+        // 多模态：发一张最小 PNG + 短提示，验证模型支持看图（走表单覆盖后的配置）
+        String visionText = textClient.completeInternal(
+            cfg,
+            null,
+            "Reply with OK",
+            ModelCallScenes.CONNECTION_TEST,
+            null,
+            List.of(VisionImagePart.builder()
                 .base64Data(TINY_PNG_BASE64)
                 .mimeType("image/png")
-                .build()))
-            .build());
+                .build()));
         return ConnectionTestResult.builder()
             .ok(true)
             .kind(providerKind.getValue())
-            .preview(vision.getText())
+            .preview(visionText)
             .build();
       }
       // 文本侧发一句短提示，走真实补全链路验证密钥与协议
@@ -180,6 +185,44 @@ public class DefaultAiFacade implements AiTextFacade, AiImageFacade, AiVisionFac
           ErrorCodes.CONNECTION_FAILED);
       throw new BusinessException(ErrorCodes.AI_TEST_FAILED, "AI 连通性测试失败：" + e.getMessage(), 502);
     }
+  }
+
+  /**
+   * 将表单草稿叠到内存配置上：非密钥字段以草稿为准；apiKey 空白则保留库中密文。
+   *
+   * @param kind  提供商类型
+   * @param patch 前端草稿；null 表示整侧用库中配置
+   * @return 仅用于本次探测的内存实体（不落库）
+   */
+  private AiProviderConfigEntity resolveTestConfig(AiProviderKind kind, ProviderConfigPatch patch) {
+    AiProviderConfigEntity saved = requireKind(kind);
+    if (patch == null) {
+      return saved;
+    }
+    AiProviderConfigEntity cfg = AiProviderConfigEntity.builder()
+        .id(saved.getId())
+        .kind(saved.getKind())
+        .name(StrUtil.blankToDefault(patch.getName(), saved.getName()))
+        .model(patch.getModel() != null ? patch.getModel() : saved.getModel())
+        .baseUrl(patch.getBaseUrl() != null ? patch.getBaseUrl() : saved.getBaseUrl())
+        .protocol(patch.getProtocol() != null ? patch.getProtocol() : saved.getProtocol())
+        .timeoutSeconds(
+            patch.getTimeoutSeconds() != null ? patch.getTimeoutSeconds() : saved.getTimeoutSeconds())
+        .maxRetries(saved.getMaxRetries())
+        .temperature(saved.getTemperature())
+        .maxOutputTokens(saved.getMaxOutputTokens())
+        .imageQuality(
+            patch.getImageQuality() != null ? patch.getImageQuality() : saved.getImageQuality())
+        .enabled(patch.getEnabled() != null ? patch.getEnabled() : saved.getEnabled())
+        .apiKeyCiphertext(saved.getApiKeyCiphertext())
+        .createdAt(saved.getCreatedAt())
+        .updatedAt(saved.getUpdatedAt())
+        .build();
+    // 表单填了新密钥则加密进内存实体；空白/"null" 占位不覆盖已保存密钥
+    if (StrUtil.isNotBlank(patch.getApiKey()) && !"null".equals(patch.getApiKey())) {
+      cfg.setApiKeyCiphertext(secretCipher.encrypt(patch.getApiKey()));
+    }
+    return cfg;
   }
 
   /**

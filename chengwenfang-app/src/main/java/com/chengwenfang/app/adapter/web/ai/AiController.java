@@ -2,6 +2,7 @@ package com.chengwenfang.app.adapter.web.ai;
 
 import com.chengwenfang.ai.facade.AiImageFacade;
 import com.chengwenfang.ai.facade.AiVisionFacade;
+import com.chengwenfang.ai.facade.dto.request.AiConnectionTestRequest;
 import com.chengwenfang.ai.facade.dto.request.AiSettingsUpdateRequest;
 import com.chengwenfang.ai.facade.dto.view.AiSettingsView;
 import com.chengwenfang.ai.facade.AiTextFacade;
@@ -66,16 +67,18 @@ public class AiController {
   }
 
   /**
-   * 测试指定 kind（text/image/vision）的上游连通性。
+   * 用页面表单草稿测试指定 kind（text/image/vision）的上游连通性；不落库。
    *
    * @param kind 提供商类型：{@code text}、{@code image} 或 {@code vision}
+   * @param body 可选；{@code config} 为当前表单值，apiKey 空白则用已保存密钥
    * @return 连通性测试结果
    */
   @Operation(summary = "测试 AI 连通性")
   @PostMapping("/settings/ai/{kind}/test")
   public ApiResult<ConnectionTestResult> test(
-      @Parameter(description = "text、image 或 vision") @PathVariable String kind) {
-    return ApiResult.ok(textFacade.testConnection(kind));
+      @Parameter(description = "text、image 或 vision") @PathVariable String kind,
+      @RequestBody(required = false) AiConnectionTestRequest body) {
+    return ApiResult.ok(textFacade.testConnection(kind, body == null ? null : body.getConfig()));
   }
 
   /**

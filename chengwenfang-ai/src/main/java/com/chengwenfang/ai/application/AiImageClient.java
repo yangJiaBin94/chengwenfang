@@ -39,15 +39,25 @@ public class AiImageClient {
   private final ModelCallRecorder modelCallRecorder;
 
   /**
-   * 调用图像模型生成图片；{@code dryRun=true} 时不请求上游，仅校验配置是否可读。
+   * 按库中 image 配置生成图片。
    *
    * @param request 生图请求；{@code prompt} 提示词，{@code size} 尺寸（默认 1024x1024），{@code dryRun} 是否空跑
    * @return 成功时含 model 与 b64Json/url（视上游返回）；dryRun 时仅 ok/model
    * @throws BusinessException 未配置 apiKey 或上游 HTTP 非 2xx
    */
   public ImageGenerateResult generate(ImageGenerateRequest request) {
-    // 固定走 image 配置
-    AiProviderConfigEntity cfg = requireKind(AiProviderKind.IMAGE);
+    return generate(requireKind(AiProviderKind.IMAGE), request);
+  }
+
+  /**
+   * 使用指定配置生成图片（连通性测试可传表单草稿，不读库）。
+   *
+   * @param cfg     提供商配置（须含 apiKey、baseUrl、model）
+   * @param request 生图请求；{@code dryRun=true} 时不请求上游
+   * @return 生图结果
+   * @throws BusinessException 未配置 apiKey 或上游 HTTP 非 2xx
+   */
+  ImageGenerateResult generate(AiProviderConfigEntity cfg, ImageGenerateRequest request) {
     ImageGenerateRequest req = request == null ? new ImageGenerateRequest() : request;
     // 连通性测试等场景：不打上游，只确认配置存在
     if (Boolean.TRUE.equals(req.getDryRun())) {
@@ -66,7 +76,7 @@ public class AiImageClient {
     String prompt = req.getPrompt() == null ? "" : req.getPrompt();
     // 未指定尺寸时用常见默认值
     String size = StrUtil.blankToDefault(req.getSize(), "1024x1024");
-    // 拼 OpenAI 兼容生图路径；模型与质量一律取自图片 AI 配置，不写死模型名
+    // 拼 OpenAI 兼容生图路径；模型与质量一律取自传入配置，不写死模型名
     String url = trimSlash(cfg.getBaseUrl()) + "/images/generations";
     var bodyBuilder = OpenAiImageGenerationRequest.builder()
         .model(cfg.getModel())
