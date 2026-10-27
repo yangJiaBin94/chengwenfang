@@ -22,6 +22,7 @@ import com.chengwenfang.infra.config.ChengwenfangProperties;
 import com.chengwenfang.job.facade.JobFacade;
 import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
 import com.chengwenfang.skill.facade.enums.HotNewsRadarCollectNodeType;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -118,6 +119,8 @@ public class FetchChannelsRadarNodeHandler implements RadarCollectNodeHandler {
 
     Set<String> seenUrls = new LinkedHashSet<>();
     session.getCandidates().clear();
+    // 重跑时清掉上一轮分渠道结果，避免 finishRun 带脏数据
+    session.getChannelRuns().clear();
     AtomicInteger finished = new AtomicInteger();
     AtomicInteger failed = new AtomicInteger();
     AtomicInteger blockSkipped = new AtomicInteger();
@@ -139,6 +142,16 @@ public class FetchChannelsRadarNodeHandler implements RadarCollectNodeHandler {
       rawVideoFetched.addAndGet(outcome.rawVideoCount());
       // 合并各渠道偏题桶，供本轮末尾诊断
       SearchQueryDiagnoseService.mergeBuckets(diagnoseBuckets, outcome.buckets());
+      // 写入分渠道运行，供 Finalize finishRun 落库与覆盖率
+      session.getChannelRuns().add(RadarChannelRunViews.fromFetchOutcome(
+          outcome.channelId(),
+          outcome.channelName(),
+          outcome.channelType(),
+          outcome.ok(),
+          outcome.errorCode(),
+          outcome.rawCount(),
+          outcome.accepted(),
+          LocalDateTime.now()));
       for (RadarCollectCandidate candidate : outcome.candidates()) {
         String key = StrUtil.blankToDefault(candidate.getUrl(), candidate.getTitle()).toLowerCase();
         if (StrUtil.isBlank(key) || !seenUrls.add(key)) {
@@ -384,6 +397,7 @@ public class FetchChannelsRadarNodeHandler implements RadarCollectNodeHandler {
       RadarCollectSessionStore.Session session,
       ChannelView channel,
       Set<String> blockKeys) {
+    String channelId = channel == null ? "" : StrUtil.nullToEmpty(channel.getId());
     String channelName = channel == null ? "" : StrUtil.nullToEmpty(channel.getName());
     String channelType = channel == null ? "" : StrUtil.nullToEmpty(channel.getType());
     FetchResult result = fetchFacade.fetch(FetchRequest.builder()
@@ -396,7 +410,18 @@ public class FetchChannelsRadarNodeHandler implements RadarCollectNodeHandler {
     if (!result.isOk() || result.getItems() == null) {
       log.warn("渠道采集失败 name={} code={}", channelName, result.getErrorCode());
       return new ChannelFetchOutcome(
-          channelName, false, result.getErrorCode(), 0, 0, 0, 0, 0, List.of(), List.of());
+          channelId,
+          channelName,
+          channelType,
+          false,
+          result.getErrorCode(),
+          0,
+          0,
+          0,
+          0,
+          0,
+          List.of(),
+          List.of());
     }
     List<RadarCollectCandidate> out = new ArrayList<>();
     Map<String, SearchQueryDiagnoseService.MutableBucket> buckets =
@@ -462,7 +487,9 @@ public class FetchChannelsRadarNodeHandler implements RadarCollectNodeHandler {
           .build());
     }
     return new ChannelFetchOutcome(
+        channelId,
         channelName,
+        channelType,
         true,
         null,
         rawCount,
@@ -522,8 +549,12 @@ public class FetchChannelsRadarNodeHandler implements RadarCollectNodeHandler {
   @Accessors(fluent = true)
   @AllArgsConstructor
   private static final class ChannelFetchOutcome {
+    /** 渠道 ID。 */
+    private final String channelId;
     /** 渠道名。 */
     private final String channelName;
+    /** 渠道类型。 */
+    private final String channelType;
     /** 是否成功。 */
     private final boolean ok;
     /** 失败码。 */

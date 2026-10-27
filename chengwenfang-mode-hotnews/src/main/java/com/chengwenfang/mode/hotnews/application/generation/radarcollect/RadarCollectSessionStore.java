@@ -2,6 +2,7 @@ package com.chengwenfang.mode.hotnews.application.generation.radarcollect;
 
 import cn.hutool.core.util.StrUtil;
 import com.chengwenfang.common.ThemeTitleRelevance;
+import com.chengwenfang.sourcing.facade.dto.view.HotNewsChannelRunView;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -75,6 +76,8 @@ public class RadarCollectSessionStore {
     private int hours = 24;
     /** 渠道 ID。 */
     private final List<String> channelIds = new ArrayList<>();
+    /** 本轮分渠道运行结果（供 finishRun 落库）。 */
+    private final List<HotNewsChannelRunView> channelRuns = new ArrayList<>();
     /** 内存候选。 */
     private final List<RadarCollectCandidate> candidates = new ArrayList<>();
     /** Skill 摘要。 */
@@ -146,6 +149,15 @@ public class RadarCollectSessionStore {
 
     public List<String> getChannelIds() {
       return channelIds;
+    }
+
+    /**
+     * 本轮分渠道运行结果。
+     *
+     * @return 可写列表
+     */
+    public List<HotNewsChannelRunView> getChannelRuns() {
+      return channelRuns;
     }
 
     public List<RadarCollectCandidate> getCandidates() {

@@ -85,15 +85,16 @@ public class RadarCollectPipeline {
       context.completeWith(output);
       step(job, context, "done", 100, "雷达采集完成");
     } catch (Exception exception) {
-      // 图中途失败时尽量关闭 fetch_run，避免列表长期显示 pending
+      // 图中途失败时尽量关闭 fetch_run，避免列表长期显示 pending；已抓到的渠道结果一并落库
       try {
         if (StrUtil.isNotBlank(fetchRunId)) {
+          RadarCollectSessionStore.Session session = radarCollectSessionStore.get(job.getId());
           hotNews.finishRun(
               fetchRunId,
               0,
               0,
               0,
-              List.of(),
+              session == null ? List.of() : session.getChannelRuns(),
               exception.getMessage() == null ? "雷达采集失败" : exception.getMessage());
         }
       } catch (Exception finishError) {

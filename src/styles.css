@@ -1167,10 +1167,10 @@ button:not(:disabled):hover svg {
   width: 42px;
   height: 42px;
   place-items: center;
-  border: 1px solid #1f2b1e;
+  border: 1px solid var(--green-dark);
   border-radius: 10px;
-  background: #20231f;
-  color: #f3e8bf;
+  background: var(--green);
+  color: #f6f8f3;
 }
 
 .brand-title {

@@ -229,7 +229,7 @@ export function HotNewsPageViewHeader(props: Record<string, any>) {
         <div>
           <span>热点总数</span>
           <strong>{topicCount}</strong>
-          <small>当日评分前 20</small>
+          <small>当日写作分 Top 10</small>
         </div>
         <div>
           <span>启用来源</span>
@@ -245,7 +245,9 @@ export function HotNewsPageViewHeader(props: Record<string, any>) {
             {collectRunning
               ? `采集中 · ${collectStageTitle || "进行中"}`
               : latestRun
-                ? `${RUN_STATUS[latestRun.status] || latestRun.status} · 覆盖 ${coverageRate ?? 0}%`
+                ? coverageRate == null
+                  ? `${RUN_STATUS[latestRun.status] || latestRun.status}`
+                  : `${RUN_STATUS[latestRun.status] || latestRun.status} · 覆盖 ${coverageRate}%`
                 : "尚未执行"}
           </small>
         </div>

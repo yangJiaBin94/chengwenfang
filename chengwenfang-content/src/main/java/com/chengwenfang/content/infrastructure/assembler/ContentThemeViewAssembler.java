@@ -23,12 +23,14 @@ import com.chengwenfang.job.facade.JobFacade;
 import com.chengwenfang.job.facade.constant.JobTypes;
 import com.chengwenfang.job.facade.dto.view.JobView;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 /**
@@ -49,6 +51,7 @@ public class ContentThemeViewAssembler {
   private final ThemeProfileStore profileStore;
   private final CourseCurriculumStore curriculumStore;
   private final JobFacade jobs;
+  private final JdbcTemplate jdbcTemplate;
   private final JacksonJsonSupport json;
 
   /**
@@ -59,6 +62,7 @@ public class ContentThemeViewAssembler {
    * @param profileStore         主题画像
    * @param curriculumStore      课表草案
    * @param jobs                 任务门面
+   * @param jdbcTemplate         JDBC（热点来源/候选计数）
    * @param objectMapper         Jackson
    * @param support              内容工具（writeJson 回退）
    */
@@ -70,6 +74,7 @@ public class ContentThemeViewAssembler {
       ThemeProfileStore profileStore,
       CourseCurriculumStore curriculumStore,
       JobFacade jobs,
+      JdbcTemplate jdbcTemplate,
       ObjectMapper objectMapper,
       ContentEntityUtil support) {
     this.courseStore = courseStore;
@@ -79,6 +84,7 @@ public class ContentThemeViewAssembler {
     this.profileStore = profileStore;
     this.curriculumStore = curriculumStore;
     this.jobs = jobs;
+    this.jdbcTemplate = jdbcTemplate;
     this.json = new JacksonJsonSupport(objectMapper);
     // support 仅保留构造签名兼容；writeDraft 用 json + support 回退在 writeDraftJson
     this.support = support;
@@ -276,8 +282,15 @@ public class ContentThemeViewAssembler {
     if (mode != null) {
       builder.modeName(mode.getName()).modeCode(mode.getCode());
     }
-    if (HOT_NEWS_THEME_ID.equals(theme.getId())) {
-      builder.itemCount(0).candidateCount(0);
+    // 热点主题展示真实来源条目 / 候选选题数（不再写死 0）
+    if (isHotNewsTheme(theme, mode)) {
+      builder
+          .itemCount((int) (batch == null
+              ? countSourceItems(theme.getId())
+              : batch.itemCount(theme.getId())))
+          .candidateCount((int) (batch == null
+              ? countCandidateTopics(theme.getId())
+              : batch.candidateCount(theme.getId())));
     }
     return builder.build();
   }
@@ -360,8 +373,11 @@ public class ContentThemeViewAssembler {
     Map<String, Long> courseCounts = new HashMap<>();
     Map<String, Long> completedCounts = new HashMap<>();
     Map<String, JobView> latestJobs = new HashMap<>();
+    Map<String, Long> itemCounts = new HashMap<>();
+    Map<String, Long> candidateCounts = new HashMap<>();
     if (CollUtil.isEmpty(themeIds)) {
-      return new ThemeCountBatch(seriesCounts, courseCounts, completedCounts, latestJobs);
+      return new ThemeCountBatch(
+          seriesCounts, courseCounts, completedCounts, latestJobs, itemCounts, candidateCounts);
     }
     List<CourseSeriesEntity> seriesRows = courseSeriesMapper.selectList(new LambdaQueryWrapper<CourseSeriesEntity>()
         .in(CourseSeriesEntity::getThemeId, themeIds));
@@ -371,7 +387,79 @@ public class ContentThemeViewAssembler {
     courseCounts.putAll(courseStore.countByThemeIds(themeIds));
     completedCounts.putAll(courseStore.countCompletedByThemeIds(themeIds));
     latestJobs.putAll(jobs.findLatestByThemesAndType(themeIds, JobTypes.THEME_CURRICULUM_GENERATION));
-    return new ThemeCountBatch(seriesCounts, courseCounts, completedCounts, latestJobs);
+    itemCounts.putAll(countGrouped("source_items", themeIds, null));
+    candidateCounts.putAll(countGrouped("hotnews_topics", themeIds, "status = 'candidate'"));
+    return new ThemeCountBatch(
+        seriesCounts, courseCounts, completedCounts, latestJobs, itemCounts, candidateCounts);
+  }
+
+  /**
+   * 是否热点资讯主题。
+   *
+   * @param theme 主题实体
+   * @param mode  模式实体；可空
+   * @return 热点主题为 true
+   */
+  private static boolean isHotNewsTheme(ContentThemeEntity theme, ContentModeEntity mode) {
+    if (theme != null && HOT_NEWS_THEME_ID.equals(theme.getId())) {
+      return true;
+    }
+    String modeCode = mode != null ? mode.getCode() : (theme == null ? null : theme.getModeCode());
+    return ContentModeIds.HOT_NEWS_CODE.equals(modeCode);
+  }
+
+  /**
+   * 统计主题下来源条目数。
+   *
+   * @param themeId 主题 id
+   * @return 条目数
+   */
+  private long countSourceItems(String themeId) {
+    Long count = jdbcTemplate.queryForObject(
+        "SELECT COUNT(*) FROM source_items WHERE theme_id = ?", Long.class, themeId);
+    return count == null ? 0L : count;
+  }
+
+  /**
+   * 统计主题下候选选题数。
+   *
+   * @param themeId 主题 id
+   * @return 候选数
+   */
+  private long countCandidateTopics(String themeId) {
+    Long count = jdbcTemplate.queryForObject(
+        "SELECT COUNT(*) FROM hotnews_topics WHERE theme_id = ? AND status = 'candidate'",
+        Long.class,
+        themeId);
+    return count == null ? 0L : count;
+  }
+
+  /**
+   * 按 theme_id 分组计数。
+   *
+   * @param table      表白名单表名
+   * @param themeIds   主题 id
+   * @param extraWhere 额外 AND 条件；可空
+   * @return themeId → 计数
+   */
+  private Map<String, Long> countGrouped(String table, Set<String> themeIds, String extraWhere) {
+    if (CollUtil.isEmpty(themeIds)) {
+      return Collections.emptyMap();
+    }
+    List<String> ids = new ArrayList<>(themeIds);
+    String placeholders = ids.stream().map(id -> "?").collect(Collectors.joining(","));
+    String sql = "SELECT theme_id, COUNT(*) AS cnt FROM "
+        + table
+        + " WHERE theme_id IN ("
+        + placeholders
+        + ")"
+        + (extraWhere == null || extraWhere.isBlank() ? "" : " AND " + extraWhere)
+        + " GROUP BY theme_id";
+    Map<String, Long> result = new HashMap<>();
+    jdbcTemplate.query(sql, ids.toArray(), rs -> {
+      result.put(rs.getString("theme_id"), rs.getLong("cnt"));
+    });
+    return result;
   }
 
   /**
@@ -433,12 +521,16 @@ public class ContentThemeViewAssembler {
    * @param courseCounts    课程数
    * @param completedCounts 已完成数
    * @param latestJobs      最近课表生成任务
+   * @param itemCounts      热点来源条目数
+   * @param candidateCounts 热点候选选题数
    */
   public record ThemeCountBatch(
       Map<String, Long> seriesCounts,
       Map<String, Long> courseCounts,
       Map<String, Long> completedCounts,
-      Map<String, JobView> latestJobs) {
+      Map<String, JobView> latestJobs,
+      Map<String, Long> itemCounts,
+      Map<String, Long> candidateCounts) {
 
     long seriesCount(String themeId) {
       return seriesCounts.getOrDefault(themeId, 0L);
@@ -454,6 +546,14 @@ public class ContentThemeViewAssembler {
 
     JobView latestJob(String themeId) {
       return latestJobs.get(themeId);
+    }
+
+    long itemCount(String themeId) {
+      return itemCounts.getOrDefault(themeId, 0L);
+    }
+
+    long candidateCount(String themeId) {
+      return candidateCounts.getOrDefault(themeId, 0L);
     }
   }
 }

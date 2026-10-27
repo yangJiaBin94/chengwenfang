@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Theme greens: --green #416f4a / --green-dark #24452f / primary #356e45 -->
+  <rect width="32" height="32" rx="7" fill="#416f4a"/>
+  <rect x="0.5" y="0.5" width="31" height="31" rx="6.5" stroke="#24452f" stroke-opacity="0.45"/>
+  <path
+    d="M16 7.2 24.5 11.2 16 15.2 7.5 11.2 16 7.2Z"
+    stroke="#f6f8f3"
+    stroke-width="1.6"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M7.5 15.2 16 19.2 24.5 15.2"
+    stroke="#f6f8f3"
+    stroke-width="1.6"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M7.5 19.2 16 23.2 24.5 19.2"
+    stroke="#edf3ea"
+    stroke-width="1.6"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

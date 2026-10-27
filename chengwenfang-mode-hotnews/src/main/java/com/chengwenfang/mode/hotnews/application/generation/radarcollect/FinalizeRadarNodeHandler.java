@@ -36,12 +36,13 @@ public class FinalizeRadarNodeHandler implements RadarCollectNodeHandler {
         candidate.setRawText(null);
       }
     }
+    // 传入 FetchChannels 写入的分渠道结果，供覆盖率与渠道明细展示
     hotNews.finishRun(
         session.getFetchRunId(),
         total,
         inserted,
         discarded,
-        List.of(),
+        session.getChannelRuns(),
         null);
     lightState.put(RadarCollectGraphStateKeys.CANDIDATE_COUNT, total);
     lightState.put(RadarCollectGraphStateKeys.INSERTED_COUNT, inserted);

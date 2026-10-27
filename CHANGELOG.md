@@ -21,6 +21,11 @@ where releases are tagged.
 
 ### Fixed
 
+- AI settings connection test uses the on-page form draft (not saved DB config); blank apiKey still falls back to the stored secret.
+- Radar collect persists per-channel `channelRuns` so coverage and channel breakdown are available after a run (including failure fallback).
+- Theme cards show real hot-news source-item and candidate-topic counts instead of hardcoded zeros.
+- Hot-news header: label daily Top 10 writing score; omit coverage % when `channelRuns` are empty.
+- App favicon / brand mark use the green theme assets.
 - Dockerfile: put `# syntax=docker/dockerfile:1` on line 1; copy version-stable `chengwenfang-app.jar` (`finalName`).
 - Clarify compose `app` / README: hardcoded secrets are local-dev only, not a prod template.
 
