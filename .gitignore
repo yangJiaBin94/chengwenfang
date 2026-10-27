@@ -17,6 +17,13 @@ bin/
 .chengwenfang/
 .chengwenfang-it/
 chengwenfang-app/.chengwenfang-golden/
+
+# Personal manuscripts / generated content (never commit to the public tree)
+content/learning-content/
+public/content/
+public/data/chengwenfang-data.json
+# Abandoned empty Maven module shell (logic lives in chengwenfang-mode-hotnews)
+chengwenfang-hot-news/
 # 旧运行时目录名（改名后残留，勿再入库）
 .workbench/
 .workbench-it/

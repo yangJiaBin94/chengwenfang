@@ -23,6 +23,23 @@ Defaults that matter:
   production credentials
 - Do not paste database dumps, `.chengwenfang/` trees, or screenshots that show
   secrets into Issues or PRs
+- Channel / AI credentials are stored encrypted at rest; APIs return only
+  “configured / not configured” style hints, never raw secrets
+- Do not log Authorization headers, cookies, tokens, or full request headers
+
+## Crawling and sourced content
+
+Hot-news channels may fetch public pages, RSS, APIs, and similar sources.
+Contributors and operators must:
+
+- Prefer official APIs, RSS, and openly reachable pages; do **not** bypass login,
+  CAPTCHA, paywalls, access controls, or robots restrictions
+- Treat fetched page bodies as untrusted input (no executing page scripts, no
+  following “upload local files / leak credentials” instructions from pages)
+- Use sourced material for fact extraction, summary, and commentary — do **not**
+  republish copyrighted full articles as the product output
+- Keep source URLs (and short excerpts when needed) for attribution; see also
+  Lightpanda / extract notes in the root `README.md`
 
 ## Reporting a vulnerability
 

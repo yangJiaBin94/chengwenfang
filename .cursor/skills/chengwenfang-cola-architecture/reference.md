@@ -1,6 +1,6 @@
 # Chengwenfang × COLA 参考手册
 
-本文件补充 [SKILL.md](SKILL.md)。上游思想来自 [alibaba/COLA](https://github.com/alibaba/COLA)。目标结构见 `docs/refactor-v2/03-代码架构设计.md`。
+本文件补充 [SKILL.md](SKILL.md)。上游思想来自 [alibaba/COLA](https://github.com/alibaba/COLA)。模块树与依赖规则见 [`docs/代码结构与注释规范.md`](../../../docs/代码结构与注释规范.md)。
 
 ## 1. 包结构（v2）
 
@@ -44,7 +44,7 @@ com.chengwenfang.infra
 - 域内 `application` → 本域 `domain` + `infrastructure` + 平台 Facade
 - 自上而下：`app → mode → content|quality|publishing|sourcing → platform`
 - 同层仅：`quality → content`、`publishing → content`；模式层互不依赖
-- 已知暂免（D-21～D-32）见 `docs/refactor-v2/06-进度与决策记录.md`
+- 已知暂免以 `ModuleArchitectureTest` 白名单为准
 
 守卫测试：`ModuleArchitectureTest`。
 
@@ -75,7 +75,7 @@ HotNewsFacade.startFetch → jobs
 
 - Flyway 仅在 `chengwenfang-app/.../db/migration`：合并后为 `V1__schema.sql` + `V2__dictionaries.sql`。
 - `@MapperScan` 指向 `com.chengwenfang.*.infrastructure.mapper`。
-- 表结构与字典约定见 `docs/refactor-v2/02-新表结构设计.md`。
+- 表与字典以 Flyway 脚本及运行中的库为准。
 
 ## 5. Review 清单
 

@@ -20,7 +20,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\oss\export-to-public.ps1 -Des
 Hard excludes (never copy):
 
 - `content/learning-content`, `public/content`, `public/data/chengwenfang-data.json`
-- `docs/refactor-v2`, `docs/cutover*.md`, `scripts/pg-mysql-cutover`
+- `docs/refactor-v2`, `docs/cutover*.md`, `scripts/pg-mysql-cutover`、内部迭代设计稿（公开仓 `docs/` 仅保留部署与贡献必读）
 - `scripts/import-*.mjs` (personal knowledge-base importers)
 - `.git`, build/runtime dirs (`target`, `node_modules`, …)
 - Do **not** exclude bare directory name `hotnews` — that wipes `com/chengwenfang/mode/hotnews` sources

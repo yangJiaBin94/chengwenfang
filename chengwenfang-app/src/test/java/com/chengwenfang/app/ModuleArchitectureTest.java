@@ -11,7 +11,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 模块依赖守卫（对齐 docs/refactor-v2/03 第一节）。
+ * 模块依赖守卫（对齐 docs/代码结构与注释规范.md）。
  *
  * <p>分层自上而下：适配层(app) → 模式层 → 内容核心层 → 平台层。同层仅允许 {@code quality → content}、
  * {@code publishing → content}；模式层互不依赖。Facade 边界：他域默认只碰 {@code *.facade..}。

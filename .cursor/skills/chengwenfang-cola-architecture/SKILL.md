@@ -11,7 +11,7 @@ description: >-
 # Chengwenfang × COLA 开发架构规范
 
 结合 [alibaba/COLA](https://github.com/alibaba/COLA) 的「以业务为核心、解耦外部依赖、分离业务与技术复杂度」思想，落地到本仓库 **v2 Maven 多模块**结构。  
-Maven 模块按业务域切分；**模块内**统一 `facade / application / domain / infrastructure` 分包。权威依赖方向见 `docs/refactor-v2/03-代码架构设计.md`，由 `ModuleArchitectureTest` 强制。
+Maven 模块按业务域切分；**模块内**统一 `facade / application / domain / infrastructure` 分包。权威依赖方向见 [`docs/代码结构与注释规范.md`](../../../docs/代码结构与注释规范.md)，由 `ModuleArchitectureTest` 强制。
 
 ## 何时使用本 Skill
 
@@ -127,7 +127,5 @@ mvn -pl chengwenfang-app -am "-Dtest=ModuleArchitectureTest" "-Dsurefire.failIfN
 
 - [reference.md](reference.md)
 - [`docs/类命名词典.md`](../../../docs/类命名词典.md) — **类后缀权威词典**（View/Result/Request/Patch、Facade 一对一、Service/Util/SPI 边界）
-- [`docs/类重命名清单-1-3.md`](../../../docs/类重命名清单-1-3.md) — 历史异名改造勾选
-- `docs/代码结构与注释规范.md`
-- `docs/refactor-v2/03-代码架构设计.md` — v2 目标模块与扩展点
+- [`docs/代码结构与注释规范.md`](../../../docs/代码结构与注释规范.md)
 - [alibaba/COLA](https://github.com/alibaba/COLA)

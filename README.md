@@ -291,16 +291,14 @@ npm test
 
 | 路径 | 内容 |
 |------|------|
+| [`docs/README.md`](docs/README.md) | **文档索引** |
 | [`docs/AI从零搭建满血成文坊.md`](docs/AI从零搭建满血成文坊.md) | **给 AI 的从零满血部署手册**（见「快速开始（AI 方式）」） |
-| [`docs/design/01-产品需求文档.md`](docs/design/01-产品需求文档.md) | 产品定位 |
-| [`docs/design/02-技术架构方案.md`](docs/design/02-技术架构方案.md) | 技术架构 |
 | [`docs/代码结构与注释规范.md`](docs/代码结构与注释规范.md) | 分层与注释 |
 | [`docs/类命名词典.md`](docs/类命名词典.md) | 类命名 |
 | [`contracts/api-sse-contract.md`](contracts/api-sse-contract.md) | API / SSE |
-| [`docs/cutover.md`](docs/cutover.md) | 割接说明 |
-| [`docs/前端回归清单.md`](docs/前端回归清单.md) | 前端回归 |
+| [`SECURITY.md`](SECURITY.md) | 本机安全与采集合规 |
 
-更多方案在 `docs/design/`。Java 重写前备份分支：`backup/main-20260907-before-java-rewrite`。
+Java 重写前备份分支：`backup/main-20260907-before-java-rewrite`。
 
 ## 配置注意
 

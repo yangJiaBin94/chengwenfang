@@ -57,7 +57,7 @@ ffmpeg -version
 | Docker Desktop + Compose | `docker compose version` 成功，且 Docker 引擎已启动 | `winget install Docker.DockerDesktop`，**请用户启动 Docker Desktop** 后再继续 |
 | JDK | 21 | `winget install Microsoft.OpenJDK.21`，新开终端 |
 | Maven | 能跑 `mvn -version` | `winget search maven` 后安装，或用户已有安装并在 PATH |
-| Node.js | 建议 20+（Vite 7） | `winget install OpenJS.NodeJS.LTS`，新开终端 |
+| Node.js | `>=22`（见 `package.json` `engines`） | `winget install OpenJS.NodeJS.LTS`，新开终端 |
 | Python | 3.11+ | `winget install Python.Python.3.12`，新开终端 |
 | ffmpeg | 在 PATH | `winget install Gyan.FFmpeg`，新开终端 |
 
