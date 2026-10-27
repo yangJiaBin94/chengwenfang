@@ -55,6 +55,10 @@ scripts/_p64_*.py
 __pycache__/
 *.py[cod]
 
+# Local start.sh PIDs
+.chengwenfang-backend.pid
+.chengwenfang-frontend.pid
+
 # Env / logs
 .env
 .env.*

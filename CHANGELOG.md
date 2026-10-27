@@ -8,6 +8,15 @@ where releases are tagged.
 
 ## [Unreleased]
 
+### Changed
+
+- README facade: real UI screenshots, course-only quick start first, accurate module tree, optional hot-news deps called out.
+- `prod` profile: require `CHENGWENFANG_SECRET_KEY`, disable `crawler-allow-loopback`.
+
+### Added
+
+- `scripts/start.sh` for macOS / Linux course-only (or `--all-deps`) start.
+
 ## [0.1.1] - 2026-10-27
 
 ### Changed

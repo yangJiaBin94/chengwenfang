@@ -19,8 +19,9 @@ Defaults that matter:
 ## Secrets
 
 - Put real keys only in the settings UI or local `.env` (never commit them)
-- Rotate `CHENGWENFANG_SECRET_KEY` away from the development default before storing
-  production credentials
+- Development ships a known default `CHENGWENFANG_SECRET_KEY` / DB password for
+  local Compose only. With `--spring.profiles.active=prod`, startup **requires**
+  `CHENGWENFANG_SECRET_KEY` (no default) and sets `crawler-allow-loopback=false`
 - Do not paste database dumps, `.chengwenfang/` trees, or screenshots that show
   secrets into Issues or PRs
 - Channel / AI credentials are stored encrypted at rest; APIs return only

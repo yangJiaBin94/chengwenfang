@@ -4,7 +4,10 @@
 chengwenfang:
   environment: production
   worker-enabled: true
-  # 生产必须提供 CHENGWENFANG_SECRET_KEY；此处不设默认明文
+  # 生产必须显式提供密钥；未设置环境变量时启动失败（不继承开发默认值）
+  secret-key: ${CHENGWENFANG_SECRET_KEY}
+  # 生产禁止采环回（开发为本地 SearXNG 才开）
+  crawler-allow-loopback: false
 
 # 生产关闭 API 文档入口，避免对外暴露调试面
 springdoc:
