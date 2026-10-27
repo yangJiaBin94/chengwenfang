@@ -10,6 +10,7 @@ where releases are tagged.
 
 ### Changed
 
+- README gallery includes the hot-news radar still (`05-hotnews-radar.png`), above the walkthrough GIF.
 - README facade: real UI screenshots, course-only quick start first, accurate module tree, optional hot-news deps called out.
 - Hot-news README shot shows populated theme metrics; add short walkthrough GIF (themes → radar → sources).
 - Document Spring Boot **3.3.5** pin and upgrade policy (root `pom.xml` `spring-boot.version`; patch vs minor rules).
