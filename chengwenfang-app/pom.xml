@@ -138,6 +138,8 @@
       </dependency>
   </dependencies>
   <build>
+    <!-- 固定产物名，避免 Dockerfile / 启动脚本硬编码版本号 -->
+    <finalName>chengwenfang-app</finalName>
     <plugins>
       <plugin>
         <groupId>org.springframework.boot</groupId>

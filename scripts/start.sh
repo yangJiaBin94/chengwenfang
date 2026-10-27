@@ -48,7 +48,7 @@ fi
 echo "Building chengwenfang-app..."
 mvn -pl chengwenfang-app -am -DskipTests package
 
-JAR="chengwenfang-app/target/chengwenfang-app-0.1.0-SNAPSHOT.jar"
+JAR="chengwenfang-app/target/chengwenfang-app.jar"
 if [[ ! -f "$JAR" ]]; then
   echo "Jar not found: $JAR" >&2
   exit 1

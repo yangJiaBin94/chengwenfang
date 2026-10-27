@@ -97,7 +97,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\start-java.ps1
 chmod +x scripts/start.sh && ./scripts/start.sh
 ```
 
-**可选：后端跑在 Docker**（前端仍用本机 Vite；不是「全家桶一镜像」）：
+**可选：后端跑在 Docker**（前端仍用本机 Vite；不是「全家桶一镜像」；`app` profile 里的密钥/密码是本机开发默认，不是生产样板）：
 
 ```powershell
 docker compose up -d --wait

@@ -74,6 +74,8 @@ services:
 
   # 可选：后端 jar 容器（不含 Vite 前端；热点 Python CLI 仍在宿主机）
   #   docker compose --profile app up -d --build app
+  # 开发样板 only：下面账号 / SECRET 是本机默认值，不是生产部署模板；
+  # 生产请自建编排并注入强随机密钥（见 SECURITY.md / prod profile）。
   app:
     profiles: ["app"]
     build:
@@ -96,7 +98,7 @@ services:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: "6379"
       SPRING_DATA_REDIS_DATABASE: "0"
-      # 本地 compose 开发用；正式部署请注入强随机值
+      # 本机开发默认；勿原样用于生产
       CHENGWENFANG_SECRET_KEY: chengwenfang-dev-secret-key-change-me!!
     restart: unless-stopped
 

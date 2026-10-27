@@ -40,7 +40,7 @@ $javaArgs = @(
   "-Dsun.jnu.encoding=UTF-8",
   "-Dserver.port=$backendPort",
   "-Dspring.data.redis.database=$redisDb",
-  "-jar", "chengwenfang-app\target\chengwenfang-app-0.1.0-SNAPSHOT.jar"
+  "-jar", "chengwenfang-app\target\chengwenfang-app.jar"
 )
 Start-Process -FilePath "java" -ArgumentList $javaArgs -WorkingDirectory $Root -WindowStyle Minimized
 

@@ -19,6 +19,11 @@ where releases are tagged.
 - `scripts/start.sh` for macOS / Linux course-only (or `--all-deps`) start.
 - Backend `Dockerfile` + compose profile `app` (jar only; Vite still on host).
 
+### Fixed
+
+- Dockerfile: put `# syntax=docker/dockerfile:1` on line 1; copy version-stable `chengwenfang-app.jar` (`finalName`).
+- Clarify compose `app` / README: hardcoded secrets are local-dev only, not a prod template.
+
 ### Removed
 
 - Unused `public/screenshot-placeholder.svg`.
