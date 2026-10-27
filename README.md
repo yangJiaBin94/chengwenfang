@@ -33,6 +33,9 @@
   <img src="docs/screenshots/04-settings-ai.png" alt="设置 · AI 配置" width="48%" />
 </p>
 <p align="center">
+  <img src="docs/screenshots/05-hotnews-radar.png" alt="热点雷达选题榜（含评分与来源）" width="72%" />
+</p>
+<p align="center">
   <img src="docs/screenshots/hotnews-walkthrough.gif" alt="热点：主题 → 雷达 → 来源" width="72%" />
 </p>
 
@@ -42,6 +45,7 @@
 | 热点资讯 | 主题卡片展示来源条目 / 候选选题计数（非空壳） |
 | 工作流 | 内置课程生成与热点采集 / 成文流程 |
 | 设置 | 文本 / 图片 / 多模态 AI 分供应商配置 |
+| 热点雷达 | 选题榜展示评分、来源与入池状态 |
 | GIF | 热点主题列表 → 雷达选题 → 来源管理（短循环） |
 
 ---
