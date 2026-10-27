@@ -141,10 +141,24 @@ Python venv 安装见 [`scripts/article-extract/README.md`](scripts/article-extr
 
 | 层 | 选型 |
 |----|------|
-| 后端 | Spring Boot `3.3.5`、Java 21、MyBatis-Plus、Flyway、Redisson、LangChain4j |
+| 后端 | Spring Boot `3.3.5`（钉版，见下）、Java 21、MyBatis-Plus、Flyway、Redisson、LangChain4j |
 | 前端 | React 19、Vite 7、TypeScript、Vitest |
 | 基础设施 | MySQL 8.4、Redis 7；可选 SearXNG、Lightpanda |
 | 工程 | Maven 多模块 + npm；Lombok / Hutool / MapStruct |
+
+<details>
+<summary>Spring Boot 钉版与升级</summary>
+
+版本写在根 `pom.xml` 的 `spring-boot.version`（当前 **3.3.5**），经 `spring-boot-dependencies` BOM 统一管理；不要在子模块另起一套 Boot 版本。
+
+| 策略 | 做法 |
+|------|------|
+| 为何钉 3.3.x | 与本仓已验证的 MyBatis-Plus / Redisson / springdoc / LangChain4j 组合对齐；公开仓优先可复现，不追每周最新 minor |
+| 同 minor 补丁 | 可跟 Dependabot（Maven）升到 3.3.x 最新补丁；合并前跑 `npm test` + `mvn -pl chengwenfang-app -am test` |
+| 升到 3.4+ / 下一 major | 先单独 PR：改 `spring-boot.version`，过全量单测与本机课程主流程冒烟；若 starter API 或默认配置行为变化，同步改 `application*.yml` 与适配层 |
+| 不做什么 | 不为「徽章好看」跨 minor 盲升；不在 Dockerfile / 文档写死另一套 Boot 号而不改 BOM |
+
+</details>
 
 COLA 分层：Adapter → Application → Facade → Infrastructure。守卫测试：`ModuleArchitectureTest`。详见 [架构 Skill](.cursor/skills/chengwenfang-cola-architecture/SKILL.md)、[`docs/代码结构与注释规范.md`](docs/代码结构与注释规范.md)。
 
@@ -207,7 +221,7 @@ macOS / Linux：Homebrew 等装齐后跳过 `use-utf8.ps1`；`application.yml` �
 - `crawler-allow-loopback=false`（不允许采环回）  
 - Swagger 关闭  
 
-开发默认密钥 / DB 密码仅供本机 Compose，见 [`SECURITY.md`](SECURITY.md)。
+本机 Compose / jar 的密钥与 DB 密码从 **`.env`**（或进程环境变量）注入；样板见 [`.env.example`](.env.example)，勿把真实密钥提交进仓。详见 [`SECURITY.md`](SECURITY.md)。
 
 </details>
 

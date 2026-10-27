@@ -11,6 +11,9 @@ where releases are tagged.
 ### Changed
 
 - README facade: real UI screenshots, course-only quick start first, accurate module tree, optional hot-news deps called out.
+- Document Spring Boot **3.3.5** pin and upgrade policy (root `pom.xml` `spring-boot.version`; patch vs minor rules).
+- Compose MySQL / app secrets come from `.env` (or `${VAR:-dev-default}`); no longer hardcode credentials as the only source.
+- Split large theme wizards into `themeWizard/` (hook + step components); pages/components keep re-exports.
 - `prod` profile: require `CHENGWENFANG_SECRET_KEY`, disable `crawler-allow-loopback`.
 - `server.address` overridable via `SERVER_ADDRESS` (Docker sets `0.0.0.0`).
 
@@ -18,6 +21,7 @@ where releases are tagged.
 
 - `scripts/start.sh` for macOS / Linux course-only (or `--all-deps`) start.
 - Backend `Dockerfile` + compose profile `app` (jar only; Vite still on host).
+- `.env.example` lists `MYSQL_*` + `CHENGWENFANG_SECRET_KEY` for Compose substitution.
 
 ### Fixed
 
@@ -27,7 +31,7 @@ where releases are tagged.
 - Hot-news header: label daily Top 10 writing score; omit coverage % when `channelRuns` are empty.
 - App favicon / brand mark use the green theme assets.
 - Dockerfile: put `# syntax=docker/dockerfile:1` on line 1; copy version-stable `chengwenfang-app.jar` (`finalName`).
-- Clarify compose `app` / README: hardcoded secrets are local-dev only, not a prod template.
+- Clarify compose `app` / README: local-dev secrets are env-injected defaults, not a prod template.
 
 ### Removed
 
