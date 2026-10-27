@@ -1,6 +1,7 @@
 package com.chengwenfang.content.infrastructure.assembler;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.chengwenfang.common.JacksonJsonSupport;
@@ -15,7 +16,9 @@ import com.chengwenfang.content.facade.constant.ContentModeIds;
 import com.chengwenfang.content.facade.dto.view.ContentModeView;
 import com.chengwenfang.content.facade.dto.view.ContentThemeView;
 import com.chengwenfang.content.facade.dto.view.CurriculumDraftView;
+import com.chengwenfang.content.facade.dto.view.ThemeListMetrics;
 import com.chengwenfang.content.facade.enums.ContentThemeStatus;
+import com.chengwenfang.content.facade.spi.ThemeListMetricsContributor;
 import com.chengwenfang.content.infrastructure.mapper.ContentModeMapper;
 import com.chengwenfang.content.infrastructure.mapper.ContentThemeMapper;
 import com.chengwenfang.content.infrastructure.mapper.CourseSeriesMapper;
@@ -23,14 +26,12 @@ import com.chengwenfang.job.facade.JobFacade;
 import com.chengwenfang.job.facade.constant.JobTypes;
 import com.chengwenfang.job.facade.dto.view.JobView;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 /**
@@ -51,20 +52,21 @@ public class ContentThemeViewAssembler {
   private final ThemeProfileStore profileStore;
   private final CourseCurriculumStore curriculumStore;
   private final JobFacade jobs;
-  private final JdbcTemplate jdbcTemplate;
+  /** 模式层贡献的主题列表附加指标（可空列表）。 */
+  private final List<ThemeListMetricsContributor> metricsContributors;
   private final JacksonJsonSupport json;
 
   /**
-   * @param courseStore          课程存储
-   * @param courseSeriesMapper   系列表
-   * @param contentModeMapper    模式表
-   * @param contentThemeMapper   主题表
-   * @param profileStore         主题画像
-   * @param curriculumStore      课表草案
-   * @param jobs                 任务门面
-   * @param jdbcTemplate         JDBC（热点来源/候选计数）
-   * @param objectMapper         Jackson
-   * @param support              内容工具（writeJson 回退）
+   * @param courseStore           课程存储
+   * @param courseSeriesMapper    系列表
+   * @param contentModeMapper     模式表
+   * @param contentThemeMapper    主题表
+   * @param profileStore          主题画像
+   * @param curriculumStore       课表草案
+   * @param jobs                  任务门面
+   * @param metricsContributors   主题列表指标 SPI（如热点来源/候选计数）
+   * @param objectMapper          Jackson
+   * @param support               内容工具（writeJson 回退）
    */
   public ContentThemeViewAssembler(
       CourseStore courseStore,
@@ -74,7 +76,7 @@ public class ContentThemeViewAssembler {
       ThemeProfileStore profileStore,
       CourseCurriculumStore curriculumStore,
       JobFacade jobs,
-      JdbcTemplate jdbcTemplate,
+      List<ThemeListMetricsContributor> metricsContributors,
       ObjectMapper objectMapper,
       ContentEntityUtil support) {
     this.courseStore = courseStore;
@@ -84,7 +86,8 @@ public class ContentThemeViewAssembler {
     this.profileStore = profileStore;
     this.curriculumStore = curriculumStore;
     this.jobs = jobs;
-    this.jdbcTemplate = jdbcTemplate;
+    this.metricsContributors =
+        metricsContributors == null ? List.of() : List.copyOf(metricsContributors);
     this.json = new JacksonJsonSupport(objectMapper);
     // support 仅保留构造签名兼容；writeDraft 用 json + support 回退在 writeDraftJson
     this.support = support;
@@ -282,14 +285,15 @@ public class ContentThemeViewAssembler {
     if (mode != null) {
       builder.modeName(mode.getName()).modeCode(mode.getCode());
     }
-    // 热点主题展示真实来源条目 / 候选选题数（不再写死 0）
+    // 热点等模式指标由 ThemeListMetricsContributor 贡献，避免 content 直查外域表
     if (isHotNewsTheme(theme, mode)) {
+      String modeCode = mode != null ? mode.getCode() : theme.getModeCode();
       builder
           .itemCount((int) (batch == null
-              ? countSourceItems(theme.getId())
+              ? resolveMetrics(modeCode, theme.getId()).getItemCount()
               : batch.itemCount(theme.getId())))
           .candidateCount((int) (batch == null
-              ? countCandidateTopics(theme.getId())
+              ? resolveMetrics(modeCode, theme.getId()).getCandidateCount()
               : batch.candidateCount(theme.getId())));
     }
     return builder.build();
@@ -387,8 +391,8 @@ public class ContentThemeViewAssembler {
     courseCounts.putAll(courseStore.countByThemeIds(themeIds));
     completedCounts.putAll(courseStore.countCompletedByThemeIds(themeIds));
     latestJobs.putAll(jobs.findLatestByThemesAndType(themeIds, JobTypes.THEME_CURRICULUM_GENERATION));
-    itemCounts.putAll(countGrouped("source_items", themeIds, null));
-    candidateCounts.putAll(countGrouped("hotnews_topics", themeIds, "status = 'candidate'"));
+    // 合并各模式 SPI 贡献的附加计数（目前主要为热点）
+    mergeContributorMetrics(themeIds, itemCounts, candidateCounts);
     return new ThemeCountBatch(
         seriesCounts, courseCounts, completedCounts, latestJobs, itemCounts, candidateCounts);
   }
@@ -409,58 +413,54 @@ public class ContentThemeViewAssembler {
   }
 
   /**
-   * 统计主题下来源条目数。
+   * 单主题解析附加指标（无贡献者或无数据时返回全 0）。
    *
-   * @param themeId 主题 id
-   * @return 条目数
+   * @param modeCode 模式 code
+   * @param themeId  主题 id
+   * @return 指标
    */
-  private long countSourceItems(String themeId) {
-    Long count = jdbcTemplate.queryForObject(
-        "SELECT COUNT(*) FROM source_items WHERE theme_id = ?", Long.class, themeId);
-    return count == null ? 0L : count;
-  }
-
-  /**
-   * 统计主题下候选选题数。
-   *
-   * @param themeId 主题 id
-   * @return 候选数
-   */
-  private long countCandidateTopics(String themeId) {
-    Long count = jdbcTemplate.queryForObject(
-        "SELECT COUNT(*) FROM hotnews_topics WHERE theme_id = ? AND status = 'candidate'",
-        Long.class,
-        themeId);
-    return count == null ? 0L : count;
-  }
-
-  /**
-   * 按 theme_id 分组计数。
-   *
-   * @param table      表白名单表名
-   * @param themeIds   主题 id
-   * @param extraWhere 额外 AND 条件；可空
-   * @return themeId → 计数
-   */
-  private Map<String, Long> countGrouped(String table, Set<String> themeIds, String extraWhere) {
-    if (CollUtil.isEmpty(themeIds)) {
-      return Collections.emptyMap();
+  private ThemeListMetrics resolveMetrics(String modeCode, String themeId) {
+    if (StrUtil.isBlank(themeId) || CollUtil.isEmpty(metricsContributors)) {
+      return ThemeListMetrics.builder().itemCount(0).candidateCount(0).build();
     }
-    List<String> ids = new ArrayList<>(themeIds);
-    String placeholders = ids.stream().map(id -> "?").collect(Collectors.joining(","));
-    String sql = "SELECT theme_id, COUNT(*) AS cnt FROM "
-        + table
-        + " WHERE theme_id IN ("
-        + placeholders
-        + ")"
-        + (extraWhere == null || extraWhere.isBlank() ? "" : " AND " + extraWhere)
-        + " GROUP BY theme_id";
-    Map<String, Long> result = new HashMap<>();
-    // 使用 RowCallbackHandler 在后、参数 varargs 的重载，避免 Object[] 版 query 弃用告警
-    jdbcTemplate.query(sql, rs -> {
-      result.put(rs.getString("theme_id"), rs.getLong("cnt"));
-    }, ids.toArray());
-    return result;
+    for (ThemeListMetricsContributor contributor : metricsContributors) {
+      if (StrUtil.isNotBlank(modeCode) && !contributor.supportsMode(modeCode)) {
+        continue;
+      }
+      ThemeListMetrics one = contributor.countByThemeIds(Set.of(themeId)).get(themeId);
+      if (one != null) {
+        return one;
+      }
+    }
+    return ThemeListMetrics.builder().itemCount(0).candidateCount(0).build();
+  }
+
+  /**
+   * 合并全部 SPI 贡献者的批量计数到目标 Map。
+   *
+   * @param themeIds        主题 id
+   * @param itemCounts      来源条目计数（输出）
+   * @param candidateCounts 候选选题计数（输出）
+   */
+  private void mergeContributorMetrics(
+      Set<String> themeIds, Map<String, Long> itemCounts, Map<String, Long> candidateCounts) {
+    if (CollUtil.isEmpty(themeIds) || CollUtil.isEmpty(metricsContributors)) {
+      return;
+    }
+    for (ThemeListMetricsContributor contributor : metricsContributors) {
+      Map<String, ThemeListMetrics> metrics = contributor.countByThemeIds(themeIds);
+      if (CollUtil.isEmpty(metrics)) {
+        continue;
+      }
+      for (Map.Entry<String, ThemeListMetrics> entry : metrics.entrySet()) {
+        ThemeListMetrics value = entry.getValue();
+        if (value == null) {
+          continue;
+        }
+        itemCounts.merge(entry.getKey(), value.getItemCount(), Long::sum);
+        candidateCounts.merge(entry.getKey(), value.getCandidateCount(), Long::sum);
+      }
+    }
   }
 
   /**

@@ -17,6 +17,7 @@ where releases are tagged.
 - Document CI gate: Actions runs Vitest + Maven unit tests; excludes `*IT` / fingerprint goldens (run IT locally with Docker).
 - Compose MySQL / app secrets come from `.env` (or `${VAR:-dev-default}`); no longer hardcode credentials as the only source.
 - Split large theme wizards into `themeWizard/` (hook + step components); pages/components keep re-exports.
+- Theme list `itemCount` / `candidateCount` via `ThemeListMetricsContributor` SPI (hot-news MP impl); drop content-module JdbcTemplate cross-table counts.
 - `prod` profile: require `CHENGWENFANG_SECRET_KEY`, disable `crawler-allow-loopback`.
 - `server.address` overridable via `SERVER_ADDRESS` (Docker sets `0.0.0.0`).
 
