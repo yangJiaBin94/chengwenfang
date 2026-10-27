@@ -97,7 +97,15 @@ powershell -ExecutionPolicy Bypass -File .\scripts\start-java.ps1
 chmod +x scripts/start.sh && ./scripts/start.sh
 ```
 
-停止后端：`.\scripts\stop-java.ps1`（Windows）或 `kill $(cat .chengwenfang-backend.pid .chengwenfang-frontend.pid)`（`start.sh`）。
+**可选：后端跑在 Docker**（前端仍用本机 Vite；不是「全家桶一镜像」）：
+
+```powershell
+docker compose up -d --wait
+docker compose --profile app up -d --build app
+npm install && npm run dev:frontend
+```
+
+停止后端：`.\scripts\stop-java.ps1`（Windows）、`kill $(cat .chengwenfang-backend.pid .chengwenfang-frontend.pid)`（`start.sh`），或 `docker compose --profile app stop app`。
 
 ### 用 AI 从零搭建
 

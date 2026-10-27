@@ -1,8 +1,9 @@
 # 默认配置（开发环境）。启动：mvn -pl chengwenfang-app -am spring-boot:run
 
 server:
-  # 仅本机监听，避免开发机对外暴露。默认 8001；与另一实例并存时可设环境变量 SERVER_PORT=8002
-  address: 127.0.0.1
+  # 默认本机监听；Docker / 容器内请设 SERVER_ADDRESS=0.0.0.0，并用端口映射限制暴露面
+  # 与另一实例并存时可设 SERVER_PORT=8002
+  address: ${SERVER_ADDRESS:127.0.0.1}
   port: ${SERVER_PORT:8001}
 
 spring:

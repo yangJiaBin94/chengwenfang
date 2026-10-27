@@ -72,6 +72,34 @@ services:
       LIGHTPANDA_DISABLE_TELEMETRY: "true"
     restart: unless-stopped
 
+  # 可选：后端 jar 容器（不含 Vite 前端；热点 Python CLI 仍在宿主机）
+  #   docker compose --profile app up -d --build app
+  app:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: chengwenfang-app
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8001:8001"
+    environment:
+      SERVER_ADDRESS: "0.0.0.0"
+      SERVER_PORT: "8001"
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/chengwenfang?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=utf8
+      SPRING_DATASOURCE_USERNAME: chengwenfang
+      SPRING_DATASOURCE_PASSWORD: chengwenfang_dev
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: "6379"
+      SPRING_DATA_REDIS_DATABASE: "0"
+      # 本地 compose 开发用；正式部署请注入强随机值
+      CHENGWENFANG_SECRET_KEY: chengwenfang-dev-secret-key-change-me!!
+    restart: unless-stopped
+
 # Compose 命名卷声明（与上方 mysql.volumes 对应）
 volumes:
   chengwenfang-mysql:

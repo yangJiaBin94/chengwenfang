@@ -12,10 +12,16 @@ where releases are tagged.
 
 - README facade: real UI screenshots, course-only quick start first, accurate module tree, optional hot-news deps called out.
 - `prod` profile: require `CHENGWENFANG_SECRET_KEY`, disable `crawler-allow-loopback`.
+- `server.address` overridable via `SERVER_ADDRESS` (Docker sets `0.0.0.0`).
 
 ### Added
 
 - `scripts/start.sh` for macOS / Linux course-only (or `--all-deps`) start.
+- Backend `Dockerfile` + compose profile `app` (jar only; Vite still on host).
+
+### Removed
+
+- Unused `public/screenshot-placeholder.svg`.
 
 ## [0.1.1] - 2026-10-27
 
