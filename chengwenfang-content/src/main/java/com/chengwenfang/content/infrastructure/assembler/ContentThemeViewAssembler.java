@@ -456,9 +456,10 @@ public class ContentThemeViewAssembler {
         + (extraWhere == null || extraWhere.isBlank() ? "" : " AND " + extraWhere)
         + " GROUP BY theme_id";
     Map<String, Long> result = new HashMap<>();
-    jdbcTemplate.query(sql, ids.toArray(), rs -> {
+    // 使用 RowCallbackHandler 在后、参数 varargs 的重载，避免 Object[] 版 query 弃用告警
+    jdbcTemplate.query(sql, rs -> {
       result.put(rs.getString("theme_id"), rs.getLong("cnt"));
-    });
+    }, ids.toArray());
     return result;
   }
 
