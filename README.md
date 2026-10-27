@@ -26,19 +26,23 @@
 
 <p align="center">
   <img src="docs/screenshots/01-course-mode.png" alt="课程体系教学模式" width="48%" />
-  <img src="docs/screenshots/02-hotnews-mode.png" alt="热点资讯模式" width="48%" />
+  <img src="docs/screenshots/02-hotnews-mode.png" alt="热点资讯模式（主题卡片含来源/候选计数）" width="48%" />
 </p>
 <p align="center">
   <img src="docs/screenshots/03-workflows.png" alt="工作流" width="48%" />
   <img src="docs/screenshots/04-settings-ai.png" alt="设置 · AI 配置" width="48%" />
 </p>
+<p align="center">
+  <img src="docs/screenshots/hotnews-walkthrough.gif" alt="热点：主题 → 雷达 → 来源" width="72%" />
+</p>
 
 | 图 | 说明 |
 |----|------|
 | 课程体系 | 主题卡片、课表入口、新建主题 |
-| 热点资讯 | 雷达 / 已选题 / 来源管理 |
+| 热点资讯 | 主题卡片展示来源条目 / 候选选题计数（非空壳） |
 | 工作流 | 内置课程生成与热点采集 / 成文流程 |
 | 设置 | 文本 / 图片 / 多模态 AI 分供应商配置 |
+| GIF | 热点主题列表 → 雷达选题 → 来源管理（短循环） |
 
 ---
 
@@ -249,7 +253,26 @@ mvn -pl chengwenfang-app -am test
 npm test
 ```
 
-CI 跑 Vitest + 后端单元测试（不含需 Docker 的 IT）。
+### CI 门禁（GitHub Actions）
+
+工作流 [`.github/workflows/ci.yml`](.github/workflows/ci.yml) 在 `push` / `pull_request` 上跑两道必过门禁：
+
+| Job | 跑什么 | 不跑什么 |
+|-----|--------|----------|
+| `frontend` | `npm ci` + Vitest（Node 22） | — |
+| `backend` | `mvn -pl chengwenfang-app -am test`，并 **排除** `**/*IT.java`、`ChengwenfangIT`、以及 `golden/fingerprint/**` | 需 Docker / Testcontainers 的集成测试；跨 OS 易因 CRLF 抖动的 fingerprint 金样 |
+
+原因：公开 CI 无稳定的本机 Docker 服务编排时长与密钥，IT 与 fingerprint 金样在 Actions 上易红、成本高；门禁以可复现的单元测试为主。
+
+本地改持久化、HTTP 适配层或整仓冒烟时，请自行跑 IT（需 Docker Desktop）：
+
+```powershell
+. .\scripts\use-utf8.ps1
+# 与 CI 相同（默认也会跑到 IT，若本机 Surefire 未额外 excludes）
+mvn -pl chengwenfang-app -am test
+# 或只跑集成套件（类名 *IT）
+mvn -pl chengwenfang-app -am test -Dtest='*IT'
+```
 
 | 文档 | 说明 |
 |------|------|

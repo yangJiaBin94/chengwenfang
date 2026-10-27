@@ -11,7 +11,9 @@ where releases are tagged.
 ### Changed
 
 - README facade: real UI screenshots, course-only quick start first, accurate module tree, optional hot-news deps called out.
+- Hot-news README shot shows populated theme metrics; add short walkthrough GIF (themes → radar → sources).
 - Document Spring Boot **3.3.5** pin and upgrade policy (root `pom.xml` `spring-boot.version`; patch vs minor rules).
+- Document CI gate: Actions runs Vitest + Maven unit tests; excludes `*IT` / fingerprint goldens (run IT locally with Docker).
 - Compose MySQL / app secrets come from `.env` (or `${VAR:-dev-default}`); no longer hardcode credentials as the only source.
 - Split large theme wizards into `themeWizard/` (hook + step components); pages/components keep re-exports.
 - `prod` profile: require `CHENGWENFANG_SECRET_KEY`, disable `crawler-allow-loopback`.
@@ -22,6 +24,7 @@ where releases are tagged.
 - `scripts/start.sh` for macOS / Linux course-only (or `--all-deps`) start.
 - Backend `Dockerfile` + compose profile `app` (jar only; Vite still on host).
 - `.env.example` lists `MYSQL_*` + `CHENGWENFANG_SECRET_KEY` for Compose substitution.
+- `docs/screenshots/hotnews-walkthrough.gif` and `05-hotnews-radar.png`.
 
 ### Fixed
 

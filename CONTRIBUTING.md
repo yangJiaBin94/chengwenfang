@@ -32,8 +32,11 @@ npm test
 mvn -pl chengwenfang-app -am test
 ```
 
-Integration tests that need Docker/Testcontainers may be skipped in CI; run them
-locally when you change persistence or HTTP adapters.
+**CI gate** (see README「CI 门禁」): Actions runs Vitest + Maven unit tests only.
+`*IT` / `ChengwenfangIT` and `golden/fingerprint/**` are excluded in
+`.github/workflows/ci.yml` (Docker/Testcontainers cost + CRLF fingerprint flake).
+When you change persistence or HTTP adapters, run the IT suites locally with
+Docker Desktop before opening the PR.
 
 ## Code of Conduct
 
