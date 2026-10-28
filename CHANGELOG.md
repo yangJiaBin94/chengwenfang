@@ -12,6 +12,7 @@ where releases are tagged.
 
 - README facade: real UI screenshots (1440×900), course-only quick start first, accurate module tree, optional hot-news deps called out.
 - README visuals: hero GIF + course-route under badges; populated radar as feature shot; theme/workflow/settings under details.
+- Re-capture README shots via CDP at 1440×900 (no cover-crop); keep full left sidebar; GIF same canvas as stills.
 - Document Spring Boot **3.3.5** pin and upgrade policy (root `pom.xml` `spring-boot.version`; patch vs minor rules).
 - Document CI gate: Actions runs Vitest + Maven unit tests; excludes `*IT` / fingerprint goldens (run IT locally with Docker).
 - Compose MySQL / app secrets come from `.env` (or `${VAR:-dev-default}`); no longer hardcode credentials as the only source.

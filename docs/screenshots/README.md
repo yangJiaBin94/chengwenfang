@@ -15,8 +15,9 @@ Do not commit shots that show real API keys or private manuscript bodies.
 
 ## Regenerating
 
-1. Run the app (Vite + API) with demo data.
-2. Capture at 1440×900 into a temp `_raw/` folder.
-3. `python scripts/oss/normalize-readme-screenshots.py`
+1. Run the app (Vite + API) with demo data. Private demo: Vite `5174` → API `8002`.
+2. Capture the **viewport** at 1440×900 via CDP `Page.captureScreenshot` (not a browser-chrome crop).
+3. Save into temp `_raw/`, then `python scripts/oss/normalize-readme-screenshots.py`
+   (contain + pad only — **never cover-crop**, or the left sidebar gets clipped).
 
-Optional trim helper for letterboxed stills: `scripts/oss/trim-screenshot-padding.py`.
+Optional edge trim: `scripts/oss/trim-screenshot-padding.py` (keeps left chrome).

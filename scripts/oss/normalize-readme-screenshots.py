@@ -1,11 +1,10 @@
-"""Normalize README screenshots to identical canvas size (product viewport only)."""
+"""Normalize README screenshots to identical canvas size (never crop content)."""
 
 from __future__ import annotations
 
-import shutil
 from pathlib import Path
 
-from PIL import Image, ImageSequence
+from PIL import Image
 
 RAW = Path(r"C:\Users\嘉彬\AppData\Local\Temp\cursor\screenshots\_raw")
 OUT = Path("docs/screenshots")
@@ -14,18 +13,20 @@ W, H = 1440, 900
 BG = (247, 248, 246)
 
 
-def fit_canvas(im: Image.Image, width: int = W, height: int = H) -> Image.Image:
+def contain_canvas(im: Image.Image, width: int = W, height: int = H) -> Image.Image:
+    """Scale to fit inside canvas; pad with background. Never crop."""
     rgb = im.convert("RGB")
-    # Already exact? keep
     if rgb.size == (width, height):
         return rgb
-    # Cover-fit into canvas then center-crop (no letterbox bars)
-    scale = max(width / rgb.width, height / rgb.height)
-    nw, nh = max(1, int(rgb.width * scale)), max(1, int(rgb.height * scale))
+    scale = min(width / rgb.width, height / rgb.height)
+    nw = max(1, int(round(rgb.width * scale)))
+    nh = max(1, int(round(rgb.height * scale)))
     resized = rgb.resize((nw, nh), Image.Resampling.LANCZOS)
-    left = max(0, (nw - width) // 2)
-    top = max(0, (nh - height) // 2)
-    return resized.crop((left, top, left + width, top + height))
+    canvas = Image.new("RGB", (width, height), BG)
+    left = (width - nw) // 2
+    top = (height - nh) // 2
+    canvas.paste(resized, (left, top))
+    return canvas
 
 
 def save_png(src_name: str, dst_name: str) -> None:
@@ -33,7 +34,7 @@ def save_png(src_name: str, dst_name: str) -> None:
     if not src.exists():
         print(f"missing {src}")
         return
-    out = fit_canvas(Image.open(src))
+    out = contain_canvas(Image.open(src))
     dest = OUT / dst_name
     out.save(dest, "PNG", optimize=True)
     print(f"{dst_name}: {out.size} ({dest.stat().st_size // 1024} KB)")
@@ -50,7 +51,8 @@ def build_gif() -> None:
         if not path.exists():
             print(f"gif skip missing {path.name}")
             return
-        frames.append(fit_canvas(Image.open(path), 1200, 750))
+        # Same aspect as stills — avoid a second crop pass
+        frames.append(contain_canvas(Image.open(path), W, H))
     dest = OUT / "hotnews-walkthrough.gif"
     frames[0].save(
         dest,
