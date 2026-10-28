@@ -6,6 +6,20 @@
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3-6DB33F.svg)](https://spring.io/projects/spring-boot)
 [![React](https://img.shields.io/badge/React-19-61DAFB.svg)](https://react.dev/)
 
+<p align="center">
+  <a href="docs/screenshots/hotnews-walkthrough.gif">
+    <img src="docs/screenshots/hotnews-walkthrough.gif" alt="热点走查：主题 → 雷达 → 来源" width="880" />
+  </a><br />
+  <sub>热点资讯 · 主题 → 雷达选题 → 来源管理</sub>
+</p>
+
+<p align="center">
+  <a href="docs/screenshots/06-course-route.png">
+    <img src="docs/screenshots/06-course-route.png" alt="课程主路径：七个系列推进内容生产" width="880" />
+  </a><br />
+  <sub>课程体系 · 课程路线（系列推进与生产状态）</sub>
+</p>
+
 **本机运行的个人内容生产工具**：课程写作与热点资讯成文共用一套工作流，数据只落在你自己的电脑上。
 
 | 模式 | 链路 |
@@ -18,35 +32,56 @@
 > ⚠️ **仅限本机**：默认绑定 `127.0.0.1`，[无鉴权](SECURITY.md)，请勿对公网暴露。  
 > 本仓库**不附带**个人课程正文，仅含 bootstrap 演示主题（见 [`content/README.md`](content/README.md)）。
 
-[仅课程快速开始](#快速开始仅课程主流程推荐) · [截图](#界面预览) · [文档](#文档) · [贡献](CONTRIBUTING.md) · [安全](SECURITY.md) · [变更](CHANGELOG.md)
+[仅课程快速开始](#快速开始仅课程主流程推荐) · [更多截图](#更多界面) · [文档](#文档) · [贡献](CONTRIBUTING.md) · [安全](SECURITY.md) · [变更](CHANGELOG.md)
 
 ---
 
-## 界面预览
+## 更多界面
+
+**热点雷达** — 写作价值排序、来源渠道与采集统计（有货状态）。
 
 <p align="center">
-  <img src="docs/screenshots/01-course-mode.png" alt="课程体系教学模式" width="48%" />
-  <img src="docs/screenshots/02-hotnews-mode.png" alt="热点资讯模式（主题卡片含来源/候选计数）" width="48%" />
-</p>
-<p align="center">
-  <img src="docs/screenshots/03-workflows.png" alt="工作流" width="48%" />
-  <img src="docs/screenshots/04-settings-ai.png" alt="设置 · AI 配置" width="48%" />
-</p>
-<p align="center">
-  <img src="docs/screenshots/05-hotnews-radar.png" alt="热点雷达选题榜（含评分与来源）" width="72%" />
-</p>
-<p align="center">
-  <img src="docs/screenshots/hotnews-walkthrough.gif" alt="热点：主题 → 雷达 → 来源" width="72%" />
+  <a href="docs/screenshots/05-hotnews-radar.png">
+    <img src="docs/screenshots/05-hotnews-radar.png" alt="热点雷达选题榜" width="880" />
+  </a>
 </p>
 
-| 图 | 说明 |
-|----|------|
-| 课程体系 | 主题卡片、课表入口、新建主题 |
-| 热点资讯 | 主题卡片展示来源条目 / 候选选题计数（非空壳） |
-| 工作流 | 内置课程生成与热点采集 / 成文流程 |
-| 设置 | 文本 / 图片 / 多模态 AI 分供应商配置 |
-| 热点雷达 | 选题榜展示评分、来源与入池状态 |
-| GIF | 热点主题列表 → 雷达选题 → 来源管理（短循环） |
+<details>
+<summary>主题总览 · 工作流 · AI 设置</summary>
+
+**课程主题** — 系列 / 课次计数。
+
+<p align="center">
+  <a href="docs/screenshots/01-course-mode.png">
+    <img src="docs/screenshots/01-course-mode.png" alt="课程体系教学模式" width="880" />
+  </a>
+</p>
+
+**热点主题** — 来源条目与候选选题计数。
+
+<p align="center">
+  <a href="docs/screenshots/02-hotnews-mode.png">
+    <img src="docs/screenshots/02-hotnews-mode.png" alt="热点资讯模式" width="880" />
+  </a>
+</p>
+
+**工作流** — 热点采集与课程生成流程清单。
+
+<p align="center">
+  <a href="docs/screenshots/03-workflows.png">
+    <img src="docs/screenshots/03-workflows.png" alt="工作流" width="880" />
+  </a>
+</p>
+
+**设置** — 文本 / 图片 / 多模态 AI 分供应商（Key 已脱敏）。
+
+<p align="center">
+  <a href="docs/screenshots/04-settings-ai.png">
+    <img src="docs/screenshots/04-settings-ai.png" alt="设置 · AI 配置" width="880" />
+  </a>
+</p>
+
+</details>
 
 ---
 
