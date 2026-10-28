@@ -33,6 +33,10 @@ public final class VideoParseErrorMessages {
     if (containsAny(lower, "openai-whisper", "no module named 'whisper'", "no module named whisper")) {
       return "本机未安装语音识别组件（Whisper）" + stepHint + "。请按文档安装 scripts/video-transcript 依赖。";
     }
+    if (containsAny(lower, "createprocess error=2", "系统找不到指定的文件", "cannot run program")) {
+      return "找不到视频解析 Python 环境" + stepHint
+          + "。请按 scripts/video-transcript/README 创建 .venv 后重试。";
+    }
     if (containsAny(lower, "modulenotfound", "no module named")) {
       return "Python 环境缺少依赖" + stepHint + "。请确认已创建 venv 并安装 requirements.txt。";
     }

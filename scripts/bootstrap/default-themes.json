@@ -1,41 +1,59 @@
 {
   "courseTheme": {
-    "id": "theme-demo-course",
-    "code": "demo_course",
-    "name": "Demo Course",
-    "description": "Minimal sample theme for first-run bootstrap (no lesson bodies).",
+    "id": "theme-ai-self-study-zero",
+    "code": "ai_self_study_zero",
+    "name": "AI 自学零基础",
+    "description": "从零开始系统学习 AI。",
     "briefing": {
       "schema_version": 1,
       "step": 7,
       "naming": {
-        "name": "Demo Course",
-        "description": "Minimal sample theme for first-run bootstrap (no lesson bodies).",
-        "code": "demo_course",
-        "domain": "general",
+        "name": "AI 自学零基础",
+        "description": "从零开始系统学习 AI。",
+        "code": "ai_self_study_zero",
+        "domain": "ai_intro",
         "domain_custom": ""
       },
       "audience": {
-        "readers": ["zero_basis"],
+        "readers": [
+          "zero_basis"
+        ],
         "readers_note": "",
-        "prerequisites": ["none"],
+        "prerequisites": [
+          "none"
+        ],
         "time_budget": "system_1_2m"
       },
       "goals": {
-        "outcomes": ["Walk through the course UI with a sample route"],
+        "outcomes": [
+          "形成完整 AI 知识体系",
+          "能复述核心概念并动手实践"
+        ],
         "success_criteria": "understand"
       },
       "scope": {
-        "must_cover": ["Getting started"],
+        "must_cover": [
+          "认知启蒙",
+          "数学基石",
+          "模型原理",
+          "核心架构",
+          "大语言模型",
+          "实战工具",
+          "前沿趋势"
+        ],
         "out_of_scope": [],
         "difficulty_curve": "easy_to_hard"
       },
       "structure": {
         "series_count_pref": "custom",
-        "series_count_custom": 1,
+        "series_count_custom": 7,
         "lessons_per_series_pref": "custom",
-        "lessons_per_series_custom": 2,
-        "need_overview_lessons": false,
-        "lesson_forms": ["concept"]
+        "lessons_per_series_custom": null,
+        "need_overview_lessons": true,
+        "lesson_forms": [
+          "concept",
+          "practice"
+        ]
       },
       "expression": {
         "tone": "companion",
@@ -45,24 +63,552 @@
     },
     "curriculumDraft": {
       "schemaVersion": 1,
-      "routeNarrative": "A tiny demo route so the UI has something to show after seed import.",
+      "routeNarrative": "从初中数学基础出发，0 基础学透 AI——覆盖认知启蒙、数学基石、模型原理、核心架构、大语言模型、实战工具、前沿趋势七大板块，形成完整知识体系。",
       "series": [
         {
           "tempId": "s1",
-          "name": "Getting started",
+          "name": "认知启蒙",
           "sortOrder": 1,
-          "positioning": "Sample series with two empty lesson shells.",
+          "positioning": "在接触数学之前，先用生活化的方式建立完整的 AI 世界观。",
           "lessons": [
             {
               "lessonNo": 1,
-              "title": "Welcome",
-              "summary": "Open the course detail page and explore tabs.",
+              "title": "AI 的定义与边界",
+              "summary": "人工智能 ≠ 机器人，分清什么是 AI、什么不是",
               "learningOutcomes": []
             },
             {
               "lessonNo": 2,
-              "title": "Generate when ready",
-              "summary": "Configure AI keys in Settings, then run generation.",
+              "title": "AI 发展简史",
+              "summary": "从达特茅斯会议到 ChatGPT，AI 为什么在 2023 年突然爆发",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 3,
+              "title": "AI 的能力与局限",
+              "summary": "AI 擅长什么、不擅长什么，建立理性预期",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 4,
+              "title": "你已经被 AI 包围了",
+              "summary": "从手机解锁到短视频推荐，AI 早已渗透日常生活",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 5,
+              "title": "AI 的七只手",
+              "summary": "文本/图像/语音/视频/代码/推理，七大能力层完整拆解",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 6,
+              "title": "AI 正在改写游戏规则",
+              "summary": "代码重塑开发、AlphaFold 获诺奖、机器人+具身智能、行业案例",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 7,
+              "title": "AI 时代，你站在哪里",
+              "summary": "B2C vs B2B、Agent 专题、AGI 展望、找到你的方向",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 8,
+              "title": "计算机如何工作",
+              "summary": "CPU vs GPU、内存 vs 硬盘，为什么训练 AI 要\"烧显卡\"",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 9,
+              "title": "数据：AI 的燃料",
+              "summary": "结构化/非结构化数据，训练集/测试集的含义",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 10,
+              "title": "编程思维入门",
+              "summary": "变量、循环、函数的基本逻辑，消除对代码的恐惧",
+              "learningOutcomes": []
+            }
+          ]
+        },
+        {
+          "tempId": "s2",
+          "name": "数学基础",
+          "sortOrder": 2,
+          "positioning": "用初中数学基础，理解 AI 底层最核心的数学原理。",
+          "lessons": [
+            {
+              "lessonNo": 1,
+              "title": "AI 的数学语言",
+              "summary": "向量与矩阵（数据怎么存）→ 点积与矩阵乘法（数据怎么算）→ 梯度下降（模型怎么学）",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 2,
+              "title": "导数与梯度",
+              "summary": "导数基础 → 链式法则 → 手算房价预测的梯度",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 3,
+              "title": "反向传播",
+              "summary": "前向传播 → 反向传播 → 两层网络完整实操",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 4,
+              "title": "概率是什么",
+              "summary": "频率派 vs 贝叶斯派，建立概率直觉",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 5,
+              "title": "条件概率与贝叶斯定理",
+              "summary": "AI 如何根据新证据更新判断",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 6,
+              "title": "概率分布初探",
+              "summary": "正态分布、softmax，ChatGPT 选词本质是在概率分布里采样",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 7,
+              "title": "采样与温度",
+              "summary": "温度参数如何影响创造力，同一个问题两次回答为什么不一样",
+              "learningOutcomes": []
+            }
+          ]
+        },
+        {
+          "tempId": "s3",
+          "name": "模型原理",
+          "sortOrder": 3,
+          "positioning": "把数学基础中的知识串联起来，理解神经网络原理并过渡到实践。",
+          "lessons": [
+            {
+              "lessonNo": 1,
+              "title": "神经元：AI 的基本单元",
+              "summary": "加权求和 + 激活函数 = 一个神经元",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 2,
+              "title": "激活函数",
+              "summary": "Sigmoid/ReLU/Tanh，没有激活函数多层等于一层",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 3,
+              "title": "从单层到多层",
+              "summary": "输入层 → 隐藏层 → 输出层，为什么“深”比“宽”更重要",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 4,
+              "title": "神经网络中的前向与反向",
+              "summary": "矩阵乘法（前向）+ 反向传播套用到多层网络",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 5,
+              "title": "本地 Python 开发环境与第一次运行",
+              "summary": "理解 Python、解释器、命令行和 VS Code 的分工，以及“编写→保存→运行→查看输出”的闭环；Windows 使用 PowerShell + winget、macOS 使用 Terminal + Homebrew 安装并验证 Python；通过 VS Code 官网文字说明完成安装，安装官方 Python 扩展；所有明确安装和运行步骤直接使用代码块，不制作操作截图；创建 python-practice 项目和 hello.py，分别在两套系统终端运行程序，读懂版本号、Hello 输出、目录定位和常见错误，并完成一次修改变量后重新运行的练习；不讲 Notebook、PyTorch、虚拟环境和神经网络代码",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 6,
+              "title": "Python 如何保存和计算数据",
+              "summary": "变量、数字、字符串、列表与基础运算，用打印结果检查程序是否正确",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 7,
+              "title": "让 Python 按步骤完成任务",
+              "summary": "条件判断、循环、函数、缩进与常见报错，建立阅读和修改代码的能力",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 8,
+              "title": "为 AI 项目准备独立运行环境",
+              "summary": "理解第三方库、pip 和 .venv，分别使用 Windows PowerShell 与 macOS Terminal 创建、激活虚拟环境，在 VS Code 选择解释器；通过国内 PyPI 镜像或离线 wheel 安装并验证 PyTorch，处理下载超时和环境选错",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 9,
+              "title": "从 Python 列表到 PyTorch 张量",
+              "summary": "创建张量，理解维度、形状和数据类型，完成最基础的张量运算",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 10,
+              "title": "用 PyTorch 搭建第一个神经网络",
+              "summary": "认识 import、nn.Module、__init__、网络层和 forward，逐行读懂结构代码，本课只搭模型暂不训练",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 11,
+              "title": "准备 MNIST 手写数字数据",
+              "summary": "理解样本、标签、训练/验证/测试集、归一化和 DataLoader；课程资源提供国内可下载的数据包及本地 data 目录放置方法，默认可用 download=False 运行，不依赖海外数据源",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 12,
+              "title": "让未训练的网络完成第一次预测",
+              "summary": "输入一批图片，完成前向计算，读懂输出形状、类别分数和预测结果",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 13,
+              "title": "损失函数如何衡量预测错误",
+              "summary": "聚焦分类任务的交叉熵，用具体输出算清损失值，不展开优化器",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 14,
+              "title": "反向传播后，参数怎样真正更新",
+              "summary": "承接数学基础中已学过的反向传播，简要复习后理解梯度清零、loss.backward()、学习率、优化器和 optimizer.step()",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 15,
+              "title": "把训练步骤写成循环",
+              "summary": "串联取数据、前向计算、计算损失、反向传播和参数更新，观察每轮进度和损失变化",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 16,
+              "title": "怎样判断模型是否真的学会了",
+              "summary": "理解验证集、测试集、准确率与训练/评估模式，会保存和加载模型",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 17,
+              "title": "过拟合与训练改进",
+              "summary": "识别训练准但验证差，理解 Dropout、权重衰减、早停法以及网络与训练参数调整的作用",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 18,
+              "title": "完整实战：在本地训练第一个神经网络",
+              "summary": "分别在 Windows 和 macOS 上用 VS Code 创建项目、激活虚拟环境、验证 PyTorch、读取本地 MNIST、训练与测试、保存与加载模型并完成预测；默认 CPU 小网络、3～5 轮和较小 batch_size，普通 8GB 内存办公电脑可完成，CUDA/MPS 仅作可选加速；安装包与数据均有国内镜像或离线兜底，无需 VPN",
+              "learningOutcomes": []
+            }
+          ]
+        },
+        {
+          "tempId": "s4",
+          "name": "核心架构",
+          "sortOrder": 4,
+          "positioning": "理解 CNN、RNN/LSTM、Transformer 三大经典架构。",
+          "lessons": [
+            {
+              "lessonNo": 1,
+              "title": "图像问题的特殊挑战",
+              "summary": "为什么图像不能用普通神经网络，CNN 被发明的动机",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 2,
+              "title": "卷积核：图像的\"特征探测器\"",
+              "summary": "滑动窗口，低层检测边缘→中层检测纹理→高层检测部件",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 3,
+              "title": "池化与全连接",
+              "summary": "CNN 完整架构：卷积→池化→全连接",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 4,
+              "title": "CNN 的进化与应用",
+              "summary": "图像分类→目标检测→图像分割，ResNet 残差连接",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 5,
+              "title": "序列数据的特殊性",
+              "summary": "文本/语音/股票，顺序很重要，普通网络为什么记不住上文",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 6,
+              "title": "RNN：带\"记忆\"的网络",
+              "summary": "隐藏状态在时间步之间传递，记忆如何实现",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 7,
+              "title": "梯度消失与 LSTM",
+              "summary": "遗忘门/输入门/输出门，选择性记忆和遗忘",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 8,
+              "title": "Seq2Seq",
+              "summary": "编码器-解码器架构，机器翻译的经典范式",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 9,
+              "title": "RNN 的致命缺陷",
+              "summary": "串行计算慢、长距离依赖衰减，Transformer 为什么被发明",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 10,
+              "title": "自注意力",
+              "summary": "Query/Key/Value，让每个词能直接关注句中所有其他词",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 11,
+              "title": "多头注意力与位置编码",
+              "summary": "多头 = 多角度看问题，位置编码弥补\"看不到顺序\"",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 12,
+              "title": "Transformer 完整架构",
+              "summary": "Encoder→Decoder，LayerNorm/残差连接/FFN 各自的作用",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 13,
+              "title": "为什么 Transformer 能赢",
+              "summary": "并行计算、长距离依赖、可扩展性三个维度完胜 RNN",
+              "learningOutcomes": []
+            }
+          ]
+        },
+        {
+          "tempId": "s5",
+          "name": "大语言模型",
+          "sortOrder": 5,
+          "positioning": "理解大模型从 Transformer 骨架到对话助手的完整链路。",
+          "lessons": [
+            {
+              "lessonNo": 1,
+              "title": "GPT 只用 Decoder",
+              "summary": "GPT vs BERT（生成 vs 理解），自回归的含义",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 2,
+              "title": "Token：模型看世界的最小单位",
+              "summary": "BPE 分词，为什么中文比英文\"贵\"",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 3,
+              "title": "自回归生成",
+              "summary": "每次预测下一个 Token，温度/Top-p/Top-k 如何影响创造力",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 4,
+              "title": "上下文窗口",
+              "summary": "模型的工作记忆，长上下文为什么难做",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 5,
+              "title": "预训练是什么",
+              "summary": "在海量文本上做\"下一个词预测\"，为什么这个简单任务能让模型学会语言",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 6,
+              "title": "Scaling Law：大力出奇迹",
+              "summary": "参数量/数据量/算力与性能的关系，涌现能力",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 7,
+              "title": "训练基础设施",
+              "summary": "千卡 GPU 集群、分布式训练、混合精度",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 8,
+              "title": "开源模型生态",
+              "summary": "LLaMA/Mistral/Qwen/DeepSeek，开源 vs 闭源",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 9,
+              "title": "基座模型的\"尴尬\"",
+              "summary": "预训练完只会续写不会聊天，必须\"教\"它对话格式",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 10,
+              "title": "监督微调 SFT",
+              "summary": "用高质量的\"指令-回答\"对教模型对话",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 11,
+              "title": "RLHF：让 AI 更\"有用\"",
+              "summary": "偏好数据→奖励模型→PPO 强化学习",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 12,
+              "title": "对齐与安全",
+              "summary": "价值观对齐、越狱攻击、宪法 AI",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 13,
+              "title": "推理优化",
+              "summary": "KV Cache、量化（int8/int4）、投机采样",
+              "learningOutcomes": []
+            }
+          ]
+        },
+        {
+          "tempId": "s6",
+          "name": "实战工具",
+          "sortOrder": 6,
+          "positioning": "从提示词到工具选择再到亲手做项目。",
+          "lessons": [
+            {
+              "lessonNo": 1,
+              "title": "提示词的底层原理",
+              "summary": "模型如何\"读\"你的提示，为什么措辞影响结果",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 2,
+              "title": "四大核心技巧",
+              "summary": "角色设定、分步指令、Few-shot、思维链 CoT",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 3,
+              "title": "结构化提示与高级策略",
+              "summary": "输出格式控制、自我反思、角色扮演",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 4,
+              "title": "提示词的边界",
+              "summary": "什么时候换方法而不是换提示词，RAG 的替代场景",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 5,
+              "title": "对话类 AI 横向对比",
+              "summary": "ChatGPT/Claude/Gemini/DeepSeek/Kimi/豆包 各自优势",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 6,
+              "title": "AI 编程工具",
+              "summary": "GitHub Copilot/Cursor/Codex/Windsurf 的差异和适用场景",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 7,
+              "title": "AI 图像/视频/音频",
+              "summary": "Midjourney/DALL·E/Stable Diffusion/Sora/Suno",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 8,
+              "title": "AI 工作流搭建",
+              "summary": "RAG 知识库/Agent 框架/自动化流程",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 9,
+              "title": "搭建个人 AI 知识库",
+              "summary": "用 RAG 技术做一个能用自己文档问答的系统",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 10,
+              "title": "微调一个文本分类模型",
+              "summary": "HuggingFace 全流程：数据→训练→评估→部署",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 11,
+              "title": "AI 辅助完成一个产品",
+              "summary": "用 AI 工具从 0 到 1 做出完整小产品",
+              "learningOutcomes": []
+            }
+          ]
+        },
+        {
+          "tempId": "s7",
+          "name": "前沿趋势",
+          "sortOrder": 7,
+          "positioning": "了解 AI 正在发生什么和将要发生什么。",
+          "lessons": [
+            {
+              "lessonNo": 1,
+              "title": "多模态是什么",
+              "summary": "文本+图像+语音+视频的融合，为什么多模态是必然方向",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 2,
+              "title": "文生图的技术路线",
+              "summary": "Stable Diffusion vs DALL·E vs Midjourney 的基本原理",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 3,
+              "title": "视觉语言模型",
+              "summary": "GPT-4V/Claude Vision 如何\"看懂\"图片",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 4,
+              "title": "Agent 是什么",
+              "summary": "感知→规划→执行→反馈循环，不只回答问题而是完成任务",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 5,
+              "title": "Agent 的核心能力",
+              "summary": "工具调用、记忆系统、任务分解、自我纠错",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 6,
+              "title": "Agent 的现状与局限",
+              "summary": "可靠性问题、循环陷阱、安全与成本",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 7,
+              "title": "AI 的偏见与公平",
+              "summary": "训练数据的偏见如何被模型放大",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 8,
+              "title": "AI 安全的核心议题",
+              "summary": "对齐问题、滥用风险、安全措施",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 9,
+              "title": "AGI 的讨论",
+              "summary": "各种定义争论、预测时间线、对个人的影响",
+              "learningOutcomes": []
+            },
+            {
+              "lessonNo": 10,
+              "title": "如何持续学习 AI",
+              "summary": "信息源推荐、学习方法、节奏建议",
               "learningOutcomes": []
             }
           ]
@@ -71,35 +617,52 @@
     }
   },
   "hotNewsTheme": {
-    "id": "theme-demo-hotnews",
-    "code": "demo_hotnews",
-    "name": "Demo Hot News",
-    "description": "Minimal sample hot-news theme for bootstrap (no topics).",
+    "id": "theme-ai-frontier",
+    "code": "ai_frontier",
+    "name": "AI 前沿热点",
+    "description": "跟踪并沉淀值得写作的 AI 资讯选题。",
     "briefing": {
       "schema_version": 1,
       "step": 7,
       "naming": {
-        "name": "Demo Hot News",
-        "description": "Minimal sample hot-news theme for bootstrap (no topics).",
-        "code": "demo_hotnews",
-        "domain": "general"
+        "name": "AI 前沿热点",
+        "description": "跟踪并沉淀值得写作的 AI 资讯选题。",
+        "code": "ai_frontier",
+        "domain": "ai"
       },
       "audience": {
-        "readers": ["creator"],
+        "readers": [
+          "developer",
+          "creator"
+        ],
         "content_stance": "deep_analysis"
       },
       "value_filters": {
-        "worth_writing": ["actionable"]
+        "worth_writing": [
+          "multi_source",
+          "actionable"
+        ]
       },
       "scope": {
-        "must_watch": ["open source", "AI tools"],
-        "out_of_scope": "rumors",
+        "must_watch": [
+          "大模型",
+          "Agent",
+          "开源发布"
+        ],
+        "out_of_scope": "纯八卦与谣言",
         "locale": "zh"
       },
       "radar": {
-        "search_queries": ["open source AI", "developer tools"],
-        "github_query": "",
-        "seed_channels": ["searxng"]
+        "search_queries": [
+          "大模型 发布",
+          "AI Agent",
+          "开源 LLM"
+        ],
+        "github_query": "LLM OR Agent language:Python stars:>100",
+        "seed_channels": [
+          "searxng",
+          "github"
+        ]
       },
       "scoring_rubric": {
         "version": 1,

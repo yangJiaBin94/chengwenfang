@@ -158,12 +158,19 @@ public class HotNewsVideoParseService {
           .build());
       return;
     }
-    // 按时长降序入队，线程池 FIFO 优先消化长片
-    researchItemStrategy.prioritizeByDuration(targets);
     int total = targets.size();
+    // 先报进度，避免时长排序/入队前 UI 长期停在「等待线程池调度」
+    Map<String, Object> preparingMeta = new LinkedHashMap<>();
+    preparingMeta.put("total", total);
+    preparingMeta.put("completed", 0);
+    preparingMeta.put("running", 0);
+    preparingMeta.put("parallel", true);
+    context.progress(jobId, "preparing", 1, "正在排队 " + total + " 条视频…", preparingMeta);
+    // 按时长降序入队（仅用已落库时长）；线程池 FIFO 优先消化长片
+    researchItemStrategy.prioritizeByDuration(targets);
     AtomicInteger succeeded = new AtomicInteger();
     AtomicInteger failed = new AtomicInteger();
-    AtomicInteger maxProgress = new AtomicInteger(0);
+    AtomicInteger maxProgress = new AtomicInteger(1);
     /** 进行中条目：itemId → 短标题，供并行进度展示。 */
     Map<String, String> activeTitles = new LinkedHashMap<>();
     Object progressLock = new Object();

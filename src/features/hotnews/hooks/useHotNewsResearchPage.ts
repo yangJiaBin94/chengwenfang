@@ -93,9 +93,9 @@ export function useHotNewsResearchPage({
     }
   }
 
-  /** 拉取当前页资料（后端 LIMIT/OFFSET）。 */
-  async function loadItemPage(page = listPage) {
-    setListLoading(true);
+  /** 拉取当前页资料（后端 LIMIT/OFFSET）。silent 时不闪「加载中」。 */
+  async function loadItemPage(page = listPage, silent = false) {
+    if (!silent) setListLoading(true);
     try {
       const result = await pageHotNewsResearchItems(topicId, {
         page,
@@ -112,7 +112,7 @@ export function useHotNewsResearchPage({
       );
       return null;
     } finally {
-      setListLoading(false);
+      if (!silent) setListLoading(false);
     }
   }
 
@@ -133,10 +133,13 @@ export function useHotNewsResearchPage({
     setBrief(nextBriefs[0] ?? null);
   }
 
-  /** 刷新资料当前页与周边元数据。 */
-  async function refresh() {
+  /** 刷新资料当前页与周边元数据。silent 供轮询，避免工具栏文案闪烁。 */
+  async function refresh(silent = false) {
     try {
-      const [, itemPage] = await Promise.all([refreshMeta(), loadItemPage()]);
+      const [, itemPage] = await Promise.all([
+        refreshMeta(),
+        loadItemPage(listPage, silent),
+      ]);
       return itemPage;
     } catch (error) {
       showNotice(
@@ -266,7 +269,7 @@ export function useHotNewsResearchPage({
   const previousStatus = useRef("");
   useEffect(() => {
     if (!new Set(["pending", "running"]).has(latestStatus)) return;
-    const timer = window.setInterval(() => void refresh(), 2_000);
+    const timer = window.setInterval(() => void refresh(true), 2_000);
     return () => window.clearInterval(timer);
   }, [latestStatus, topicId]);
 

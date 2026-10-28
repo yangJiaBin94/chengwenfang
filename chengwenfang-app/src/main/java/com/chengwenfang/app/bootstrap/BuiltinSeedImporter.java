@@ -13,7 +13,9 @@ import com.chengwenfang.content.facade.dto.request.CurriculumDraftSaveRequest;
 import com.chengwenfang.content.facade.dto.request.ThemeBriefingPatchRequest;
 import com.chengwenfang.content.facade.dto.view.ContentThemeView;
 import com.chengwenfang.content.facade.dto.view.CurriculumDraftView;
+import com.chengwenfang.content.facade.dto.view.HotNewsThemeCommitView;
 import com.chengwenfang.content.facade.enums.ContentThemeStatus;
+import com.chengwenfang.mode.hotnews.application.hotnews.HotNewsThemeCommitOrchestrator;
 import com.chengwenfang.publishing.facade.constant.BuiltinLayoutThemeKeys;
 import com.chengwenfang.skill.facade.SkillBindingIds;
 import com.chengwenfang.skill.facade.SkillFacade;
@@ -59,6 +61,8 @@ public class BuiltinSeedImporter implements ApplicationRunner {
   private final WorkflowFacade workflows;
   /** 内容门面（默认主题课壳）。 */
   private final ContentFacade content;
+  /** 热点主题确认编排（与手动 wizard 同一路径：启用 + 初始渠道）。 */
+  private final HotNewsThemeCommitOrchestrator hotNewsThemeCommit;
   /** 排版主题直写 JDBC（bootstrap 一次性导入）。 */
   private final JdbcTemplate jdbc;
   /** JSON 解析。 */
@@ -268,7 +272,19 @@ public class BuiltinSeedImporter implements ApplicationRunner {
   }
 
   /**
-   * 种子热点默认主题：briefing → commit（启用 + defaults，不造选题）。
+   * 统计主题下热点渠道行数。
+   *
+   * @param themeId 主题 id
+   * @return 行数
+   */
+  private int countHotNewsChannels(String themeId) {
+    Integer count = jdbc.queryForObject(
+        "SELECT COUNT(1) FROM source_channels WHERE theme_id=?", Integer.class, themeId);
+    return count == null ? 0 : count;
+  }
+
+  /**
+   * 种子热点默认主题：briefing → 与手动确认相同的编排（启用 + defaults + 初始渠道）。
    *
    * @param node hotNewsTheme 节点
    */
@@ -287,10 +303,22 @@ public class BuiltinSeedImporter implements ApplicationRunner {
         text(node, "name"),
         text(node, "description"),
         1);
+    int channelRows = countHotNewsChannels(theme.getId());
+    // 已确认且已有渠道：跳过；已确认但 0 渠道：回退为 draft 再走完整确认路径
+    if ((ContentThemeStatus.ENABLED.matches(theme.getStatus())
+            || ContentThemeStatus.DISABLED.matches(theme.getStatus()))
+        && channelRows > 0) {
+      log.info(
+          "跳过已确认热点种子主题 id={} status={} channels={}",
+          theme.getId(),
+          theme.getStatus(),
+          channelRows);
+      return;
+    }
     if (ContentThemeStatus.ENABLED.matches(theme.getStatus())
         || ContentThemeStatus.DISABLED.matches(theme.getStatus())) {
-      log.info("跳过已确认热点种子主题 id={} status={}", theme.getId(), theme.getStatus());
-      return;
+      reopenEmptySeedTheme(theme.getId());
+      log.info("空渠道种子主题已回退为 draft 以补全初始渠道 id={}", theme.getId());
     }
     Map<String, Object> briefing = objectMapper.convertValue(
         node.path("briefing"), new TypeReference<Map<String, Object>>() {});
@@ -302,8 +330,13 @@ public class BuiltinSeedImporter implements ApplicationRunner {
             .code(text(node, "code"))
             .briefing(FlexiblePayload.of(briefing))
             .build());
-    content.commitHotNewsTheme(theme.getId());
-    log.info("已确认热点种子主题 id={}", theme.getId());
+    // 与 ThemeController hot-news:commit 同一编排，确保渠道/查询词与手动创建一致
+    HotNewsThemeCommitView committed = hotNewsThemeCommit.commit(theme.getId());
+    log.info(
+        "已确认热点种子主题 id={} channels={} types={}",
+        theme.getId(),
+        committed.getChannelCount(),
+        committed.getSeededChannelTypes());
   }
 
   /**

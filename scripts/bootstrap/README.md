@@ -31,9 +31,9 @@ powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap\Initialize-Chengwen
 
 `default-themes.json`（同次导入）：
 
-- 默认课程主题 / 热点主题：问卷与课表草案，确认后落库系列 + **课壳**（无正文生产）
+- 默认课程主题「AI 自学零基础」、热点主题「AI 前沿热点」：问卷与课表草案，确认后落库系列 + **课壳**（无正文生产）
 - 已确认主题会跳过，避免覆盖手动改过的结构
-- 开源导出使用同目录 `default-themes.oss.json`（最小 Demo Course / Demo Hot News）；见 `scripts/oss/export-to-public.ps1`
+- 开源对外导出用同目录 `default-themes.oss.json`（最小 Demo Course / Demo Hot News）；见 `scripts/oss/export-to-public.ps1`
 
 ## 更新种子
 

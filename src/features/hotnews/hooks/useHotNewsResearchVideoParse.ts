@@ -11,6 +11,48 @@ import {
   asProgressTitles,
 } from "../components/researchPanels";
 
+/** 刷新后恢复解析态的 session 键。 */
+function videoParseSessionKey(topicId: string) {
+  return `cwf.hotnews.videoParse.${topicId}`;
+}
+
+type VideoParseSession = {
+  jobId: string;
+  scope: "batch" | "item";
+  itemId?: string | null;
+};
+
+/** 写入进行中的解析任务，供刷新后恢复。 */
+function rememberVideoParse(topicId: string, session: VideoParseSession) {
+  try {
+    sessionStorage.setItem(videoParseSessionKey(topicId), JSON.stringify(session));
+  } catch {
+    /* private mode */
+  }
+}
+
+/** 清除已记住的解析任务。 */
+function forgetVideoParse(topicId: string) {
+  try {
+    sessionStorage.removeItem(videoParseSessionKey(topicId));
+  } catch {
+    /* ignore */
+  }
+}
+
+/** 读取刷新前记住的解析任务。 */
+function readVideoParse(topicId: string): VideoParseSession | null {
+  try {
+    const raw = sessionStorage.getItem(videoParseSessionKey(topicId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as VideoParseSession;
+    if (!parsed?.jobId) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
 /** 热点调研页：视频解析任务状态与启动逻辑。 */
 export function useHotNewsResearchVideoParse({
   topicId,
@@ -24,7 +66,7 @@ export function useHotNewsResearchVideoParse({
   pendingVideoCount: number;
   items: Array<Record<string, unknown>>;
   setItems: React.Dispatch<React.SetStateAction<Array<Record<string, unknown>>>>;
-  refresh: () => Promise<unknown>;
+  refresh: (silent?: boolean) => Promise<unknown>;
   showNotice: (title: string, message: string) => void;
 }) {
   const [videoParseJobId, setVideoParseJobId] = useState<string | null>(null);
@@ -42,6 +84,37 @@ export function useHotNewsResearchVideoParse({
     titles?: string[];
     parallel?: boolean;
   }>({});
+
+  // 刷新后：若 session 里仍有进行中的 job，继续挂进度条
+  useEffect(() => {
+    if (!topicId) return;
+    const saved = readVideoParse(topicId);
+    if (!saved?.jobId) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const job = await loadJob(saved.jobId);
+        if (cancelled) return;
+        const status = String(job.status || "");
+        if (["pending", "running"].includes(status)) {
+          setVideoParseScope(saved.scope === "item" ? "item" : "batch");
+          setVideoParseItemId(saved.itemId ? String(saved.itemId) : null);
+          setVideoParseBusy(true);
+          setVideoParseJobId(saved.jobId);
+          setVideoParseProgress(Number(job.progress || 0));
+          setVideoParseMessage(String(job.progressMessage || "解析进行中…"));
+          setVideoParseStep(String(job.currentStep || ""));
+        } else {
+          forgetVideoParse(topicId);
+        }
+      } catch {
+        forgetVideoParse(topicId);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [topicId]);
 
   // 轮询视频解析 Job；单条模式顺带刷新条目状态
   useEffect(() => {
@@ -101,11 +174,12 @@ export function useHotNewsResearchVideoParse({
         const status = String(job.status || "");
         if (["succeeded", "failed", "cancelled"].includes(status)) {
           // 先清掉 jobId，避免下次点解析时仍轮询到旧的终态任务
+          forgetVideoParse(topicId);
           setVideoParseBusy(false);
           setVideoParseJobId(null);
           setVideoParseItemId(null);
           setVideoParseMeta({});
-          await refresh();
+          await refresh(true);
           if (status === "succeeded") {
             const output = job.output || {};
             showNotice(
@@ -119,8 +193,8 @@ export function useHotNewsResearchVideoParse({
             );
           }
         } else {
-          // 批量/单条均刷新条目，便于卡片显示 running
-          await refresh();
+          // 批量/单条均刷新条目，便于卡片显示 running；静默避免「加载中」闪烁
+          await refresh(true);
         }
       } catch {
         /* keep polling */
@@ -152,8 +226,10 @@ export function useHotNewsResearchVideoParse({
     });
     try {
       const job = await startHotNewsVideoParse(topicId, {});
+      rememberVideoParse(topicId, { jobId: job.id, scope: "batch" });
       setVideoParseJobId(job.id);
     } catch (error) {
+      forgetVideoParse(topicId);
       setVideoParseBusy(false);
       setVideoParseJobId(null);
       setVideoParseMeta({});
@@ -198,8 +274,14 @@ export function useHotNewsResearchVideoParse({
         itemId,
         resolvedStep ? { fromStep: resolvedStep } : {},
       );
+      rememberVideoParse(topicId, {
+        jobId: job.id,
+        scope: "item",
+        itemId,
+      });
       setVideoParseJobId(job.id);
     } catch (error) {
+      forgetVideoParse(topicId);
       setVideoParseBusy(false);
       setVideoParseJobId(null);
       setVideoParseItemId(null);

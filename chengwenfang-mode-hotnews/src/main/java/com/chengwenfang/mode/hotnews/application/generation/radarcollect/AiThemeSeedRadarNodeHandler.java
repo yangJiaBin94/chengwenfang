@@ -8,7 +8,6 @@ import com.chengwenfang.content.facade.HotNewsThemeBriefingSupport;
 import com.chengwenfang.content.facade.dto.view.ContentThemeView;
 import com.chengwenfang.mode.hotnews.domain.TopicMathUtil;
 import com.chengwenfang.mode.hotnews.facade.HotNewsFacade;
-import com.chengwenfang.mode.hotnews.facade.constant.HotNewsTopicOriginKinds;
 import com.chengwenfang.mode.hotnews.facade.dto.request.AiThemeSeedPersistRequest;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsTopicView;
 import com.chengwenfang.job.facade.JobFacade;
@@ -25,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * 按主题问卷生成 AI 主题种子素材；本批不足 {@link TopicMathUtil#DAILY_TOPIC_LIMIT} 时补齐。
+ * 按主题问卷生成 AI 主题种子素材；本批不足 {@link TopicMathUtil#DAILY_TOPIC_LIMIT} 时补满，已满则跳过。
  * <p>生成结果做标题去重自检；不足或撞题时最多再补生成
  * {@link AiThemeSeedDedupeSupport#MAX_REFILL_RETRIES} 次，仍不足则放弃。
  */
@@ -73,12 +72,11 @@ public class AiThemeSeedRadarNodeHandler implements RadarCollectNodeHandler {
 
     List<HotNewsTopicView> batchTopics = hotNews.listRadarBatchTopics(themeId, radarBatchId);
     int batchCount = batchTopics.size();
-    int existingAiSeeds = countAiThemeSeeds(batchTopics);
-    int need = TopicMathUtil.aiThemeSeedNeed(batchCount, existingAiSeeds);
+    int need = TopicMathUtil.aiThemeSeedNeed(batchCount);
     if (need <= 0) {
       String note = "本批选题已满 "
           + TopicMathUtil.DAILY_TOPIC_LIMIT
-          + " 且已有 AI 主题素材，跳过补全";
+          + " 条，跳过 AI 主题素材补全";
       session.setTopicCount(batchCount);
       lightState.put(RadarCollectGraphStateKeys.TOPIC_COUNT, batchCount);
       lightState.put(RadarCollectGraphStateKeys.AI_THEME_SEED_NOTE, note);
@@ -212,25 +210,6 @@ public class AiThemeSeedRadarNodeHandler implements RadarCollectNodeHandler {
         need,
         refillUsed,
         topicCount);
-  }
-
-  /**
-   * 统计本批 AI 主题种子条数。
-   *
-   * @param topics 本批选题
-   * @return 种子数
-   */
-  private static int countAiThemeSeeds(List<HotNewsTopicView> topics) {
-    if (topics == null || topics.isEmpty()) {
-      return 0;
-    }
-    int count = 0;
-    for (HotNewsTopicView topic : topics) {
-      if (topic != null && HotNewsTopicOriginKinds.isAiThemeSeed(topic.getOriginKind())) {
-        count++;
-      }
-    }
-    return count;
   }
 
   /**

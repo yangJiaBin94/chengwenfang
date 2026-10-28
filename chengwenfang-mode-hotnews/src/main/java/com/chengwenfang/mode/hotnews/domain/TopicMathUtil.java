@@ -29,21 +29,13 @@ public final class TopicMathUtil {
 
   /**
    * 计算本批还需生成的 AI 主题种子条数。
-   * <p>不足 {@link #DAILY_TOPIC_LIMIT} 时按差额补齐；已满但尚无 AI 种子时仍补 1 条参与评分排序；
-   * 已满且已有种子时返回 0（重跑不重复灌入）。
+   * <p>仅当本批选题不足 {@link #DAILY_TOPIC_LIMIT} 时按差额补满；已满（含超额）则返回 0。
    *
-   * @param batchTopicCount     本批当前选题总数（含已有 AI 种子）
-   * @param existingAiSeedCount 本批已有 AI 种子数
+   * @param batchTopicCount 本批当前选题总数（含已有 AI 种子）
    * @return 需要新生成的条数（≥0）
    */
-  public static int aiThemeSeedNeed(int batchTopicCount, int existingAiSeedCount) {
-    int safeBatch = Math.max(0, batchTopicCount);
-    int safeSeeds = Math.max(0, existingAiSeedCount);
-    int deficit = Math.max(0, DAILY_TOPIC_LIMIT - safeBatch);
-    if (deficit > 0) {
-      return deficit;
-    }
-    return safeSeeds > 0 ? 0 : 1;
+  public static int aiThemeSeedNeed(int batchTopicCount) {
+    return Math.max(0, DAILY_TOPIC_LIMIT - Math.max(0, batchTopicCount));
   }
 
   /** 评分用的单条来源证据（可信度由 AI 写作评分判断，此处不含信任等级）。 */

@@ -93,23 +93,13 @@ public class TopicResearchItemVideoParseStrategy
   }
 
   /**
-   * 按探测时长降序重排；未知时长视为 0，排在队尾。
-   * 探测成功且实体尚未落库时长时回写。
+   * 按已落库时长降序重排；未知时长视为 0，排在队尾。
+   * <p>启动阶段不做 yt-dlp 同步探测：探测单条可卡数十秒，会让整批长时间停在「等待线程池调度」。
    *
    * @param items 待解析条目（原地排序）
    */
   public void prioritizeByDuration(List<TopicResearchItemEntity> items) {
-    if (items == null || items.isEmpty()) {
-      return;
-    }
-    for (TopicResearchItemEntity item : items) {
-      if (item == null) {
-        continue;
-      }
-      // 探测并回写缺失时长，供排序与列表展示
-      resolveAndPersistDuration(item);
-    }
-    if (items.size() <= 1) {
+    if (items == null || items.size() <= 1) {
       return;
     }
     items.sort((left, right) -> Integer.compare(
@@ -203,25 +193,6 @@ public class TopicResearchItemVideoParseStrategy
     } catch (Exception ignored) {
       log.warn("标记视频解析失败状态时出错 itemId={}", ownerId);
     }
-  }
-
-  /**
-   * 读取条目时长；未落库则探测并回写。
-   *
-   * @param item 资料池条目
-   * @return 秒数；未知为 0
-   */
-  private int resolveAndPersistDuration(TopicResearchItemEntity item) {
-    if (item.getVideoDurationSeconds() != null && item.getVideoDurationSeconds() > 0) {
-      return item.getVideoDurationSeconds();
-    }
-    Integer seconds = videoTranscriptService.resolveDurationSeconds(item.getUrl());
-    if (seconds == null || seconds <= 0) {
-      return 0;
-    }
-    item.setVideoDurationSeconds(seconds);
-    researchItemMapper.updateById(item);
-    return seconds;
   }
 
   /**

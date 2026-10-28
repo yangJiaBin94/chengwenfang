@@ -18,13 +18,13 @@ class TopicMathUtilTest {
   }
 
   @Test
-  void aiThemeSeedNeed_padsDeficitAndKeepsAtLeastOneWhenEmptySeeds() {
-    assertThat(TopicMathUtil.aiThemeSeedNeed(0, 0)).isEqualTo(10);
-    assertThat(TopicMathUtil.aiThemeSeedNeed(3, 0)).isEqualTo(7);
-    assertThat(TopicMathUtil.aiThemeSeedNeed(9, 0)).isEqualTo(1);
-    assertThat(TopicMathUtil.aiThemeSeedNeed(15, 0)).isEqualTo(1);
-    assertThat(TopicMathUtil.aiThemeSeedNeed(10, 7)).isZero();
-    assertThat(TopicMathUtil.aiThemeSeedNeed(12, 1)).isZero();
+  void aiThemeSeedNeed_onlyPadsWhenBelowDailyLimit() {
+    assertThat(TopicMathUtil.aiThemeSeedNeed(0)).isEqualTo(10);
+    assertThat(TopicMathUtil.aiThemeSeedNeed(3)).isEqualTo(7);
+    assertThat(TopicMathUtil.aiThemeSeedNeed(9)).isEqualTo(1);
+    assertThat(TopicMathUtil.aiThemeSeedNeed(10)).isZero();
+    assertThat(TopicMathUtil.aiThemeSeedNeed(11)).isZero();
+    assertThat(TopicMathUtil.aiThemeSeedNeed(15)).isZero();
   }
 
   @Test
