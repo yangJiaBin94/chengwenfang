@@ -43,6 +43,14 @@ public final class ModelCallScenes {
   public static final String HOT_NEWS_THEME_GITHUB_QUERY = "hot_news_theme_github_query";
   /** 热点主题：AI 生成来源渠道候选。 */
   public static final String HOT_NEWS_THEME_SOURCE_CHANNELS = "hot_news_theme_source_channels";
+  /** 热点主题：推导主要意图。 */
+  public static final String HOT_NEWS_THEME_CORE_INTENT = "hot_news_theme_core_intent";
+  /** 热点主题：推荐采集策略模式。 */
+  public static final String HOT_NEWS_THEME_COLLECT_STRATEGY = "hot_news_theme_collect_strategy";
+  /** 雷达采集：非结构化多轮搜索规划。 */
+  public static final String RADAR_ADAPTIVE_SEARCH_PLAN = "radar_adaptive_search_plan";
+  /** 雷达采集：从搜索结果抽取中间线索实体。 */
+  public static final String RADAR_ADAPTIVE_SEARCH_EXTRACT = "radar_adaptive_search_extract";
 
   /** 热点选题：按主题量表 AI 写作价值打分。 */
   public static final String HOT_NEWS_TOPIC_WRITING_SCORE = "hot_news_topic_writing_score";
@@ -50,6 +58,11 @@ public final class ModelCallScenes {
   public static final String HOT_NEWS_TOPIC_TRANSLATION = "hot_news_topic_translation";
   /** 选题资料池：检索关键词提取。 */
   public static final String HOT_NEWS_TOPIC_RESEARCH_KEYWORDS = "hot_news_topic_research_keywords";
+  /** 选题资料池：AI Agent 多轮检索决策。 */
+  public static final String HOT_NEWS_TOPIC_RESEARCH_AGENT = "hot_news_topic_research_agent";
+  /** 选题资料池：现生成来源策略（优选域/角度，不落库）。 */
+  public static final String HOT_NEWS_TOPIC_RESEARCH_SOURCE_POLICY =
+      "hot_news_topic_research_source_policy";
   /** 选题资料池：相关性过滤。 */
   public static final String HOT_NEWS_TOPIC_RESEARCH_RELEVANCE = "hot_news_topic_research_relevance";
   /** 选题资料池：非中文标题/摘要翻译。 */

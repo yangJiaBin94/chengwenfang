@@ -25,10 +25,11 @@ export function StepNaming({ briefing, setBriefing }: StepNamingProps) {
         />
       </label>
       <label>
-        主题说明（可选）
-        <input
+        我想用这个主题干什么（建议填写，供 AI 分析意图）
+        <textarea
+          rows={3}
           value={briefing.naming.description}
-          placeholder="这个主题关注什么"
+          placeholder="例如：想看 A 股新股涨势、火热板块走势、大公司融资/政策对股价影响，以及炒股大牛最新言论"
           onChange={(event) =>
             setBriefing((current) => ({
               ...current,

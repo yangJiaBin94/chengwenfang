@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 class HotNewsThemeBriefingSupportTest {
 
   @Test
-  void assertReadyToCommit_rejectsEmptyQueries() {
+  void assertReadyToCommit_rejectsEmptyQueriesForStructured() {
     Map<String, Object> briefing = validBriefing();
     @SuppressWarnings("unchecked")
     Map<String, Object> radar = (Map<String, Object>) briefing.get("radar");
@@ -26,6 +26,19 @@ class HotNewsThemeBriefingSupportTest {
     BusinessException exception =
         assertThrows(BusinessException.class, () -> HotNewsThemeBriefingSupport.assertReadyToCommit(briefing));
     assertTrue(exception.getMessage().contains("短关键词"));
+  }
+
+  @Test
+  void assertReadyToCommit_acceptsUnstructuredWithoutQueries() {
+    Map<String, Object> briefing = validBriefing();
+    @SuppressWarnings("unchecked")
+    Map<String, Object> radar = (Map<String, Object>) briefing.get("radar");
+    radar.put("search_queries", List.of());
+    Map<String, Object> strategy = new LinkedHashMap<>();
+    strategy.put("mode", "unstructured");
+    strategy.put("rationale", "需要先发现再深挖");
+    briefing.put("collect_strategy", strategy);
+    assertDoesNotThrow(() -> HotNewsThemeBriefingSupport.assertReadyToCommit(briefing));
   }
 
   @Test
@@ -38,8 +51,17 @@ class HotNewsThemeBriefingSupportTest {
     Map<String, Object> briefing = new LinkedHashMap<>();
     briefing.put("naming", naming);
     briefing.put("radar", radar);
+    putConfirmedIntent(briefing);
+    putStructuredStrategy(briefing);
     putValidRubric(briefing);
     assertDoesNotThrow(() -> HotNewsThemeBriefingSupport.assertReadyToCommit(briefing));
+  }
+
+  @Test
+  void themeContextPrompt_includesCoreIntent() {
+    String prompt = HotNewsThemeBriefingSupport.themeContextPrompt(validBriefing(), "测试主题");
+    assertTrue(prompt.contains("主要意图"));
+    assertTrue(prompt.contains("盯测试领域最新可写事件"));
   }
 
   @Test
@@ -87,15 +109,37 @@ class HotNewsThemeBriefingSupportTest {
     expression.put("boundaries", "");
 
     Map<String, Object> briefing = new LinkedHashMap<>();
-    briefing.put("schema_version", 1);
+    briefing.put("schema_version", 3);
     briefing.put("naming", naming);
     briefing.put("audience", audience);
     briefing.put("value_filters", valueFilters);
     briefing.put("scope", scope);
     briefing.put("radar", radar);
     briefing.put("expression", expression);
+    putConfirmedIntent(briefing);
+    putStructuredStrategy(briefing);
     putValidRubric(briefing);
     return briefing;
+  }
+
+  /** 写入已确认主要意图。 */
+  private static void putConfirmedIntent(Map<String, Object> briefing) {
+    Map<String, Object> intent = new LinkedHashMap<>();
+    intent.put("summary", "盯测试领域最新可写事件");
+    intent.put("material_wants", List.of("产品发布", "开源动态"));
+    intent.put("material_avoids", List.of("机构百科介绍"));
+    intent.put("success_looks_like", "近几天可核实事件且有读者行动点");
+    intent.put("confirmed", true);
+    briefing.put("core_intent", intent);
+  }
+
+  /** 写入结构化采集策略。 */
+  private static void putStructuredStrategy(Map<String, Object> briefing) {
+    Map<String, Object> strategy = new LinkedHashMap<>();
+    strategy.put("mode", "structured");
+    strategy.put("rationale", "固定词可覆盖");
+    strategy.put("user_override", false);
+    briefing.put("collect_strategy", strategy);
   }
 
   /** 写入启用门禁所需的合法评分量表。 */

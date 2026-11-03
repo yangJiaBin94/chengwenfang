@@ -175,6 +175,8 @@ public final class BuiltinConfigInspector {
     expected.add(new ExpectedSkill(HotNewsSkillNames.THEME_SEARCH_QUERIES, hot));
     expected.add(new ExpectedSkill(HotNewsSkillNames.THEME_GITHUB_QUERY, hot));
     expected.add(new ExpectedSkill(HotNewsSkillNames.THEME_SOURCE_CHANNELS, hot));
+    expected.add(new ExpectedSkill(HotNewsSkillNames.THEME_CORE_INTENT, hot));
+    expected.add(new ExpectedSkill(HotNewsSkillNames.THEME_COLLECT_STRATEGY, hot));
     String radar = HotNewsRadarCollectWorkflowKeys.SCENE;
     expected.add(new ExpectedSkill(HotNewsRadarCollectSkillNames.ARTICLE_FACT_BRIEF, radar));
     expected.add(new ExpectedSkill(HotNewsRadarCollectSkillNames.ARTICLE_PUBLISH_DATE, radar));

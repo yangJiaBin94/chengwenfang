@@ -41,6 +41,18 @@ export function emptyBriefing(): BriefingState {
       tone: "chatty_tech",
       boundaries: "",
     },
+    core_intent: {
+      summary: "",
+      material_wants: [],
+      material_avoids: [],
+      success_looks_like: "",
+      confirmed: false,
+    },
+    collect_strategy: {
+      mode: "",
+      rationale: "",
+      user_override: false,
+    },
     scoring_rubric: null,
   };
 }
@@ -88,6 +100,19 @@ export function validateRubric(rubric: ScoringRubric | null | undefined): string
 /** 多选 chip 切换。 */
 export function toggleInList(list: string[], value: string): string[] {
   return list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
+}
+
+/** SearXNG 渠道键（非结构化强制保留）。 */
+export const SEARXNG_CHANNEL = "searxng";
+
+/**
+ * 确保渠道列表含 SearXNG（非结构化策略锁定用）。
+ *
+ * @param channels 当前渠道
+ * @return 含 searxng 的新列表
+ */
+export function ensureSearxngChannel(channels: string[]): string[] {
+  return channels.includes(SEARXNG_CHANNEL) ? channels : [...channels, SEARXNG_CHANNEL];
 }
 
 /**
@@ -148,32 +173,43 @@ export function mergeSearchQueries(current: string[], incoming: string[]): strin
 }
 
 /**
- * 恢复向导步骤。schema_version≥2 为四步（含评分量表）；≥1 为旧三步；更早为五步草稿。
+ * 恢复向导步骤。schema_version≥3 为五步（含意图）；≥2 为四步；≥1 为旧三步。
  *
  * @param savedStep 已保存的 step
  * @param schemaVersion briefing.schema_version；缺省视为旧稿
- * @return 1–4
+ * @return 1–5
  */
 export function mapResumeStep(savedStep: number, schemaVersion?: number): number {
+  if (typeof schemaVersion === "number" && schemaVersion >= 3) {
+    return Math.min(5, Math.max(1, savedStep));
+  }
   if (typeof schemaVersion === "number" && schemaVersion >= 2) {
-    return Math.min(4, Math.max(1, savedStep));
+    // 旧四步：1 命名，2 采集，3 量表，4 确认 → 插入意图后变为 1,3,4,5
+    if (savedStep <= 1) {
+      return 1;
+    }
+    if (savedStep === 2) {
+      return 3;
+    }
+    if (savedStep === 3) {
+      return 4;
+    }
+    return 5;
   }
   if (typeof schemaVersion === "number" && schemaVersion >= 1) {
     if (savedStep <= 1) {
       return 1;
     }
     if (savedStep === 2) {
-      return 2;
+      return 3;
     }
-    // 旧「确认启用」映射到新第 4 步；中间补评分量表步
-    return savedStep >= 3 ? 4 : 3;
+    return savedStep >= 3 ? 5 : 4;
   }
-  // 旧 5 步：2/3/4 → 采集范围，≥5 → 确认启用
   if (savedStep <= 1) {
     return 1;
   }
   if (savedStep === 2 || savedStep === 3 || savedStep === 4) {
-    return 2;
+    return 3;
   }
-  return 4;
+  return 5;
 }

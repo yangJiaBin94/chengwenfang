@@ -60,6 +60,13 @@ export const TAVILY_DEFAULT_MAX_RESULTS = 8;
 /** Tavily 默认 topic。 */
 export const TAVILY_DEFAULT_TOPIC = "news";
 
+/** Tavily topic 可选项。 */
+export const TAVILY_TOPIC_OPTIONS = [
+  { value: "news", label: "新闻 (news)" },
+  { value: "general", label: "通用 (general)" },
+  { value: "finance", label: "金融 (finance)" },
+] as const;
+
 /** Tavily 默认 search_depth。 */
 export const TAVILY_DEFAULT_SEARCH_DEPTH = "advanced";
 
@@ -111,7 +118,7 @@ export const SEARCH_ENGINE_FORM_META: Record<
     defaultMaxResults: TAVILY_DEFAULT_MAX_RESULTS,
     baseUrlHint: "官方固定 API 地址，无需修改。",
     queriesHint:
-      "按「资讯/事件」写查询词，少写纯厂商名。换行或英文逗号 = 多次搜索；同行 OR/AND 仍算一次。默认 topic=news。",
+      "按「资讯/事件」写查询词，少写纯厂商名。换行或英文逗号 = 多次搜索；同行 OR/AND 仍算一次。金融主题可把 topic 设为 finance。",
     maxResultsHint: "每一条查询词最多保留多少条结果（不是全部查询合计）。",
     apiKeyHint: "在 Tavily 控制台创建，形如 tvly-…；仅服务端保存，列表不回传明文。",
   },

@@ -43,4 +43,10 @@ public final class HotNewsSkillNames {
    * 来源管理：根据主题说明推荐可采集的 RSS / 网页 / 搜索渠道。
    */
   public static final String THEME_SOURCE_CHANNELS = "热点主题来源渠道推荐";
+
+  /** 热点主题创建：从名称/说明推导主要意图。 */
+  public static final String THEME_CORE_INTENT = "热点主题主要意图分析";
+
+  /** 热点主题创建：推荐结构化/非结构化采集策略。 */
+  public static final String THEME_COLLECT_STRATEGY = "热点主题采集策略推荐";
 }

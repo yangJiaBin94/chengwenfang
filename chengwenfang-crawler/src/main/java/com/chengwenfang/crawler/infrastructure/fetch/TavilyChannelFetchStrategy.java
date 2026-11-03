@@ -88,11 +88,17 @@ public class TavilyChannelFetchStrategy implements ChannelFetchStrategy {
       return new FetchResult(false, ex.getClass().getSimpleName(), ex.getMessage(), List.of());
     }
 
-    log.info("Tavily 开始并行查询 查询数={} topic={}", queries.size(), topic);
+    log.info(
+        "Tavily 开始并行查询 查询数={} topic={} timeRange={} includeDomains={} excludeDomains={}",
+        queries.size(),
+        topic,
+        config.getTimeRange(),
+        config.getIncludeDomains() == null ? 0 : config.getIncludeDomains().size(),
+        config.getExcludeDomains() == null ? 0 : config.getExcludeDomains().size());
     List<CompletableFuture<List<FetchedItemView>>> futures = new ArrayList<>();
     for (String query : queries) {
       futures.add(CompletableFuture.supplyAsync(
-          () -> searchOne(apiUrl, apiKey, query, maxResults, topic, depth, context),
+          () -> searchOne(apiUrl, apiKey, query, maxResults, topic, depth, config, context),
           channelFetchExecutor));
     }
     FetchedItemMerger merger = new FetchedItemMerger();
@@ -137,14 +143,23 @@ public class TavilyChannelFetchStrategy implements ChannelFetchStrategy {
       int maxResults,
       String topic,
       String depth,
+      ChannelFetchConfig config,
       ChannelFetchContext context) {
-    TavilySearchRequest requestBody = TavilySearchRequest.builder()
+    TavilySearchRequest.TavilySearchRequestBuilder builder = TavilySearchRequest.builder()
         .apiKey(apiKey)
         .query(query)
         .topic(topic)
         .searchDepth(depth)
         .maxResults(maxResults)
-        .build();
+        .timeRange(blankToNull(config.getTimeRange()))
+        .includeRawContent(config.getIncludeRawContent());
+    if (config.getIncludeDomains() != null && !config.getIncludeDomains().isEmpty()) {
+      builder.includeDomains(new ArrayList<>(config.getIncludeDomains()));
+    }
+    if (config.getExcludeDomains() != null && !config.getExcludeDomains().isEmpty()) {
+      builder.excludeDomains(new ArrayList<>(config.getExcludeDomains()));
+    }
+    TavilySearchRequest requestBody = builder.build();
     try {
       urlGuard.limit(apiUrl);
       try (HttpResponse response = HttpRequest.post(apiUrl)
@@ -163,6 +178,10 @@ public class TavilyChannelFetchStrategy implements ChannelFetchStrategy {
       log.warn("Tavily 查询异常 query={} err={}", query, ex.getMessage());
       return List.of();
     }
+  }
+
+  private static String blankToNull(String value) {
+    return value == null || value.isBlank() ? null : value.trim();
   }
 
   /**
@@ -192,7 +211,11 @@ public class TavilyChannelFetchStrategy implements ChannelFetchStrategy {
       }
       LocalDateTime published = FetchStrategySupport.resolvePublishedAt(
           parsePublished(item.getPublishedDate()), url);
-      FetchedItemView view = FetchStrategySupport.item(title, url, item.getContent(), null, published);
+      String summary = item.getRawContent();
+      if (summary == null || summary.isBlank()) {
+        summary = item.getContent();
+      }
+      FetchedItemView view = FetchStrategySupport.item(title, url, summary, null, published);
       view.setSearchQuery(searchQuery);
       out.add(view);
     }

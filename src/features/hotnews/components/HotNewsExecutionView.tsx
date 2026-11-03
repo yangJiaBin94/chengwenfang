@@ -68,6 +68,7 @@ export function HotNewsExecutionView(props: Record<string, any>) {
     attemptNodes,
     currentStageIndex,
     currentStageKey,
+    displayStatus,
     effectiveCurrentStageKey,
     events,
     goBackToWorkspace,

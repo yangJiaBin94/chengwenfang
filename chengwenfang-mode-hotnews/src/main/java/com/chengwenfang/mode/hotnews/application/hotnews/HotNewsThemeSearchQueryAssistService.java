@@ -49,8 +49,14 @@ public class HotNewsThemeSearchQueryAssistService {
     String description = StrUtil.trim(StrUtil.nullToEmpty(body.getDescription()));
     String domainLabel = StrUtil.trim(StrUtil.nullToEmpty(body.getDomainLabel()));
     List<String> mustWatch = body.getMustWatch() == null ? List.of() : body.getMustWatch();
+    String intentSummary = StrUtil.trim(StrUtil.nullToEmpty(body.getIntentSummary()));
+    List<String> materialWants =
+        body.getMaterialWants() == null ? List.of() : body.getMaterialWants();
+    List<String> materialAvoids =
+        body.getMaterialAvoids() == null ? List.of() : body.getMaterialAvoids();
 
-    List<String> fromAi = tryAi(name, description, domainLabel, mustWatch);
+    List<String> fromAi = tryAi(
+        name, description, domainLabel, mustWatch, intentSummary, materialWants, materialAvoids);
     if (CollUtil.isNotEmpty(fromAi)) {
       return HotNewsSearchQuerySuggestView.builder().queries(fromAi).fromAi(true).build();
     }
@@ -62,23 +68,39 @@ public class HotNewsThemeSearchQueryAssistService {
   /**
    * 调用文本模型并解析 queries。
    *
-   * @param name         主题名
-   * @param description  说明
-   * @param domainLabel  领域
-   * @param mustWatch    关注实体
+   * @param name           主题名
+   * @param description    说明
+   * @param domainLabel    领域
+   * @param mustWatch      关注实体
+   * @param intentSummary  主要意图
+   * @param materialWants  要的素材
+   * @param materialAvoids 不要的素材
    * @return 规范化短词；失败空列表
    */
   private List<String> tryAi(
-      String name, String description, String domainLabel, List<String> mustWatch) {
+      String name,
+      String description,
+      String domainLabel,
+      List<String> mustWatch,
+      String intentSummary,
+      List<String> materialWants,
+      List<String> materialAvoids) {
     String userPrompt = """
         主题名称：%s
         领域：%s
         主题说明：%s
+        主要意图：%s
+        要的素材：%s
+        不要的素材：%s
         关注实体：%s
+        要求：按「主体+动作/事件」写短搜索词，禁止只写机构名/百科实体名。
         """.formatted(
         StrUtil.blankToDefault(name, "未命名"),
         StrUtil.blankToDefault(domainLabel, "未指定"),
         StrUtil.blankToDefault(description, "无"),
+        StrUtil.blankToDefault(intentSummary, "无"),
+        materialWants.isEmpty() ? "无" : String.join("、", materialWants),
+        materialAvoids.isEmpty() ? "无" : String.join("、", materialAvoids),
         mustWatch.isEmpty() ? "无" : String.join("、", mustWatch));
     String systemPrompt = resolveSystemPrompt();
     if (StrUtil.isBlank(systemPrompt)) {

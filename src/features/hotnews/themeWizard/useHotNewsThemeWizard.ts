@@ -5,6 +5,8 @@ import {
   getContentTheme,
   hotNewsThemePath,
   patchThemeBriefing,
+  suggestHotNewsCollectStrategy,
+  suggestHotNewsCoreIntent,
   suggestHotNewsGithubQuery,
   suggestHotNewsScoringRubric,
   suggestHotNewsSearchQueries,
@@ -17,11 +19,13 @@ import {
   MAX_SEARCH_QUERIES,
   MAX_SEARCH_QUERY_CHARS,
   MIN_RUBRIC_DIMS,
+  WIZARD_STEP_COUNT,
 } from "./constants";
 import {
   atomizeSearchTerms,
   domainLabelOf,
   emptyBriefing,
+  ensureSearxngChannel,
   mapResumeStep,
   mergeSearchQueries,
   parseSearchQueries,
@@ -52,6 +56,8 @@ export function useHotNewsThemeWizard({
   const [suggesting, setSuggesting] = useState(false);
   const [rubricGenerating, setRubricGenerating] = useState(false);
   const [githubQueryGenerating, setGithubQueryGenerating] = useState(false);
+  const [intentGenerating, setIntentGenerating] = useState(false);
+  const [strategyGenerating, setStrategyGenerating] = useState(false);
   /** 首次建稿后 navigate 会改 URL；跳过紧随其后的 resume 重载，避免冲掉表单。 */
   const skipNextResumeLoadRef = useRef(false);
   /** resume 加载代数，用于丢弃过期响应。 */
@@ -61,7 +67,7 @@ export function useHotNewsThemeWizard({
   showNoticeRef.current = showNotice;
 
   const stepTitle = useMemo(() => {
-    const titles = ["", "基本信息", "采集范围", "评分量表", "确认启用"];
+    const titles = ["", "基本信息", "意图与策略", "采集范围", "评分量表", "确认启用"];
     return titles[step] || "";
   }, [step]);
 
@@ -106,6 +112,14 @@ export function useHotNewsThemeWizard({
             scope: { ...emptyBriefing().scope, ...parsed.scope },
             radar: { ...emptyBriefing().radar, ...parsed.radar },
             expression: { ...emptyBriefing().expression, ...parsed.expression },
+            core_intent: {
+              ...emptyBriefing().core_intent,
+              ...(parsed as BriefingState).core_intent,
+            },
+            collect_strategy: {
+              ...emptyBriefing().collect_strategy,
+              ...(parsed as BriefingState).collect_strategy,
+            },
             scoring_rubric: parsedRubric?.dimensions?.length ? parsedRubric : null,
           });
           const queries = parseSearchQueries(
@@ -158,7 +172,7 @@ export function useHotNewsThemeWizard({
     const normalized = atomizeSearchTerms(nextQueries).slice(0, MAX_SEARCH_QUERIES);
     const payload = {
       ...nextBriefing,
-      schema_version: 2,
+      schema_version: 3,
       step: nextStep,
       scoring_rubric: nextBriefing.scoring_rubric || null,
       radar: {
@@ -246,6 +260,9 @@ export function useHotNewsThemeWizard({
         description: briefing.naming.description,
         domainLabel: domainLabelOf(briefing),
         mustWatch: [],
+        intentSummary: briefing.core_intent.summary,
+        materialWants: briefing.core_intent.material_wants,
+        materialAvoids: briefing.core_intent.material_avoids,
       });
       const next = atomizeSearchTerms(result.queries || []).slice(0, MAX_SEARCH_QUERIES);
       if (!result.fromAi || next.length === 0) {
@@ -440,6 +457,128 @@ export function useHotNewsThemeWizard({
     });
   }
 
+  /** AI 推导主要意图。 */
+  async function generateIntentByAi() {
+    if (!briefing.naming.name.trim()) {
+      showNotice("请先填写主题名称", "第一步的主题名称会用于分析意图。");
+      return;
+    }
+    setIntentGenerating(true);
+    try {
+      const result = await suggestHotNewsCoreIntent({
+        name: briefing.naming.name,
+        description: briefing.naming.description,
+        domainLabel: domainLabelOf(briefing),
+      });
+      const intent = result.intent;
+      if (!result.fromAi || !intent?.summary?.trim()) {
+        showNotice("AI 未能分析意图", "请检查 AI 设置后重试，或手动填写意图。");
+        return;
+      }
+      resumeLoadGenerationRef.current += 1;
+      const nextBriefing: BriefingState = {
+        ...briefing,
+        core_intent: {
+          summary: intent.summary,
+          material_wants: intent.materialWants || [],
+          material_avoids: intent.materialAvoids || [],
+          success_looks_like: intent.successLooksLike || "",
+          confirmed: false,
+        },
+      };
+      setBriefing(nextBriefing);
+      if (themeId) {
+        await saveBriefing(step, nextBriefing, searchQueries);
+      }
+      showNotice("已生成主要意图", "请核对后点「确认此意图」。");
+    } catch (error) {
+      showNotice(
+        "AI 分析失败",
+        error instanceof Error ? error.message : "请检查 AI 设置后重试",
+      );
+    } finally {
+      setIntentGenerating(false);
+    }
+  }
+
+  /** 确认意图并落盘（有草稿时立即写入，避免刷新丢失）。 */
+  async function confirmIntent() {
+    if (!briefing.core_intent.summary.trim()) {
+      showNotice("请完善意图", "一句话意图不能为空。");
+      return;
+    }
+    const nextBriefing: BriefingState = {
+      ...briefing,
+      core_intent: { ...briefing.core_intent, confirmed: true },
+    };
+    setBriefing(nextBriefing);
+    if (themeId) {
+      try {
+        await saveBriefing(step, nextBriefing, searchQueries);
+      } catch (error) {
+        showNotice(
+          "保存失败",
+          error instanceof Error ? error.message : "意图已确认但未写入服务器，请稍后重试下一步。",
+        );
+        return;
+      }
+    }
+    showNotice("意图已确认", "可继续让 AI 推荐采集策略，或手动选择。");
+  }
+
+  /** AI 推荐采集策略。 */
+  async function generateStrategyByAi() {
+    if (!briefing.core_intent.summary.trim()) {
+      showNotice("请先填写意图", "需要主要意图才能推荐策略。");
+      return;
+    }
+    setStrategyGenerating(true);
+    try {
+      const result = await suggestHotNewsCollectStrategy({
+        name: briefing.naming.name,
+        description: briefing.naming.description,
+        domainLabel: domainLabelOf(briefing),
+        intentSummary: briefing.core_intent.summary,
+        materialWants: briefing.core_intent.material_wants,
+        materialAvoids: briefing.core_intent.material_avoids,
+      });
+      const strategy = result.strategy;
+      if (!strategy?.mode) {
+        showNotice("未能推荐策略", "请手动选择结构化或非结构化。");
+        return;
+      }
+      resumeLoadGenerationRef.current += 1;
+      const seedChannels =
+        strategy.mode === "unstructured"
+          ? ensureSearxngChannel(briefing.radar.seed_channels)
+          : briefing.radar.seed_channels;
+      const nextBriefing: BriefingState = {
+        ...briefing,
+        collect_strategy: {
+          mode: strategy.mode,
+          rationale: strategy.rationale || "",
+          user_override: false,
+        },
+        radar: { ...briefing.radar, seed_channels: seedChannels },
+      };
+      setBriefing(nextBriefing);
+      if (themeId) {
+        await saveBriefing(step, nextBriefing, searchQueries);
+      }
+      showNotice(
+        "已推荐采集策略",
+        `${strategy.mode === "unstructured" ? "非结构化" : "结构化"}：${strategy.rationale || ""}`,
+      );
+    } catch (error) {
+      showNotice(
+        "推荐失败",
+        error instanceof Error ? error.message : "请检查 AI 设置后重试",
+      );
+    } finally {
+      setStrategyGenerating(false);
+    }
+  }
+
   async function goNext() {
     let nextBriefing = briefing;
     let nextQueries = searchQueries;
@@ -454,17 +593,42 @@ export function useHotNewsThemeWizard({
     }
 
     if (step === 2) {
+      if (!briefing.core_intent.summary.trim() || !briefing.core_intent.confirmed) {
+        showNotice("请确认主要意图", "请先 AI 分析或手写意图，并点「确认此意图」。");
+        return;
+      }
+      if (!briefing.collect_strategy.mode) {
+        showNotice("请选择采集策略", "请点「AI 推荐策略」或手动选择。");
+        return;
+      }
+      nextBriefing = briefing;
+    }
+
+    if (step === 3) {
+      const unstructured = briefing.collect_strategy.mode === "unstructured";
       const normalized = atomizeSearchTerms(searchQueries).slice(0, MAX_SEARCH_QUERIES);
-      if (normalized.length === 0) {
+      if (!unstructured && normalized.length === 0) {
         showNotice(
           "请完善必填项",
-          `请点「AI 生成」或手动追加短关键词（最多 ${MAX_SEARCH_QUERIES} 条，每条 ≤${MAX_SEARCH_QUERY_CHARS} 字）。`,
+          `结构化策略须点「AI 生成」或手动追加短关键词（最多 ${MAX_SEARCH_QUERIES} 条）。`,
         );
         return;
       }
       if (briefing.radar.seed_channels.length === 0) {
         showNotice("请完善必填项", "请至少选择一个初始搜索渠道。");
         return;
+      }
+      if (unstructured) {
+        const hasWeb =
+          briefing.radar.seed_channels.includes("searxng") ||
+          briefing.radar.seed_channels.includes("tavily");
+        if (!hasWeb) {
+          showNotice(
+            "请完善必填项",
+            "非结构化策略须勾选 SearXNG 或 Tavily 作为联网搜索通道。",
+          );
+          return;
+        }
       }
       if (
         briefing.radar.seed_channels.includes("github") &&
@@ -479,13 +643,19 @@ export function useHotNewsThemeWizard({
       nextQueries = normalized;
       nextBriefing = {
         ...briefing,
-        radar: { ...briefing.radar, search_queries: normalized },
+        radar: {
+          ...briefing.radar,
+          search_queries: normalized,
+          seed_channels: unstructured
+            ? ensureSearxngChannel(briefing.radar.seed_channels)
+            : briefing.radar.seed_channels,
+        },
       };
       setBriefing(nextBriefing);
       setSearchQueries(normalized);
     }
 
-    if (step === 3) {
+    if (step === 4) {
       const error = validateRubric(briefing.scoring_rubric);
       if (error) {
         showNotice("请完善评分量表", error);
@@ -495,8 +665,12 @@ export function useHotNewsThemeWizard({
 
     try {
       setBusy(true);
-      await saveBriefing(Math.min(leavingStep + 1, 4), nextBriefing, nextQueries);
-      setStep((current) => Math.min(current + 1, 4));
+      await saveBriefing(
+        Math.min(leavingStep + 1, WIZARD_STEP_COUNT),
+        nextBriefing,
+        nextQueries,
+      );
+      setStep((current) => Math.min(current + 1, WIZARD_STEP_COUNT));
     } catch (error) {
       showNotice("保存失败", error instanceof Error ? error.message : "请稍后重试");
       return;
@@ -508,8 +682,17 @@ export function useHotNewsThemeWizard({
   async function commit() {
     setBusy(true);
     try {
+      const unstructured = briefing.collect_strategy.mode === "unstructured";
       const normalized = atomizeSearchTerms(searchQueries).slice(0, MAX_SEARCH_QUERIES);
-      if (normalized.length === 0) {
+      if (!briefing.core_intent.confirmed || !briefing.core_intent.summary.trim()) {
+        showNotice("请确认主要意图", "启用前须确认主要意图。");
+        return;
+      }
+      if (!briefing.collect_strategy.mode) {
+        showNotice("请选择采集策略", "启用前须选定策略模式。");
+        return;
+      }
+      if (!unstructured && normalized.length === 0) {
         showNotice(
           "请完善必填项",
           `请至少确认一条可检索短关键词（每条不超过 ${MAX_SEARCH_QUERY_CHARS} 字）。`,
@@ -523,10 +706,15 @@ export function useHotNewsThemeWizard({
       }
       const nextBriefing = {
         ...briefing,
-        radar: { ...briefing.radar, search_queries: normalized },
+        radar: {
+          ...briefing.radar,
+          search_queries: normalized,
+          seed_channels: unstructured
+            ? ensureSearxngChannel(briefing.radar.seed_channels)
+            : briefing.radar.seed_channels,
+        },
         scoring_rubric: briefing.scoring_rubric,
       };
-      // 若上次已启用成功但未离开向导，直接回总览，避免再次 patch 草稿报错
       if (themeId) {
         const existing = await getContentTheme(themeId);
         if (existing.status === "enabled") {
@@ -535,7 +723,7 @@ export function useHotNewsThemeWizard({
           return;
         }
       }
-      const updated = await saveBriefing(4, nextBriefing, normalized);
+      const updated = await saveBriefing(WIZARD_STEP_COUNT, nextBriefing, normalized);
       const result = await commitHotNewsTheme(updated.id);
       const enabled = await getContentTheme(result.themeId);
       showNotice(
@@ -565,11 +753,16 @@ export function useHotNewsThemeWizard({
     suggesting,
     rubricGenerating,
     githubQueryGenerating,
+    intentGenerating,
+    strategyGenerating,
     onCancel,
     addQueryChip,
     generateQueriesByAi,
     generateGithubQueryByAi,
     generateRubricByAi,
+    generateIntentByAi,
+    generateStrategyByAi,
+    confirmIntent,
     patchRubricDimension,
     removeRubricDimension,
     addRubricDimension,

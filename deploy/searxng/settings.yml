@@ -2,10 +2,12 @@
 # 改此文件后执行：docker compose --profile searxng up -d --force-recreate searxng
 #
 # 策略：
-# - 国内引擎永久开启（360 / 夸克 / B站 / 百度 / Bing …）
-# - 海外视频引擎保持开启（YouTube 等）；整次搜索由 max_request_timeout 封顶，超时后其余结果仍返回
+# - 国内网页引擎开启（360 / 夸克 / 百度 / Bing / 搜狗）；视频站引擎关闭，避免资料补充被 B 站占满
 # - 易拖垮整次搜索的海外网页引擎关闭（google cse / brave / duckduckgo / reuters …）
+# - 若确需 Google 网页：将下方 google cse / google news 的 disabled 改为 false，并放宽 max_request_timeout
+# - 百度/夸克若 CAPTCHA 挂起，仍可靠 Bing/360/搜狗出图文结果
 # 完整选项：https://docs.searxng.org/admin/settings/settings.html
+# 热点主题「非结构化」策略会按主要意图多轮调用本实例；结构化策略主要用主题渠道里的固定 queries
 use_default_settings: true
 
 general:
@@ -72,8 +74,9 @@ engines:
     timeout: 6.0
   - name: quark
     disabled: false
+  # 资料补充要图文/公告；B 站引擎打开后命中几乎全是视频，且业务侧还会屏蔽 bilibili.com
   - name: bilibili
-    disabled: false
+    disabled: true
   - name: baidu
     disabled: false
   - name: baidu kaifa
@@ -85,10 +88,10 @@ engines:
   - name: sogou
     disabled: false
 
-  # —— 开启：海外视频（能拿到就用；超时记 unresponsive，不阻断其它引擎）——
+  # —— 关闭：视频引擎（与资料补充屏蔽视频站一致）——
   - name: youtube
-    disabled: false
+    disabled: true
   - name: google videos
-    disabled: false
+    disabled: true
   - name: dailymotion
-    disabled: false
+    disabled: true

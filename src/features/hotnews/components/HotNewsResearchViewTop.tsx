@@ -183,7 +183,7 @@ export function HotNewsResearchViewTop({
             title={
               videoParseBusy
                 ? "视频解析进行中，请完成后再补充资料"
-                : undefined
+                : "检索并做话题相关性过滤"
             }
             onClick={() => void research()}
           >
@@ -194,7 +194,7 @@ export function HotNewsResearchViewTop({
                 ? indeterminate
                   ? "执行中..."
                   : `执行中 ${progress}%`
-                : "补充资料与核验"}
+                : "补充资料"}
           </button>
         </div>
       </header>
@@ -216,7 +216,7 @@ export function HotNewsResearchViewTop({
           <span>
             {latest
               ? `本次整理 ${itemCount} 条资料`
-              : "点击「补充资料与核验」开始检索"}
+              : "点击「补充资料」开始检索与话题过滤"}
           </span>
         </div>
         {active ? (

@@ -40,12 +40,20 @@ public class RadarCollectAiSupport {
   private static final int MARKETING_SNIPPET_MAX_CHARS = 6_000;
   /** 主题相关性一次送审的标题条数。 */
   private static final int THEME_BATCH_SIZE = 40;
-  /** 词典未命中时的系统提示：只列明显偏题，拿不准的留下。 */
+  /** 无主要意图时的系统提示：只列明显偏题，拿不准的留下。 */
   private static final String THEME_BATCH_SYSTEM = """
       你是热点素材编辑。根据主题信号判断标题是否明显偏题。
       新模型名、产品名、开源发布、行业日报，只要属于该主题领域，都算相关。
       只把明显不属于该主题的条目 id 列出来。拿不准的不要列。
       只输出 JSON：{"offTopicIds":["id"]}。没有偏题时输出 {"offTopicIds":[]}。
+      """;
+  /** 有主要意图时：按意图契合度筛，百科/机构介绍与避免项一律剔除。 */
+  private static final String INTENT_BATCH_SYSTEM = """
+      你是热点素材编辑。根据「主要意图」判断标题是否不符合用户要的素材。
+      剔除：明显踩「不要的素材」、机构百科/职能介绍、无近期可写事件的官网介绍、与「要的素材」明显无关。
+      保留：符合要的素材类型、近期可核实事件、板块/个股/政策/融资/人物观点等可写线索。
+      拿不准但领域相邻的事件可保留；纯百科介绍必须剔除。
+      只输出 JSON：{"offTopicIds":["id"]}。没有不符时输出 {"offTopicIds":[]}。
       """;
 
   /** Skill 门面。 */
@@ -163,13 +171,29 @@ public class RadarCollectAiSupport {
    */
   public Set<String> findOffTopicIds(
       ThemeTitleRelevance.Profile profile, List<RadarCollectCandidate> candidates) {
+    return findOffTopicIds(profile, "", candidates);
+  }
+
+  /**
+   * 按主题信号与可选主要意图筛选不符素材。
+   *
+   * @param profile          主题信号
+   * @param coreIntentPrompt 主要意图提示块；可空
+   * @param candidates       待判定候选
+   * @return 明确不符的临时 ID
+   */
+  public Set<String> findOffTopicIds(
+      ThemeTitleRelevance.Profile profile,
+      String coreIntentPrompt,
+      List<RadarCollectCandidate> candidates) {
     if (profile == null || candidates == null || candidates.isEmpty()) {
       return Set.of();
     }
     Set<String> offTopic = new LinkedHashSet<>();
     for (int offset = 0; offset < candidates.size(); offset += THEME_BATCH_SIZE) {
       int end = Math.min(candidates.size(), offset + THEME_BATCH_SIZE);
-      offTopic.addAll(findOffTopicChunk(profile, candidates.subList(offset, end)));
+      offTopic.addAll(
+          findOffTopicChunk(profile, coreIntentPrompt, candidates.subList(offset, end)));
     }
     return offTopic;
   }
@@ -190,19 +214,25 @@ public class RadarCollectAiSupport {
   }
 
   /**
-   * 问一轮模型，只收回本批里明确偏题的 ID。
+   * 问一轮模型，只收回本批里明确不符的 ID。
    *
-   * @param profile 主题信号
-   * @param chunk   本批候选
-   * @return 偏题 ID；失败为空集
+   * @param profile          主题信号
+   * @param coreIntentPrompt 主要意图；可空
+   * @param chunk            本批候选
+   * @return 不符 ID；失败为空集
    */
   private Set<String> findOffTopicChunk(
-      ThemeTitleRelevance.Profile profile, List<RadarCollectCandidate> chunk) {
+      ThemeTitleRelevance.Profile profile,
+      String coreIntentPrompt,
+      List<RadarCollectCandidate> chunk) {
     StringBuilder user = new StringBuilder();
     user.append("主题：").append(StrUtil.nullToEmpty(profile.themeName())).append('\n');
     user.append("搜索词：").append(joinSignals(profile.searchQueries())).append('\n');
-    user.append("关注点：").append(joinSignals(profile.mustWatch())).append("\n\n");
-    user.append("待判定标题（id|标题）：\n");
+    user.append("关注点：").append(joinSignals(profile.mustWatch())).append('\n');
+    if (StrUtil.isNotBlank(coreIntentPrompt)) {
+      user.append(coreIntentPrompt).append('\n');
+    }
+    user.append("\n待判定标题（id|标题）：\n");
     Set<String> knownIds = new LinkedHashSet<>();
     for (RadarCollectCandidate candidate : chunk) {
       if (candidate == null || StrUtil.isBlank(candidate.getTempId())) {
@@ -217,7 +247,8 @@ public class RadarCollectAiSupport {
     if (knownIds.isEmpty()) {
       return Set.of();
     }
-    String text = complete(THEME_BATCH_SYSTEM, user.toString(), ModelCallScenes.RADAR_CANDIDATE_FILTER_THEME);
+    String system = StrUtil.isNotBlank(coreIntentPrompt) ? INTENT_BATCH_SYSTEM : THEME_BATCH_SYSTEM;
+    String text = complete(system, user.toString(), ModelCallScenes.RADAR_CANDIDATE_FILTER_THEME);
     Set<String> offTopic = new LinkedHashSet<>();
     for (String id : parseOffTopicIds(text)) {
       if (knownIds.contains(StrUtil.trim(id))) {

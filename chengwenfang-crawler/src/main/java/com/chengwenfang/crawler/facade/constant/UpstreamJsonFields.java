@@ -42,6 +42,16 @@ public final class UpstreamJsonFields {
   public static final String SEARCH_DEPTH = "search_depth";
   /** Tavily max_results。 */
   public static final String MAX_RESULTS = "max_results";
+  /** Tavily include_domains。 */
+  public static final String INCLUDE_DOMAINS = "include_domains";
+  /** Tavily exclude_domains。 */
+  public static final String EXCLUDE_DOMAINS = "exclude_domains";
+  /** Tavily include_raw_content。 */
+  public static final String INCLUDE_RAW_CONTENT = "include_raw_content";
+  /** Tavily raw_content。 */
+  public static final String RAW_CONTENT = "raw_content";
+  /** Tavily 单条 query 建议上限（字符）。 */
+  public static final int TAVILY_MAX_QUERY_CHARS = 400;
   /** SearXNG q。 */
   public static final String Q = "q";
   /** SearXNG format。 */

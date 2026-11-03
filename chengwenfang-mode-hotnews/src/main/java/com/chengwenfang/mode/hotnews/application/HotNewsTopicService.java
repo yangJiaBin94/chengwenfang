@@ -263,6 +263,16 @@ public class HotNewsTopicService {
   }
 
   /**
+   * 按主键加载选题并行锁，供资料补充与视频解析启动互斥。
+   *
+   * @param topicId 选题主键
+   * @return 选题实体
+   */
+  public TopicClusterEntity requireTopicLocked(String topicId) {
+    return query.requireTopicLocked(topicId);
+  }
+
+  /**
    * 组装主题标题相关性信号：聚合主题下渠道搜索词（优先当前渠道）。
    *
    * @param themeId   主题 ID

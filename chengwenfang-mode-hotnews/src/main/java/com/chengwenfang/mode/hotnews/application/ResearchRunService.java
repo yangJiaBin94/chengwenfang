@@ -21,7 +21,9 @@ import com.chengwenfang.job.facade.dto.job.HotNewsTopicResearchJobInput;
 import com.chengwenfang.job.facade.dto.view.JobView;
 import com.chengwenfang.job.facade.enums.JobStatus;
 import com.chengwenfang.mode.hotnews.application.model.ResearchCandidate;
+import com.chengwenfang.mode.hotnews.application.research.ResearchAgentCollectResult;
 import com.chengwenfang.mode.hotnews.application.research.ResearchKeywordPlan;
+import com.chengwenfang.mode.hotnews.application.research.ResearchSourcePolicy;
 import com.chengwenfang.mode.hotnews.domain.ChineseTextNormalizer;
 import com.chengwenfang.mode.hotnews.domain.TopicResearchPlanner;
 import com.chengwenfang.mode.hotnews.domain.entity.TopicBriefEntity;
@@ -73,19 +75,25 @@ public class ResearchRunService {
   private final HotNewsTopicService topics;
   /** 候选采集。 */
   private final ResearchCandidateCollector collector;
+  /** AI 决策 + SearXNG 执行的补搜 Agent。 */
+  private final ResearchSupplementAgent researchSupplementAgent;
+  /** 主题资料来源策略解析。 */
+  private final ResearchSourcePolicyResolver researchSourcePolicyResolver;
 
   /**
-   * @param researchRunMapper        调研运行 Mapper
-   * @param briefMapper              选题 brief Mapper
-   * @param jobs                     任务门面
-   * @param fetchFacade              抓取门面
-   * @param researchAssist           调研 AI 辅助
-   * @param researchItemScoreService 资料打分
-   * @param researchPoolTx           资料池事务替换
-   * @param videoTranscriptService   视频时长
-   * @param videoParse               视频解析协作
-   * @param topics                   选题协作
-   * @param collector                候选采集
+   * @param researchRunMapper             调研运行 Mapper
+   * @param briefMapper                   选题 brief Mapper
+   * @param jobs                          任务门面
+   * @param fetchFacade                   抓取门面
+   * @param researchAssist                调研 AI 辅助
+   * @param researchItemScoreService      资料打分
+   * @param researchPoolTx                资料池事务替换
+   * @param videoTranscriptService        视频时长
+   * @param videoParse                    视频解析协作
+   * @param topics                        选题协作
+   * @param collector                     候选采集
+   * @param researchSupplementAgent       补搜 Agent
+   * @param researchSourcePolicyResolver  来源策略
    */
   public ResearchRunService(
       TopicResearchRunMapper researchRunMapper,
@@ -98,7 +106,9 @@ public class ResearchRunService {
       VideoTranscriptService videoTranscriptService,
       HotNewsVideoParseService videoParse,
       @Lazy HotNewsTopicService topics,
-      ResearchCandidateCollector collector) {
+      ResearchCandidateCollector collector,
+      ResearchSupplementAgent researchSupplementAgent,
+      ResearchSourcePolicyResolver researchSourcePolicyResolver) {
     this.researchRunMapper = researchRunMapper;
     this.briefMapper = briefMapper;
     this.jobs = jobs;
@@ -110,16 +120,46 @@ public class ResearchRunService {
     this.videoParse = videoParse;
     this.topics = topics;
     this.collector = collector;
+    this.researchSupplementAgent = researchSupplementAgent;
+    this.researchSourcePolicyResolver = researchSourcePolicyResolver;
   }
 
+  /**
+   * 启动选题资料补充任务。
+   * <p>先锁选题再插 pending run，避免与视频解析/重复补充竞态。
+   *
+   * @param topicId 选题主键
+   * @return 任务视图
+   */
+  @Transactional
   public JobView startTopicResearch(String topicId) {
-    // 先校验选题存在，避免空跑任务
-    topics.requireTopic(topicId);
+    // 行锁选题：与 startVideoParse 串行，堵住 check-then-act 窗口
+    topics.requireTopicLocked(topicId);
+    // 同选题资料补充进行中禁止重复启动
+    Long researchActive = researchRunMapper.selectCount(new LambdaQueryWrapper<TopicResearchRunEntity>()
+        .eq(TopicResearchRunEntity::getTopicId, topicId)
+        .in(TopicResearchRunEntity::getStatus,
+            JobStatus.PENDING.getValue(), JobStatus.RUNNING.getValue()));
+    if (researchActive != null && researchActive > 0) {
+      throw new BusinessException(
+          ErrorCodes.RESEARCH_ALREADY_RUNNING,
+          "该选题资料补充正在进行中，请完成后再试",
+          409);
+    }
+    // 资料池视频解析进行中禁止补充，避免与解析抢资源、覆盖素材
+    if (jobs.hasActiveJob(JobTypes.HOT_NEWS_VIDEO_PARSE, topicId)) {
+      throw new BusinessException(
+          ErrorCodes.RESEARCH_BLOCKED_BY_VIDEO_PARSE,
+          "该选题视频解析进行中，请完成后再补充资料",
+          409);
+    }
+    // 先落 pending run，再入队 Job，使互斥对 video-parse 立即可见
     TopicResearchRunEntity run = new TopicResearchRunEntity();
     run.setId(IdsUtil.newId());
     run.setTopicId(topicId);
     run.setStatus(JobStatus.PENDING.getValue());
     run.setCreatedAt(LocalDateTime.now());
+    researchRunMapper.insert(run);
     JobView job = jobs.create(
         JobTypes.HOT_NEWS_TOPIC_RESEARCH,
         JobEntityTypes.TOPIC_RESEARCH_RUN,
@@ -129,7 +169,7 @@ public class ResearchRunService {
             .researchRunId(run.getId())
             .build());
     run.setJobId(job.getId());
-    researchRunMapper.insert(run);
+    researchRunMapper.updateById(run);
     return job;
   }
 
@@ -226,67 +266,34 @@ public class ResearchRunService {
 
     String topicTitle = topic.getTitle() == null ? "" : topic.getTitle().trim();
     String summary = topic.getSummary() == null ? "" : topic.getSummary().trim();
-    // AI 提取检索主体/关键词（失败回退规则），再按主题已配置搜索渠道检索
-    ResearchKeywordPlan keywordPlan = researchAssist.extractKeywords(topicTitle, summary);
-    List<String> queries = researchAssist.buildSearchQueries(keywordPlan);
     List<SourceChannelEntity> searchChannels = collector.listResearchSearchChannels(topic.getThemeId());
-    log.info("选题资料补充检索 subject={} fromAi={} channels={} queries={} sourceItems={}",
-        keywordPlan.getSubject(),
-        keywordPlan.isFromAi(),
+    // 来源策略按本次选题现生成，不落库
+    ResearchSourcePolicy sourcePolicy = researchSourcePolicyResolver.resolve(
+        topic.getThemeId(), topicTitle, summary);
+    // 主路径：优选域名 site: + AI 多轮决策；渠道已优先 Tavily（有配置时），否则 SearXNG
+    ResearchAgentCollectResult agentResult = researchSupplementAgent.collect(
+        topicTitle, summary, new ArrayList<>(sourceUrls), searchChannels, sourcePolicy);
+    log.info(
+        "选题资料补充 Agent used={} finished={} rounds={} hits={} selected={} queries={} channels={} sourceItems={}",
+        agentResult.isUsedAgent(),
+        agentResult.isFinished(),
+        agentResult.getRounds(),
+        agentResult.getHitCount(),
+        agentResult.getWebCandidates() == null ? 0 : agentResult.getWebCandidates().size(),
+        agentResult.getQueriesRun(),
         searchChannels.stream().map(SourceChannelEntity::getName).toList(),
-        queries,
         sourceCandidates.size());
 
+    ResearchKeywordPlan keywordPlan = researchAssist.extractKeywords(topicTitle, summary);
     List<ResearchCandidate> webCollected = new ArrayList<>();
-    Set<String> seenUrls = new LinkedHashSet<>(sourceUrls);
-    int fetchBudget = 8;
-    for (String query : queries) {
-      List<SearchHitView> hits = collector.searchViaConfiguredChannels(searchChannels, query, 5);
-      for (SearchHitView hit : hits) {
-        if (hit == null || StrUtil.isBlank(hit.getUrl())) {
-          continue;
-        }
-        String urlKey = TopicResearchPlanner.normalizeUrl(hit.getUrl());
-        if (StrUtil.isBlank(urlKey) || !seenUrls.add(urlKey)) {
-          continue;
-        }
-        if (MarketingPageFilter.shouldSkip(hit.getUrl(), hit.getTitle())) {
-          continue;
-        }
-        String itemSummary = hit.getSnippet() == null ? "" : hit.getSnippet();
-        String title = StrUtil.isBlank(hit.getTitle()) ? hit.getUrl() : hit.getTitle();
-        if (fetchBudget > 0) {
-          fetchBudget--;
-          try {
-            FetchResult fetched = fetchFacade.fetch(FetchRequest.builder()
-                .url(hit.getUrl())
-                .type(ChannelType.WEB.getValue())
-                .timeoutSeconds(ChannelFetchDefaults.QUICK_WEB_TIMEOUT_SECONDS)
-                .build());
-            if (fetched.isOk() && fetched.getItems() != null && !fetched.getItems().isEmpty()) {
-              FetchedItemView item = fetched.getItems().get(0);
-              if (StrUtil.isNotBlank(item.getTitle())) {
-                title = item.getTitle();
-              }
-              if (StrUtil.isNotBlank(item.getSummary())) {
-                itemSummary = item.getSummary();
-              }
-            }
-          } catch (Exception ignored) {
-            // 保留搜索摘要
-          }
-        }
-        // 抓取后标题可能变成商品名，再滤一次
-        if (MarketingPageFilter.shouldSkip(hit.getUrl(), title)) {
-          continue;
-        }
-        webCollected.add(ResearchCandidate.builder()
-            .title(ChineseTextNormalizer.toSimplified(title))
-            .url(hit.getUrl())
-            .summary(ChineseTextNormalizer.toSimplified(itemSummary))
-            .kind(ResearchItemKind.WEB)
-            .build());
-      }
+    if (agentResult.isFinished() && agentResult.getWebCandidates() != null
+        && !agentResult.getWebCandidates().isEmpty()) {
+      webCollected.addAll(agentResult.getWebCandidates());
+    } else {
+      log.info("资料补充 Agent 未产出，回退出词搜索 subject={} fromAi={}",
+          keywordPlan.getSubject(), keywordPlan.isFromAi());
+      webCollected.addAll(legacyKeywordSearch(
+          keywordPlan, searchChannels, new LinkedHashSet<>(sourceUrls), sourcePolicy));
     }
 
     // 超长视频（默认 >30 分钟）不进核验与资料池，复用视频解析时长配置
@@ -312,18 +319,22 @@ public class ResearchRunService {
           sourceCandidates.size());
     }
 
-    // 原始来源在前，网页补充在后；再裁到文章/视频各上限
+    // 来源保底入池；网页先打分再按分数裁配额，避免来源占坑挤掉优质网页
+    if (!webCollected.isEmpty()) {
+      researchItemScoreService.scoreCandidates(topicTitle, summary, webCollected);
+      webCollected.sort((left, right) -> Integer.compare(
+          right == null ? 0 : right.getScore(),
+          left == null ? 0 : left.getScore()));
+      webCollected = HotNewsResearchPoolQuotaSupport.applyLimits(webCollected, null);
+    }
+    for (ResearchCandidate sourceCandidate : sourceCandidates) {
+      TopicResearchItemScoreService.applyFallbackScore(sourceCandidate);
+    }
     List<ResearchCandidate> collected = new ArrayList<>(sourceCandidates.size() + webCollected.size());
     collected.addAll(sourceCandidates);
     collected.addAll(webCollected);
-    // 先裁配额再打分：applyLimits 不依赖分数，可减少无效 AI 调用
-    collected = HotNewsResearchPoolQuotaSupport.applyLimits(collected, null);
     // 配额阶段已探测时长（rejectOverlongVideos），落库前写入候选便于列表展示
     collector.stampVideoDurations(collected);
-    // 五维 AI 打分（失败回退 kind 默认分）
-    if (!collected.isEmpty()) {
-      researchItemScoreService.scoreCandidates(topicTitle, summary, collected);
-    }
     HotNewsTopicResearchPoolTx.ReplaceResult replaced = researchPoolTx.replacePool(
         resolvedTopicId,
         run,
@@ -356,5 +367,83 @@ public class ResearchRunService {
         .build();
   }
 
-
+  /**
+   * Agent 失败时的回退：关键词计划展开查询 + 搜索渠道检索。
+   *
+   * @param keywordPlan    检索计划
+   * @param searchChannels 主题搜索渠道
+   * @param seenUrls       已占用 URL（含原始来源）
+   * @return 网页候选
+   */
+  private List<ResearchCandidate> legacyKeywordSearch(
+      ResearchKeywordPlan keywordPlan,
+      List<SourceChannelEntity> searchChannels,
+      Set<String> seenUrls,
+      ResearchSourcePolicy sourcePolicy) {
+    List<String> queries = new ArrayList<>(researchAssist.buildSearchQueries(keywordPlan));
+    // Tavily：短角度词；SearXNG：site: 优选域
+    if (collector.isTavilyOnly(searchChannels)) {
+      queries.addAll(0, ResearchSourcePolicyResolver.buildAngleQueries(
+          keywordPlan.getSubject(), sourcePolicy));
+    } else {
+      queries.addAll(0, ResearchSourcePolicyResolver.buildSiteScopedQueries(
+          keywordPlan.getSubject(), sourcePolicy));
+    }
+    log.info("资料补充回退出词检索 subject={} fromAi={} queries={}",
+        keywordPlan.getSubject(), keywordPlan.isFromAi(), queries);
+    List<ResearchCandidate> webCollected = new ArrayList<>();
+    int fetchBudget = 8;
+    for (String query : queries) {
+      List<SearchHitView> hits = collector.searchViaConfiguredChannels(
+          searchChannels, query, 5, sourcePolicy);
+      for (SearchHitView hit : hits) {
+        if (hit == null || StrUtil.isBlank(hit.getUrl())) {
+          continue;
+        }
+        String urlKey = TopicResearchPlanner.normalizeUrl(hit.getUrl());
+        if (StrUtil.isBlank(urlKey) || !seenUrls.add(urlKey)) {
+          continue;
+        }
+        if (ResearchSourcePolicyResolver.isBlockedUrl(hit.getUrl(), sourcePolicy)) {
+          continue;
+        }
+        if (MarketingPageFilter.shouldSkip(hit.getUrl(), hit.getTitle())) {
+          continue;
+        }
+        String itemSummary = hit.getSnippet() == null ? "" : hit.getSnippet();
+        String title = StrUtil.isBlank(hit.getTitle()) ? hit.getUrl() : hit.getTitle();
+        if (fetchBudget > 0) {
+          fetchBudget--;
+          try {
+            FetchResult fetched = fetchFacade.fetch(FetchRequest.builder()
+                .url(hit.getUrl())
+                .type(ChannelType.WEB.getValue())
+                .timeoutSeconds(ChannelFetchDefaults.QUICK_WEB_TIMEOUT_SECONDS)
+                .build());
+            if (fetched.isOk() && fetched.getItems() != null && !fetched.getItems().isEmpty()) {
+              FetchedItemView item = fetched.getItems().get(0);
+              if (StrUtil.isNotBlank(item.getTitle())) {
+                title = item.getTitle();
+              }
+              if (StrUtil.isNotBlank(item.getSummary())) {
+                itemSummary = item.getSummary();
+              }
+            }
+          } catch (Exception ignored) {
+            // 保留搜索摘要
+          }
+        }
+        if (MarketingPageFilter.shouldSkip(hit.getUrl(), title)) {
+          continue;
+        }
+        webCollected.add(ResearchCandidate.builder()
+            .title(ChineseTextNormalizer.toSimplified(title))
+            .url(hit.getUrl())
+            .summary(ChineseTextNormalizer.toSimplified(itemSummary))
+            .kind(ResearchItemKind.WEB)
+            .build());
+      }
+    }
+    return webCollected;
+  }
 }

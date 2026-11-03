@@ -256,6 +256,7 @@ AI **不能**代替用户填写真实密钥。完成后请用户：
 | 正文抽取失败 | 查 `scripts/article-extract/.venv`；Lightpanda：`docker ps` 是否有 `chengwenfang-lightpanda` |
 | 视频解析失败 | `ffmpeg -version`；video-transcript venv；设置里是否配置 Vision |
 | SearXNG 超时 / 空结果 | 见 `deploy/searxng/settings.yml`；勿只依赖 SearXNG，可加 RSS 等 |
+| 意图驱动 / 非结构化采集搜不到 | 主题须确认「主要意图」并选非结构化；联网搜索走 SearXNG/Tavily（产品不另做百度/谷歌爬虫）。本地实例已默认开 baidu/bing；google 网页引擎因国内超时默认关闭，见 `deploy/searxng/settings.yml`。改引擎后 `docker compose --profile searxng up -d --force-recreate searxng` |
 | 中文日志乱码 | 重新 `. .\scripts\use-utf8.ps1` 后再起 Java |
 | 8001 / 5173 端口占用 | 查占用进程；或先 `.\scripts\stop-java.ps1` |
 | `start-java.ps1` 前端白屏 | 是否执行过 `npm install` |

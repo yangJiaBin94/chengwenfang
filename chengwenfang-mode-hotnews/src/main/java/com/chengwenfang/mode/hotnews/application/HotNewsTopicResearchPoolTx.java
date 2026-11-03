@@ -10,7 +10,9 @@ import com.chengwenfang.mode.hotnews.domain.entity.TopicResearchConflictEntity;
 import com.chengwenfang.mode.hotnews.domain.entity.TopicResearchItemEntity;
 import com.chengwenfang.mode.hotnews.domain.entity.TopicResearchRunEntity;
 import com.chengwenfang.mode.hotnews.domain.TopicResearchPlanner;
+import com.chengwenfang.sourcing.domain.entity.VideoTranscriptEntity;
 import com.chengwenfang.sourcing.facade.constant.VideoParseOwnerTypes;
+import com.chengwenfang.sourcing.facade.enums.VideoParseStatus;
 import com.chengwenfang.mode.hotnews.facade.enums.ResearchItemKind;
 import com.chengwenfang.mode.hotnews.infrastructure.mapper.TopicResearchConflictMapper;
 import com.chengwenfang.mode.hotnews.infrastructure.mapper.TopicResearchItemMapper;
@@ -18,6 +20,7 @@ import com.chengwenfang.mode.hotnews.infrastructure.mapper.TopicResearchRunMappe
 import com.chengwenfang.job.facade.enums.JobStatus;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -41,7 +44,7 @@ public class HotNewsTopicResearchPoolTx {
   private final TopicResearchItemMapper researchItemMapper;
   private final TopicResearchConflictMapper researchConflictMapper;
   private final TopicResearchRunMapper researchRunMapper;
-  /** 视频解析共享表：入库时预置 none。 */
+  /** 视频解析共享表：入库时预置 none，或按 URL remount。 */
   private final VideoParseRunService videoParseRuns;
   /** 资料评分明细结构化存储。 */
   private final ResearchItemScoreDetailsStore scoreDetailsStore;
@@ -66,27 +69,42 @@ public class HotNewsTopicResearchPoolTx {
       boolean hasSourceItems,
       LocalDateTime now) {
     // 手动添加的素材在自动补充时保留，避免被整池替换清掉
-    List<TopicResearchItemEntity> manualItems = researchItemMapper.selectList(
+    List<TopicResearchItemEntity> existingItems = researchItemMapper.selectList(
         new LambdaQueryWrapper<TopicResearchItemEntity>()
-            .eq(TopicResearchItemEntity::getTopicId, topicId)
-            .eq(TopicResearchItemEntity::getKind, ResearchItemKind.MANUAL.getValue()));
+            .eq(TopicResearchItemEntity::getTopicId, topicId));
+    List<TopicResearchItemEntity> manualItems = new ArrayList<>();
+    List<TopicResearchItemEntity> autoItems = new ArrayList<>();
     Set<String> manualUrlKeys = new LinkedHashSet<>();
-    for (TopicResearchItemEntity manual : manualItems) {
-      String key = TopicResearchPlanner.normalizeUrl(manual.getUrl());
-      if (StrUtil.isNotBlank(key)) {
-        manualUrlKeys.add(key);
+    for (TopicResearchItemEntity existing : existingItems) {
+      if (existing == null) {
+        continue;
+      }
+      if (ResearchItemKind.from(existing.getKind()).isManual()) {
+        manualItems.add(existing);
+        String key = TopicResearchPlanner.normalizeUrl(existing.getUrl());
+        if (StrUtil.isNotBlank(key)) {
+          manualUrlKeys.add(key);
+        }
+      } else {
+        autoItems.add(existing);
       }
     }
+
+    // 删除前按 URL 收集可复用的解析行与摘要，并记下全部旧 transcript 供孤儿清理
+    RemountPlan remountPlan = collectRemountSlots(autoItems);
+    Map<String, RemountSlot> remountByUrl = remountPlan.slotsByUrl();
 
     int removedConflicts = researchConflictMapper.delete(new LambdaQueryWrapper<TopicResearchConflictEntity>()
         .eq(TopicResearchConflictEntity::getTopicId, topicId));
     int removedItems = researchItemMapper.delete(new LambdaQueryWrapper<TopicResearchItemEntity>()
         .eq(TopicResearchItemEntity::getTopicId, topicId)
         .ne(TopicResearchItemEntity::getKind, ResearchItemKind.MANUAL.getValue()));
-    log.info("资料池事务清空 topicId={} removedItems={} keptManual={} removedConflicts={}",
-        topicId, removedItems, manualItems.size(), removedConflicts);
+    log.info("资料池事务清空 topicId={} removedItems={} keptManual={} removedConflicts={} remountCandidates={}",
+        topicId, removedItems, manualItems.size(), removedConflicts, remountByUrl.size());
 
     int itemCount = 0;
+    int remounted = 0;
+    Set<String> usedTranscriptIds = new HashSet<>();
     Map<String, List<ResearchCandidate>> byTitle = new LinkedHashMap<>();
     List<ResearchCandidate> safe = collected == null ? List.of() : collected;
     for (ResearchCandidate candidate : safe) {
@@ -113,19 +131,51 @@ public class HotNewsTopicResearchPoolTx {
       if (video) {
         item.setVideoDurationSeconds(candidate.getVideoDurationSeconds());
       }
+      // 同 URL 已解析成功时保留原摘要，供成文参考
+      RemountSlot remount = StrUtil.isBlank(urlKey) ? null : remountByUrl.get(urlKey);
+      if (video && remount != null && remount.reusable() && StrUtil.isNotBlank(remount.summary())) {
+        String kept = remount.summary();
+        item.setSummary(kept.length() > 4000 ? kept.substring(0, 4000) : kept);
+        if (item.getVideoDurationSeconds() == null && remount.durationSeconds() != null) {
+          item.setVideoDurationSeconds(remount.durationSeconds());
+        }
+      }
       item.setCreatedAt(now);
       researchItemMapper.insert(item);
       scoreDetailsStore.write(item.getId(), candidate.getScoreDetails());
       if (video) {
-        videoParseRuns.ensureNone(
-            VideoParseOwnerTypes.TOPIC_RESEARCH_ITEM,
-            item.getId(),
-            item.getUrl(),
-            null,
-            item.getVideoDurationSeconds());
+        if (remount != null && remount.reusable()
+            && remount.transcript() != null
+            && !usedTranscriptIds.contains(remount.transcript().getId())) {
+          videoParseRuns.rebindResearchItem(
+              remount.transcript(),
+              item.getId(),
+              item.getUrl(),
+              item.getVideoDurationSeconds());
+          usedTranscriptIds.add(remount.transcript().getId());
+          remounted++;
+        } else {
+          videoParseRuns.ensureNone(
+              VideoParseOwnerTypes.TOPIC_RESEARCH_ITEM,
+              item.getId(),
+              item.getUrl(),
+              null,
+              item.getVideoDurationSeconds());
+        }
       }
       itemCount++;
       byTitle.computeIfAbsent(candidate.normalizedTitle(), ignored -> new ArrayList<>()).add(candidate);
+    }
+
+    // 未再绑定的旧解析行清理（含同 URL 被挤掉的槽），避免悬挂
+    Set<String> orphanIds = new HashSet<>();
+    for (String transcriptId : remountPlan.allTranscriptIds()) {
+      if (StrUtil.isNotBlank(transcriptId) && !usedTranscriptIds.contains(transcriptId)) {
+        orphanIds.add(transcriptId);
+      }
+    }
+    if (!orphanIds.isEmpty()) {
+      videoParseRuns.deleteByIds(orphanIds);
     }
 
     int conflictCount = 0;
@@ -138,7 +188,7 @@ public class HotNewsTopicResearchPoolTx {
       conflict.setRunId(run.getId());
       conflict.setTopicId(topicId);
       conflict.setClaim(entry.getValue().get(0).getTitle());
-      conflict.setDetail("同标题出现在 " + entry.getValue().size() + " 条资料中，需交叉核验");
+      conflict.setDetail("同标题出现在 " + entry.getValue().size() + " 条资料中，需人工核对");
       conflict.setCreatedAt(now);
       researchConflictMapper.insert(conflict);
       conflictCount++;
@@ -156,9 +206,122 @@ public class HotNewsTopicResearchPoolTx {
       run.setErrorMessage(null);
     }
     researchRunMapper.updateById(run);
-    log.info("资料池事务写入完成 topicId={} itemCount={} conflictCount={} status={}",
-        topicId, itemCount, conflictCount, status);
+    log.info(
+        "资料池事务写入完成 topicId={} itemCount={} remounted={} orphans={} conflictCount={} status={}",
+        topicId, itemCount, remounted, orphanIds.size(), conflictCount, status);
     return new ReplaceResult(itemCount, conflictCount, status);
+  }
+
+  /**
+   * 收集自动资料中可按 URL remount 的解析槽；同 URL 优先 succeeded。
+   * <p>同时收集全部旧 transcript id，供被挤掉的槽做孤儿清理。
+   *
+   * @param autoItems 非手动条目
+   * @return remount 计划
+   */
+  private RemountPlan collectRemountSlots(List<TopicResearchItemEntity> autoItems) {
+    Map<String, RemountSlot> slotsByUrl = new LinkedHashMap<>();
+    Set<String> allTranscriptIds = new HashSet<>();
+    if (autoItems == null || autoItems.isEmpty()) {
+      return new RemountPlan(slotsByUrl, allTranscriptIds);
+    }
+    List<String> videoItemIds = new ArrayList<>();
+    Map<String, TopicResearchItemEntity> itemById = new LinkedHashMap<>();
+    for (TopicResearchItemEntity item : autoItems) {
+      if (item == null || StrUtil.isBlank(item.getId())) {
+        continue;
+      }
+      if (!ResearchContentClassifier.isVideo(item.getUrl(), item.getTitle())) {
+        continue;
+      }
+      videoItemIds.add(item.getId());
+      itemById.put(item.getId(), item);
+    }
+    if (videoItemIds.isEmpty()) {
+      return new RemountPlan(slotsByUrl, allTranscriptIds);
+    }
+    Map<String, VideoTranscriptEntity> byOwner =
+        videoParseRuns.mapByOwnerIds(VideoParseOwnerTypes.TOPIC_RESEARCH_ITEM, videoItemIds);
+    for (Map.Entry<String, TopicResearchItemEntity> entry : itemById.entrySet()) {
+      TopicResearchItemEntity item = entry.getValue();
+      VideoTranscriptEntity transcript = byOwner.get(entry.getKey());
+      if (transcript == null) {
+        continue;
+      }
+      if (StrUtil.isNotBlank(transcript.getId())) {
+        allTranscriptIds.add(transcript.getId());
+      }
+      String urlKey = TopicResearchPlanner.normalizeUrl(item.getUrl());
+      if (StrUtil.isBlank(urlKey)) {
+        continue;
+      }
+      RemountSlot next = new RemountSlot(
+          transcript,
+          StrUtil.nullToEmpty(item.getSummary()),
+          item.getVideoDurationSeconds() != null
+              ? item.getVideoDurationSeconds()
+              : transcript.getDurationSeconds());
+      RemountSlot prev = slotsByUrl.get(urlKey);
+      if (prev == null || preferRemount(next, prev)) {
+        slotsByUrl.put(urlKey, next);
+      }
+    }
+    return new RemountPlan(slotsByUrl, allTranscriptIds);
+  }
+
+  /**
+   * 整池替换前的 remount 计划。
+   *
+   * @param slotsByUrl        normalizeUrl → 优选槽
+   * @param allTranscriptIds  旧自动视频关联的全部 transcript id
+   */
+  private record RemountPlan(
+      Map<String, RemountSlot> slotsByUrl,
+      Set<String> allTranscriptIds) {}
+
+  /**
+   * 同 URL 多槽时优先可复用且 succeeded 的。
+   *
+   * @param candidate 候选
+   * @param current   已选
+   * @return 是否用候选替换
+   */
+  private static boolean preferRemount(RemountSlot candidate, RemountSlot current) {
+    if (current == null) {
+      return true;
+    }
+    if (!current.reusable() && candidate.reusable()) {
+      return true;
+    }
+    if (candidate.reusable() && current.reusable()) {
+      return VideoParseStatus.from(candidate.transcript().getStatus()).isSucceeded()
+          && !VideoParseStatus.from(current.transcript().getStatus()).isSucceeded();
+    }
+    return false;
+  }
+
+  /**
+   * 同 URL 解析复用槽。
+   *
+   * @param transcript      共享行
+   * @param summary         原条目摘要
+   * @param durationSeconds 时长
+   */
+  private record RemountSlot(
+      VideoTranscriptEntity transcript,
+      String summary,
+      Integer durationSeconds) {
+    /**
+     * 非 none 的解析状态可改绑复用。
+     *
+     * @return 可复用时 true
+     */
+    boolean reusable() {
+      if (transcript == null) {
+        return false;
+      }
+      return VideoParseStatus.from(transcript.getStatus()) != VideoParseStatus.NONE;
+    }
   }
 
   /**

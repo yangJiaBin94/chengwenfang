@@ -475,6 +475,25 @@ public class TopicQueryService {
   }
 
   /**
+   * 按主键加载选题并行锁（{@code FOR UPDATE}），供资料补充/视频解析启动互斥。
+   *
+   * @param topicId 选题主键
+   * @return 选题实体
+   */
+  public TopicClusterEntity requireTopicLocked(String topicId) {
+    if (StrUtil.isBlank(topicId)) {
+      throw new BusinessException(ErrorCodes.TOPIC_NOT_FOUND, "选题不存在", 404);
+    }
+    TopicClusterEntity topic = topicMapper.selectOne(new LambdaQueryWrapper<TopicClusterEntity>()
+        .eq(TopicClusterEntity::getId, topicId)
+        .last("FOR UPDATE"));
+    if (topic == null) {
+      throw new BusinessException(ErrorCodes.TOPIC_NOT_FOUND, "选题不存在", 404);
+    }
+    return topic;
+  }
+
+  /**
    * 组装主题标题相关性信号：聚合主题下渠道搜索词（优先当前渠道）。
    *
    * @param themeId   主题 ID

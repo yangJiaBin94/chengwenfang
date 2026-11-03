@@ -249,7 +249,7 @@ export function HotNewsResearchViewBottom({
             <Search size={22} />
             <strong>还没有资料</strong>
             <span>
-              点击「补充资料与核验」检索，或「添加素材」粘贴链接；无资料也可拟定骨架并生成文章。
+              点击「补充资料」检索，或「添加素材」粘贴链接；无资料也可拟定骨架并生成文章。
             </span>
           </div>
         ) : total === 0 ? (

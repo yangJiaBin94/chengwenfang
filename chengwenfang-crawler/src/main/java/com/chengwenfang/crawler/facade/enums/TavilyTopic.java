@@ -7,7 +7,9 @@ public enum TavilyTopic {
   /** 新闻向。 */
   NEWS("news"),
   /** 通用检索。 */
-  GENERAL("general");
+  GENERAL("general"),
+  /** 金融向。 */
+  FINANCE("finance");
 
   private final String value;
 

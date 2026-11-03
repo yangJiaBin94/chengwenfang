@@ -495,6 +495,9 @@ export async function suggestHotNewsSearchQueries(body: {
   description?: string;
   domainLabel?: string;
   mustWatch?: string[];
+  intentSummary?: string;
+  materialWants?: string[];
+  materialAvoids?: string[];
 }) {
   const response = await fetch("/api/themes/hot-news:suggest-search-queries", {
     method: "POST",
@@ -504,9 +507,70 @@ export async function suggestHotNewsSearchQueries(body: {
       description: body.description,
       domainLabel: body.domainLabel,
       mustWatch: body.mustWatch || [],
+      intentSummary: body.intentSummary,
+      materialWants: body.materialWants || [],
+      materialAvoids: body.materialAvoids || [],
     }),
   });
   return readPayload<{ queries: string[]; fromAi: boolean }>(response);
+}
+
+/** 主题主要意图。 */
+export type ThemeCoreIntent = {
+  summary: string;
+  materialWants?: string[];
+  materialAvoids?: string[];
+  successLooksLike?: string;
+  confirmed?: boolean;
+};
+
+/** AI 分析热点主题主要意图。 */
+export async function suggestHotNewsCoreIntent(body: {
+  name?: string;
+  description?: string;
+  domainLabel?: string;
+}) {
+  const response = await fetch("/api/themes/hot-news:suggest-core-intent", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: body.name,
+      description: body.description,
+      domainLabel: body.domainLabel,
+    }),
+  });
+  return readPayload<{ intent: ThemeCoreIntent; fromAi: boolean }>(response);
+}
+
+/** 采集策略。 */
+export type ThemeCollectStrategy = {
+  mode: string;
+  rationale?: string;
+  userOverride?: boolean;
+};
+
+/** AI 推荐热点主题采集策略。 */
+export async function suggestHotNewsCollectStrategy(body: {
+  name?: string;
+  description?: string;
+  domainLabel?: string;
+  intentSummary?: string;
+  materialWants?: string[];
+  materialAvoids?: string[];
+}) {
+  const response = await fetch("/api/themes/hot-news:suggest-collect-strategy", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: body.name,
+      description: body.description,
+      domainLabel: body.domainLabel,
+      intentSummary: body.intentSummary,
+      materialWants: body.materialWants || [],
+      materialAvoids: body.materialAvoids || [],
+    }),
+  });
+  return readPayload<{ strategy: ThemeCollectStrategy; fromAi: boolean }>(response);
 }
 
 /** 主题写作价值评分维度。 */

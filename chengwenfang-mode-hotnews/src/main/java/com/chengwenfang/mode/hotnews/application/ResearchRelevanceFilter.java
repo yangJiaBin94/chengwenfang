@@ -127,6 +127,10 @@ public class ResearchRelevanceFilter {
               StrUtil.sub(StrUtil.nullToEmpty(candidates.get(i).getTitle()), 0, 80));
         }
       }
+      // 模型明确全否时信任结果，允许网页侧为空、只留来源；解析失败仍 fail-open
+      if (kept.isEmpty() && !candidates.isEmpty()) {
+        log.warn("选题资料相关性核验 all_rejected count={}", candidates.size());
+      }
       log.info("选题资料相关性核验完成 in={} kept={}", candidates.size(), kept.size());
       return kept;
     } catch (Exception ex) {

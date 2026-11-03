@@ -294,6 +294,62 @@ public class VideoParseRunService {
   }
 
   /**
+   * 资料池整池替换时：将解析行改绑到新 researchItemId，保留原文与状态。
+   *
+   * @param transcript        已有共享行
+   * @param newResearchItemId 新资料条目 id
+   * @param url               视频 URL；可空则不改
+   * @param durationSeconds   时长；仅当行上为空时写入
+   */
+  @Transactional
+  public void rebindResearchItem(
+      VideoTranscriptEntity transcript,
+      String newResearchItemId,
+      String url,
+      Integer durationSeconds) {
+    if (transcript == null || StrUtil.isBlank(newResearchItemId)) {
+      return;
+    }
+    transcript.setResearchItemId(newResearchItemId);
+    transcript.setSourceItemId(null);
+    if (StrUtil.isNotBlank(url)) {
+      transcript.setUrl(url);
+    }
+    if (transcript.getDurationSeconds() == null && durationSeconds != null) {
+      transcript.setDurationSeconds(durationSeconds);
+    }
+    transcript.setUpdatedAt(LocalDateTime.now());
+    transcriptMapper.updateById(transcript);
+  }
+
+  /**
+   * 删除资料池解析共享行及原文文件（整池替换后未再绑定的孤儿）。
+   *
+   * @param transcriptIds 行主键集合
+   */
+  @Transactional
+  public void deleteByIds(Collection<String> transcriptIds) {
+    if (CollUtil.isEmpty(transcriptIds)) {
+      return;
+    }
+    List<VideoTranscriptEntity> rows = transcriptMapper.selectList(
+        new LambdaQueryWrapper<VideoTranscriptEntity>()
+            .in(VideoTranscriptEntity::getId, transcriptIds));
+    for (VideoTranscriptEntity row : rows) {
+      if (row == null || StrUtil.isBlank(row.getTextFileId())) {
+        continue;
+      }
+      try {
+        files.delete(row.getTextFileId());
+      } catch (Exception ignored) {
+        // 文件缺失不阻断行删除
+      }
+    }
+    transcriptMapper.delete(new LambdaQueryWrapper<VideoTranscriptEntity>()
+        .in(VideoTranscriptEntity::getId, transcriptIds));
+  }
+
+  /**
    * 按 owner 查共享行。
    *
    * @param ownerType 类型

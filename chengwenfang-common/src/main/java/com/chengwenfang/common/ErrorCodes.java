@@ -43,6 +43,12 @@ public final class ErrorCodes {
   /** 热点抓取运行不存在。 */
   public static final String FETCH_RUN_NOT_FOUND = "fetch_run_not_found";
   public static final String RESEARCH_ITEM_EXISTS = "research_item_exists";
+  /** 同选题资料补充任务进行中，拒绝重复启动。 */
+  public static final String RESEARCH_ALREADY_RUNNING = "research_already_running";
+  /** 同选题视频解析进行中，拒绝启动资料补充。 */
+  public static final String RESEARCH_BLOCKED_BY_VIDEO_PARSE = "research_blocked_by_video_parse";
+  /** 同选题资料补充进行中，拒绝启动视频解析。 */
+  public static final String VIDEO_PARSE_BLOCKED_BY_RESEARCH = "video_parse_blocked_by_research";
   public static final String INVALID_URL = "invalid_url";
   public static final String INVALID_CONTENT_KIND = "invalid_content_kind";
   public static final String FILE_MISSING = "file_missing";

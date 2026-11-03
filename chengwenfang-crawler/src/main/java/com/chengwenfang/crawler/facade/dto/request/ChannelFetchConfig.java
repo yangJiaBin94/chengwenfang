@@ -30,6 +30,16 @@ public class ChannelFetchConfig {
   private String searchDepth;
   /** Tavily API Key（仅服务端使用，日志禁止打印明文）。 */
   private String apiKey;
+  /** Tavily include_domains。 */
+  @Builder.Default
+  private List<String> includeDomains = new ArrayList<>();
+  /** Tavily exclude_domains。 */
+  @Builder.Default
+  private List<String> excludeDomains = new ArrayList<>();
+  /** Tavily time_range：day / week / month / year。 */
+  private String timeRange;
+  /** Tavily include_raw_content。 */
+  private Boolean includeRawContent;
   /** GitHub 时间口径：created / updated。 */
   private String dateField;
   /** GitHub 排序：stars / updated / forks。 */

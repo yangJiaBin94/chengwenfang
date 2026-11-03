@@ -255,12 +255,18 @@ public class AiThemeSeedRadarNodeHandler implements RadarCollectNodeHandler {
       String outOfScope = StrUtil.firstNonBlank(
           trimOrNull(scope.get("out_of_scope")),
           trimOrNull(briefing.get("out_of_scope")));
+      var intent = HotNewsThemeBriefingSupport.coreIntent(briefing);
       StringBuilder builder = new StringBuilder();
       builder.append("【主题问卷】\n");
       builder.append("主题名称：").append(name).append('\n');
       builder.append("主题说明：")
           .append(StrUtil.blankToDefault(description, "（未填写）"))
           .append('\n');
+      if (intent.isConfirmed() && intent.hasSummary()) {
+        builder.append(intent.toPromptBlock()).append('\n');
+        builder.append("请严格围绕主要意图生成可写话题（时效事件/板块动态/融资政策/人物观点等），");
+        builder.append("禁止机构百科、职能介绍、无事件的官网 About。\n");
+      }
       builder.append("搜索词：")
           .append(searchQueries.isEmpty() ? "（无）" : String.join("、", searchQueries))
           .append('\n');

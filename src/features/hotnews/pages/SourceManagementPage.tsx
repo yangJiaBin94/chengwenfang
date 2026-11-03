@@ -41,6 +41,7 @@ import {
   TAVILY_DEFAULT_MAX_RESULTS,
   TAVILY_DEFAULT_SEARCH_DEPTH,
   TAVILY_DEFAULT_TOPIC,
+  TAVILY_TOPIC_OPTIONS,
   TAVILY_SEARCH_API_URL,
   isSearchEngineType,
   type ChannelFetchConfig,
@@ -88,6 +89,8 @@ type FormState = {
   queriesText: string;
   maxResults: string;
   apiKey: string;
+  /** Tavily topic：news / general / finance。 */
+  topic: string;
   sort: GithubSortValue;
 };
 
@@ -103,6 +106,7 @@ function emptyForm(defaultQueriesText = FALLBACK_SEARCH_QUERIES, defaultGithubQu
     queriesText: defaultQueriesText,
     maxResults: String(SEARXNG_DEFAULT_MAX_RESULTS),
     apiKey: "",
+    topic: TAVILY_DEFAULT_TOPIC,
     sort: GithubSort.STARS,
   };
 }
@@ -155,6 +159,7 @@ function formFromSource(source: HotNewsSource): FormState {
     queriesText: queries || FALLBACK_SEARCH_QUERIES,
     maxResults: String(source.config?.maxResults || defaultMax),
     apiKey: "",
+    topic: String(source.config?.topic || TAVILY_DEFAULT_TOPIC),
     sort:
       source.config?.sort === GithubSort.UPDATED || source.config?.sort === GithubSort.FORKS
         ? source.config.sort
@@ -192,7 +197,10 @@ function buildConfig(form: FormState): ChannelFetchConfig {
         (form.type === ChannelType.TAVILY ? TAVILY_DEFAULT_MAX_RESULTS : SEARXNG_DEFAULT_MAX_RESULTS),
     };
     if (form.type === ChannelType.TAVILY) {
-      config.topic = TAVILY_DEFAULT_TOPIC;
+      const topicValues = TAVILY_TOPIC_OPTIONS.map((item) => item.value);
+      config.topic = topicValues.includes(form.topic as (typeof topicValues)[number])
+        ? form.topic
+        : TAVILY_DEFAULT_TOPIC;
       config.searchDepth = TAVILY_DEFAULT_SEARCH_DEPTH;
       if (form.apiKey.trim()) {
         config.apiKey = form.apiKey.trim();
@@ -842,16 +850,31 @@ export function SourceManagementPage({
                     <small>{engineMeta.maxResultsHint}</small>
                   </label>
                   {form.type === ChannelType.TAVILY && (
-                    <label>API Key{editingSource?.credentialConfigured ? "（已配置，留空则不修改）" : ""}
-                      <input
-                        type="password"
-                        autoComplete="off"
-                        value={form.apiKey}
-                        placeholder={editingSource?.credentialConfigured ? "留空保留原 Key" : "tvly-xxxxxxxx"}
-                        onChange={(event) => setForm((current) => ({ ...current, apiKey: event.target.value }))}
-                      />
-                      <small>{engineMeta.apiKeyHint}</small>
-                    </label>
+                    <>
+                      <label>搜索主题 topic
+                        <select
+                          value={form.topic}
+                          onChange={(event) => setForm((current) => ({ ...current, topic: event.target.value }))}
+                        >
+                          {TAVILY_TOPIC_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                        <small>股票/金融类主题建议选 finance；一般资讯用 news。</small>
+                      </label>
+                      <label>API Key{editingSource?.credentialConfigured ? "（已配置，留空则不修改）" : ""}
+                        <input
+                          type="password"
+                          autoComplete="off"
+                          value={form.apiKey}
+                          placeholder={editingSource?.credentialConfigured ? "留空保留原 Key" : "tvly-xxxxxxxx"}
+                          onChange={(event) => setForm((current) => ({ ...current, apiKey: event.target.value }))}
+                        />
+                        <small>{engineMeta.apiKeyHint}</small>
+                      </label>
+                    </>
                   )}
                 </>
               ) : (

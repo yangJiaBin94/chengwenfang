@@ -160,6 +160,25 @@ public class JobFacadeImpl implements JobFacade {
   }
 
   /**
+   * 是否存在指定类型、实体 id 的 pending/running 任务。
+   *
+   * @param type     任务类型
+   * @param entityId 关联实体 id
+   * @return 存在进行中任务时为 true
+   */
+  @Override
+  public boolean hasActiveJob(String type, String entityId) {
+    if (StrUtil.isBlank(type) || StrUtil.isBlank(entityId)) {
+      return false;
+    }
+    Long count = jobMapper.selectCount(new LambdaQueryWrapper<JobEntity>()
+        .eq(JobEntity::getJobType, type)
+        .eq(JobEntity::getEntityId, entityId)
+        .in(JobEntity::getStatus, JobStatus.PENDING.getValue(), JobStatus.RUNNING.getValue()));
+    return count != null && count > 0;
+  }
+
+  /**
    * 按主题与任务类型取最近一条任务。
    *
    * @param themeId 主题主键

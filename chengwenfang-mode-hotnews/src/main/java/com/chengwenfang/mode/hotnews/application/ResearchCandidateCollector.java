@@ -12,7 +12,13 @@ import com.chengwenfang.crawler.facade.dto.view.FetchedItemView;
 import com.chengwenfang.crawler.facade.dto.view.SearchHitView;
 import com.chengwenfang.crawler.facade.enums.ChannelType;
 import com.chengwenfang.mode.hotnews.application.model.ResearchCandidate;
+import com.chengwenfang.mode.hotnews.application.research.ResearchSourcePolicy;
+import com.chengwenfang.mode.hotnews.application.search.HotNewsSearchChannelSelector;
+import com.chengwenfang.mode.hotnews.application.search.TavilySearchConfigAssembler;
+import com.chengwenfang.mode.hotnews.application.search.TavilySearchContext;
 import com.chengwenfang.mode.hotnews.domain.TopicResearchPlanner;
+import com.chengwenfang.mode.hotnews.facade.constant.HotNewsResearchSourceDefaults;
+import com.chengwenfang.mode.hotnews.facade.enums.TavilySearchScene;
 import com.chengwenfang.sourcing.application.HotNewsChannelService;
 import com.chengwenfang.sourcing.domain.entity.SourceChannelEntity;
 import com.chengwenfang.sourcing.infrastructure.mapper.SourceChannelMapper;
@@ -42,6 +48,10 @@ public class ResearchCandidateCollector {
   private final SearchFacade searchFacade;
   /** 视频解析协作（时长戳记）。 */
   private final HotNewsVideoParseService videoParse;
+  /** 联网渠道选择。 */
+  private final HotNewsSearchChannelSelector searchChannelSelector;
+  /** Tavily 配置装配。 */
+  private final TavilySearchConfigAssembler tavilySearchConfigAssembler;
 
   public void stampVideoDurations(List<ResearchCandidate> candidates) {
     videoParse.stampVideoDurations(candidates);
@@ -51,7 +61,7 @@ public class ResearchCandidateCollector {
     if (StrUtil.isBlank(themeId)) {
       return List.of();
     }
-    return channelMapper.selectList(new LambdaQueryWrapper<SourceChannelEntity>()
+    List<SourceChannelEntity> channels = channelMapper.selectList(new LambdaQueryWrapper<SourceChannelEntity>()
         .eq(SourceChannelEntity::getThemeId, themeId)
         .eq(SourceChannelEntity::getEnabled, true)
         .in(SourceChannelEntity::getChannelType, List.of(
@@ -59,18 +69,36 @@ public class ResearchCandidateCollector {
             ChannelType.TAVILY.getValue(),
             ChannelType.GITHUB.getValue()))
         .orderByAsc(SourceChannelEntity::getName));
+    return searchChannelSelector.preferTavilyForResearch(channels);
   }
 
   /**
    * 按已配置搜索渠道执行单条检索；无可用渠道时回落默认网页搜索（便于本地/测试）。
    *
-   * @param channels 主题搜索渠道
-   * @param query    检索词（选题主体派生）
-   * @param limit    每渠道条数上限
+   * @param searchChannels 主题搜索渠道
+   * @param query          检索词（选题主体派生）
+   * @param limit          每渠道条数上限
    * @return 合并去重后的命中
    */
   List<SearchHitView> searchViaConfiguredChannels(
       List<SourceChannelEntity> searchChannels, String query, int limit) {
+    return searchViaConfiguredChannels(searchChannels, query, limit, null);
+  }
+
+  /**
+   * 按已配置搜索渠道执行单条检索；Tavily 时注入来源策略域名等装配参数。
+   *
+   * @param searchChannels 主题搜索渠道
+   * @param query          检索词
+   * @param limit          每渠道条数上限
+   * @param sourcePolicy   来源策略；可空
+   * @return 合并去重后的命中
+   */
+  List<SearchHitView> searchViaConfiguredChannels(
+      List<SourceChannelEntity> searchChannels,
+      String query,
+      int limit,
+      ResearchSourcePolicy sourcePolicy) {
     if (StrUtil.isBlank(query)) {
       return List.of();
     }
@@ -87,14 +115,27 @@ public class ResearchCandidateCollector {
         }
         try {
           ChannelFetchConfig config = this.channels.parseConfig(channel);
-          // 保留渠道凭证与其它配置，仅覆盖本次选题检索词
-          config.setQuery(query);
-          config.setQueries(List.of(query));
           int maxResults = config.getMaxResults() == null || config.getMaxResults() <= 0
               ? capped
               : Math.min(config.getMaxResults(), capped);
           config.setMaxResults(maxResults);
-          // hours=null：资料补充允许无发布时间的结果（不套用热点采集的强制日期策略）
+          if (type == ChannelType.TAVILY) {
+            boolean finance = sourcePolicy != null
+                && HotNewsResearchSourceDefaults.looksFinanceTheme(null, sourcePolicy.getPackKey());
+            config = tavilySearchConfigAssembler.assemble(
+                config,
+                TavilySearchContext.builder()
+                    .scene(TavilySearchScene.TOPIC_RESEARCH)
+                    .includeDomains(sourcePolicy == null ? List.of() : sourcePolicy.getPreferredDomains())
+                    .excludeDomains(sourcePolicy == null ? List.of() : sourcePolicy.getBlockedDomains())
+                    .queries(List.of(query))
+                    .financeTopic(finance)
+                    .build());
+          } else {
+            config.setQuery(query);
+            config.setQueries(List.of(query));
+          }
+          // hours=null：资料补充允许无发布时间的结果
           FetchResult result = fetchFacade.fetch(FetchRequest.builder()
               .url(channel.getBaseUrl())
               .type(type.getValue())
@@ -128,7 +169,6 @@ public class ResearchCandidateCollector {
     if (!merged.isEmpty()) {
       return new ArrayList<>(merged.values());
     }
-    // 已配置渠道但全部失败/空结果时，同样回落默认网页搜索，避免资料池只剩原始来源
     try {
       log.info("资料补充渠道无命中，回落默认网页搜索 query={} configuredChannels={}",
           query, searchChannels == null ? 0 : searchChannels.size());
@@ -139,5 +179,13 @@ public class ResearchCandidateCollector {
     }
   }
 
-
+  /**
+   * 当前补搜渠道是否仅 Tavily。
+   *
+   * @param searchChannels 渠道
+   * @return 仅 Tavily 时 true
+   */
+  boolean isTavilyOnly(List<SourceChannelEntity> searchChannels) {
+    return searchChannelSelector.isTavilyOnly(searchChannels);
+  }
 }

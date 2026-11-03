@@ -40,6 +40,20 @@ export type BriefingState = {
     tone: string;
     boundaries: string;
   };
+  /** 主要意图（用户确认后驱动采集/过滤/补话题）。 */
+  core_intent: {
+    summary: string;
+    material_wants: string[];
+    material_avoids: string[];
+    success_looks_like: string;
+    confirmed: boolean;
+  };
+  /** 采集策略：structured | unstructured。 */
+  collect_strategy: {
+    mode: string;
+    rationale: string;
+    user_override: boolean;
+  };
   /** 主题级写作价值评分量表；启用前必须合法。 */
   scoring_rubric?: ScoringRubric | null;
 };

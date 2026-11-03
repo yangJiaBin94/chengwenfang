@@ -7,14 +7,19 @@ import com.chengwenfang.crawler.facade.ArticleContentFacade;
 import com.chengwenfang.crawler.facade.FetchFacade;
 import com.chengwenfang.crawler.facade.MarketingPageFilter;
 import com.chengwenfang.crawler.facade.constant.ChannelFetchDefaults;
+import com.chengwenfang.crawler.facade.dto.request.ChannelFetchConfig;
 import com.chengwenfang.crawler.facade.dto.request.FetchRequest;
 import com.chengwenfang.crawler.facade.dto.view.FetchResult;
 import com.chengwenfang.crawler.facade.dto.view.FetchedItemView;
 import com.chengwenfang.crawler.facade.dto.view.UrlReachabilityView;
+import com.chengwenfang.crawler.facade.enums.ChannelType;
+import com.chengwenfang.mode.hotnews.application.search.TavilySearchConfigAssembler;
+import com.chengwenfang.mode.hotnews.application.search.TavilySearchContext;
 import com.chengwenfang.mode.hotnews.domain.ResearchContentClassifier;
 import com.chengwenfang.mode.hotnews.domain.TopicResearchPlanner;
 import com.chengwenfang.mode.hotnews.facade.HotNewsFacade;
 import com.chengwenfang.mode.hotnews.facade.VideoTranscriptFacade;
+import com.chengwenfang.mode.hotnews.facade.enums.TavilySearchScene;
 import com.chengwenfang.sourcing.facade.dto.view.ChannelView;
 import com.chengwenfang.sourcing.facade.dto.view.QuerySiteBlockView;
 import com.chengwenfang.sourcing.facade.enums.SourceMediaType;
@@ -52,6 +57,8 @@ public class FetchChannelsRadarNodeHandler implements RadarCollectNodeHandler {
   private final VideoTranscriptFacade videoTranscript;
   /** 文章正文门面（含 URL 直连探测）。 */
   private final ArticleContentFacade articleContent;
+  /** Tavily 配置装配。 */
+  private final TavilySearchConfigAssembler tavilySearchConfigAssembler;
 
   /**
    * @param hotNews              热点门面
@@ -62,6 +69,7 @@ public class FetchChannelsRadarNodeHandler implements RadarCollectNodeHandler {
    * @param searchQueryDiagnose  搜索词×网站诊断
    * @param videoTranscript      视频解析门面（时长探测）
    * @param articleContent       文章正文门面（直连探测）
+   * @param tavilySearchConfigAssembler Tavily 装配器
    */
   public FetchChannelsRadarNodeHandler(
       HotNewsFacade hotNews,
@@ -71,13 +79,15 @@ public class FetchChannelsRadarNodeHandler implements RadarCollectNodeHandler {
       ChengwenfangProperties properties,
       SearchQueryDiagnoseService searchQueryDiagnose,
       VideoTranscriptFacade videoTranscript,
-      ArticleContentFacade articleContent) {
+      ArticleContentFacade articleContent,
+      TavilySearchConfigAssembler tavilySearchConfigAssembler) {
     this.hotNews = hotNews;
     this.fetchFacade = fetchFacade;
     this.channelFetchExecutor = channelFetchExecutor;
     this.jobs = jobs;
     this.properties = properties;
     this.searchQueryDiagnose = searchQueryDiagnose;
+    this.tavilySearchConfigAssembler = tavilySearchConfigAssembler;
     this.videoTranscript = videoTranscript;
     this.articleContent = articleContent;
   }
@@ -400,12 +410,21 @@ public class FetchChannelsRadarNodeHandler implements RadarCollectNodeHandler {
     String channelId = channel == null ? "" : StrUtil.nullToEmpty(channel.getId());
     String channelName = channel == null ? "" : StrUtil.nullToEmpty(channel.getName());
     String channelType = channel == null ? "" : StrUtil.nullToEmpty(channel.getType());
+    ChannelFetchConfig fetchConfig = channel == null ? null : channel.getConfig();
+    if (channel != null && ChannelType.TAVILY.getValue().equalsIgnoreCase(channelType)) {
+      fetchConfig = tavilySearchConfigAssembler.assemble(
+          fetchConfig,
+          TavilySearchContext.builder()
+              .scene(TavilySearchScene.RADAR_FIXED)
+              .hours(session.getHours())
+              .build());
+    }
     FetchResult result = fetchFacade.fetch(FetchRequest.builder()
         .url(channel.getBaseUrl())
         .type(channel.getType())
         .timeoutSeconds(ChannelFetchDefaults.DEFAULT_TIMEOUT_SECONDS)
         .hours(session.getHours())
-        .config(channel.getConfig())
+        .config(fetchConfig)
         .build());
     if (!result.isOk() || result.getItems() == null) {
       log.warn("渠道采集失败 name={} code={}", channelName, result.getErrorCode());

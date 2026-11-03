@@ -63,6 +63,8 @@ public final class ThemeProfileAssembler {
     if (scoring != null) {
       root.put("scoring_rubric", scoring);
     }
+    putJsonObjectItem(root, "core_intent", safeItems, ThemeProfileItemTypes.CORE_INTENT);
+    putJsonObjectItem(root, "collect_strategy", safeItems, ThemeProfileItemTypes.COLLECT_STRATEGY);
     return root;
   }
 
@@ -124,6 +126,8 @@ public final class ThemeProfileAssembler {
       if (scoring != null) {
         root.put("scoring_rubric", scoring);
       }
+      putJsonObjectItem(root, "core_intent", safeItems, ThemeProfileItemTypes.CORE_INTENT);
+      putJsonObjectItem(root, "collect_strategy", safeItems, ThemeProfileItemTypes.COLLECT_STRATEGY);
       return root;
     }
     if (profile.getTone() != null) {
@@ -221,6 +225,9 @@ public final class ThemeProfileAssembler {
       if (source.get("out_of_scope") instanceof List<?>) {
         addItems(items, themeId, profileKind, ThemeProfileItemTypes.OUT_OF_SCOPE, source.get("out_of_scope"));
       }
+      addJsonObjectItem(items, themeId, profileKind, ThemeProfileItemTypes.CORE_INTENT, source.get("core_intent"));
+      addJsonObjectItem(
+          items, themeId, profileKind, ThemeProfileItemTypes.COLLECT_STRATEGY, source.get("collect_strategy"));
     } else {
       addItems(items, themeId, profileKind, ThemeProfileItemTypes.READER, audience.get("readers"));
       addItems(items, themeId, profileKind, ThemeProfileItemTypes.PREREQUISITE, audience.get("prerequisites"));
@@ -233,6 +240,9 @@ public final class ThemeProfileAssembler {
       if (scope.get("out_of_scope") instanceof List<?>) {
         addItems(items, themeId, profileKind, ThemeProfileItemTypes.OUT_OF_SCOPE, scope.get("out_of_scope"));
       }
+      addJsonObjectItem(items, themeId, profileKind, ThemeProfileItemTypes.CORE_INTENT, source.get("core_intent"));
+      addJsonObjectItem(
+          items, themeId, profileKind, ThemeProfileItemTypes.COLLECT_STRATEGY, source.get("collect_strategy"));
     }
 
     ThemeScoringRubricEntity rubricEntity = null;
@@ -522,7 +532,9 @@ public final class ThemeProfileAssembler {
         || items.stream().anyMatch(item ->
             ThemeProfileItemTypes.WORTH_WRITING.equals(item.getItemType())
                 || ThemeProfileItemTypes.MUST_WATCH.equals(item.getItemType())
-                || ThemeProfileItemTypes.SEARCH_QUERY.equals(item.getItemType()));
+                || ThemeProfileItemTypes.SEARCH_QUERY.equals(item.getItemType())
+                || ThemeProfileItemTypes.CORE_INTENT.equals(item.getItemType())
+                || ThemeProfileItemTypes.COLLECT_STRATEGY.equals(item.getItemType()));
   }
 
   private static List<String> itemContents(List<ThemeProfileItemEntity> items, String itemType) {
@@ -533,6 +545,84 @@ public final class ThemeProfileAssembler {
       }
     }
     return result;
+  }
+
+  /**
+   * 将整段 JSON 对象列表项写回根 Map。
+   *
+   * @param root     根 Map
+   * @param key      根键
+   * @param items    列表项
+   * @param itemType 项类型
+   */
+  private static void putJsonObjectItem(
+      Map<String, Object> root, String key, List<ThemeProfileItemEntity> items, String itemType) {
+    List<String> contents = itemContents(items, itemType);
+    if (contents.isEmpty()) {
+      return;
+    }
+    String json = contents.get(0);
+    if (StrUtil.isBlank(json) || !JSONUtil.isTypeJSONObject(json)) {
+      return;
+    }
+    Object normalized = normalizeJsonValue(JSONUtil.parse(json));
+    if (normalized instanceof Map<?, ?>) {
+      root.put(key, normalized);
+    }
+  }
+
+  /**
+   * 把 Hutool JSON 节点收成普通 Map/List，避免下游 equals / stringList 踩 JSONArray。
+   *
+   * @param value 解析结果
+   * @return 普通 Java 值
+   */
+  private static Object normalizeJsonValue(Object value) {
+    if (value instanceof Map<?, ?> map) {
+      Map<String, Object> out = new LinkedHashMap<>();
+      map.forEach((key, entryValue) -> {
+        if (key != null) {
+          out.put(String.valueOf(key), normalizeJsonValue(entryValue));
+        }
+      });
+      return out;
+    }
+    if (value instanceof List<?> list) {
+      List<Object> out = new ArrayList<>();
+      for (Object item : list) {
+        out.add(normalizeJsonValue(item));
+      }
+      return out;
+    }
+    return value;
+  }
+
+  /**
+   * 将嵌套 Map 序列化为单条 JSON 列表项。
+   *
+   * @param target      目标列表
+   * @param themeId     主题 id
+   * @param profileKind 画像种类
+   * @param itemType    项类型
+   * @param raw         原始值；须为 Map
+   */
+  private static void addJsonObjectItem(
+      List<ThemeProfileItemEntity> target,
+      String themeId,
+      String profileKind,
+      String itemType,
+      Object raw) {
+    if (!(raw instanceof Map<?, ?> map) || map.isEmpty()) {
+      return;
+    }
+    target.add(ThemeProfileItemEntity.builder()
+        .id(IdsUtil.newId())
+        .themeId(themeId)
+        .profileKind(profileKind)
+        .itemType(itemType)
+        .seq(1)
+        .content(JSONUtil.toJsonStr(castMap(map)))
+        .build());
   }
 
   private static void addItems(

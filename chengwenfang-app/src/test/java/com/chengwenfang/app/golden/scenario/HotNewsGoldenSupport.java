@@ -138,6 +138,18 @@ public final class HotNewsGoldenSupport {
     radar.put("github_query", "sleep OR melatonin");
     radar.put("seed_channels", List.of("searxng", "github"));
     briefing.put("radar", radar);
+    Map<String, Object> intent = new LinkedHashMap<>();
+    intent.put("summary", "追踪" + name + "相关近期可写事件与误区澄清");
+    intent.put("material_wants", List.of("机理科普", "研究解读", "生活干预信号"));
+    intent.put("material_avoids", List.of("机构百科介绍", "纯营销软文"));
+    intent.put("success_looks_like", "近几天可核实、读者能带走行动点");
+    intent.put("confirmed", true);
+    briefing.put("core_intent", intent);
+    Map<String, Object> strategy = new LinkedHashMap<>();
+    strategy.put("mode", "structured");
+    strategy.put("rationale", "黄金样例用固定搜索词覆盖");
+    strategy.put("user_override", false);
+    briefing.put("collect_strategy", strategy);
     Map<String, Object> scoring = new LinkedHashMap<>();
     scoring.put("version", 1);
     List<Map<String, Object>> dimensions = new ArrayList<>();

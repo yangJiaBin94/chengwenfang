@@ -3,13 +3,17 @@ package com.chengwenfang.app.adapter.web.content;
 import com.chengwenfang.common.ApiResult;
 import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.common.ErrorCodes;
+import com.chengwenfang.mode.hotnews.application.hotnews.HotNewsThemeCollectStrategyAssistService;
 import com.chengwenfang.mode.hotnews.application.hotnews.HotNewsThemeCommitOrchestrator;
+import com.chengwenfang.mode.hotnews.application.hotnews.HotNewsThemeCoreIntentAssistService;
 import com.chengwenfang.mode.hotnews.application.hotnews.HotNewsThemeGithubQueryAssistService;
 import com.chengwenfang.mode.hotnews.application.hotnews.HotNewsThemeScoringRubricAssistService;
 import com.chengwenfang.mode.hotnews.application.hotnews.HotNewsThemeSearchQueryAssistService;
 import com.chengwenfang.mode.hotnews.application.hotnews.HotNewsThemeSourceChannelGenerateService;
 import com.chengwenfang.content.facade.ContentFacade;
 import com.chengwenfang.content.facade.dto.request.CurriculumDraftSaveRequest;
+import com.chengwenfang.content.facade.dto.request.HotNewsCollectStrategySuggestRequest;
+import com.chengwenfang.content.facade.dto.request.HotNewsCoreIntentSuggestRequest;
 import com.chengwenfang.content.facade.dto.request.HotNewsGithubQuerySuggestRequest;
 import com.chengwenfang.content.facade.dto.request.HotNewsScoringRubricSuggestRequest;
 import com.chengwenfang.content.facade.dto.request.HotNewsSearchQuerySuggestRequest;
@@ -19,6 +23,8 @@ import com.chengwenfang.content.facade.dto.request.ThemePatchRequest;
 import com.chengwenfang.content.facade.dto.view.ContentThemeView;
 import com.chengwenfang.content.facade.dto.view.CourseSeriesView;
 import com.chengwenfang.content.facade.dto.view.CurriculumDraftView;
+import com.chengwenfang.content.facade.dto.view.HotNewsCollectStrategySuggestView;
+import com.chengwenfang.content.facade.dto.view.HotNewsCoreIntentSuggestView;
 import com.chengwenfang.content.facade.dto.view.HotNewsGithubQuerySuggestView;
 import com.chengwenfang.content.facade.dto.view.HotNewsScoringRubricSuggestView;
 import com.chengwenfang.content.facade.dto.view.HotNewsSearchQuerySuggestView;
@@ -64,6 +70,10 @@ public class ThemeController {
   private final HotNewsThemeCommitOrchestrator hotNewsThemeCommit;
   /** 热点主题搜索词 AI 建议。 */
   private final HotNewsThemeSearchQueryAssistService hotNewsSearchQueryAssist;
+  /** 热点主题主要意图 AI 推导。 */
+  private final HotNewsThemeCoreIntentAssistService hotNewsCoreIntentAssist;
+  /** 热点主题采集策略 AI 推荐。 */
+  private final HotNewsThemeCollectStrategyAssistService hotNewsCollectStrategyAssist;
   /** 热点主题评分量表 AI 生成。 */
   private final HotNewsThemeScoringRubricAssistService hotNewsScoringRubricAssist;
   /** 热点主题 GitHub 查询串 AI 生成。 */
@@ -223,6 +233,32 @@ public class ThemeController {
   public ApiResult<HotNewsSearchQuerySuggestView> suggestHotNewsSearchQueries(
       @RequestBody(required = false) HotNewsSearchQuerySuggestRequest request) {
     return ApiResult.ok(hotNewsSearchQueryAssist.suggest(request));
+  }
+
+  /**
+   * 根据主题名称/说明推导主要意图（须用户确认后写入 briefing）。
+   *
+   * @param request 主题上下文
+   * @return 意图建议
+   */
+  @PostMapping("/themes/hot-news:suggest-core-intent")
+  @Operation(summary = "AI 分析热点主题主要意图")
+  public ApiResult<HotNewsCoreIntentSuggestView> suggestHotNewsCoreIntent(
+      @RequestBody(required = false) HotNewsCoreIntentSuggestRequest request) {
+    return ApiResult.ok(hotNewsCoreIntentAssist.suggest(request));
+  }
+
+  /**
+   * 根据主要意图推荐结构化/非结构化采集策略。
+   *
+   * @param request 意图上下文
+   * @return 策略建议
+   */
+  @PostMapping("/themes/hot-news:suggest-collect-strategy")
+  @Operation(summary = "AI 推荐热点主题采集策略")
+  public ApiResult<HotNewsCollectStrategySuggestView> suggestHotNewsCollectStrategy(
+      @RequestBody(required = false) HotNewsCollectStrategySuggestRequest request) {
+    return ApiResult.ok(hotNewsCollectStrategyAssist.suggest(request));
   }
 
   /**

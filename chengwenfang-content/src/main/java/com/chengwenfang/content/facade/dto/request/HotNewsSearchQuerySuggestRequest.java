@@ -24,4 +24,12 @@ public class HotNewsSearchQuerySuggestRequest {
   /** 关注实体 / 关键词簇。 */
   @Builder.Default
   private List<String> mustWatch = new ArrayList<>();
+  /** 已确认的主要意图摘要。 */
+  private String intentSummary;
+  /** 要的素材。 */
+  @Builder.Default
+  private List<String> materialWants = new ArrayList<>();
+  /** 不要的素材。 */
+  @Builder.Default
+  private List<String> materialAvoids = new ArrayList<>();
 }

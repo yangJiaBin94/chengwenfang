@@ -16,6 +16,10 @@ public enum HotNewsRadarCollectNodeType {
   LOAD_SKILLS("radar_load_skills", "加载采集 Skill", "text", true),
   /** 并行渠道拉取到内存候选。 */
   FETCH_CHANNELS("radar_fetch_channels", "获取渠道资源", "none", true),
+  /**
+   * 非结构化策略：按主要意图多轮规划搜索并追加候选；结构化策略空跑。
+   */
+  PLAN_SEARCH("radar_plan_search", "意图自适应搜索", "text", true),
   /** 打标、解析正文/视频并生成事实速览。 */
   ENRICH_SUMMARIZE("radar_enrich_summarize", "解析与事实速览", "text", true),
   /**

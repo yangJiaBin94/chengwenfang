@@ -7,6 +7,9 @@ import com.chengwenfang.common.ErrorCodes;
 import com.chengwenfang.common.SearchQueryNormalizer;
 import com.chengwenfang.content.facade.constant.HotNewsThemeSeedChannelKeys;
 import com.chengwenfang.content.facade.dto.view.ScoringRubricView;
+import com.chengwenfang.content.facade.dto.view.ThemeCollectStrategyView;
+import com.chengwenfang.content.facade.dto.view.ThemeCoreIntentView;
+import com.chengwenfang.content.facade.enums.HotNewsCollectStrategyMode;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -132,9 +135,51 @@ public final class HotNewsThemeBriefingSupport {
   }
 
   /**
+   * 读取主要意图。
+   *
+   * @param briefing 问卷 map
+   * @return 意图；缺省空对象
+   */
+  public static ThemeCoreIntentView coreIntent(Map<String, Object> briefing) {
+    Map<String, Object> raw = nestedMap(briefing, "core_intent");
+    if (raw.isEmpty()) {
+      return ThemeCoreIntentView.builder().build();
+    }
+    return ThemeCoreIntentView.builder()
+        .summary(StrUtil.trim(StrUtil.nullToEmpty(stringOrNull(raw.get("summary")))))
+        .materialWants(stringList(raw.get("material_wants")))
+        .materialAvoids(stringList(raw.get("material_avoids")))
+        .successLooksLike(
+            StrUtil.trim(StrUtil.nullToEmpty(stringOrNull(raw.get("success_looks_like")))))
+        .confirmed(Boolean.TRUE.equals(raw.get("confirmed"))
+            || "true".equalsIgnoreCase(StrUtil.nullToEmpty(stringOrNull(raw.get("confirmed")))))
+        .build();
+  }
+
+  /**
+   * 读取采集策略。
+   *
+   * @param briefing 问卷 map
+   * @return 策略；缺省空对象
+   */
+  public static ThemeCollectStrategyView collectStrategy(Map<String, Object> briefing) {
+    Map<String, Object> raw = nestedMap(briefing, "collect_strategy");
+    if (raw.isEmpty()) {
+      return ThemeCollectStrategyView.builder().build();
+    }
+    return ThemeCollectStrategyView.builder()
+        .mode(StrUtil.trim(StrUtil.nullToEmpty(stringOrNull(raw.get("mode")))).toLowerCase())
+        .rationale(StrUtil.trim(StrUtil.nullToEmpty(stringOrNull(raw.get("rationale")))))
+        .userOverride(Boolean.TRUE.equals(raw.get("user_override"))
+            || "true".equalsIgnoreCase(StrUtil.nullToEmpty(stringOrNull(raw.get("user_override")))))
+        .build();
+  }
+
+  /**
    * 校验热点主题启用前必填项。
    *
-   * <p>必填：主题名、至少一条搜索关键词、合法评分量表（3～6 维且权重和为 100）。
+   * <p>必填：主题名、已确认主要意图、已选采集策略、合法评分量表。
+   * 结构化策略另需至少一条搜索词；非结构化可空搜索词但须有联网搜索种子渠道。
    *
    * @param briefing 问卷 map
    */
@@ -146,9 +191,28 @@ public final class HotNewsThemeBriefingSupport {
     if (StrUtil.isBlank(stringOrNull(naming.get("name")))) {
       throw new BusinessException(ErrorCodes.THEME_INVALID_STATUS, "请填写主题名称", 400);
     }
+    ThemeCoreIntentView intent = coreIntent(briefing);
+    if (!intent.hasSummary() || !intent.isConfirmed()) {
+      throw new BusinessException(
+          ErrorCodes.THEME_INVALID_STATUS, "请先由 AI 分析并确认主题主要意图", 400);
+    }
+    ThemeCollectStrategyView strategy = collectStrategy(briefing);
+    if (!strategy.hasMode() || HotNewsCollectStrategyMode.from(strategy.getMode()).isEmpty()) {
+      throw new BusinessException(ErrorCodes.THEME_INVALID_STATUS, "请选择采集策略模式", 400);
+    }
     normalizeSearchQueriesInPlace(briefing);
     List<String> queries = searchQueries(briefing);
-    if (queries.isEmpty()) {
+    List<String> seedChannels = seedChannelTypes(briefing);
+    if (strategy.isUnstructured()) {
+      boolean hasWebSearch = seedChannels.contains(HotNewsThemeSeedChannelKeys.SEARXNG)
+          || seedChannels.contains(HotNewsThemeSeedChannelKeys.TAVILY);
+      if (!hasWebSearch) {
+        throw new BusinessException(
+            ErrorCodes.THEME_INVALID_STATUS,
+            "非结构化策略须至少勾选 SearXNG 或 Tavily 作为联网搜索通道",
+            400);
+      }
+    } else if (queries.isEmpty()) {
       throw new BusinessException(
           ErrorCodes.THEME_INVALID_STATUS,
           "请至少确认一条可检索的短关键词（每条不超过 "
@@ -156,7 +220,6 @@ public final class HotNewsThemeBriefingSupport {
               + " 字，勿粘贴整段主题描述）",
           400);
     }
-    List<String> seedChannels = seedChannelTypes(briefing);
     if (seedChannels.contains(HotNewsThemeSeedChannelKeys.GITHUB)
         && StrUtil.isBlank(githubQuery(briefing))) {
       throw new BusinessException(ErrorCodes.THEME_INVALID_STATUS, "已勾选 GitHub 渠道时须填写 GitHub 查询串", 400);
@@ -190,6 +253,24 @@ public final class HotNewsThemeBriefingSupport {
     defaults.put("github_query", githubQuery(briefing));
     defaults.put("tone", stringOrNull(expression.get("tone")));
     defaults.put("boundaries", StrUtil.nullToEmpty(stringOrNull(expression.get("boundaries"))));
+    ThemeCoreIntentView intent = coreIntent(briefing);
+    if (intent.hasSummary()) {
+      Map<String, Object> intentMap = new LinkedHashMap<>();
+      intentMap.put("summary", intent.getSummary());
+      intentMap.put("material_wants", intent.getMaterialWants());
+      intentMap.put("material_avoids", intent.getMaterialAvoids());
+      intentMap.put("success_looks_like", intent.getSuccessLooksLike());
+      intentMap.put("confirmed", intent.isConfirmed());
+      defaults.put("core_intent", intentMap);
+    }
+    ThemeCollectStrategyView strategy = collectStrategy(briefing);
+    if (strategy.hasMode()) {
+      Map<String, Object> strategyMap = new LinkedHashMap<>();
+      strategyMap.put("mode", strategy.getMode());
+      strategyMap.put("rationale", strategy.getRationale());
+      strategyMap.put("user_override", strategy.isUserOverride());
+      defaults.put("collect_strategy", strategyMap);
+    }
     ScoringRubricView rubric = ScoringRubricSupport.readFrom(briefing);
     if (rubric != null) {
       ScoringRubricSupport.writeInto(defaults, rubric);
@@ -244,6 +325,21 @@ public final class HotNewsThemeBriefingSupport {
         stringOrNull(briefing.get("domain")));
     StringBuilder builder = new StringBuilder();
     builder.append("本主题「").append(StrUtil.blankToDefault(themeName, "未命名")).append("」写作上下文：");
+    ThemeCoreIntentView intent = coreIntent(briefing);
+    if (intent.hasSummary()) {
+      builder.append("主要意图=").append(intent.getSummary()).append("；");
+      if (CollUtil.isNotEmpty(intent.getMaterialWants())) {
+        builder.append("要的素材=").append(String.join("、", intent.getMaterialWants())).append("；");
+      }
+      if (CollUtil.isNotEmpty(intent.getMaterialAvoids())) {
+        builder.append("不要的素材=")
+            .append(String.join("、", intent.getMaterialAvoids()))
+            .append("；");
+      }
+      if (StrUtil.isNotBlank(intent.getSuccessLooksLike())) {
+        builder.append("好素材标准=").append(intent.getSuccessLooksLike()).append("；");
+      }
+    }
     if (StrUtil.isNotBlank(domain)) {
       builder.append("领域=").append(domain).append("；");
     }

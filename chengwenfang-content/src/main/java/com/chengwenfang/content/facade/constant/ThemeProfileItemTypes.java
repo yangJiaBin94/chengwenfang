@@ -24,4 +24,8 @@ public final class ThemeProfileItemTypes {
   public static final String SEED_CHANNEL = "seed_channel";
   /** 不在范围内。 */
   public static final String OUT_OF_SCOPE = "out_of_scope";
+  /** 热点主要意图（content 为整段 JSON）。 */
+  public static final String CORE_INTENT = "core_intent";
+  /** 热点采集策略（content 为整段 JSON）。 */
+  public static final String COLLECT_STRATEGY = "collect_strategy";
 }

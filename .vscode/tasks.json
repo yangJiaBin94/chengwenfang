@@ -3,19 +3,17 @@
   "tasks": [
     {
       "label": "maven-compile-chengwenfang",
-      "type": "shell",
-      "command": "${workspaceFolder}/scripts/maven-compile-chengwenfang.ps1",
+      "type": "process",
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/scripts/maven-compile-chengwenfang.ps1"
+      ],
       "options": {
-        "cwd": "${workspaceFolder}",
-        "shell": {
-          "executable": "powershell.exe",
-          "args": [
-            "-NoProfile",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-File"
-          ]
-        }
+        "cwd": "${workspaceFolder}"
       },
       "group": "build",
       "problemMatcher": [],
@@ -24,7 +22,6 @@
         "panel": "shared",
         "showReuseMessage": false,
         "clear": true,
-        "close": true,
         "focus": false
       }
     }

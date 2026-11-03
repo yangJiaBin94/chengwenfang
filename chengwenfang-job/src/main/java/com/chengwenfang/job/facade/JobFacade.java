@@ -46,6 +46,15 @@ public interface JobFacade {
   boolean hasActiveJobsForTheme(String themeId);
 
   /**
+   * 是否存在指定类型、实体 id 的 pending/running 任务。
+   *
+   * @param type     任务类型（{@link JobTypes}）
+   * @param entityId 关联实体 id
+   * @return 存在进行中任务时为 true
+   */
+  boolean hasActiveJob(String type, String entityId);
+
+  /**
    * 按主题与任务类型取最近一条任务。
    *
    * @param themeId 主题主键

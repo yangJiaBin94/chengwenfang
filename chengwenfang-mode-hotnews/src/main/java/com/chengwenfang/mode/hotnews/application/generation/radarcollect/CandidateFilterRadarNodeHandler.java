@@ -77,7 +77,8 @@ public class CandidateFilterRadarNodeHandler implements RadarCollectNodeHandler 
     int inputCount = pending.size();
     reportProgress(jobId, stepKey, 72, "素材筛选：参与 " + inputCount + " 条…");
 
-    // 1) 本地规则先拦硬广和空标题。词典未命中不在这里丢，整包问模型
+    // 1) 本地规则先拦硬广和空标题。有主要意图时幸存者整包按意图筛；否则仅词典未命中问模型
+    boolean hasIntent = StrUtil.isNotBlank(session.getCoreIntentPrompt());
     List<RadarCollectCandidate> needMarketing = new ArrayList<>();
     List<RadarCollectCandidate> needThemeModel = new ArrayList<>();
     int ruleScanned = 0;
@@ -93,7 +94,7 @@ public class CandidateFilterRadarNodeHandler implements RadarCollectNodeHandler 
       } else if (MarketingPageFilter.shouldSkip(candidate.getUrl(), candidate.getTitle())
           || SourceVideoTitleFilter.looksLikeHardSellTitle(candidate.getTitle())) {
         discard(candidate, "标题硬广/推销");
-      } else if (themeDecision.uncertain()) {
+      } else if (hasIntent || themeDecision.uncertain()) {
         needThemeModel.add(candidate);
       } else {
         needMarketing.add(candidate);
@@ -122,10 +123,12 @@ public class CandidateFilterRadarNodeHandler implements RadarCollectNodeHandler 
           74,
           "素材筛选：主题相关性判定 " + needThemeModel.size() + " 条…");
       Set<String> offTopicIds = aiSupport.findOffTopicIds(
-          session.getThemeRelevanceProfile(), needThemeModel);
+          session.getThemeRelevanceProfile(),
+          session.getCoreIntentPrompt(),
+          needThemeModel);
       for (RadarCollectCandidate candidate : needThemeModel) {
         if (offTopicIds.contains(candidate.getTempId())) {
-          discard(candidate, "AI 判定主题不相关");
+          discard(candidate, hasIntent ? "AI 判定不符合主要意图" : "AI 判定主题不相关");
         } else {
           needMarketing.add(candidate);
         }

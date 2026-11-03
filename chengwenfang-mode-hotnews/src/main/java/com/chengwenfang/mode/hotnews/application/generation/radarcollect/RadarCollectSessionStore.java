@@ -64,6 +64,10 @@ public class RadarCollectSessionStore {
     /** 主题相关性信号（标题/速览过滤用）。 */
     private ThemeTitleRelevance.Profile themeRelevanceProfile =
         new ThemeTitleRelevance.Profile("", List.of(), List.of());
+    /** 已确认主要意图提示块；可空。 */
+    private String coreIntentPrompt = "";
+    /** 采集策略模式值；可空（缺省按结构化）。 */
+    private String collectStrategyMode = "";
     /** 采集 run ID。 */
     private String fetchRunId;
     /** 批次 ID。 */
@@ -105,6 +109,22 @@ public class RadarCollectSessionStore {
       this.themeRelevanceProfile = themeRelevanceProfile == null
           ? new ThemeTitleRelevance.Profile("", List.of(), List.of())
           : themeRelevanceProfile.normalized();
+    }
+
+    public String getCoreIntentPrompt() {
+      return coreIntentPrompt;
+    }
+
+    public void setCoreIntentPrompt(String coreIntentPrompt) {
+      this.coreIntentPrompt = StrUtil.nullToEmpty(coreIntentPrompt);
+    }
+
+    public String getCollectStrategyMode() {
+      return collectStrategyMode;
+    }
+
+    public void setCollectStrategyMode(String collectStrategyMode) {
+      this.collectStrategyMode = StrUtil.nullToEmpty(collectStrategyMode);
     }
 
     public String getFetchRunId() {

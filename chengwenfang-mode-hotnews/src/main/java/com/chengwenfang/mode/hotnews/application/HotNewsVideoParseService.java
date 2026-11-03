@@ -2,6 +2,7 @@ package com.chengwenfang.mode.hotnews.application;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.common.ErrorCodes;
 import com.chengwenfang.mode.hotnews.application.model.ResearchCandidate;
@@ -14,7 +15,9 @@ import com.chengwenfang.sourcing.application.videoparse.VideoParseProgressSuppor
 import com.chengwenfang.mode.hotnews.domain.ResearchContentClassifier;
 import com.chengwenfang.sourcing.domain.entity.SourceItemEntity;
 import com.chengwenfang.mode.hotnews.domain.entity.TopicResearchItemEntity;
+import com.chengwenfang.mode.hotnews.domain.entity.TopicResearchRunEntity;
 import com.chengwenfang.mode.hotnews.facade.dto.request.VideoParseRequest;
+import com.chengwenfang.mode.hotnews.infrastructure.mapper.TopicResearchRunMapper;
 import com.chengwenfang.sourcing.facade.enums.VideoParseStep;
 import com.chengwenfang.infra.config.ChengwenfangProperties;
 import com.chengwenfang.job.facade.JobExecutionContext;
@@ -27,6 +30,7 @@ import com.chengwenfang.job.facade.dto.job.HotNewsVideoParseJobInput;
 import com.chengwenfang.job.facade.dto.job.HotNewsVideoParseJobOutput;
 import com.chengwenfang.job.facade.dto.job.JobPayloads;
 import com.chengwenfang.job.facade.dto.view.JobView;
+import com.chengwenfang.job.facade.enums.JobStatus;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -65,6 +69,8 @@ public class HotNewsVideoParseService {
   private final SourceItemVideoParseStrategy sourceItemStrategy;
   /** 归属策略解析器（markFailed 等通用路径）。 */
   private final VideoParseOwnerStrategyResolver ownerStrategies;
+  /** 选题调研运行 Mapper（与资料补充互斥）。 */
+  private final TopicResearchRunMapper researchRunMapper;
 
   /**
    * @param jobs                     任务门面
@@ -75,6 +81,7 @@ public class HotNewsVideoParseService {
    * @param researchItemStrategy     资料池策略
    * @param sourceItemStrategy       信源策略
    * @param ownerStrategies          归属策略解析器
+   * @param researchRunMapper        调研运行 Mapper
    */
   public HotNewsVideoParseService(
       JobFacade jobs,
@@ -84,7 +91,8 @@ public class HotNewsVideoParseService {
       @Lazy HotNewsTopicService topics,
       TopicResearchItemVideoParseStrategy researchItemStrategy,
       SourceItemVideoParseStrategy sourceItemStrategy,
-      VideoParseOwnerStrategyResolver ownerStrategies) {
+      VideoParseOwnerStrategyResolver ownerStrategies,
+      TopicResearchRunMapper researchRunMapper) {
     this.jobs = jobs;
     this.videoTranscriptService = videoTranscriptService;
     this.chengwenfangProperties = chengwenfangProperties;
@@ -93,6 +101,24 @@ public class HotNewsVideoParseService {
     this.researchItemStrategy = researchItemStrategy;
     this.sourceItemStrategy = sourceItemStrategy;
     this.ownerStrategies = ownerStrategies;
+    this.researchRunMapper = researchRunMapper;
+  }
+
+  /**
+   * 选题是否有进行中的资料补充运行。
+   *
+   * @param topicId 选题主键
+   * @return 存在 pending/running 时 true
+   */
+  private boolean hasActiveTopicResearch(String topicId) {
+    if (StrUtil.isBlank(topicId)) {
+      return false;
+    }
+    Long count = researchRunMapper.selectCount(new LambdaQueryWrapper<TopicResearchRunEntity>()
+        .eq(TopicResearchRunEntity::getTopicId, topicId)
+        .in(TopicResearchRunEntity::getStatus,
+            JobStatus.PENDING.getValue(), JobStatus.RUNNING.getValue()));
+    return count != null && count > 0;
   }
 
   /**
@@ -104,7 +130,15 @@ public class HotNewsVideoParseService {
    */
   @Transactional
   public JobView startVideoParse(String topicId, VideoParseRequest request) {
-    topics.requireTopic(topicId);
+    // 行锁选题：与 startTopicResearch 串行
+    topics.requireTopicLocked(topicId);
+    // 资料补充进行中禁止解析，与 startTopicResearch 对称互斥
+    if (hasActiveTopicResearch(topicId)) {
+      throw new BusinessException(
+          ErrorCodes.VIDEO_PARSE_BLOCKED_BY_RESEARCH,
+          "该选题资料补充正在进行中，请完成后再解析视频",
+          409);
+    }
     if (!videoTranscriptService.isEnabled()) {
       throw new BusinessException(
           ErrorCodes.VIDEO_PARSE_DISABLED,

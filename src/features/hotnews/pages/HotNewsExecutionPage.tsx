@@ -403,6 +403,7 @@ export function HotNewsExecutionPage({
       attemptNodes={attemptNodes}
       currentStageIndex={currentStageIndex}
       currentStageKey={currentStageKey}
+      displayStatus={displayStatus}
       effectiveCurrentStageKey={effectiveCurrentStageKey}
       events={events}
       goBackToWorkspace={goBackToWorkspace}

@@ -69,6 +69,15 @@ export function useHotNewsResearchPage({
   const [pageSize, setPageSize] = useState<ListPageSize>(5);
   const [pageSizeOpen, setPageSizeOpen] = useState(false);
   const pageSizeRef = useRef<HTMLDivElement | null>(null);
+  /** 供轮询/异步回调读取最新分页参数，避免闭包停在旧页。 */
+  const listPageRef = useRef(listPage);
+  const pageSizeStateRef = useRef(pageSize);
+  const debouncedQueryRef = useRef(debouncedQuery);
+  const mediaFilterRef = useRef(mediaFilter);
+  listPageRef.current = listPage;
+  pageSizeStateRef.current = pageSize;
+  debouncedQueryRef.current = debouncedQuery;
+  mediaFilterRef.current = mediaFilter;
   const [, setArticles] = useState<HotNewsArticle[]>([]);
   /** 来自 Job 的真实进度（research-runs 本身不含 progress）。 */
   const [jobProgress, setJobProgress] = useState(0);
@@ -80,30 +89,40 @@ export function useHotNewsResearchPage({
   const [manualUrl, setManualUrl] = useState("");
   const [manualBusy, setManualBusy] = useState(false);
 
-  /** 把分页接口结果写入列表与选题级统计。 */
-  function applyItemPage(result: HotNewsResearchItemPage) {
+  /**
+   * 写入列表；仅当仍停留在请求页时采纳，防止视频解析/调研轮询把页码打回去。
+   *
+   * @param result 分页结果
+   * @param requestedPage 发起请求时的页码
+   */
+  function applyItemPage(result: HotNewsResearchItemPage, requestedPage: number) {
+    if (requestedPage !== listPageRef.current) {
+      return;
+    }
     setItems(result.items);
     setTotal(result.total);
     setItemCount(result.itemCount);
     setArticleCount(result.articleCount);
     setVideoCount(result.videoCount);
     setPendingVideoCount(result.pendingVideoCount);
-    if (result.page !== listPage) {
+    // 后端可能把超范围页夹到末页
+    if (result.page !== listPageRef.current) {
       setListPage(result.page);
     }
   }
 
   /** 拉取当前页资料（后端 LIMIT/OFFSET）。silent 时不闪「加载中」。 */
-  async function loadItemPage(page = listPage, silent = false) {
+  async function loadItemPage(page = listPageRef.current, silent = false) {
+    const requestedPage = page;
     if (!silent) setListLoading(true);
     try {
       const result = await pageHotNewsResearchItems(topicId, {
-        page,
-        pageSize,
-        keyword: debouncedQuery,
-        media: mediaFilter,
+        page: requestedPage,
+        pageSize: pageSizeStateRef.current,
+        keyword: debouncedQueryRef.current,
+        media: mediaFilterRef.current,
       });
-      applyItemPage(result);
+      applyItemPage(result, requestedPage);
       return result;
     } catch (error) {
       showNotice(
@@ -138,7 +157,7 @@ export function useHotNewsResearchPage({
     try {
       const [, itemPage] = await Promise.all([
         refreshMeta(),
-        loadItemPage(listPage, silent),
+        loadItemPage(listPageRef.current, silent),
       ]);
       return itemPage;
     } catch (error) {
@@ -196,23 +215,24 @@ export function useHotNewsResearchPage({
   // 分页参数变化时加载当前页
   useEffect(() => {
     let cancelled = false;
+    const requestedPage = listPage;
     (async () => {
       setListLoading(true);
       try {
         const result = await pageHotNewsResearchItems(topicId, {
-          page: listPage,
+          page: requestedPage,
           pageSize,
           keyword: debouncedQuery,
           media: mediaFilter,
         });
-        if (cancelled) return;
+        if (cancelled || requestedPage !== listPageRef.current) return;
         setItems(result.items);
         setTotal(result.total);
         setItemCount(result.itemCount);
         setArticleCount(result.articleCount);
         setVideoCount(result.videoCount);
         setPendingVideoCount(result.pendingVideoCount);
-        if (result.page !== listPage) {
+        if (result.page !== listPageRef.current) {
           setListPage(result.page);
         }
       } catch (error) {
@@ -323,14 +343,14 @@ export function useHotNewsResearchPage({
   async function research() {
     // 视频解析进行中不可再启补充资料，避免与解析任务抢资源、覆盖素材
     if (videoParseBusy) {
-      showNotice("请稍候", "视频解析进行中，完成后可再补充资料与核验。");
+      showNotice("请稍候", "视频解析进行中，完成后可再补充资料。");
       return;
     }
     // 资料池已有素材时二次确认，避免误触覆盖自动检索结果
     if (itemCount > 0) {
       const confirmed = await confirmAction(
         "重新补充资料？",
-        `当前资料池已有 ${itemCount} 条素材。继续将重新检索并替换自动补充的资料（手动添加的素材会保留）。`,
+        `当前资料池已有 ${itemCount} 条素材。继续将重新检索并替换自动补充的资料；同链接已解析视频会保留；手动添加的素材会保留。`,
         "danger",
       );
       if (!confirmed) return;

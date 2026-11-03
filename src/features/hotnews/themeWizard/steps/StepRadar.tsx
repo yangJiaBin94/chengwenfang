@@ -1,5 +1,5 @@
 import { MAX_SEARCH_QUERIES, MAX_SEARCH_QUERY_CHARS, SEED_CHANNEL_OPTIONS } from "../constants";
-import { toggleInList } from "../briefingUtils";
+import { ensureSearxngChannel, SEARXNG_CHANNEL, toggleInList } from "../briefingUtils";
 import type { HotNewsThemeWizardModel } from "../useHotNewsThemeWizard";
 
 type StepRadarProps = Pick<
@@ -19,7 +19,7 @@ type StepRadarProps = Pick<
 >;
 
 /**
- * 向导第 2 步：搜索关键词、初始渠道与 GitHub 查询串。
+ * 向导采集范围步：搜索关键词、初始渠道与 GitHub 查询串。
  *
  * @param props 采集范围相关状态与操作
  */
@@ -37,11 +37,16 @@ export function StepRadar({
   generateQueriesByAi,
   generateGithubQueryByAi,
 }: StepRadarProps) {
+  const unstructured = briefing.collect_strategy?.mode === "unstructured";
+  const seedChannels = unstructured
+    ? ensureSearxngChannel(briefing.radar.seed_channels)
+    : briefing.radar.seed_channels;
   return (
     <div className="theme-wizard-panel">
       <p className="theme-wizard-hint">
-        点击「AI 生成」根据主题名称与说明生成搜索词（最多 {MAX_SEARCH_QUERIES}{" "}
-        条，每条不超过 {MAX_SEARCH_QUERY_CHARS} 字），也可手动追加短词。
+        {unstructured
+          ? "非结构化策略：采集时按意图多轮联网搜索；SearXNG 已固定为联网通道，不可取消；Tavily/GitHub 可选。搜索词可选（作兜底）。"
+          : `点击「AI 生成」根据主要意图与主题说明生成搜索词（最多 ${MAX_SEARCH_QUERIES} 条，每条不超过 ${MAX_SEARCH_QUERY_CHARS} 字），也可手动追加短词。`}
       </p>
       <div className="theme-wizard-query-toolbar">
         <strong>
@@ -108,28 +113,38 @@ export function StepRadar({
       </label>
       <p>创建时启用的初始搜索渠道*</p>
       <div className="chip-row">
-        {SEED_CHANNEL_OPTIONS.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            className={
-              briefing.radar.seed_channels.includes(option.value) ? "chip selected" : "chip"
-            }
-            onClick={() =>
-              setBriefing((current) => ({
-                ...current,
-                radar: {
-                  ...current.radar,
-                  seed_channels: toggleInList(current.radar.seed_channels, option.value),
-                },
-              }))
-            }
-          >
-            {option.label}
-          </button>
-        ))}
+        {SEED_CHANNEL_OPTIONS.map((option) => {
+          const lockedSearxng = unstructured && option.value === SEARXNG_CHANNEL;
+          const selected = seedChannels.includes(option.value);
+          return (
+            <button
+              key={option.value}
+              type="button"
+              className={selected ? "chip selected" : "chip"}
+              title={lockedSearxng ? "非结构化策略下 SearXNG 不可取消" : undefined}
+              onClick={() => {
+                if (lockedSearxng) {
+                  return;
+                }
+                setBriefing((current) => {
+                  const toggled = toggleInList(current.radar.seed_channels, option.value);
+                  return {
+                    ...current,
+                    radar: {
+                      ...current.radar,
+                      seed_channels: unstructured ? ensureSearxngChannel(toggled) : toggled,
+                    },
+                  };
+                });
+              }}
+            >
+              {option.label}
+              {lockedSearxng ? "（固定）" : ""}
+            </button>
+          );
+        })}
       </div>
-      {briefing.radar.seed_channels.includes("github") && (
+      {seedChannels.includes("github") && (
         <div className="theme-wizard-github-query">
           <div className="theme-wizard-query-toolbar">
             <strong>GitHub 查询串*</strong>

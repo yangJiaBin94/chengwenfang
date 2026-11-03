@@ -8,6 +8,8 @@ import com.chengwenfang.common.ThemeTitleRelevance;
 import com.chengwenfang.content.facade.ContentFacade;
 import com.chengwenfang.content.facade.HotNewsThemeBriefingSupport;
 import com.chengwenfang.content.facade.dto.view.ContentThemeView;
+import com.chengwenfang.content.facade.dto.view.ThemeCollectStrategyView;
+import com.chengwenfang.content.facade.dto.view.ThemeCoreIntentView;
 import com.chengwenfang.mode.hotnews.facade.HotNewsFacade;
 import com.chengwenfang.sourcing.facade.constant.HotNewsFetchKeys;
 import com.chengwenfang.infra.config.ChengwenfangProperties;
@@ -72,8 +74,8 @@ public class LoadContextRadarNodeHandler implements RadarCollectNodeHandler {
     // 批次行先于落库成簇写入，满足 topic_clusters.radar_batch_id FK
     String jobId = stringVal(lightState.get(RadarCollectGraphStateKeys.JOB_ID));
     hotNews.ensureRadarBatch(radarBatchId, themeId, jobId);
-    // 固化主题名/搜索词/关注点，供获取后与素材筛选使用
-    session.setThemeRelevanceProfile(resolveThemeProfile(themeId));
+    // 固化主题名/搜索词/关注点/意图，供获取后与素材筛选使用
+    applyThemeSignals(session, themeId, lightState);
     lightState.put(RadarCollectGraphStateKeys.THEME_ID, themeId);
     lightState.put(RadarCollectGraphStateKeys.RADAR_BATCH_ID, radarBatchId);
     lightState.put(RadarCollectGraphStateKeys.MAX_ARTICLE_PER_FETCH, maxArticle);
@@ -82,16 +84,19 @@ public class LoadContextRadarNodeHandler implements RadarCollectNodeHandler {
   }
 
   /**
-   * 从主题问卷组装相关性 Profile。
+   * 从主题问卷写入相关性 Profile、意图与策略。
    *
-   * @param themeId 主题 ID
-   * @return Profile；失败时退回空信号（后续过滤放行）
+   * @param session    会话
+   * @param themeId    主题 ID
+   * @param lightState 轻量状态
    */
-  private ThemeTitleRelevance.Profile resolveThemeProfile(String themeId) {
+  private void applyThemeSignals(
+      RadarCollectSessionStore.Session session, String themeId, Map<String, Object> lightState) {
     try {
       ContentThemeView theme = content.getTheme(themeId);
       if (theme == null) {
-        return new ThemeTitleRelevance.Profile("", List.of(), List.of());
+        session.setThemeRelevanceProfile(new ThemeTitleRelevance.Profile("", List.of(), List.of()));
+        return;
       }
       Map<String, Object> briefing = readBriefing(theme.getBriefingJson());
       String name = StrUtil.firstNonBlank(
@@ -99,16 +104,25 @@ public class LoadContextRadarNodeHandler implements RadarCollectNodeHandler {
           theme.getName());
       List<String> queries = HotNewsThemeBriefingSupport.searchQueries(briefing);
       List<String> mustWatch = HotNewsThemeBriefingSupport.mustWatch(briefing);
+      ThemeCoreIntentView intent = HotNewsThemeBriefingSupport.coreIntent(briefing);
+      ThemeCollectStrategyView strategy = HotNewsThemeBriefingSupport.collectStrategy(briefing);
+      String intentPrompt = intent.isConfirmed() ? intent.toPromptBlock() : "";
+      session.setThemeRelevanceProfile(new ThemeTitleRelevance.Profile(name, queries, mustWatch));
+      session.setCoreIntentPrompt(intentPrompt);
+      session.setCollectStrategyMode(strategy.hasMode() ? strategy.getMode() : "");
+      lightState.put(RadarCollectGraphStateKeys.CORE_INTENT_PROMPT, intentPrompt);
+      lightState.put(RadarCollectGraphStateKeys.COLLECT_STRATEGY_MODE, session.getCollectStrategyMode());
       log.info(
-          "雷达主题信号已加载 themeId={} name={} queries={} mustWatch={}",
+          "雷达主题信号已加载 themeId={} name={} queries={} mustWatch={} intent={} strategy={}",
           themeId,
           name,
           queries.size(),
-          mustWatch.size());
-      return new ThemeTitleRelevance.Profile(name, queries, mustWatch);
+          mustWatch.size(),
+          StrUtil.isNotBlank(intentPrompt),
+          session.getCollectStrategyMode());
     } catch (Exception exception) {
       log.warn("加载主题相关性信号失败 themeId={} err={}", themeId, exception.getMessage());
-      return new ThemeTitleRelevance.Profile("", List.of(), List.of());
+      session.setThemeRelevanceProfile(new ThemeTitleRelevance.Profile("", List.of(), List.of()));
     }
   }
 

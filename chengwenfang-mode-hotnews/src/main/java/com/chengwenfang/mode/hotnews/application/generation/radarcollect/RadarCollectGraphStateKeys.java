@@ -68,6 +68,12 @@ public final class RadarCollectGraphStateKeys {
   public static final String AI_THEME_SEED_NOTE = "aiThemeSeedNote";
   /** AI 主题种子选题 ID（本批）。 */
   public static final String AI_THEME_SEED_TOPIC_ID = "aiThemeSeedTopicId";
+  /** 主要意图提示块。 */
+  public static final String CORE_INTENT_PROMPT = "coreIntentPrompt";
+  /** 采集策略模式。 */
+  public static final String COLLECT_STRATEGY_MODE = "collectStrategyMode";
+  /** 自适应搜索备注。 */
+  public static final String ADAPTIVE_SEARCH_NOTE = "adaptiveSearchNote";
   /** 评分取 Top10 步骤可读摘要。 */
   public static final String SCORE_TOP10_NOTE = "scoreTop10Note";
   /** 当前步骤 typeKey。 */

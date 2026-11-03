@@ -1,12 +1,14 @@
+import { WIZARD_STEP_COUNT } from "./constants";
 import type { HotNewsThemeWizardProps } from "./types";
 import { useHotNewsThemeWizard } from "./useHotNewsThemeWizard";
 import { StepConfirm } from "./steps/StepConfirm";
+import { StepIntent } from "./steps/StepIntent";
 import { StepNaming } from "./steps/StepNaming";
 import { StepRadar } from "./steps/StepRadar";
 import { StepRubric } from "./steps/StepRubric";
 
 /**
- * 热点主题分区创建向导：基本信息 → 采集范围 → 评分量表 → 确认启用。
+ * 热点主题分区创建向导：基本信息 → 意图与策略 → 采集范围 → 评分量表 → 确认启用。
  *
  * @param props 向导入参
  */
@@ -32,8 +34,8 @@ export function HotNewsThemeWizard(props: HotNewsThemeWizardProps) {
           <span className="section-kicker">Hot News Theme</span>
           <h2>{theme?.name || "新建主题分区"}</h2>
           <p>
-            步骤 {step} / 4：{stepTitle}
-            。雷达流程通用，主题用于隔离统计、选题素材、文章与来源配置；写作价值按本主题量表打分。
+            步骤 {step} / {WIZARD_STEP_COUNT}：{stepTitle}
+            。先确认主要意图与采集策略，再配置搜索词与评分量表；写作价值按本主题量表打分。
           </p>
         </div>
         <button type="button" className="ghost-button" onClick={onCancel} disabled={busy}>
@@ -45,6 +47,18 @@ export function HotNewsThemeWizard(props: HotNewsThemeWizardProps) {
         <StepNaming briefing={model.briefing} setBriefing={model.setBriefing} />
       )}
       {step === 2 && (
+        <StepIntent
+          briefing={model.briefing}
+          setBriefing={model.setBriefing}
+          busy={model.busy}
+          intentGenerating={model.intentGenerating}
+          strategyGenerating={model.strategyGenerating}
+          generateIntentByAi={model.generateIntentByAi}
+          generateStrategyByAi={model.generateStrategyByAi}
+          confirmIntent={model.confirmIntent}
+        />
+      )}
+      {step === 3 && (
         <StepRadar
           briefing={model.briefing}
           setBriefing={model.setBriefing}
@@ -60,7 +74,7 @@ export function HotNewsThemeWizard(props: HotNewsThemeWizardProps) {
           generateGithubQueryByAi={model.generateGithubQueryByAi}
         />
       )}
-      {step === 3 && (
+      {step === 4 && (
         <StepRubric
           briefing={model.briefing}
           setBriefing={model.setBriefing}
@@ -74,7 +88,7 @@ export function HotNewsThemeWizard(props: HotNewsThemeWizardProps) {
           maxRubricDims={model.maxRubricDims}
         />
       )}
-      {step === 4 && (
+      {step === 5 && (
         <StepConfirm briefing={model.briefing} searchQueries={model.searchQueries} />
       )}
 
@@ -89,7 +103,7 @@ export function HotNewsThemeWizard(props: HotNewsThemeWizardProps) {
             上一步
           </button>
         )}
-        {step < 4 ? (
+        {step < WIZARD_STEP_COUNT ? (
           <button
             type="button"
             className="primary-button"

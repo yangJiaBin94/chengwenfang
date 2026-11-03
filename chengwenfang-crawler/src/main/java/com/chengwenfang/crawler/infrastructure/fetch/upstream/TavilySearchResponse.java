@@ -32,6 +32,9 @@ public class TavilySearchResponse {
     private String url;
     /** 摘要。 */
     private String content;
+    /** 清洗正文（include_raw_content 时）。 */
+    @Alias("raw_content")
+    private String rawContent;
     /** 发布时间。 */
     @Alias("published_date")
     private String publishedDate;
