@@ -43,6 +43,10 @@ class HotNewsTopicResearchAssistServiceTest {
   void parse_skeleton() {
     var skeleton = HotNewsTopicResearchAssistService.parseSkeleton("t1", """
         {"workingTitle":"Beam 发布","scope":"只谈开源模型","coreThesis":"后训练进入新阶段",
+         "targetAudience":"关注开源模型落地的从业者",
+         "readerIntents":["看清发布里真正变了什么","核验宣传口径"],
+         "readerGaps":["缺可核对的能力边界说明"],
+         "readerSignals":["带走一个可验证判断"],
          "illustrationStyle":"对照示意图","coverBrief":"Beam 发布冲突感封面",
          "recommendedWordCountOption":"2500-4000","recommendedImageCountOption":"0",
          "architecture":["事实","影响"],"flow":["开场","收束"],
@@ -52,6 +56,10 @@ class HotNewsTopicResearchAssistServiceTest {
     assertThat(skeleton).isNotNull();
     assertThat(skeleton.getWorkingTitle()).isEqualTo("Beam 发布");
     assertThat(skeleton.getCoreThesis()).contains("后训练");
+    assertThat(skeleton.getTargetAudience()).contains("从业者");
+    assertThat(skeleton.getReaderIntents()).containsExactly("看清发布里真正变了什么", "核验宣传口径");
+    assertThat(skeleton.getReaderGaps()).containsExactly("缺可核对的能力边界说明");
+    assertThat(skeleton.getReaderSignals()).containsExactly("带走一个可验证判断");
     assertThat(skeleton.getModules()).hasSize(1);
     assertThat(skeleton.getIllustrationStyle()).isEqualTo("对照示意图");
     assertThat(skeleton.getRecommendedWordCountOption()).isEqualTo("2500-4000");
@@ -59,5 +67,16 @@ class HotNewsTopicResearchAssistServiceTest {
     assertThat(skeleton.getRecommendedImageCountOption()).isEqualTo("2-3");
     // 缺省 imagePromptRequirements 时回填默认生图要求
     assertThat(skeleton.getImagePromptRequirements()).isNotBlank();
+    assertThat(ArticleSkeletonBuilder.hasUsableAudienceDiagnosis(skeleton)).isTrue();
+  }
+
+  @Test
+  void audience_diagnosis_rejects_missing_reader_fields() {
+    var incomplete = HotNewsTopicResearchAssistService.parseSkeleton("t1", """
+        {"workingTitle":"仅有论点","coreThesis":"有论点无读者诊断",
+         "recommendedWordCountOption":"2500-4000","recommendedImageCountOption":"2-3"}
+        """);
+    assertThat(incomplete).isNotNull();
+    assertThat(ArticleSkeletonBuilder.hasUsableAudienceDiagnosis(incomplete)).isFalse();
   }
 }

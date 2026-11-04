@@ -48,7 +48,7 @@ public class ResearchPoolWriter {
   private final TopicResearchRunMapper researchRunMapper;
   /** 资料池条目 Mapper。 */
   private final TopicResearchItemMapper researchItemMapper;
-  /** 抓取门面。 */
+  /** 抓取门面（轻取标题）。 */
   private final FetchFacade fetchFacade;
   /** 调研 AI 辅助。 */
   private final HotNewsTopicResearchAssistService researchAssist;
@@ -64,6 +64,8 @@ public class ResearchPoolWriter {
   private final ResearchItemScoreDetailsStore scoreDetailsStore;
   /** 调研查询（视图映射）。 */
   private final ResearchQueryService query;
+  /** 文章正文抽取 + 事实摘要。 */
+  private final ResearchArticleEnricher articleEnricher;
 
   /**
    * @param topicMapper              选题簇 Mapper
@@ -77,6 +79,7 @@ public class ResearchPoolWriter {
    * @param topics                   选题协作
    * @param scoreDetailsStore        资料评分明细
    * @param query                    调研查询
+   * @param articleEnricher          文章摘要 enrich
    */
   public ResearchPoolWriter(
       TopicClusterMapper topicMapper,
@@ -89,7 +92,8 @@ public class ResearchPoolWriter {
       VideoParseRunService videoParseRuns,
       @Lazy HotNewsTopicService topics,
       ResearchItemScoreDetailsStore scoreDetailsStore,
-      ResearchQueryService query) {
+      ResearchQueryService query,
+      ResearchArticleEnricher articleEnricher) {
     this.topicMapper = topicMapper;
     this.researchRunMapper = researchRunMapper;
     this.researchItemMapper = researchItemMapper;
@@ -101,6 +105,7 @@ public class ResearchPoolWriter {
     this.topics = topics;
     this.scoreDetailsStore = scoreDetailsStore;
     this.query = query;
+    this.articleEnricher = articleEnricher;
   }
 
   public HotNewsResearchItemView addManualResearchItem(
@@ -127,6 +132,7 @@ public class ResearchPoolWriter {
 
     String title = url;
     String summary = "";
+    // 轻取标题；文章摘要改由正文瀑布 enrich，避免门户导航当摘要
     try {
       FetchResult fetched = fetchFacade.fetch(FetchRequest.builder()
           .url(url)
@@ -162,6 +168,8 @@ public class ResearchPoolWriter {
     if (translated != null && !translated.isEmpty()) {
       candidate = translated.get(0);
     }
+    // 文章：正文抽取 + AI 事实摘要（覆盖浅抓噪声）
+    articleEnricher.enrichArticles(List.of(candidate));
     // 五维 AI 打分（失败回退 kind 默认分）
     TopicClusterEntity topicForScore = topicMapper.selectById(topicId);
     researchItemScoreService.scoreCandidates(

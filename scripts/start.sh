@@ -20,7 +20,7 @@ Usage: scripts/start.sh [options]
   -h, --help       show this help
 
 Course-only (MySQL + Redis) is the default. Hot-news Python CLIs are optional;
-see README「仅课程主流程」.
+install with: ./scripts/setup-hotnews-clis.sh (see README「热点模式」).
 EOF
 }
 

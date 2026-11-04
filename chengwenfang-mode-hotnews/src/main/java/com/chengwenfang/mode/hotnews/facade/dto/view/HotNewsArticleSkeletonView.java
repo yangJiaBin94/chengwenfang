@@ -24,11 +24,17 @@ public class HotNewsArticleSkeletonView {
   private String coreThesis;
   /** 核心事件一句话 */
   private String coreEvent;
+  /** 主读者画像（一句话，按选题推测） */
+  private String targetAudience;
+  /** 读者点开意图（2～4 条） */
+  private List<String> readerIntents;
+  /** 读者常缺、本文应补的决策缺口（2～4 条） */
+  private List<String> readerGaps;
   /** 核心洞察点（非流水账事实） */
   private List<String> keyInsights;
   /** 影响面 */
   private List<String> impacts;
-  /** 读者应带走的信号/判断 */
+  /** 读者应带走的信号/判断（须与 intents/gaps 对齐） */
   private List<String> readerSignals;
   /** 叙事形态（故事切入 / 冲突推进 / 对照等） */
   private String narrativeShape;

@@ -91,18 +91,20 @@ public class GenerateDraftNodeHandler implements HotNewsNodeHandler {
         请根据「文章骨架」生成完整热点原稿（Markdown）。
         硬性要求：
         1. 结构必须跟随骨架的 narrativeShape、sectionPlan、architecture，不要另起一套大纲。
-        2. 覆盖 coreEvent、keyInsights、impacts、readerSignals、coreThesis。
-        3. 事实包与参考资料只作线索，禁止逐条复述或编造素材外事实。
-        4. 正文字数落在字数档 %s 内（允许少量浮动）；插图提示词不计入字数。
-        5. 必须写入插图提示词并保留在原稿中：封面 1 个 + 正文插图 %d 个。
+        2. 围绕 targetAudience 说话；落实 readerIntents（读者为何点开），主动补上 readerGaps
+           （可观察锚点 / 读法 / 风险维度），结尾落到 readerSignals；禁止买卖建议、目标价与荐股口吻。
+        3. 覆盖 coreEvent、keyInsights、impacts、readerSignals、coreThesis。
+        4. 事实包与参考资料只作线索，禁止逐条复述或编造素材外事实。
+        5. 正文字数落在字数档 %s 内（允许少量浮动）；插图提示词不计入字数。
+        6. 必须写入插图提示词并保留在原稿中：封面 1 个 + 正文插图 %d 个。
            唯一权威格式：先写「**插图位置：…**」行，再紧跟 ```text 围栏；禁止括号/裸提示词行/引用块/正文段落式生图描述。
            封面标记须含「封面」；正文插图标记写「插图 N｜主题」。
            封面提示词须写出「一眼能看懂的核心内容画面」：围绕骨架 coreThesis / coverBrief：
            用具体可视元素表达冲突或关键数字，让人想点开；禁止抽象氛围空装饰。
-        6. 像活人聊天：第一人称可有判断与语气；句子长短参差；禁止训诫小标题，也禁止说明书括注与翻译腔。
-        7. 每条插图提示词必须遵循骨架的 illustrationStyle、coverBrief、imagePromptRequirements：
+        7. 像活人聊天：第一人称可有判断与语气；句子长短参差；禁止训诫小标题，也禁止说明书括注与翻译腔。
+        8. 每条插图提示词必须遵循骨架的 illustrationStyle、coverBrief、imagePromptRequirements：
            把生图要素写进提示词正文，不要另起一套画面规范。
-        8. 只输出可发布正文与插图提示词块，不要提纲、建议或内部说明。
+        9. 只输出可发布正文与插图提示词块，不要提纲、建议或内部说明。
         标题：%s
         选题摘要：%s
         插图风格：%s

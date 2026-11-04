@@ -4,6 +4,8 @@
 
 chengwenfang:
   environment: course-only
+  page-screenshot:
+    enabled: false
   video-transcript:
     enabled: false
   article-content:

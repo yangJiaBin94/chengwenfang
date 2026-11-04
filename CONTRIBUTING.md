@@ -11,8 +11,9 @@ Thanks for helping improve Chengwenfang. Please keep changes focused and local-f
 . .\scripts\use-utf8.ps1
 ```
 
-- Optional hotspot features need Python 3.11+ venvs under `scripts/article-extract`
-  and `scripts/video-transcript`, plus `ffmpeg` on `PATH` (see README)
+- Optional hotspot features: run `scripts/setup-hotnews-clis.ps1` (or `.sh`) for
+  `article-extract` / `video-transcript` / `page-screenshot`(+Chromium), plus
+  `ffmpeg` on `PATH` (see README)
 
 ## Setup
 

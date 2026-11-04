@@ -59,6 +59,8 @@ public class ChengwenfangProperties {
   private ArticleContentSettings articleContent = new ArticleContentSettings();
   /** 本机 Trafilatura / Lightpanda 正文抽取 CLI。 */
   private ArticleExtractSettings articleExtract = new ArticleExtractSettings();
+  /** 资料补充文章摘要：Playwright 分段截图 Vision 兜底（可选）。 */
+  private PageScreenshotSettings pageScreenshot = new PageScreenshotSettings();
   /** 微信公众号开放平台 API。 */
   private WechatMpApiSettings wechatMp = new WechatMpApiSettings();
   /**
@@ -126,6 +128,23 @@ public class ChengwenfangProperties {
     private String workingDirectory = "scripts/article-extract";
     /** Trafilatura 单次超时秒数。 */
     private int stepTimeoutSeconds = 30;
+  }
+
+  /** 网页分段截图 CLI（Vision 兜底）。 */
+  @Data
+  public static class PageScreenshotSettings {
+    /** 是否启用；默认关，需本机 Playwright + 多模态 AI。 */
+    private boolean enabled = false;
+    /** Python 可执行文件（建议 venv）。 */
+    private String pythonExecutable = "python";
+    /** CLI 工作目录。 */
+    private String workingDirectory = "scripts/page-screenshot";
+    /** 单次截图超时秒数。 */
+    private int timeoutSeconds = 45;
+    /** 最多截屏张数。 */
+    private int maxShots = 3;
+    /** 视口，如 1280x900。 */
+    private String viewport = "1280x900";
   }
 
   /** 视频解析 CLI 配置。 */

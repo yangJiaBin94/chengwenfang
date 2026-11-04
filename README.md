@@ -162,21 +162,25 @@ npm install && npm run dev:frontend
 
 ## 热点模式（可选加装）
 
-雷达正文、资料池视频解析才需要下面这些；**跳过不影响课程**。
+雷达正文、资料池视频解析、资料补充截图 Vision 才需要下面这些；**跳过不影响课程**。
 
 | 依赖 | 作用 |
 |------|------|
-| `scripts/article-extract` venv | 网页正文抽取 |
+| `scripts/article-extract` venv | 网页正文抽取（Trafilatura / Lightpanda） |
 | `scripts/video-transcript` venv + 本机 `ffmpeg` | 视频口播 / 抽帧 |
+| `scripts/page-screenshot` venv + Chromium | 资料补充截图 Vision 兜底（开发默认开启） |
 | `docker compose --profile all` | SearXNG（搜索）+ Lightpanda（JS 页回退） |
 
 ```powershell
 docker compose --profile all up -d --wait
+# 一键安装三个 Python CLI（含 Playwright Chromium）
+powershell -ExecutionPolicy Bypass -File .\scripts\setup-hotnews-clis.ps1
+# macOS / Linux：chmod +x scripts/setup-hotnews-clis.sh && ./scripts/setup-hotnews-clis.sh
 # 或：.\scripts\start-java.ps1 -AllDeps
 # 或：./scripts/start.sh --all-deps
 ```
 
-Python venv 安装见 [`scripts/article-extract/README.md`](scripts/article-extract/README.md)、[`scripts/video-transcript/README.md`](scripts/video-transcript/README.md)。
+分项说明：[`scripts/article-extract/README.md`](scripts/article-extract/README.md)、[`scripts/video-transcript/README.md`](scripts/video-transcript/README.md)、[`scripts/page-screenshot/README.md`](scripts/page-screenshot/README.md)。资料补充 Vision 还需在「设置」配置好多模态模型。
 
 ---
 
@@ -277,6 +281,7 @@ macOS / Linux：Homebrew 等装齐后跳过 `use-utf8.ps1`；`application.yml` �
 | 雷达正文 | article-extract；Jina → Trafilatura → Lightpanda → 摘要 | 正文质量下降 |
 | SearXNG / Lightpanda | Compose profile | 该渠道或回退不可用 |
 | 资料池视频 | video-transcript + ffmpeg + 多模态 AI | 解析失败提示 |
+| 资料补充截图摘要 | page-screenshot + Playwright Chromium + 多模态 Vision（开发默认开） | 保留原 snippet / 可关 `page-screenshot.enabled` |
 
 Lightpanda 镜像 AGPL-3.0，本仓未改源码；不用于绕过验证码 / 登录墙。
 

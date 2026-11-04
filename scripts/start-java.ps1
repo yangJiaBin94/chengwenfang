@@ -2,6 +2,7 @@ param(
   [switch]$SkipCompose,
   [switch]$OpenBrowser,
   # 同时拉起 SearXNG + Lightpanda（compose profile: all）
+  # 热点 Python CLI 请另跑：.\scripts\setup-hotnews-clis.ps1
   [switch]$AllDeps,
   # 与另一成文坊实例并存：后端 8002、前端 5174、Redis DB 1（不改 compose MySQL 端口）
   [switch]$BesidePrivate

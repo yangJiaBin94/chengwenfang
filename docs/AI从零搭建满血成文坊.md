@@ -10,7 +10,7 @@
 | 人类仍须完成 | 在网页「设置」里填写真实 AI API Key（及可选微信公众号）；密钥勿写入仓库 |
 | 默认 OS | Windows + PowerShell（作者环境）；非 Windows 见文末附录 |
 
-相关人工说明：[`README.md`](../README.md)。正文抽取 / 视频 CLI 细节：[`scripts/article-extract/README.md`](../scripts/article-extract/README.md)、[`scripts/video-transcript/README.md`](../scripts/video-transcript/README.md)。
+相关人工说明：[`README.md`](../README.md)。正文抽取 / 视频 / 截图 CLI：[`scripts/article-extract/README.md`](../scripts/article-extract/README.md)、[`scripts/video-transcript/README.md`](../scripts/video-transcript/README.md)、[`scripts/page-screenshot/README.md`](../scripts/page-screenshot/README.md)。一键安装：[`scripts/setup-hotnews-clis.ps1`](../scripts/setup-hotnews-clis.ps1) / [`scripts/setup-hotnews-clis.sh`](../scripts/setup-hotnews-clis.sh)。
 
 ---
 
@@ -32,7 +32,8 @@
 - [ ] `docker compose --profile all ps` 中 mysql、redis、searxng、lightpanda 为 running（或 healthy）  
 - [ ] 存在 `scripts/article-extract/.venv/Scripts/python.exe`（Windows）且能 `import trafilatura`  
 - [ ] 存在 `scripts/video-transcript/.venv`，且本机 `ffmpeg -version` 可用；venv 内可 `import whisper`  
-- [ ] 向用户说明：须在前端「设置」配置 AI 后，生成/解析类能力才真正可用  
+- [ ] 存在 `scripts/page-screenshot/.venv`，且已 `playwright install chromium`；试跑 `-m page_screenshot` 能出 PNG  
+- [ ] 向用户说明：须在前端「设置」配置文本 AI + 多模态 Vision 后，生成/解析/截图摘要才真正可用  
 
 ---
 
@@ -100,12 +101,23 @@ docker compose --profile searxng up -d --force-recreate searxng
 
 ---
 
-## 阶段 C — 本机 Python CLI（正文 + 视频）
+## 阶段 C — 本机 Python CLI（正文 + 视频 + 截图 Vision）
 
 开发配置默认路径（Windows，见 `application.yml`）：
 
 - `chengwenfang.article-extract.python-executable` → `scripts/article-extract/.venv/Scripts/python.exe`  
 - `chengwenfang.video-transcript.python-executable` → `scripts/video-transcript/.venv/Scripts/python.exe`  
+- `chengwenfang.page-screenshot.python-executable` → `scripts/page-screenshot/.venv/Scripts/python.exe`（`enabled=true`）
+
+### C0 一键安装（推荐）
+
+```powershell
+cd $ROOT
+powershell -ExecutionPolicy Bypass -File .\scripts\setup-hotnews-clis.ps1
+# 等价分项：C1 + C2 + C3
+```
+
+macOS / Linux：`chmod +x scripts/setup-hotnews-clis.sh && ./scripts/setup-hotnews-clis.sh`（并将 yml 中三处 `python-executable` 改为 `.venv/bin/python`）。
 
 ### C1 正文抽取
 
@@ -134,7 +146,22 @@ cd $ROOT
 
 说明：`openai-whisper` 体积大；首次真正跑 ASR 还会下载 `base` 模型。可设 `HTTP_PROXY` / `HTTPS_PROXY`（若用户网络需要）。
 
-**验收 C**：C1/C2 的 `print(... ok)` 均成功；`ffmpeg -version` 成功。
+### C3 网页截图 Vision 兜底
+
+资料补充在正文抽取失败、摘要像导航、或模型返回「信息不足」时，Playwright 分段截图 + 多模态 AI 写事实摘要。开发默认 `chengwenfang.page-screenshot.enabled=true`。
+
+```powershell
+cd $ROOT\scripts\page-screenshot
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -U pip
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m playwright install chromium
+.\.venv\Scripts\python.exe -c "from playwright.sync_api import sync_playwright; print('page-screenshot ok')"
+.\.venv\Scripts\python.exe -m page_screenshot --url "https://example.com" --out-dir .tmp-shots --max-shots 1
+cd $ROOT
+```
+
+**验收 C**：C1/C2/C3 的 `print(... ok)` 均成功；`ffmpeg -version` 成功；C3 试跑 JSON 含 `"ok":true`。
 
 ---
 
@@ -238,7 +265,7 @@ AI **不能**代替用户填写真实密钥。完成后请用户：
 
 1. 已安装 / 已存在的本机工具版本号  
 2. Compose 四服务状态  
-3. 两个 Python venv 是否就绪、ffmpeg 是否在 PATH  
+3. 三个 Python CLI（article-extract / video-transcript / page-screenshot）是否就绪、ffmpeg 是否在 PATH  
 4. 后端 health、前端 URL  
 5. 是否已执行 `scripts/bootstrap/Initialize-ChengwenfangSeed.ps1`（未执行则生成用的 Skill/工作流不在库里）  
 6. 仍待用户完成的设置项（API Key、SearXNG 来源）  
@@ -255,6 +282,7 @@ AI **不能**代替用户填写真实密钥。完成后请用户：
 | `npm run dev` 找不到 powershell | 用阶段 E1，或安装 PowerShell 7 |
 | 正文抽取失败 | 查 `scripts/article-extract/.venv`；Lightpanda：`docker ps` 是否有 `chengwenfang-lightpanda` |
 | 视频解析失败 | `ffmpeg -version`；video-transcript venv；设置里是否配置 Vision |
+| 资料补充截图摘要失败 | `scripts/page-screenshot/.venv` + `playwright install chromium`；`page-screenshot.enabled`；设置多模态 Vision |
 | SearXNG 超时 / 空结果 | 见 `deploy/searxng/settings.yml`；勿只依赖 SearXNG，可加 RSS 等 |
 | 意图驱动 / 非结构化采集搜不到 | 主题须确认「主要意图」并选非结构化；联网搜索走 SearXNG/Tavily（产品不另做百度/谷歌爬虫）。本地实例已默认开 baidu/bing；google 网页引擎因国内超时默认关闭，见 `deploy/searxng/settings.yml`。改引擎后 `docker compose --profile searxng up -d --force-recreate searxng` |
 | 中文日志乱码 | 重新 `. .\scripts\use-utf8.ps1` 后再起 Java |
@@ -268,7 +296,7 @@ AI **不能**代替用户填写真实密钥。完成后请用户：
 - 跳过 `use-utf8.ps1`。  
 - 包管理：Homebrew 等安装 `openjdk@21`、`maven`、`node`、`python`、`ffmpeg`、Docker。  
 - Compose 命令相同：`docker compose --profile all up -d --wait`。  
-- Python venv 解释器为 `.venv/bin/python`，**必须**改 `application.yml`（或环境覆盖）中两处 `python-executable`，否则 Java 仍找 Windows 路径。  
+- Python venv 解释器为 `.venv/bin/python`，**必须**改 `application.yml`（或环境覆盖）中三处 `python-executable`（article-extract / video-transcript / page-screenshot），否则 Java 仍找 Windows 路径。  
 - `start-java.ps1` 不可用时改用阶段 E1。  
 
 ---
@@ -283,16 +311,7 @@ cd $ROOT
 
 docker compose --profile all up -d --wait
 
-cd scripts\article-extract
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -U pip
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-cd ..\video-transcript
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -U pip
-pip install -r requirements.txt
-cd ..\..
+powershell -ExecutionPolicy Bypass -File .\scripts\setup-hotnews-clis.ps1
 
 npm install
 

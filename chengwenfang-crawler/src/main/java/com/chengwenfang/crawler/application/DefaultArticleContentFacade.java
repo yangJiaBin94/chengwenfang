@@ -11,6 +11,7 @@ import com.chengwenfang.crawler.application.article.TrafilaturaArticleExtractor;
 import com.chengwenfang.crawler.application.article.TrafilaturaCliResult;
 import com.chengwenfang.crawler.application.article.UrlReachabilityProbe;
 import com.chengwenfang.crawler.facade.ArticleContentFacade;
+import com.chengwenfang.crawler.facade.ArticleTextQuality;
 import com.chengwenfang.crawler.facade.HtmlDateTextSupport;
 import com.chengwenfang.crawler.facade.constant.ArticleContentDefaults;
 import com.chengwenfang.crawler.facade.dto.request.ArticleContentRequest;
@@ -311,7 +312,14 @@ public class DefaultArticleContentFacade implements ArticleContentFacade {
     if (text.length() > ArticleContentDefaults.MAX_TEXT_CHARS) {
       text = text.substring(0, ArticleContentDefaults.MAX_TEXT_CHARS);
     }
-    boolean usable = text.length() >= ArticleContentDefaults.MIN_USABLE_CHARS;
+    boolean longEnough = text.length() >= ArticleContentDefaults.MIN_USABLE_CHARS;
+    // 导航菜单密度过高时不算可用，继续 Trafilatura / Lightpanda
+    boolean navNoise = ArticleTextQuality.looksLikeNavigationNoise(text);
+    boolean usable = longEnough && !navNoise;
+    String rejectReason = error;
+    if (!usable && navNoise) {
+      rejectReason = StrUtil.blankToDefault(error, "抽取结果疑似站点导航噪声");
+    }
     String dateInput = HtmlDateTextSupport.clipHead(
         StrUtil.blankToDefault(dateInputText, usable ? text : ""),
         HtmlDateTextSupport.DATE_INPUT_MAX_CHARS);
@@ -322,7 +330,7 @@ public class DefaultArticleContentFacade implements ArticleContentFacade {
         .metadataDate(usable ? metadataDate : null)
         .dateInputText(usable ? dateInput : "")
         .costMs(System.currentTimeMillis() - startedAt)
-        .errorMessage(usable ? null : error)
+        .errorMessage(usable ? null : rejectReason)
         .usable(usable)
         .build();
   }

@@ -58,11 +58,15 @@ public class ReviewWechatNodeHandler implements HotNewsNodeHandler {
           state.getJobId(), resolvedNodeKey, HotNewsArtifactTypes.REVIEWED_WECHAT, null);
     }
     if (StrUtil.isNotBlank(reused)) {
-      state.setWechat(reused);
+      // 旧产物可能无摘要行，复用时补齐以便推送 digest
+      state.setWechat(HotNewsMarkdownUtil.ensureWechatDigestLine(
+          reused, resolveDigestFallback(state)));
       state.setWechatReviewPassed(true);
       return;
     }
     if (Boolean.TRUE.equals(state.getWechatReviewPassed()) && StrUtil.isNotBlank(state.getWechat())) {
+      state.setWechat(HotNewsMarkdownUtil.ensureWechatDigestLine(
+          state.getWechat(), resolveDigestFallback(state)));
       return;
     }
 
@@ -70,13 +74,17 @@ public class ReviewWechatNodeHandler implements HotNewsNodeHandler {
     String systemPrompt = HotNewsWritingPrompts.systemPrompt(skillPrompt, state.getThemeContext());
     int inlineCount = HotNewsImageCountOption.resolveInlineCount(
         HotNewsImageCountOption.normalize(state.getImageCountOption()));
+    String digestFallback = StrUtil.blankToDefault(
+        HotNewsMarkdownUtil.extractWechatDigestLine(state.getWechat()),
+        resolveDigestFallback(state));
     String userPrompt = """
         审校下列公众号成品。检查：与原稿事实一致、标题导语清晰、适合移动端、无内部审核术语：
         字数落在字数档 %s 内（允许少量浮动；插图占位不计字数）。
         若有问题直接输出修订后的完整公众号正文；若通过则原样输出完整正文。不要只输出检查清单。
         必须保留 [[HOT_NEWS_COVER]] / [[HOT_NEWS_IMAGE_N]] 占位；不得出现“提示词”、提示代码块、“插图位置”或“插图2”等提示标题。
+        必须保留一级标题后的独立行「> 摘要：…」，不得删掉或并入正文段落。
         文风：改到像真人聊天——有口气、有判断，不要说明书括注、「它不是 A，是 B」和通稿腔；
-        检查关键概念粗体、中文双引号；清除正文「」。/。>、——。
+        检查关键概念粗体、中文双引号；清除正文「」。/。>、——（摘要行除外）。
         原稿（仅供事实对照，勿把插图提示词抄进公众号）：
         %s
         公众号正文：
@@ -90,6 +98,8 @@ public class ReviewWechatNodeHandler implements HotNewsNodeHandler {
     reviewed = HotNewsMarkdownUtil.ensureWechatTokens(reviewed, inlineCount);
     reviewed = HotNewsMarkdownUtil.stripWechatProductionResidue(
         HotNewsMarkdownUtil.sanitizeProseSymbols(reviewed));
+    // 审校后补回摘要行，避免模型误删导致推送 digest 为空
+    reviewed = HotNewsMarkdownUtil.ensureWechatDigestLine(reviewed, digestFallback);
     boolean passed = !looksBroken(reviewed) && !HotNewsMarkdownUtil.hasPromptLeak(reviewed);
     state.setWechat(reviewed);
     state.setWechatReviewPassed(passed);
@@ -117,10 +127,26 @@ public class ReviewWechatNodeHandler implements HotNewsNodeHandler {
   }
 
   /**
+   * 摘要兜底文案：优先骨架核心论点，其次选题摘要与标题。
+   *
+   * @param state 图状态
+   * @return 兜底摘要
+   */
+  private static String resolveDigestFallback(HotNewsGraphState state) {
+    if (state.getSkeleton() != null && StrUtil.isNotBlank(state.getSkeleton().getCoreThesis())) {
+      return state.getSkeleton().getCoreThesis().trim();
+    }
+    if (StrUtil.isNotBlank(state.getTopicSummary())) {
+      return state.getTopicSummary().trim();
+    }
+    return StrUtil.nullToEmpty(state.getTitle()).trim();
+  }
+
+  /**
    * 粗判审校输出是否明显不合格。
    *
    * @param text 审校输出
-   * @return 不合格则个true
+   * @return 不合格则 true
    */
   private static boolean looksBroken(String text) {
     if (StrUtil.isBlank(text) || text.length() < 80) {

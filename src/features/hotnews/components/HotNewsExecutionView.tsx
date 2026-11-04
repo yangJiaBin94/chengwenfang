@@ -181,6 +181,24 @@ export function HotNewsExecutionView(props: Record<string, any>) {
                       <strong>文章骨架</strong>
                       <span>{skeleton.workingTitle || "未命名"}</span>
                     </div>
+                    {skeleton.targetAudience ? (
+                      <p>
+                        <b>写给谁：</b>
+                        {skeleton.targetAudience}
+                      </p>
+                    ) : null}
+                    {skeleton.readerIntents?.length ? (
+                      <p>
+                        <b>阅读意图：</b>
+                        {skeleton.readerIntents.join("；")}
+                      </p>
+                    ) : null}
+                    {skeleton.readerGaps?.length ? (
+                      <p>
+                        <b>决策缺口：</b>
+                        {skeleton.readerGaps.join("；")}
+                      </p>
+                    ) : null}
                     <p>
                       <b>范围：</b>
                       {skeleton.scope || "—"}

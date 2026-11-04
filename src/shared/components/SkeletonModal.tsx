@@ -6,6 +6,10 @@ export type SkeletonModalData = {
   scope?: string | null;
   coreThesis?: string | null;
   coreEvent?: string | null;
+  targetAudience?: string | null;
+  readerIntents?: unknown;
+  readerGaps?: unknown;
+  readerSignals?: unknown;
   keyInsights?: unknown;
   sectionPlan?: unknown;
 };
@@ -26,6 +30,9 @@ export function SkeletonModal({
   skeleton: SkeletonModalData;
   onClose: () => void;
 }) {
+  const intents = asTextList(skeleton.readerIntents);
+  const gaps = asTextList(skeleton.readerGaps);
+  const signals = asTextList(skeleton.readerSignals);
   const insights = asTextList(skeleton.keyInsights);
   const sectionPlan = asTextList(skeleton.sectionPlan);
   return (
@@ -44,6 +51,42 @@ export function SkeletonModal({
           </button>
         </header>
         <div className="hot-research-skeleton">
+          {skeleton.targetAudience ? (
+            <p>
+              <b>写给谁：</b>
+              {skeleton.targetAudience}
+            </p>
+          ) : null}
+          {intents.length > 0 ? (
+            <>
+              <b>阅读意图</b>
+              <ul>
+                {intents.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+          {gaps.length > 0 ? (
+            <>
+              <b>决策缺口</b>
+              <ul>
+                {gaps.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+          {signals.length > 0 ? (
+            <>
+              <b>读者带走</b>
+              <ul>
+                {signals.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            </>
+          ) : null}
           {skeleton.scope ? (
             <p>
               <b>范围：</b>

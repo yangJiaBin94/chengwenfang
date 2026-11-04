@@ -79,6 +79,8 @@ public class ResearchRunService {
   private final ResearchSupplementAgent researchSupplementAgent;
   /** 主题资料来源策略解析。 */
   private final ResearchSourcePolicyResolver researchSourcePolicyResolver;
+  /** 文章正文抽取 + 事实摘要。 */
+  private final ResearchArticleEnricher articleEnricher;
 
   /**
    * @param researchRunMapper             调研运行 Mapper
@@ -94,6 +96,7 @@ public class ResearchRunService {
    * @param collector                     候选采集
    * @param researchSupplementAgent       补搜 Agent
    * @param researchSourcePolicyResolver  来源策略
+   * @param articleEnricher               文章摘要 enrich
    */
   public ResearchRunService(
       TopicResearchRunMapper researchRunMapper,
@@ -108,7 +111,8 @@ public class ResearchRunService {
       @Lazy HotNewsTopicService topics,
       ResearchCandidateCollector collector,
       ResearchSupplementAgent researchSupplementAgent,
-      ResearchSourcePolicyResolver researchSourcePolicyResolver) {
+      ResearchSourcePolicyResolver researchSourcePolicyResolver,
+      ResearchArticleEnricher articleEnricher) {
     this.researchRunMapper = researchRunMapper;
     this.briefMapper = briefMapper;
     this.jobs = jobs;
@@ -122,6 +126,7 @@ public class ResearchRunService {
     this.collector = collector;
     this.researchSupplementAgent = researchSupplementAgent;
     this.researchSourcePolicyResolver = researchSourcePolicyResolver;
+    this.articleEnricher = articleEnricher;
   }
 
   /**
@@ -310,6 +315,9 @@ public class ResearchRunService {
     if (!webCollected.isEmpty()) {
       webCollected = researchAssist.translateNonChinese(webCollected);
     }
+    // 文章：正文瀑布 + AI 事实摘要（落池前覆盖浅抓/snippet）；视频跳过
+    articleEnricher.enrichArticles(webCollected);
+    articleEnricher.enrichArticles(sourceCandidates);
 
     if (webCollected.isEmpty()) {
       log.warn("资料补充未获得新网页结果 topicId={} subject={} channels={} keptSources={}",

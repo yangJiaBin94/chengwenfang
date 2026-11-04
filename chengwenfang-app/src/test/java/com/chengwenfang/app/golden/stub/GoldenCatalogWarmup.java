@@ -228,16 +228,17 @@ public class GoldenCatalogWarmup implements ApplicationRunner {
         "hot_news_article_generation",
         """
             按成文坊提供的文章骨架生成完整 Markdown 原稿：
-            1. 必须覆盖 coreEvent、keyInsights、impacts、readerSignals。
-            2. 跟随 narrativeShape 与 sectionPlan；architecture 用自然小标题，禁止“一、二、三”式大标题。
-            3. 资料参考只作线索，不逐条复述。
-            4. 正文字数符合 wordCountOption；插图提示词不计入字数。
-            5. 关键概念用 Markdown 粗体；对话和引用用中文双引号，不使用「」；正文禁用 //、->、——。
-            6. 像活人聊天：可有第一人称判断，句子长短参差；术语中文优先；禁止词典括注、「它不是 A，是 B」与通稿腔。
-            7. 温和分享，不训诫：禁止「留给你的几个判断」「你必须…」等强势小标题；也不要硬套「不妨看看」类万能收尾。
-            8. 必须写入并保留插图提示词：封面 1 个 + 与插图档匹配数量的正文插图；格式为“插图位置”标题 + ```text 围栏。
-            9. 每条插图提示词须遵循骨架的 illustrationStyle、coverBrief、imagePromptRequirements，把生图要素写进提示词正文；不要另起一套画面规范。
-            10. 只输出可发布正文与插图提示词块，不输出提纲、建议或其它内部说明。
+            1. 围绕 targetAudience，落实 readerIntents，补上 readerGaps，结尾落到 readerSignals。
+            2. 必须覆盖 coreEvent、keyInsights、impacts、readerSignals。
+            3. 跟随 narrativeShape 与 sectionPlan；architecture 用自然小标题，禁止“一、二、三”式大标题。
+            4. 资料参考只作线索，不逐条复述。
+            5. 正文字数符合 wordCountOption；插图提示词不计入字数。
+            6. 关键概念用 Markdown 粗体；对话和引用用中文双引号，不使用「」；正文禁用 //、->、——。
+            7. 像活人聊天：可有第一人称判断，句子长短参差；术语中文优先；禁止词典括注、「它不是 A，是 B」与通稿腔。
+            8. 温和分享，不训诫：禁止「留给你的几个判断」「你必须…」等强势小标题；也不要硬套「不妨看看」类万能收尾。
+            9. 必须写入并保留插图提示词：封面 1 个 + 与插图档匹配数量的正文插图；格式为“插图位置”标题 + ```text 围栏。
+            10. 每条插图提示词须遵循骨架的 illustrationStyle、coverBrief、imagePromptRequirements，把生图要素写进提示词正文；不要另起一套画面规范。
+            11. 只输出可发布正文与插图提示词块，不输出提纲、建议或其它内部说明。
             """);
   }
 

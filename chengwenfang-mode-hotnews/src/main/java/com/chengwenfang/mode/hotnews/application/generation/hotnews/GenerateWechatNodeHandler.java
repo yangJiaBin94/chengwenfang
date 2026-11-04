@@ -51,7 +51,8 @@ public class GenerateWechatNodeHandler implements HotNewsNodeHandler {
         HotNewsArtifactTypes.REVIEWED_WECHAT,
         null);
     if (StrUtil.isNotBlank(reusedReviewed)) {
-      state.setWechat(reusedReviewed);
+      state.setWechat(HotNewsMarkdownUtil.ensureWechatDigestLine(
+          reusedReviewed, resolveDigestFallback(state)));
       state.setWechatReviewPassed(true);
       return;
     }
@@ -62,7 +63,8 @@ public class GenerateWechatNodeHandler implements HotNewsNodeHandler {
           state.getJobId(), resolvedNodeKey, HotNewsArtifactTypes.WECHAT, null);
     }
     if (StrUtil.isNotBlank(reused)) {
-      state.setWechat(reused);
+      state.setWechat(HotNewsMarkdownUtil.ensureWechatDigestLine(
+          reused, resolveDigestFallback(state)));
       return;
     }
 
@@ -80,6 +82,8 @@ public class GenerateWechatNodeHandler implements HotNewsNodeHandler {
         4. 关键概念保持 Markdown 粗体；对话和引用用中文双引号，不使用「」；正文禁用 //、->、——。
         5. 像活人聊天：可有第一人称语气；术语中文优先；禁止词典括注、「它不是 A，是 B」与通稿腔。
         6. 标题与开头突出冲突/变化/影响；段落适合移动端阅读。
+        7. 一级标题后单独一行输出「> 摘要：…」（一句完整中文，≤120 字）：概括冲突/变化/影响与读者带走点；
+           仅供微信草稿摘要字段，正文不要再复述同一段；禁止荐股、目标价与列表式摘要。
         原稿（插图提示词已替换为占位）：
         %s
         """.formatted(
@@ -91,6 +95,8 @@ public class GenerateWechatNodeHandler implements HotNewsNodeHandler {
         wechat, Math.max(inlineCount, source.imageTokens().size()));
     wechat = HotNewsMarkdownUtil.stripWechatProductionResidue(
         HotNewsMarkdownUtil.sanitizeProseSymbols(wechat));
+    // 规范化/补齐摘要行，供推送写入微信 digest
+    wechat = HotNewsMarkdownUtil.ensureWechatDigestLine(wechat, resolveDigestFallback(state));
     state.setWechat(wechat);
     artifactReuse.persistTextArtifact(
         state.getJobId(),
@@ -99,5 +105,21 @@ public class GenerateWechatNodeHandler implements HotNewsNodeHandler {
         HotNewsArtifactTypes.WECHAT,
         wechat,
         Map.of("chars", wechat.length()));
+  }
+
+  /**
+   * 摘要兜底文案：优先骨架核心论点，其次选题摘要与标题。
+   *
+   * @param state 图状态
+   * @return 兜底摘要
+   */
+  private static String resolveDigestFallback(HotNewsGraphState state) {
+    if (state.getSkeleton() != null && StrUtil.isNotBlank(state.getSkeleton().getCoreThesis())) {
+      return state.getSkeleton().getCoreThesis().trim();
+    }
+    if (StrUtil.isNotBlank(state.getTopicSummary())) {
+      return state.getTopicSummary().trim();
+    }
+    return StrUtil.nullToEmpty(state.getTitle()).trim();
   }
 }

@@ -58,6 +58,9 @@ class ArticleSkeletonStoreTest {
         .scope("范围")
         .coreThesis("论点")
         .coreEvent("事件")
+        .targetAudience("主读者")
+        .readerIntents(List.of("意图1"))
+        .readerGaps(List.of("缺口1"))
         .keyInsights(List.of("洞察1"))
         .impacts(List.of("影响1"))
         .readerSignals(List.of("信号1"))
@@ -75,10 +78,12 @@ class ArticleSkeletonStoreTest {
 
     store.write("t1", skeleton);
 
+    ArgumentCaptor<String> jsonCaptor = ArgumentCaptor.forClass(String.class);
     verify(files).writeText(
         eq("hotnews/topics/t1/skeleton-raw.json"),
         eq("skeleton-raw.json"),
-        anyString());
+        jsonCaptor.capture());
+    assertThat(jsonCaptor.getValue()).contains("\"targetAudience\":\"主读者\"");
     ArgumentCaptor<HotnewsArticleSkeletonEntity> rowCaptor =
         ArgumentCaptor.forClass(HotnewsArticleSkeletonEntity.class);
     verify(skeletonMapper).insert(rowCaptor.capture());
@@ -87,13 +92,15 @@ class ArticleSkeletonStoreTest {
 
     ArgumentCaptor<HotnewsArticleSkeletonItemEntity> itemCaptor =
         ArgumentCaptor.forClass(HotnewsArticleSkeletonItemEntity.class);
-    verify(itemMapper, org.mockito.Mockito.atLeast(7)).insert(itemCaptor.capture());
+    verify(itemMapper, org.mockito.Mockito.atLeast(9)).insert(itemCaptor.capture());
     assertThat(itemCaptor.getAllValues())
         .extracting(HotnewsArticleSkeletonItemEntity::getItemType)
         .contains(
             HotnewsSkeletonItemTypes.KEY_INSIGHT,
             HotnewsSkeletonItemTypes.IMPACT,
             HotnewsSkeletonItemTypes.READER_SIGNAL,
+            HotnewsSkeletonItemTypes.READER_INTENT,
+            HotnewsSkeletonItemTypes.READER_GAP,
             HotnewsSkeletonItemTypes.SECTION_PLAN,
             HotnewsSkeletonItemTypes.ARCHITECTURE,
             HotnewsSkeletonItemTypes.FLOW,
@@ -118,11 +125,14 @@ class ArticleSkeletonStoreTest {
         .updatedAtText("2026-01-01T00:00:00")
         .build());
     when(files.readText("file-1")).thenReturn(
-        "{\"workingTitle\":\"文件标题\",\"modules\":[{\"name\":\"事实\"}],\"keyInsights\":[\"旧洞察\"]}");
+        "{\"workingTitle\":\"文件标题\",\"targetAudience\":\"文件读者\","
+            + "\"modules\":[{\"name\":\"事实\"}],\"keyInsights\":[\"旧洞察\"]}");
     when(itemMapper.selectList(any()))
         .thenReturn(List.of(item(HotnewsSkeletonItemTypes.KEY_INSIGHT, "新洞察")))
         .thenReturn(List.of(item(HotnewsSkeletonItemTypes.IMPACT, "影响")))
         .thenReturn(List.of())
+        .thenReturn(List.of(item(HotnewsSkeletonItemTypes.READER_INTENT, "意图")))
+        .thenReturn(List.of(item(HotnewsSkeletonItemTypes.READER_GAP, "缺口")))
         .thenReturn(List.of(item(HotnewsSkeletonItemTypes.SECTION_PLAN, "计划")))
         .thenReturn(List.of(item(HotnewsSkeletonItemTypes.ARCHITECTURE, "架构")))
         .thenReturn(List.of(item(HotnewsSkeletonItemTypes.FLOW, "流程")))
@@ -133,10 +143,48 @@ class ArticleSkeletonStoreTest {
     assertThat(view).isNotNull();
     assertThat(view.getWorkingTitle()).isEqualTo("列标题");
     assertThat(view.getScope()).isEqualTo("列范围");
+    assertThat(view.getTargetAudience()).isEqualTo("文件读者");
+    assertThat(view.getReaderIntents()).containsExactly("意图");
+    assertThat(view.getReaderGaps()).containsExactly("缺口");
     assertThat(view.getKeyInsights()).containsExactly("新洞察");
     assertThat(view.getImpacts()).containsExactly("影响");
     assertThat(view.getModules()).hasSize(1);
     assertThat(view.getRecommendedWordCountOption()).isEqualTo("2500-4000");
+  }
+
+  @Test
+  void read_preserves_raw_reader_lists_when_item_table_empty() {
+    when(skeletonMapper.selectById("t1")).thenReturn(HotnewsArticleSkeletonEntity.builder()
+        .topicId("t1")
+        .rawFileId("file-1")
+        .workingTitle("列标题")
+        .scope("列范围")
+        .coreThesis("列论点")
+        .coreEvent("列事件")
+        .narrativeShape("列叙事")
+        .illustrationStyle("列风格")
+        .coverBrief("列封面")
+        .imagePromptRequirements("列生图")
+        .recommendedWordCountOption("2500-4000")
+        .recommendedImageCountOption("2-3")
+        .updatedAtText("2026-01-01T00:00:00")
+        .build());
+    when(files.readText("file-1")).thenReturn("""
+        {"workingTitle":"文件标题","targetAudience":"股民读者",
+         "readerIntents":["核验涨幅口径","学读盘方法"],
+         "readerGaps":["缺卖点时间锚点"],
+         "modules":[{"name":"事实"}],"keyInsights":["旧洞察"]}
+        """);
+    // items 表无行：所有列表查询返回空，不得抹掉 raw 中的读者诊断
+    when(itemMapper.selectList(any())).thenReturn(List.of());
+
+    HotNewsArticleSkeletonView view = store.read("t1");
+
+    assertThat(view).isNotNull();
+    assertThat(view.getTargetAudience()).isEqualTo("股民读者");
+    assertThat(view.getReaderIntents()).containsExactly("核验涨幅口径", "学读盘方法");
+    assertThat(view.getReaderGaps()).containsExactly("缺卖点时间锚点");
+    assertThat(view.getKeyInsights()).containsExactly("旧洞察");
   }
 
   private static HotnewsArticleSkeletonItemEntity item(String type, String content) {

@@ -96,6 +96,10 @@ public class HotNewsArticleViewAssembler {
         .workingTitle(String.valueOf(raw.getOrDefault("workingTitle", "")))
         .scope(String.valueOf(raw.getOrDefault("scope", "")))
         .coreThesis(String.valueOf(raw.getOrDefault("coreThesis", "")))
+        .targetAudience(String.valueOf(raw.getOrDefault("targetAudience", "")))
+        .readerIntents(HotNewsCodec.asStringList(raw.get("readerIntents")))
+        .readerGaps(HotNewsCodec.asStringList(raw.get("readerGaps")))
+        .readerSignals(HotNewsCodec.asStringList(raw.get("readerSignals")))
         .illustrationStyle(String.valueOf(raw.getOrDefault(
             "illustrationStyle", HotNewsMarkdownUtil.DEFAULT_ILLUSTRATION_STYLE)))
         .coverBrief(String.valueOf(raw.getOrDefault("coverBrief", "")))

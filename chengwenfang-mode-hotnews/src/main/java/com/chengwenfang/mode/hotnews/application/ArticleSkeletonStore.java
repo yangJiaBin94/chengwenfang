@@ -73,6 +73,9 @@ public class ArticleSkeletonStore {
         .scope(String.valueOf(raw.getOrDefault("scope", "")))
         .coreThesis(String.valueOf(raw.getOrDefault("coreThesis", "")))
         .coreEvent(String.valueOf(raw.getOrDefault("coreEvent", "")))
+        .targetAudience(String.valueOf(raw.getOrDefault("targetAudience", "")))
+        .readerIntents(HotNewsCodec.asStringList(raw.get("readerIntents")))
+        .readerGaps(HotNewsCodec.asStringList(raw.get("readerGaps")))
         .keyInsights(HotNewsCodec.asStringList(raw.get("keyInsights")))
         .impacts(HotNewsCodec.asStringList(raw.get("impacts")))
         .readerSignals(HotNewsCodec.asStringList(raw.get("readerSignals")))
@@ -113,6 +116,9 @@ public class ArticleSkeletonStore {
     payload.put("scope", skeleton.getScope());
     payload.put("coreThesis", skeleton.getCoreThesis());
     payload.put("coreEvent", skeleton.getCoreEvent());
+    payload.put("targetAudience", skeleton.getTargetAudience());
+    payload.put("readerIntents", skeleton.getReaderIntents());
+    payload.put("readerGaps", skeleton.getReaderGaps());
     payload.put("keyInsights", skeleton.getKeyInsights());
     payload.put("impacts", skeleton.getImpacts());
     payload.put("readerSignals", skeleton.getReaderSignals());
@@ -167,6 +173,8 @@ public class ArticleSkeletonStore {
     writeList(topicId, HotnewsSkeletonItemTypes.KEY_INSIGHT, skeleton.getKeyInsights());
     writeList(topicId, HotnewsSkeletonItemTypes.IMPACT, skeleton.getImpacts());
     writeList(topicId, HotnewsSkeletonItemTypes.READER_SIGNAL, skeleton.getReaderSignals());
+    writeList(topicId, HotnewsSkeletonItemTypes.READER_INTENT, skeleton.getReaderIntents());
+    writeList(topicId, HotnewsSkeletonItemTypes.READER_GAP, skeleton.getReaderGaps());
     writeList(topicId, HotnewsSkeletonItemTypes.SECTION_PLAN, skeleton.getSectionPlan());
     writeList(topicId, HotnewsSkeletonItemTypes.ARCHITECTURE, skeleton.getArchitecture());
     writeList(topicId, HotnewsSkeletonItemTypes.FLOW, skeleton.getFlow());
@@ -187,14 +195,35 @@ public class ArticleSkeletonStore {
     putIfPresent(raw, "updatedAt", row.getUpdatedAtText());
   }
 
+  /**
+   * 用 items 表覆盖 raw 中的列表字段；库中无行时保留 raw 原值，避免空列表抹掉文件里的诊断字段。
+   *
+   * @param raw     已加载的 raw map
+   * @param topicId 选题 id
+   */
   private void overlayLists(Map<String, Object> raw, String topicId) {
-    raw.put("keyInsights", readList(topicId, HotnewsSkeletonItemTypes.KEY_INSIGHT));
-    raw.put("impacts", readList(topicId, HotnewsSkeletonItemTypes.IMPACT));
-    raw.put("readerSignals", readList(topicId, HotnewsSkeletonItemTypes.READER_SIGNAL));
-    raw.put("sectionPlan", readList(topicId, HotnewsSkeletonItemTypes.SECTION_PLAN));
-    raw.put("architecture", readList(topicId, HotnewsSkeletonItemTypes.ARCHITECTURE));
-    raw.put("flow", readList(topicId, HotnewsSkeletonItemTypes.FLOW));
-    raw.put("referenceHints", readList(topicId, HotnewsSkeletonItemTypes.REFERENCE_HINT));
+    putListIfPresent(raw, "keyInsights", readList(topicId, HotnewsSkeletonItemTypes.KEY_INSIGHT));
+    putListIfPresent(raw, "impacts", readList(topicId, HotnewsSkeletonItemTypes.IMPACT));
+    putListIfPresent(raw, "readerSignals", readList(topicId, HotnewsSkeletonItemTypes.READER_SIGNAL));
+    putListIfPresent(raw, "readerIntents", readList(topicId, HotnewsSkeletonItemTypes.READER_INTENT));
+    putListIfPresent(raw, "readerGaps", readList(topicId, HotnewsSkeletonItemTypes.READER_GAP));
+    putListIfPresent(raw, "sectionPlan", readList(topicId, HotnewsSkeletonItemTypes.SECTION_PLAN));
+    putListIfPresent(raw, "architecture", readList(topicId, HotnewsSkeletonItemTypes.ARCHITECTURE));
+    putListIfPresent(raw, "flow", readList(topicId, HotnewsSkeletonItemTypes.FLOW));
+    putListIfPresent(raw, "referenceHints", readList(topicId, HotnewsSkeletonItemTypes.REFERENCE_HINT));
+  }
+
+  /**
+   * 仅当库中存在非空列表时覆盖 raw，避免空结果冲掉文件内容。
+   *
+   * @param raw   raw map
+   * @param key   JSON 字段名
+   * @param values items 表读出的列表
+   */
+  private static void putListIfPresent(Map<String, Object> raw, String key, List<String> values) {
+    if (CollUtil.isNotEmpty(values)) {
+      raw.put(key, values);
+    }
   }
 
   private List<String> readList(String topicId, String itemType) {

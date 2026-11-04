@@ -1,5 +1,6 @@
 package com.chengwenfang.mode.hotnews.application;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
@@ -90,7 +91,8 @@ public class ArticleSkeletonBuilder {
           .build());
       HotNewsArticleSkeletonView parsed = parseSkeleton(
           topicId, result == null ? null : result.getText());
-      if (parsed != null && StrUtil.isNotBlank(parsed.getCoreThesis())) {
+      // 核心论点与读者诊断齐全才算成功，否则回退启发式
+      if (hasUsableAudienceDiagnosis(parsed)) {
         log.info("文章骨架 AI 拟定成功 topicId={} modules={}",
             topicId,
             parsed.getModules() == null ? 0 : parsed.getModules().size());
@@ -150,8 +152,11 @@ public class ArticleSkeletonBuilder {
     List<String> hints = stringList(json.getJSONArray("referenceHints"));
     List<String> keyInsights = stringList(json.getJSONArray("keyInsights"));
     List<String> impacts = stringList(json.getJSONArray("impacts"));
+    List<String> readerIntents = stringList(json.getJSONArray("readerIntents"));
+    List<String> readerGaps = stringList(json.getJSONArray("readerGaps"));
     List<String> readerSignals = stringList(json.getJSONArray("readerSignals"));
     List<String> sectionPlan = stringList(json.getJSONArray("sectionPlan"));
+    String targetAudience = StrUtil.trim(json.getStr("targetAudience"));
     List<Map<String, Object>> modules = new ArrayList<>();
     JSONArray moduleArr = json.getJSONArray("modules");
     if (moduleArr != null) {
@@ -190,6 +195,9 @@ public class ArticleSkeletonBuilder {
         .scope(StrUtil.trim(json.getStr("scope")))
         .coreThesis(StrUtil.trim(json.getStr("coreThesis")))
         .coreEvent(StrUtil.trim(json.getStr("coreEvent")))
+        .targetAudience(targetAudience)
+        .readerIntents(readerIntents)
+        .readerGaps(readerGaps)
         .keyInsights(keyInsights)
         .impacts(impacts)
         .readerSignals(readerSignals)
@@ -225,37 +233,49 @@ public class ArticleSkeletonBuilder {
       }
     }
     String thesis = StrUtil.blankToDefault(topicSummary, title);
+    String targetAudience = "关心该热点、想弄清「跟我有什么关系」的普通读者";
+    List<String> readerIntents = List.of(
+        "想快速看清事件里真正变了什么",
+        "想核对标题口径与可核实事实是否一致",
+        "想带走一个以后同类新闻也能用的读法");
+    List<String> readerGaps = List.of(
+        "常缺可核对的时间/数字锚点，容易被极值标题带偏",
+        "分不清「热闹叙事」与「对自己处境真正有用的判断」",
+        "缺少不涉及荐股的风险维度提醒");
     List<String> insights = List.of("抓住事件里真正变化的那一点", "分清公告口径与实际影响");
     List<String> impacts = List.of("对从业者工具链或决策节奏的影响", "对普通人使用方式的潜在变化");
     List<String> signals = List.of("这件事说明方向在往哪偏", "读者可带走的一个可验证判断");
     List<String> sectionPlan = List.of(
-        "用具体场景或冲突开场，不要目录式报幕",
-        "交代核心事件与关键信息",
-        "展开影响与边界",
+        "用具体场景或冲突开场，对准主读者为何点开",
+        "交代核心事件与关键信息，补上常被标题带偏的锚点",
+        "展开影响与边界，回应读者决策缺口",
         "收束到读者可带走的信号");
     List<String> architecture = List.of("现场切入", "变化在哪", "影响与边界", "带走什么");
     List<Map<String, Object>> modules = new ArrayList<>();
     modules.add(Map.of(
         "name", "现场切入",
-        "purpose", "用具体场景带出事件",
+        "purpose", "用具体场景带出事件，对准读者点开意图",
         "keyPoints", List.of("一个可感知的场景", "事件一句话")));
     modules.add(Map.of(
         "name", "变化在哪",
-        "purpose", "点出真正改变的东西",
+        "purpose", "点出真正改变的东西，核验口径",
         "keyPoints", List.of("相对以前的差异", "别被通稿带偏")));
     modules.add(Map.of(
         "name", "影响与边界",
-        "purpose", "讲清影响面与不确定处",
-        "keyPoints", List.of("谁受影响", "作者判断边界")));
+        "purpose", "讲清影响面与不确定处，补决策缺口",
+        "keyPoints", List.of("谁受影响", "作者判断边界", "可观察的风险维度")));
     modules.add(Map.of(
         "name", "带走什么",
-        "purpose", "给出信号与可执行判断",
+        "purpose", "给出信号与可迁移判断",
         "keyPoints", List.of("读者信号", "下一步可观察的点")));
     Map<String, Object> raw = new LinkedHashMap<>();
     raw.put("workingTitle", title);
     raw.put("scope", "围绕选题主线展开，资料仅作可选借鉴");
     raw.put("coreThesis", thesis);
     raw.put("coreEvent", title);
+    raw.put("targetAudience", targetAudience);
+    raw.put("readerIntents", readerIntents);
+    raw.put("readerGaps", readerGaps);
     raw.put("keyInsights", insights);
     raw.put("impacts", impacts);
     raw.put("readerSignals", signals);
@@ -282,6 +302,9 @@ public class ArticleSkeletonBuilder {
         .scope("围绕选题主线展开，资料仅作可选借鉴")
         .coreThesis(thesis)
         .coreEvent(title)
+        .targetAudience(targetAudience)
+        .readerIntents(readerIntents)
+        .readerGaps(readerGaps)
         .keyInsights(insights)
         .impacts(impacts)
         .readerSignals(signals)
@@ -299,6 +322,25 @@ public class ArticleSkeletonBuilder {
         .updatedAt(now)
         .raw(raw)
         .build();
+  }
+
+  /**
+   * 判断 AI 骨架是否具备可成文的核心论点与读者诊断。
+   *
+   * @param skeleton 解析结果；可空
+   * @return 论点与人群/意图/缺口均可用时 true
+   */
+  static boolean hasUsableAudienceDiagnosis(HotNewsArticleSkeletonView skeleton) {
+    if (skeleton == null || StrUtil.isBlank(skeleton.getCoreThesis())) {
+      return false;
+    }
+    if (StrUtil.isBlank(skeleton.getTargetAudience())) {
+      return false;
+    }
+    if (CollUtil.isEmpty(skeleton.getReaderIntents())) {
+      return false;
+    }
+    return CollUtil.isNotEmpty(skeleton.getReaderGaps());
   }
 
   private static List<String> stringList(JSONArray arr) {

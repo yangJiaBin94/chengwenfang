@@ -651,6 +651,12 @@ export type HotNewsArticleSkeleton = {
   scope?: string | null;
   coreThesis?: string | null;
   coreEvent?: string | null;
+  /** 主读者画像（一句话） */
+  targetAudience?: string | null;
+  /** 读者点开意图 */
+  readerIntents?: string[];
+  /** 读者决策缺口 */
+  readerGaps?: string[];
   keyInsights?: string[];
   impacts?: string[];
   readerSignals?: string[];

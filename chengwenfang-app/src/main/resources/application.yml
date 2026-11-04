@@ -96,6 +96,14 @@ chengwenfang:
     python-executable: scripts/article-extract/.venv/Scripts/python.exe
     working-directory: scripts/article-extract
     step-timeout-seconds: 30
+  # 资料补充文章摘要 Vision 兜底（Playwright 分段截图；需多模态 AI + setup-hotnews-clis）
+  page-screenshot:
+    enabled: true
+    python-executable: scripts/page-screenshot/.venv/Scripts/python.exe
+    working-directory: scripts/page-screenshot
+    timeout-seconds: 45
+    max-shots: 3
+    viewport: 1280x900
   # 资料池视频解析（本机 Python CLI：yt-dlp / ffmpeg / Whisper）
   video-transcript:
     enabled: true

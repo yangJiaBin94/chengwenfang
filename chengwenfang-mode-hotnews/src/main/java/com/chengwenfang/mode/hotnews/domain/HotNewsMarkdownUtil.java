@@ -27,6 +27,13 @@ public final class HotNewsMarkdownUtil {
   /** 封面占位。 */
   public static final String COVER_TOKEN = "[[HOT_NEWS_COVER]]";
 
+  /** 微信 digest 最大字数（与发布器 DIGEST_MAX_CHARS 对齐）。 */
+  public static final int WECHAT_DIGEST_MAX_CHARS = 120;
+
+  /** Markdown「摘要：」行（可带引用前缀）。 */
+  private static final Pattern DIGEST_LINE_PATTERN =
+      Pattern.compile("(?m)^\\s*>?\\s*摘要\\s*[:：]\\s*(.+?)\\s*$");
+
   /** 默认插图风格（AI/科技类选题通用）。 */
   public static final String DEFAULT_ILLUSTRATION_STYLE =
       "科技立体信息图、微立体渲染、光影层次清晰、富有创意";
@@ -288,6 +295,69 @@ public final class HotNewsMarkdownUtil {
     }
     matcher.appendTail(buffer);
     return buffer.toString().replaceAll("\n{3,}", "\n\n").strip();
+  }
+
+  /**
+   * 抽出公众号正文中的摘要行正文（不含「摘要：」前缀）。
+   *
+   * @param wechat 公众号 Markdown
+   * @return 摘要正文；无则空串
+   */
+  public static String extractWechatDigestLine(String wechat) {
+    Matcher matcher = DIGEST_LINE_PATTERN.matcher(StrUtil.nullToEmpty(wechat));
+    if (matcher.find()) {
+      return StrUtil.trim(matcher.group(1));
+    }
+    return "";
+  }
+
+  /**
+   * 确保公众号正文含规范的 {@code > 摘要：} 行（紧挨一级标题之后），供推送写入微信 digest。
+   * <p>已有摘要行则保留并规范化格式；缺失则用 fallback；正文截到 {@link #WECHAT_DIGEST_MAX_CHARS}。
+   *
+   * @param wechat          公众号 Markdown
+   * @param fallbackSummary 缺失时的兜底摘要
+   * @return 含摘要行的正文
+   */
+  public static String ensureWechatDigestLine(String wechat, String fallbackSummary) {
+    String text = StrUtil.nullToEmpty(wechat).strip();
+    String digest = StrUtil.blankToDefault(extractWechatDigestLine(text), StrUtil.nullToEmpty(fallbackSummary));
+    digest = limitDigestChars(digest);
+    if (StrUtil.isBlank(digest)) {
+      return text;
+    }
+    // 去掉旧摘要行，再插回标题后
+    String withoutDigest = DIGEST_LINE_PATTERN.matcher(text).replaceAll("").replaceAll("\n{3,}", "\n\n").strip();
+    String digestLine = "> 摘要：" + digest;
+    Matcher titleMatcher = Pattern.compile("^#\\s+.+\\s*$", Pattern.MULTILINE).matcher(withoutDigest);
+    if (titleMatcher.find()) {
+      int insertAt = titleMatcher.end();
+      String before = withoutDigest.substring(0, insertAt).stripTrailing();
+      String after = withoutDigest.substring(insertAt).stripLeading();
+      if (StrUtil.isBlank(after)) {
+        return before + "\n\n" + digestLine + "\n";
+      }
+      return before + "\n\n" + digestLine + "\n\n" + after;
+    }
+    return digestLine + "\n\n" + withoutDigest;
+  }
+
+  /**
+   * 按 Unicode 码点截断摘要，对齐微信 digest 上限。
+   *
+   * @param text 摘要原文
+   * @return 截断后文本
+   */
+  private static String limitDigestChars(String text) {
+    String value = StrUtil.nullToEmpty(text).trim();
+    if (value.isEmpty()) {
+      return "";
+    }
+    return value.codePoints()
+        .limit(WECHAT_DIGEST_MAX_CHARS)
+        .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+        .toString()
+        .trim();
   }
 
   /**

@@ -153,4 +153,61 @@ class HotNewsMarkdownUtilTest {
     assertThat(cleaned).contains("“关键”").contains("｜").contains("→");
     assertThat(cleaned).doesNotContain("「").doesNotContain("——").doesNotContain("->");
   }
+
+  @Test
+  void extractWechatDigestLineReadsQuotedSummary() {
+    String wechat = """
+        # 标题
+
+        > 摘要：一眼看懂冲突与变化
+
+        正文段落。
+        """;
+    assertThat(HotNewsMarkdownUtil.extractWechatDigestLine(wechat))
+        .isEqualTo("一眼看懂冲突与变化");
+  }
+
+  @Test
+  void ensureWechatDigestLineNormalizesExistingLineAfterTitle() {
+    String wechat = """
+        # 热点标题
+
+        摘要：没有引用前缀的旧写法
+
+        正文第一段。
+        """;
+    String ensured = HotNewsMarkdownUtil.ensureWechatDigestLine(wechat, "兜底摘要");
+    assertThat(ensured).startsWith("# 热点标题");
+    assertThat(ensured).contains("> 摘要：没有引用前缀的旧写法");
+    assertThat(HotNewsMarkdownUtil.extractWechatDigestLine(ensured))
+        .isEqualTo("没有引用前缀的旧写法");
+    // 旧行已移除，只保留规范行一次
+    assertThat(ensured.indexOf("摘要：")).isEqualTo(ensured.lastIndexOf("摘要："));
+  }
+
+  @Test
+  void ensureWechatDigestLineInsertsFallbackWhenMissing() {
+    String wechat = """
+        # 热点标题
+
+        正文第一段。
+        """;
+    String ensured = HotNewsMarkdownUtil.ensureWechatDigestLine(wechat, "从骨架论点兜底");
+    assertThat(ensured).contains("# 热点标题");
+    assertThat(ensured).contains("> 摘要：从骨架论点兜底");
+    int titleAt = ensured.indexOf("# 热点标题");
+    int digestAt = ensured.indexOf("> 摘要：");
+    int bodyAt = ensured.indexOf("正文第一段");
+    assertThat(digestAt).isGreaterThan(titleAt);
+    assertThat(bodyAt).isGreaterThan(digestAt);
+  }
+
+  @Test
+  void ensureWechatDigestLineTruncatesToWechatLimit() {
+    String longFallback = "字".repeat(HotNewsMarkdownUtil.WECHAT_DIGEST_MAX_CHARS + 40);
+    String ensured = HotNewsMarkdownUtil.ensureWechatDigestLine("# 标题\n\n正文", longFallback);
+    String digest = HotNewsMarkdownUtil.extractWechatDigestLine(ensured);
+    assertThat(digest.codePointCount(0, digest.length()))
+        .isEqualTo(HotNewsMarkdownUtil.WECHAT_DIGEST_MAX_CHARS);
+  }
 }

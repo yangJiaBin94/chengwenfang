@@ -58,6 +58,6 @@ java ... com.chengwenfang.skill.bootstrap.ExportBuiltinCatalog scripts/bootstrap
 
 对应文件：`chengwenfang-app/src/main/resources/application-course-only.yml`、`application-hotnews-full.yml`。
 
-**满血热点**仍须按仓库 README 装好 `article-extract` / `video-transcript` venv（及可选 Lightpanda）。CLI 未就绪时相关 Job 会失败并写中文错误，不会静默用占位正文。
+**满血热点**请先跑 `powershell -ExecutionPolicy Bypass -File .\scripts\setup-hotnews-clis.ps1`（`article-extract` / `video-transcript` / `page-screenshot`+Chromium），并 `docker compose --profile all`（SearXNG + Lightpanda）。CLI 未就绪时相关 Job 会失败并写中文错误，不会静默用占位正文；截图 Vision 还需设置里配置多模态模型。
 
 Worker 并发（与 Profile 无关）：`worker-concurrency` 为全局上限；`worker-text/image/fetch-concurrency` 为分类型槽，防止出图 / Whisper 饿死短任务。指标见 Actuator `GET /actuator/metrics`（如 `chengwenfang.jobs`、`chengwenfang.jobs.lease.reclaim`、`chengwenfang.jobs.duration`）。

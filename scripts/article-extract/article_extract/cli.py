@@ -148,15 +148,24 @@ def _build_lightpanda_command(
     mode: str,
     docker_container: str,
     executable: str,
+    dump: str = "markdown",
+    strip_mode: str | None = "clutter",
+    as_json: bool = True,
 ) -> list[str]:
     """组装 lightpanda fetch 命令。"""
     fetch_args = [
         "fetch",
         "--obey-robots",
         "--dump",
-        "html",
-        url,
+        dump,
+        "--wait-ms",
+        "8000",
     ]
+    if strip_mode:
+        fetch_args.extend(["--strip-mode", strip_mode])
+    if as_json:
+        fetch_args.append("--json")
+    fetch_args.append(url)
     normalized = (mode or "docker-exec").strip().lower()
     if normalized == "binary":
         binary = executable.strip() if executable else "lightpanda"
@@ -172,6 +181,23 @@ def _build_lightpanda_command(
     return [docker_bin, "exec", container, "lightpanda", *fetch_args]
 
 
+def _run_lightpanda(
+    command: list[str],
+    *,
+    timeout_seconds: float,
+) -> tuple[int, str, str]:
+    """执行 Lightpanda，返回 (code, stdout, stderr)。"""
+    completed = subprocess.run(
+        command,
+        capture_output=True,
+        timeout=max(1.0, float(timeout_seconds)),
+        check=False,
+    )
+    stdout = (completed.stdout or b"").decode("utf-8", errors="replace")
+    stderr = (completed.stderr or b"").decode("utf-8", errors="replace").strip()
+    return completed.returncode, stdout, stderr
+
+
 def lightpanda_extract_url(
     url: str,
     *,
@@ -180,13 +206,16 @@ def lightpanda_extract_url(
     executable: str = "lightpanda",
     timeout_seconds: float = 45.0,
 ) -> dict:
-    """经 Lightpanda 渲染 HTML 后再 Trafilatura 抽取。"""
+    """经 Lightpanda 渲染：优先 clutter Markdown，失败再 HTML + Trafilatura。"""
     try:
-        command = _build_lightpanda_command(
+        md_command = _build_lightpanda_command(
             url,
             mode=mode,
             docker_container=docker_container,
             executable=executable,
+            dump="markdown",
+            strip_mode="clutter",
+            as_json=True,
         )
     except FileNotFoundError as exc:
         return {
@@ -198,12 +227,7 @@ def lightpanda_extract_url(
         }
 
     try:
-        completed = subprocess.run(
-            command,
-            capture_output=True,
-            timeout=max(1.0, float(timeout_seconds)),
-            check=False,
-        )
+        code, stdout, stderr = _run_lightpanda(md_command, timeout_seconds=timeout_seconds)
     except subprocess.TimeoutExpired:
         return {
             "ok": False,
@@ -221,10 +245,55 @@ def lightpanda_extract_url(
             "error": str(exc),
         }
 
-    stdout = (completed.stdout or b"").decode("utf-8", errors="replace")
-    stderr = (completed.stderr or b"").decode("utf-8", errors="replace").strip()
-    if completed.returncode != 0:
-        detail = stderr or stdout.strip() or f"exit={completed.returncode}"
+    md_text = ""
+    if code == 0 and stdout.strip():
+        try:
+            payload = json.loads(stdout.strip().splitlines()[-1])
+            if isinstance(payload, dict) and not payload.get("error"):
+                md_text = str(payload.get("content") or "").strip()
+        except json.JSONDecodeError:
+            md_text = ""
+    if len(md_text) >= 80:
+        clipped = md_text[:20000]
+        return {
+            "ok": True,
+            "text": clipped,
+            "date": "",
+            "dateInputText": clipped[:12000],
+            "error": "",
+        }
+
+    # clutter Markdown 不够时，回退 HTML + Trafilatura
+    try:
+        html_command = _build_lightpanda_command(
+            url,
+            mode=mode,
+            docker_container=docker_container,
+            executable=executable,
+            dump="html",
+            strip_mode=None,
+            as_json=False,
+        )
+        code, stdout, stderr = _run_lightpanda(html_command, timeout_seconds=timeout_seconds)
+    except subprocess.TimeoutExpired:
+        return {
+            "ok": False,
+            "text": "",
+            "date": "",
+            "dateInputText": "",
+            "error": f"Lightpanda 超时（{int(timeout_seconds)}s）",
+        }
+    except Exception as exc:  # noqa: BLE001
+        return {
+            "ok": False,
+            "text": "",
+            "date": "",
+            "dateInputText": "",
+            "error": str(exc),
+        }
+
+    if code != 0:
+        detail = stderr or stdout.strip() or f"exit={code}"
         return {
             "ok": False,
             "text": "",

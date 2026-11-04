@@ -67,6 +67,12 @@ public final class ModelCallScenes {
   public static final String HOT_NEWS_TOPIC_RESEARCH_RELEVANCE = "hot_news_topic_research_relevance";
   /** 选题资料池：非中文标题/摘要翻译。 */
   public static final String HOT_NEWS_TOPIC_RESEARCH_TRANSLATE = "hot_news_topic_research_translate";
+  /** 选题资料池：文章正文压成事实摘要。 */
+  public static final String HOT_NEWS_TOPIC_RESEARCH_ARTICLE_BRIEF =
+      "hot_news_topic_research_article_brief";
+  /** 选题资料池：网页截图 Vision 事实摘要（正文抽取失败兜底）。 */
+  public static final String HOT_NEWS_TOPIC_RESEARCH_ARTICLE_VISION_BRIEF =
+      "hot_news_topic_research_article_vision_brief";
   /** 选题资料池：素材五维综合分打分。 */
   public static final String HOT_NEWS_RESEARCH_ITEM_SCORE = "hot_news_research_item_score";
 
