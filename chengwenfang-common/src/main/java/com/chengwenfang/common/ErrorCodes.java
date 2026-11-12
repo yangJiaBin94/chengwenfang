@@ -78,5 +78,14 @@ public final class ErrorCodes {
   /** 绑定的公众号草稿 media_id 已失效（后台已删等）。 */
   public static final String WECHAT_MP_DRAFT_GONE = "wechat_mp_draft_gone";
 
+  /** 知识库文档不存在。 */
+  public static final String KNOWLEDGE_DOCUMENT_NOT_FOUND = "knowledge_document_not_found";
+  /** 知识库文档尚未可检索。 */
+  public static final String KNOWLEDGE_NOT_READY = "knowledge_not_ready";
+  /** 知识库对话会话不存在。 */
+  public static final String KNOWLEDGE_SESSION_NOT_FOUND = "knowledge_session_not_found";
+  /** 知识库索引失败。 */
+  public static final String KNOWLEDGE_INDEX_FAILED = "knowledge_index_failed";
+
   private ErrorCodes() {}
 }

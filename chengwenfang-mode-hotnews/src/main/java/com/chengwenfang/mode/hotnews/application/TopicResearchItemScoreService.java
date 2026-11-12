@@ -5,10 +5,10 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.chengwenfang.ai.facade.AiTextFacade;
+import com.chengwenfang.ai.facade.AiVisionFacade;
 import com.chengwenfang.ai.facade.constant.ModelCallScenes;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
-import com.chengwenfang.ai.facade.dto.view.TextCompleteResult;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
+import com.chengwenfang.ai.facade.dto.view.VisionCompleteResult;
 import com.chengwenfang.mode.hotnews.application.model.ResearchCandidate;
 import com.chengwenfang.mode.hotnews.application.prompt.ResearchItemScorePrompts;
 import com.chengwenfang.mode.hotnews.domain.ResearchItemScoreDetails;
@@ -40,7 +40,7 @@ import org.springframework.stereotype.Service;
 public class TopicResearchItemScoreService {
   private static final int BATCH_SIZE = 10;
 
-  private final AiTextFacade ai;
+  private final AiVisionFacade ai;
   private final TopicClusterMapper topicMapper;
   private final TopicResearchItemMapper researchItemMapper;
   private final ResearchItemScoreDetailsStore scoreDetailsStore;
@@ -188,7 +188,7 @@ public class TopicResearchItemScoreService {
     user.put("dimensions", rubricPayload(rubric));
     user.put("items", payloadItems);
     try {
-      TextCompleteResult result = ai.completeText(TextCompleteRequest.builder()
+      VisionCompleteResult result = ai.complete(VisionCompleteRequest.builder()
           .scene(ModelCallScenes.HOT_NEWS_RESEARCH_ITEM_SCORE)
           .systemPrompt(ResearchItemScorePrompts.SYSTEM_PROMPT)
           .prompt(JSONUtil.toJsonStr(user))

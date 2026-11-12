@@ -1,7 +1,7 @@
 package com.chengwenfang.app.adapter.worker;
 
-import com.chengwenfang.ai.facade.AiTextFacade;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
+import com.chengwenfang.ai.facade.AiVisionFacade;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
 import com.chengwenfang.prompt.domain.runtime.GraphTextNodeHandler;
 import com.chengwenfang.prompt.domain.runtime.WorkflowNodeHandlerRegistry;
 import com.chengwenfang.prompt.facade.PromptPackFacade;
@@ -17,26 +17,26 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * 正式路径图文本节点：优先经注册表路由到模式处理器；未命中则应用 提示词包绑定后调用通用文本 AI。
+ * 正式路径图文本节点：优先经注册表路由到模式处理器；未命中则应用 提示词包绑定后调用多模态补全。
  */
 @Slf4j
 @Component
 public class FormalGraphTextNodeHandler implements GraphTextNodeHandler {
   /** 提示词包 提示词组合。 */
   private final PromptPackFacade promptPacks;
-  /** 文本 AI。 */
-  private final AiTextFacade ai;
+  /** 多模态补全门面。 */
+  private final AiVisionFacade ai;
   /** 节点处理器注册表。 */
   private final WorkflowNodeHandlerRegistry nodeHandlerRegistry;
 
   /**
    * @param promptPacks              提示词包门面
-   * @param ai                  文本 AI
+   * @param ai                  多模态补全门面
    * @param nodeHandlerRegistry 节点处理器注册表
    */
   public FormalGraphTextNodeHandler(
       PromptPackFacade promptPacks,
-      AiTextFacade ai,
+      AiVisionFacade ai,
       WorkflowNodeHandlerRegistry nodeHandlerRegistry) {
     this.promptPacks = promptPacks;
     this.ai = ai;
@@ -105,7 +105,7 @@ public class FormalGraphTextNodeHandler implements GraphTextNodeHandler {
 
     String text;
     try {
-      var result = ai.completeText(new TextCompleteRequest(prompt.toString(), typeKey));
+      var result = ai.complete(new VisionCompleteRequest(prompt.toString(), typeKey));
       text = result.getText() == null ? "" : result.getText();
     } catch (RuntimeException exception) {
       throw new IllegalStateException("图文本节点 AI 调用失败：" + exception.getMessage(), exception);

@@ -3,6 +3,8 @@
 
 chengwenfang:
   environment: golden
+  qdrant:
+    enabled: false
   worker-enabled: true
   worker-concurrency: 1
   worker-text-concurrency: 1

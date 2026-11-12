@@ -36,6 +36,7 @@ Maven 模块按业务域切分；**模块内**统一 `facade / application / dom
 | 模式 | `chengwenfang-mode-course` | 课程课表/生成流水线/节点/配图 |
 | 模式 | `chengwenfang-mode-hotnews` | 雷达、选题、简报、调研、热点文章与节点 |
 | 内容核心 | `chengwenfang-content` | 主题、作品、产出版本、媒体、`WorkContentStore`、`ModeDefinition` SPI |
+| 内容核心 | `chengwenfang-knowledge` | 统一知识库 RAG（多来源文档、切块、Qdrant、对话） |
 | 内容核心 | `chengwenfang-quality` | 审核、人工审核、修复、修复候选 |
 | 内容核心 | `chengwenfang-publishing` | 排版主题、渲染、渠道账号、`ChannelPublisher` / `OutputRenderer` |
 | 内容核心 | `chengwenfang-sourcing` | 信源频道、抓取运行、条目、拉黑、视频转写表 |
@@ -47,10 +48,10 @@ Maven 模块按业务域切分；**模块内**统一 `facade / application / dom
 依赖只能**自上而下**：
 
 ```text
-app → mode-* → content|quality|publishing|sourcing → notification|prompt|file|job|ai|crawler|common|infra
+app → mode-* → content|knowledge|quality|publishing|sourcing → notification|prompt|file|job|ai|crawler|common|infra
 ```
 
-同层仅允许：`quality → content`、`publishing → content`；`mode-course` 与 `mode-hotnews` 互不依赖。
+同层仅允许：`quality → content`、`publishing → content`、`knowledge → content`；`mode-course` 与 `mode-hotnews` 互不依赖。
 
 禁止：Controller → Mapper；`app` 依赖 `*FacadeImpl`；domain 模块依赖 `chengwenfang-app`；前端直连上游 AI；平台/核心反向依赖模式层（`quality → mode.hotnews.facade` 等已知暂免见 06）。
 

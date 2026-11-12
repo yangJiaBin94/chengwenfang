@@ -2,10 +2,10 @@ package com.chengwenfang.mode.hotnews.application;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
-import com.chengwenfang.ai.facade.AiTextFacade;
+import com.chengwenfang.ai.facade.AiVisionFacade;
 import com.chengwenfang.ai.facade.constant.ModelCallScenes;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
-import com.chengwenfang.ai.facade.dto.view.TextCompleteResult;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
+import com.chengwenfang.ai.facade.dto.view.VisionCompleteResult;
 import com.chengwenfang.crawler.facade.ArticleContentFacade;
 import com.chengwenfang.crawler.facade.ArticleTextQuality;
 import com.chengwenfang.crawler.facade.PageScreenshotFacade;
@@ -45,8 +45,8 @@ public class ResearchArticleEnricher {
 
   /** 文章正文门面。 */
   private final ArticleContentFacade articleContent;
-  /** 文本 AI。 */
-  private final AiTextFacade ai;
+  /** 多模态补全门面。 */
+  private final AiVisionFacade ai;
   /** 网页分段截图门面。 */
   private final PageScreenshotFacade pageScreenshot;
   /** 截图 Vision 摘要。 */
@@ -210,7 +210,7 @@ public class ResearchArticleEnricher {
       return "";
     }
     try {
-      TextCompleteResult result = ai.completeText(TextCompleteRequest.builder()
+      VisionCompleteResult result = ai.complete(VisionCompleteRequest.builder()
           .scene(ModelCallScenes.HOT_NEWS_TOPIC_RESEARCH_ARTICLE_BRIEF)
           .systemPrompt(ResearchArticleBriefPrompts.SYSTEM)
           .prompt("标题：" + StrUtil.nullToEmpty(title) + "\n\n正文：\n" + clipped)

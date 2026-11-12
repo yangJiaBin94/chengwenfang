@@ -143,7 +143,7 @@ export type AuditItem = {
   detail: string;
   status: AuditStatus;
   fixable: boolean;
-  fixableByTextAi: boolean;
+  fixableByAi: boolean;
   blocking: boolean;
   location?: string | null;
   suggestion?: string | null;

@@ -8,6 +8,7 @@ import {
   Layers3,
   LayoutDashboard,
   LibraryBig,
+  MessageSquare,
   Search,
   Settings,
   Trash2,
@@ -75,6 +76,12 @@ export function AppSidebar({
               icon={LayoutDashboard}
               label="首页"
               onClick={() => navigate("/")}
+            />
+            <NavButton
+              active={activeNav === "knowledge"}
+              icon={MessageSquare}
+              label="知识库"
+              onClick={() => navigate("/knowledge")}
             />
             <button
               className={

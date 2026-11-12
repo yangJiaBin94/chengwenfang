@@ -4,11 +4,11 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.chengwenfang.ai.facade.AiTextFacade;
+import com.chengwenfang.ai.facade.AiVisionFacade;
 import com.chengwenfang.ai.facade.constant.ModelCallScenes;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
 import com.chengwenfang.mode.hotnews.application.prompt.ResearchRelevancePrompts;
-import com.chengwenfang.ai.facade.dto.view.TextCompleteResult;
+import com.chengwenfang.ai.facade.dto.view.VisionCompleteResult;
 import com.chengwenfang.mode.hotnews.application.model.ResearchCandidate;
 import com.chengwenfang.mode.hotnews.application.research.ResearchKeywordPlan;
 import com.chengwenfang.mode.hotnews.domain.ResearchContentClassifier;
@@ -31,7 +31,7 @@ import org.springframework.stereotype.Service;
 public class ResearchRelevanceFilter {
   private static final int MAX_REFERENCE_ITEMS = 12;
 
-  private final AiTextFacade ai;
+  private final AiVisionFacade ai;
 
   /**
    * 选取可用于骨架/成文的参考资料：未解析成功的视频跳过。
@@ -106,7 +106,7 @@ public class ResearchRelevanceFilter {
       user.put("subject", plan == null ? "" : StrUtil.nullToEmpty(plan.getSubject()));
       user.put("disambiguation", plan == null ? "" : StrUtil.nullToEmpty(plan.getDisambiguation()));
       user.put("items", payloadItems);
-      TextCompleteResult result = ai.completeText(TextCompleteRequest.builder()
+      VisionCompleteResult result = ai.complete(VisionCompleteRequest.builder()
           .scene(ModelCallScenes.HOT_NEWS_TOPIC_RESEARCH_RELEVANCE)
           .systemPrompt(ResearchRelevancePrompts.RELEVANCE_SYSTEM)
           .prompt(JSONUtil.toJsonStr(user))

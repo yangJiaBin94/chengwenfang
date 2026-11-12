@@ -1,7 +1,7 @@
 package com.chengwenfang.mode.course.application.course;
 
 import cn.hutool.core.util.StrUtil;
-import com.chengwenfang.ai.facade.AiTextFacade;
+import com.chengwenfang.ai.facade.AiVisionFacade;
 import com.chengwenfang.mode.course.application.generation.course.CourseGraphState;
 import com.chengwenfang.quality.facade.AuditFacade;
 import com.chengwenfang.prompt.facade.PromptPackFacade;
@@ -26,13 +26,13 @@ public class CourseWechatConverter {
   private final CourseGenerationValidators validators;
 
   /**
-   * @param ai            文本 AI
+   * @param ai            多模态补全门面
    * @param promptPacks        提示词包门面
    * @param contextLoader 上下文加载
    * @param audit         审核门面
    */
   public CourseWechatConverter(
-      AiTextFacade ai,
+      AiVisionFacade ai,
       PromptPackFacade promptPacks,
       CourseGraphContextLoader contextLoader,
       AuditFacade audit) {

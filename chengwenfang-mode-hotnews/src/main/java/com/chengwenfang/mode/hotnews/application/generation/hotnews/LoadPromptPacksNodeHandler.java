@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class LoadPromptPacksNodeHandler implements HotNewsNodeHandler {
   /** 文本/提示词包 组合「*/
-  private final HotNewsTextCompletionSupport textCompletion;
+  private final HotNewsAiCompletionSupport textCompletion;
 
   @Override
   public HotNewsWorkflowNodeType supports() {

@@ -14,14 +14,6 @@ export {
 
 /* ---- AI settings ---- */
 
-/** Internal request contract for the generic text endpoint. */
-type TextRequest = {
-  config: AiProviderConfig;
-  scene: AiScene;
-  systemPrompt: string;
-  userPrompt: string;
-};
-
 /** 后端 AiSettingsView 字段（protocol 为下划线风格）。 */
 type BackendProvider = {
   kind?: string;
@@ -39,9 +31,9 @@ type BackendProvider = {
 };
 
 type BackendAiSettings = {
-  text?: BackendProvider;
   image?: BackendProvider;
   vision?: BackendProvider;
+  embedding?: BackendProvider;
 };
 
 type AiSettingsBundle = {
@@ -55,19 +47,29 @@ function toFeProtocol(
   kind: AiSettingsKind,
 ): AiProviderConfig["protocol"] {
   if (kind === "image") return "openai-images";
+  if (kind === "embedding") return "openai-embeddings";
+  if (raw === "openai_embeddings" || raw === "openai-embeddings") {
+    return "openai-embeddings";
+  }
   if (raw === "openai_responses" || raw === "openai-responses") return "openai-responses";
   return "openai-chat";
 }
 
-function toBackendProtocol(raw: string | undefined): string {
+function toBackendProtocol(
+  raw: string | undefined,
+  kind?: AiSettingsKind,
+): string {
+  if (kind === "embedding" || raw === "openai-embeddings" || raw === "openai_embeddings") {
+    return "openai_embeddings";
+  }
   if (raw === "openai-responses" || raw === "openai_responses") return "openai_responses";
   if (raw === "openai-images") return "openai_chat";
   return "openai_chat";
 }
 
 function defaultName(kind: AiSettingsKind): string {
-  if (kind === "text") return "文本 AI";
   if (kind === "image") return "图片 AI";
+  if (kind === "embedding") return "向量嵌入";
   return "多模态 AI";
 }
 
@@ -90,23 +92,14 @@ function mapProvider(raw: BackendProvider | undefined, kind: AiSettingsKind): Ai
 
 function mapSettings(data: BackendAiSettings): AiSettings {
   return {
-    text: mapProvider(data.text, "text"),
     image: mapProvider(data.image, "image"),
     vision: mapProvider(data.vision, "vision"),
+    embedding: mapProvider(data.embedding, "embedding"),
   };
 }
 
 function toBackendBody(settings: AiSettings) {
   return {
-    text: {
-      name: settings.text.name,
-      model: settings.text.model,
-      baseUrl: settings.text.baseUrl,
-      protocol: toBackendProtocol(settings.text.protocol),
-      apiKey: settings.text.apiKey,
-      timeoutSeconds: settings.text.timeoutSeconds,
-      enabled: settings.text.enabled,
-    },
     image: {
       name: settings.image.name,
       model: settings.image.model,
@@ -126,22 +119,16 @@ function toBackendBody(settings: AiSettings) {
       timeoutSeconds: settings.vision.timeoutSeconds,
       enabled: settings.vision.enabled,
     },
+    embedding: {
+      name: settings.embedding.name,
+      model: settings.embedding.model,
+      baseUrl: settings.embedding.baseUrl,
+      protocol: toBackendProtocol(settings.embedding.protocol, "embedding"),
+      apiKey: settings.embedding.apiKey,
+      timeoutSeconds: settings.embedding.timeoutSeconds,
+      enabled: settings.embedding.enabled,
+    },
   };
-}
-
-/** Invoke a generic text scene; dedicated workflows should use their own endpoints. */
-export async function requestTextAi(request: TextRequest) {
-  const response = await fetch("/api/ai/text", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      scene: request.scene,
-      prompt: [request.systemPrompt, request.userPrompt].filter(Boolean).join("\n\n"),
-    }),
-  });
-  const payload = await unwrapApiResult<{ text?: string }>(response);
-  if (!payload.text?.trim()) throw new Error("文本 AI 未返回可用内容。");
-  return payload.text.trim();
 }
 
 /** Perform a real provider request using the current settings form values (not DB). */
@@ -154,7 +141,12 @@ export async function testAiConnection(config: AiProviderConfig, kind: AiSetting
         name: config.name,
         model: config.model,
         baseUrl: config.baseUrl,
-        protocol: kind === "image" ? "openai_chat" : toBackendProtocol(config.protocol),
+        protocol:
+          kind === "image"
+            ? "openai_chat"
+            : kind === "embedding"
+              ? "openai_embeddings"
+              : toBackendProtocol(config.protocol, kind),
         apiKey: config.apiKey,
         timeoutSeconds: config.timeoutSeconds,
         enabled: config.enabled,
@@ -202,9 +194,9 @@ export async function loadAiSettingsFromDatabase(): Promise<AiSettingsBundle> {
   const settings = mapSettings(data);
   return {
     configured: !!(
-      settings.text.apiKeyConfigured ||
       settings.image.apiKeyConfigured ||
-      settings.vision.apiKeyConfigured
+      settings.vision.apiKeyConfigured ||
+      settings.embedding.apiKeyConfigured
     ),
     settings,
     updatedAt: new Date().toISOString(),

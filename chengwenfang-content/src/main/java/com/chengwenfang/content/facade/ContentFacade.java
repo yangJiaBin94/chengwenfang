@@ -38,6 +38,7 @@ import com.chengwenfang.content.facade.dto.view.HotNewsThemeCommitView;
 import com.chengwenfang.content.facade.dto.view.ThemeCurriculumCommitView;
 import com.chengwenfang.content.facade.dto.view.ThemeCurriculumGenerateView;
 import com.chengwenfang.content.facade.dto.view.ThemeRouteView;
+import com.chengwenfang.content.facade.dto.view.WorkOutputKnowledgeSnapshot;
 import com.chengwenfang.job.facade.dto.view.JobView;
 import java.nio.file.Path;
 import java.util.List;
@@ -375,4 +376,19 @@ public interface ContentFacade {
    * @return 产出 id；无法解析时 null
    */
   String resolvePublishingOutputId(String workOrOutputId);
+
+  /**
+   * 加载主轨产出知识快照；非主轨、无版本或正文为空时返回 null。
+   *
+   * @param outputId 产出 ID
+   * @return 快照；不可用则 null
+   */
+  WorkOutputKnowledgeSnapshot loadMasterKnowledgeSnapshot(String outputId);
+
+  /**
+   * 列出全部有正文的主轨产出快照（当前版本号大于 0 且正文非空）。
+   *
+   * @return 快照列表
+   */
+  List<WorkOutputKnowledgeSnapshot> listMasterKnowledgeSnapshots();
 }

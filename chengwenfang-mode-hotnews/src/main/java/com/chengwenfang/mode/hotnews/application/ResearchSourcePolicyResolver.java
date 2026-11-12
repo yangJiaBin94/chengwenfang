@@ -6,10 +6,10 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.chengwenfang.ai.facade.AiTextFacade;
+import com.chengwenfang.ai.facade.AiVisionFacade;
 import com.chengwenfang.ai.facade.constant.ModelCallScenes;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
-import com.chengwenfang.ai.facade.dto.view.TextCompleteResult;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
+import com.chengwenfang.ai.facade.dto.view.VisionCompleteResult;
 import com.chengwenfang.content.facade.ContentFacade;
 import com.chengwenfang.content.facade.dto.view.ContentThemeView;
 import com.chengwenfang.crawler.facade.enums.ChannelType;
@@ -39,7 +39,7 @@ import org.springframework.stereotype.Service;
 public class ResearchSourcePolicyResolver {
 
   /** AI 文本门面。 */
-  private final AiTextFacade ai;
+  private final AiVisionFacade ai;
   /** 内容主题门面。 */
   private final ContentFacade content;
   /** 渠道 Mapper。 */
@@ -217,7 +217,7 @@ public class ResearchSourcePolicyResolver {
       payload.put("title", title);
       payload.put(
           "summary", summary.length() > 800 ? summary.substring(0, 800) : summary);
-      TextCompleteResult result = ai.completeText(TextCompleteRequest.builder()
+      VisionCompleteResult result = ai.complete(VisionCompleteRequest.builder()
           .scene(ModelCallScenes.HOT_NEWS_TOPIC_RESEARCH_SOURCE_POLICY)
           .systemPrompt(ResearchSourcePolicyPrompts.SYSTEM)
           .prompt(JSONUtil.toJsonStr(payload))

@@ -4,9 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import com.chengwenfang.ai.facade.AiTextFacade;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
-import com.chengwenfang.ai.facade.dto.view.TextCompleteResult;
+import com.chengwenfang.ai.facade.AiVisionFacade;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
+import com.chengwenfang.ai.facade.dto.view.VisionCompleteResult;
 import com.chengwenfang.mode.hotnews.application.model.ResearchCandidate;
 import com.chengwenfang.mode.hotnews.facade.enums.ResearchItemKind;
 import com.chengwenfang.mode.hotnews.infrastructure.mapper.TopicClusterMapper;
@@ -20,12 +20,12 @@ import org.mockito.Mockito;
 /** 资料池五维 AI 打分：成功解析与失败回退。 */
 class TopicResearchItemScoreServiceTest {
 
-  private AiTextFacade ai;
+  private AiVisionFacade ai;
   private TopicResearchItemScoreService service;
 
   @BeforeEach
   void setUp() {
-    ai = Mockito.mock(AiTextFacade.class);
+    ai = Mockito.mock(AiVisionFacade.class);
     service = new TopicResearchItemScoreService(
         ai,
         Mockito.mock(TopicClusterMapper.class),
@@ -48,8 +48,8 @@ class TopicResearchItemScoreServiceTest {
 
   @Test
   void scoreCandidates_AI成功时写回加权综合分与分维() {
-    when(ai.completeText(any(TextCompleteRequest.class))).thenReturn(
-        TextCompleteResult.builder()
+    when(ai.complete(any(VisionCompleteRequest.class))).thenReturn(
+        VisionCompleteResult.builder()
             .text("""
                 {"items":[{"id":"0","dimensions":[
                   {"key":"relevance","score":10,"reason":"紧扣选题"},
@@ -78,7 +78,7 @@ class TopicResearchItemScoreServiceTest {
 
   @Test
   void scoreCandidates_AI失败回退默认分() {
-    when(ai.completeText(any(TextCompleteRequest.class)))
+    when(ai.complete(any(VisionCompleteRequest.class)))
         .thenThrow(new RuntimeException("timeout"));
 
     ResearchCandidate candidate = ResearchCandidate.builder()
@@ -95,8 +95,8 @@ class TopicResearchItemScoreServiceTest {
 
   @Test
   void scoreCandidates_无法解析JSON时保留默认分() {
-    when(ai.completeText(any(TextCompleteRequest.class))).thenReturn(
-        TextCompleteResult.builder().text("不是 JSON").build());
+    when(ai.complete(any(VisionCompleteRequest.class))).thenReturn(
+        VisionCompleteResult.builder().text("不是 JSON").build());
 
     ResearchCandidate candidate = ResearchCandidate.builder()
         .title("测试")
@@ -109,10 +109,10 @@ class TopicResearchItemScoreServiceTest {
 
   @Test
   void scoreCandidates_传入选题上下文() {
-    ArgumentCaptor<TextCompleteRequest> captor =
-        ArgumentCaptor.forClass(TextCompleteRequest.class);
-    when(ai.completeText(captor.capture())).thenReturn(
-        TextCompleteResult.builder().text("{\"items\":[]}").build());
+    ArgumentCaptor<VisionCompleteRequest> captor =
+        ArgumentCaptor.forClass(VisionCompleteRequest.class);
+    when(ai.complete(captor.capture())).thenReturn(
+        VisionCompleteResult.builder().text("{\"items\":[]}").build());
 
     service.scoreCandidates(
         "中老年养生",

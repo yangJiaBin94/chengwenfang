@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
-import com.chengwenfang.ai.facade.AiTextFacade;
+import com.chengwenfang.ai.facade.AiVisionFacade;
 import com.chengwenfang.mode.hotnews.application.generation.hotnews.HotNewsGraphStateKeys;
 import com.chengwenfang.mode.hotnews.facade.HotNewsFacade;
 import com.chengwenfang.prompt.facade.PromptPackFacade;
@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 /** {@link CustomAiNodeHandler#applyActions} 边界单测。 */
 class CustomAiNodeHandlerApplyTest {
   private final CustomAiNodeHandler handler = new CustomAiNodeHandler(
-      mock(AiTextFacade.class),
+      mock(AiVisionFacade.class),
       mock(PromptPackFacade.class),
       new CustomAiActionPlanParser(),
       mock(HotNewsFacade.class));

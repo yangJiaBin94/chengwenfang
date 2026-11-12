@@ -37,7 +37,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class AttachEvidenceNodeHandlerTest {
 
   @Mock
-  private HotNewsTextCompletionSupport textCompletion;
+  private HotNewsAiCompletionSupport textCompletion;
   @Mock
   private HotNewsArtifactReuseSupport artifactReuse;
   @Mock

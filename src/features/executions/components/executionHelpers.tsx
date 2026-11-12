@@ -316,7 +316,7 @@ export function eventStepTitle(step: string | null | undefined) {
     preview: "下节课预告",
   };
   if (step === "draft_load_context") return "读取原稿生成上下文";
-  if (step === "draft_call_text_model") return "调用文本 AI 生成原稿";
+  if (step === "draft_call_text_model") return "调用多模态 AI 生成原稿";
   if (step === "draft_validate_content") return "检查原稿内容";
   if (step === "draft_save_artifact") return "保存原稿中间产物";
   if (step.startsWith("draft_generate_section_")) {
@@ -328,7 +328,7 @@ export function eventStepTitle(step: string | null | undefined) {
     return `复用原稿：${sectionTitles[section] || "课程章节"}`;
   }
   if (step === "wechat_load_context") return "读取公众号转换上下文";
-  if (step === "wechat_call_text_model") return "调用文本 AI 转换公众号文章";
+  if (step === "wechat_call_text_model") return "调用多模态 AI 转换公众号文章";
   if (step === "wechat_validate_content") return "检查公众号文章";
   if (step === "wechat_save_artifact") return "保存公众号中间产物";
   if (

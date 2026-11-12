@@ -63,10 +63,16 @@ chengwenfang:
   sse-poll-seconds: 0.5
   # 开发允许爬虫访问环回/私网（本地 SearXNG）；生产环境应保持 false
   crawler-allow-loopback: true
-  # 文本 / 图像生成 / 多模态看图 单次上游调用超时（秒）
-  ai-text-timeout-seconds: 120
+  # 图像生成 / 多模态补全 / 嵌入 单次上游调用超时（秒）
   ai-image-timeout-seconds: 180
   ai-vision-timeout-seconds: 180
+  ai-embedding-timeout-seconds: 60
+  qdrant:
+    enabled: true
+    host: 127.0.0.1
+    http-port: 6333
+    grpc-port: 6334
+    collection: chengwenfang_knowledge
   # 雷达文章正文：Jina → Trafilatura → Lightpanda(可选) → 搜索摘要
   article-content:
     jina-enabled: true

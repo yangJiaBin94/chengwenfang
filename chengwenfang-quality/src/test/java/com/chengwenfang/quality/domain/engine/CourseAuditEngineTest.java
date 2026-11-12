@@ -30,17 +30,17 @@ class CourseAuditEngineTest {
     CourseAuditEngine.AuditCheck result = byCode(engine.run(ctx(article)), "FORBIDDEN_SYMBOL");
     assertThat(result.status()).isEqualTo("fail");
     assertThat(result.location()).isEqualTo("第四层：行动（第 2 行）");
-    assertThat(result.fixableByTextAi()).isTrue();
+    assertThat(result.fixableByAi()).isTrue();
     assertThat(result.blocking()).isTrue();
   }
 
   @Test
   void text_and_asset_issues_are_classified_separately() {
     CourseAuditEngine.AuditResult report = engine.run(ctx("普通正文"));
-    assertThat(byCode(report, "OPENING_SUMMARY_COMPLETE").fixableByTextAi()).isTrue();
-    assertThat(byCode(report, "IMAGE_ASSETS_PRESENT").fixableByTextAi()).isFalse();
-    assertThat(byCode(report, "IMAGE_METADATA_COMPLETE").fixableByTextAi()).isFalse();
-    assertThat(byCode(report, "ARTICLE_IMAGE_REFERENCE").fixableByTextAi()).isFalse();
+    assertThat(byCode(report, "OPENING_SUMMARY_COMPLETE").fixableByAi()).isTrue();
+    assertThat(byCode(report, "IMAGE_ASSETS_PRESENT").fixableByAi()).isFalse();
+    assertThat(byCode(report, "IMAGE_METADATA_COMPLETE").fixableByAi()).isFalse();
+    assertThat(byCode(report, "ARTICLE_IMAGE_REFERENCE").fixableByAi()).isFalse();
   }
 
   @Test
@@ -54,7 +54,7 @@ class CourseAuditEngineTest {
         "普通正文", "", assets, List.of(), true, null));
     CourseAuditEngine.AuditCheck imageReference = byCode(report, "ARTICLE_IMAGE_REFERENCE");
     assertThat(imageReference.status()).isEqualTo("warn");
-    assertThat(imageReference.fixableByTextAi()).isTrue();
+    assertThat(imageReference.fixableByAi()).isTrue();
   }
 
   @Test

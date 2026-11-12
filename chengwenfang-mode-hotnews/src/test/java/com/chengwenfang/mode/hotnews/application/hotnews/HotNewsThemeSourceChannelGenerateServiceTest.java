@@ -8,9 +8,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.chengwenfang.ai.facade.AiTextFacade;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
-import com.chengwenfang.ai.facade.dto.view.TextCompleteResult;
+import com.chengwenfang.ai.facade.AiVisionFacade;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
+import com.chengwenfang.ai.facade.dto.view.VisionCompleteResult;
 import com.chengwenfang.content.facade.ContentFacade;
 import com.chengwenfang.content.facade.dto.view.ContentThemeView;
 import com.chengwenfang.crawler.facade.FetchFacade;
@@ -36,7 +36,7 @@ import org.mockito.ArgumentCaptor;
  * {@link HotNewsThemeSourceChannelGenerateService}：解析、去重、网页 URL 过滤与落库。
  */
 class HotNewsThemeSourceChannelGenerateServiceTest {
-  private AiTextFacade ai;
+  private AiVisionFacade ai;
   private PromptPackFacade promptPacks;
   private ContentFacade content;
   private HotNewsFacade hotNews;
@@ -45,7 +45,7 @@ class HotNewsThemeSourceChannelGenerateServiceTest {
 
   @BeforeEach
   void setUp() {
-    ai = mock(AiTextFacade.class);
+    ai = mock(AiVisionFacade.class);
     promptPacks = mock(PromptPackFacade.class);
     content = mock(ContentFacade.class);
     hotNews = mock(HotNewsFacade.class);
@@ -137,7 +137,7 @@ class HotNewsThemeSourceChannelGenerateServiceTest {
                 .urls(List.of("https://ok.example/old"))
                 .build())
             .build()));
-    when(ai.completeText(any(TextCompleteRequest.class))).thenReturn(TextCompleteResult.builder()
+    when(ai.complete(any(VisionCompleteRequest.class))).thenReturn(VisionCompleteResult.builder()
         .text("""
             {"channels":[{"name":"补充网页","type":"web","baseUrl":"https://ok.example/old",
             "config":{"urls":["https://ok.example/old","https://ok.example/old/",
@@ -173,7 +173,7 @@ class HotNewsThemeSourceChannelGenerateServiceTest {
   void generate_persistsOnlyReachableWebUrls() {
     stubTheme();
     when(hotNews.listChannels("theme-1")).thenReturn(List.of());
-    when(ai.completeText(any(TextCompleteRequest.class))).thenReturn(TextCompleteResult.builder()
+    when(ai.complete(any(VisionCompleteRequest.class))).thenReturn(VisionCompleteResult.builder()
         .text("""
             {"channels":[{"name":"健康网页","type":"web","baseUrl":"https://ok.example/a",
             "config":{"urls":["https://ok.example/a","https://bad.example/b"]}}]}
@@ -216,7 +216,7 @@ class HotNewsThemeSourceChannelGenerateServiceTest {
   void generate_skipsWhenAllWebUrlsFail() {
     stubTheme();
     when(hotNews.listChannels("theme-1")).thenReturn(List.of());
-    when(ai.completeText(any(TextCompleteRequest.class))).thenReturn(TextCompleteResult.builder()
+    when(ai.complete(any(VisionCompleteRequest.class))).thenReturn(VisionCompleteResult.builder()
         .text("""
             {"channels":[{"name":"坏网页","type":"web","baseUrl":"https://bad.example",
             "config":{"urls":["https://bad.example"]}}]}
@@ -245,7 +245,7 @@ class HotNewsThemeSourceChannelGenerateServiceTest {
             .type(ChannelType.RSS.getValue())
             .baseUrl("https://feeds.bbci.co.uk/news/health/rss.xml")
             .build()));
-    when(ai.completeText(any(TextCompleteRequest.class))).thenReturn(TextCompleteResult.builder()
+    when(ai.complete(any(VisionCompleteRequest.class))).thenReturn(VisionCompleteResult.builder()
         .text("""
             {"channels":[{"name":"BBC 健康","type":"rss",
             "baseUrl":"https://feeds.bbci.co.uk/news/health/rss.xml/","config":{}}]}
@@ -276,7 +276,7 @@ class HotNewsThemeSourceChannelGenerateServiceTest {
                 .urls(List.of("https://ok.example/a", "https://ok.example/b"))
                 .build())
             .build()));
-    when(ai.completeText(any(TextCompleteRequest.class))).thenReturn(TextCompleteResult.builder()
+    when(ai.complete(any(VisionCompleteRequest.class))).thenReturn(VisionCompleteResult.builder()
         .text("""
             {"channels":[{"name":"重复网页","type":"web","baseUrl":"https://ok.example/a",
             "config":{"urls":["https://ok.example/a","https://ok.example/b"]}}]}
@@ -307,7 +307,7 @@ class HotNewsThemeSourceChannelGenerateServiceTest {
           .build());
     }
     when(hotNews.listChannels("theme-1")).thenReturn(existing);
-    when(ai.completeText(any(TextCompleteRequest.class))).thenReturn(TextCompleteResult.builder()
+    when(ai.complete(any(VisionCompleteRequest.class))).thenReturn(VisionCompleteResult.builder()
         .text("""
             {"channels":[{"name":"超限","type":"rss","baseUrl":"https://example.com/new.xml","config":{}}]}
             """)
@@ -332,7 +332,7 @@ class HotNewsThemeSourceChannelGenerateServiceTest {
             .type(ChannelType.SEARXNG.getValue())
             .baseUrl("http://127.0.0.1:8080")
             .build()));
-    when(ai.completeText(any(TextCompleteRequest.class))).thenReturn(TextCompleteResult.builder()
+    when(ai.complete(any(VisionCompleteRequest.class))).thenReturn(VisionCompleteResult.builder()
         .text("""
             {"channels":[{"name":"再来一个搜索","type":"searxng","baseUrl":"http://127.0.0.1:8080",
             "config":{"queries":["中老年养生"]}}]}
@@ -351,8 +351,8 @@ class HotNewsThemeSourceChannelGenerateServiceTest {
   void generate_returnsFromAiFalseWhenModelEmpty() {
     stubTheme();
     when(hotNews.listChannels("theme-1")).thenReturn(List.of());
-    when(ai.completeText(any(TextCompleteRequest.class)))
-        .thenReturn(TextCompleteResult.builder().text("not json").build());
+    when(ai.complete(any(VisionCompleteRequest.class)))
+        .thenReturn(VisionCompleteResult.builder().text("not json").build());
 
     HotNewsSourceChannelGenerateView view = service.generate("theme-1");
 

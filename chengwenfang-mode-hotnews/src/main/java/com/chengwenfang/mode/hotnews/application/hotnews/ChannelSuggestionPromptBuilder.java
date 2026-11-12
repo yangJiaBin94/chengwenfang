@@ -2,10 +2,10 @@ package com.chengwenfang.mode.hotnews.application.hotnews;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
-import com.chengwenfang.ai.facade.AiTextFacade;
+import com.chengwenfang.ai.facade.AiVisionFacade;
 import com.chengwenfang.ai.facade.constant.ModelCallScenes;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
-import com.chengwenfang.ai.facade.dto.view.TextCompleteResult;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
+import com.chengwenfang.ai.facade.dto.view.VisionCompleteResult;
 import com.chengwenfang.content.facade.dto.view.ContentThemeView;
 import com.chengwenfang.sourcing.facade.constant.HotNewsChannelLimits;
 import com.chengwenfang.prompt.facade.PromptPackFacade;
@@ -26,8 +26,8 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ChannelSuggestionPromptBuilder {
 
-  /** 文本 AI。 */
-  private final AiTextFacade ai;
+  /** 多模态补全门面。 */
+  private final AiVisionFacade ai;
   /** 提示词包门面。 */
   private final PromptPackFacade promptPacks;
 
@@ -72,7 +72,7 @@ public class ChannelSuggestionPromptBuilder {
       return List.of();
     }
     try {
-      TextCompleteResult result = ai.completeText(TextCompleteRequest.builder()
+      VisionCompleteResult result = ai.complete(VisionCompleteRequest.builder()
           .systemPrompt(systemPrompt)
           .prompt(userPrompt)
           .scene(ModelCallScenes.HOT_NEWS_THEME_SOURCE_CHANNELS)

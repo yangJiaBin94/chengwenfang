@@ -94,8 +94,8 @@ export function TabReviewPanel(props: {
           <small>{copy.detail}</small>
           {item.status !== "pass" && (
             <em>
-              {item.fixableByTextAi
-                ? "文本 AI 可修复"
+              {item.fixableByAi
+                ? "AI 可修复"
                 : isImageAssetRepairItem(item)
                   ? "系统可自动修复"
                   : "需要流程或资产处理"}
@@ -118,7 +118,7 @@ export function TabReviewPanel(props: {
             !auditReport.items.some(
               (item) =>
                 item.status !== "pass" &&
-                (item.fixableByTextAi || isImageAssetRepairItem(item)),
+                (item.fixableByAi || isImageAssetRepairItem(item)),
             )
           }
           onClick={() => void runAiFix()}

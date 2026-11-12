@@ -4,11 +4,11 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.chengwenfang.ai.facade.AiTextFacade;
+import com.chengwenfang.ai.facade.AiVisionFacade;
 import com.chengwenfang.ai.facade.constant.ModelCallScenes;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
 import com.chengwenfang.mode.hotnews.application.prompt.ResearchTranslatePrompts;
-import com.chengwenfang.ai.facade.dto.view.TextCompleteResult;
+import com.chengwenfang.ai.facade.dto.view.VisionCompleteResult;
 import com.chengwenfang.mode.hotnews.application.model.ResearchCandidate;
 import com.chengwenfang.mode.hotnews.domain.ResearchContentClassifier;
 import java.util.ArrayList;
@@ -29,7 +29,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class ResearchTranslator {
-  private final AiTextFacade ai;
+  private final AiVisionFacade ai;
 
   /**
    * 将非中文标题/摘要译为简体中文；失败则保留原文。
@@ -67,7 +67,7 @@ public class ResearchTranslator {
     try {
       Map<String, Object> translatePayload = new LinkedHashMap<>();
       translatePayload.put("items", payloadItems);
-      TextCompleteResult result = ai.completeText(TextCompleteRequest.builder()
+      VisionCompleteResult result = ai.complete(VisionCompleteRequest.builder()
           .scene(ModelCallScenes.HOT_NEWS_TOPIC_RESEARCH_TRANSLATE)
           .systemPrompt(ResearchTranslatePrompts.TRANSLATE_SYSTEM)
           .prompt(JSONUtil.toJsonStr(translatePayload))

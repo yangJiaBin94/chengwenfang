@@ -119,7 +119,7 @@ export function DashboardPage(props: DashboardPageProps) {
                         className="home-alert is-warn"
                         onClick={() => void navigate("/settings?section=ai")}
                       >
-                        <strong>先配置文本 AI</strong>
+                        <strong>先配置多模态 AI</strong>
                         <span>生成原稿、热点成文都依赖文本模型</span>
                       </button>
                     </div>

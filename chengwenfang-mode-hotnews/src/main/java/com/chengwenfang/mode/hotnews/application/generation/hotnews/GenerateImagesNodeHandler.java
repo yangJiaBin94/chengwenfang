@@ -36,7 +36,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class GenerateImagesNodeHandler implements HotNewsNodeHandler {
   /** 文本/提示词包 组合「*/
-  private final HotNewsTextCompletionSupport textCompletion;
+  private final HotNewsAiCompletionSupport textCompletion;
   /** 图像 AI「*/
   private final AiImageFacade images;
   /** 内容落库「*/

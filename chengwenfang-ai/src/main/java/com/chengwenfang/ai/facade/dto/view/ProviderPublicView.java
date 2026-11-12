@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProviderPublicView {
-  /** 配置 kind：text / image。 */
+  /** 配置 kind：image / vision / embedding。 */
   private String kind;
   /** 显示名称。 */
   private String name;

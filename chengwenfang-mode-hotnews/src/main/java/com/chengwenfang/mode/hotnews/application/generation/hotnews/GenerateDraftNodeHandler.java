@@ -25,7 +25,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class GenerateDraftNodeHandler implements HotNewsNodeHandler {
   /** 文本补全支持「*/
-  private final HotNewsTextCompletionSupport textCompletion;
+  private final HotNewsAiCompletionSupport textCompletion;
   /** 产物复用「*/
   private final HotNewsArtifactReuseSupport artifactReuse;
 

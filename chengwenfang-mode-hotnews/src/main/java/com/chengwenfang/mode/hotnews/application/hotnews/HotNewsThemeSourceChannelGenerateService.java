@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * 来源管理：按主题用文本 AI 推荐渠道，连通性校验通过后落库。
+ * 来源管理：按主题用多模态 AI 推荐渠道，连通性校验通过后落库。
  * <p>薄门面：对外保持原公开方法签名，内部委派提示词/解析/校验/落库协作类。
  */
 @Service

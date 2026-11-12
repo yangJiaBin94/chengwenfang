@@ -569,4 +569,18 @@ public class ContentFacadeImpl implements ContentFacade {
   public String resolvePublishingOutputId(String workOrOutputId) {
     return workContents.resolvePublishingOutputId(workOrOutputId);
   }
+
+  /** {@inheritDoc} */
+  @Override
+  public com.chengwenfang.content.facade.dto.view.WorkOutputKnowledgeSnapshot loadMasterKnowledgeSnapshot(
+      String outputId) {
+    return workContents.loadMasterKnowledgeSnapshot(outputId);
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public java.util.List<com.chengwenfang.content.facade.dto.view.WorkOutputKnowledgeSnapshot>
+      listMasterKnowledgeSnapshots() {
+    return workContents.listMasterKnowledgeSnapshots();
+  }
 }

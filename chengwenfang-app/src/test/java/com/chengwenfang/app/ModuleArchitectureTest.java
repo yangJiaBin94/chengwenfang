@@ -70,6 +70,7 @@ class ModuleArchitectureTest {
               "com.chengwenfang.quality..",
               "com.chengwenfang.publishing..",
               "com.chengwenfang.sourcing..",
+              "com.chengwenfang.knowledge..",
               "com.chengwenfang.app..");
 
   @ArchTest
@@ -184,6 +185,14 @@ class ModuleArchitectureTest {
       noClasses()
           .that().resideInAPackage("com.chengwenfang.quality..")
           .should().dependOnClassesThat().resideInAPackage("com.chengwenfang.mode.course..");
+
+  @ArchTest
+  static final ArchRule knowledgeDoesNotDependOnModes =
+      noClasses()
+          .that().resideInAPackage("com.chengwenfang.knowledge..")
+          .should().dependOnClassesThat().resideInAnyPackage(
+              "com.chengwenfang.mode.hotnews..",
+              "com.chengwenfang.mode.course..");
 
   /** D-30：quality 仅可依赖 mode.hotnews.facade，不得穿透其内部。 */
   @ArchTest
@@ -317,6 +326,15 @@ class ModuleArchitectureTest {
               "com.chengwenfang.sourcing.domain..",
               "com.chengwenfang.sourcing.infrastructure..");
 
+  @ArchTest
+  static final ArchRule foreignModulesOnlyAccessKnowledgeFacade =
+      noClasses()
+          .that().resideOutsideOfPackages("com.chengwenfang.knowledge..", "com.chengwenfang.app..")
+          .should().dependOnClassesThat().resideInAnyPackage(
+              "com.chengwenfang.knowledge.application..",
+              "com.chengwenfang.knowledge.domain..",
+              "com.chengwenfang.knowledge.infrastructure..");
+
   // —— app 不得依赖 FacadeImpl / 根包 application / mapper / entity ——
 
   @ArchTest
@@ -345,7 +363,8 @@ class ModuleArchitectureTest {
               "com.chengwenfang.file.application..",
               "com.chengwenfang.ai.application..",
               "com.chengwenfang.job.application..",
-              "com.chengwenfang.crawler.application..");
+              "com.chengwenfang.crawler.application..",
+              "com.chengwenfang.knowledge.application");
 
   @ArchTest
   static final ArchRule appDoesNotDependOnDomainMappers =
@@ -361,7 +380,8 @@ class ModuleArchitectureTest {
               "com.chengwenfang.sourcing.infrastructure.mapper..",
               "com.chengwenfang.prompt.infrastructure.mapper..",
               "com.chengwenfang.file.infrastructure.mapper..",
-              "com.chengwenfang.ai.infrastructure.mapper..");
+              "com.chengwenfang.ai.infrastructure.mapper..",
+              "com.chengwenfang.knowledge.infrastructure.mapper..");
 
   @ArchTest
   static final ArchRule appDoesNotDependOnDomainEntities =
@@ -377,7 +397,8 @@ class ModuleArchitectureTest {
               "com.chengwenfang.sourcing.domain.entity..",
               "com.chengwenfang.prompt.domain.entity..",
               "com.chengwenfang.file.domain.entity..",
-              "com.chengwenfang.ai.domain.entity..");
+              "com.chengwenfang.ai.domain.entity..",
+              "com.chengwenfang.knowledge.domain.entity..");
 
   @ArchTest
   static final ArchRule adapterWebDoesNotDependOnWorkerInternals =

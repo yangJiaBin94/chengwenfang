@@ -3,9 +3,9 @@ package com.chengwenfang.app.application.generation.custom;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
-import com.chengwenfang.ai.facade.AiTextFacade;
+import com.chengwenfang.ai.facade.AiVisionFacade;
 import com.chengwenfang.ai.facade.constant.ModelCallScenes;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
 import com.chengwenfang.mode.hotnews.application.generation.hotnews.HotNewsGraphStateKeys;
 import com.chengwenfang.mode.hotnews.facade.HotNewsFacade;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsBriefView;
@@ -35,8 +35,8 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class CustomAiNodeHandler implements WorkflowNodeHandler {
-  /** 文本 AI。 */
-  private final AiTextFacade ai;
+  /** 多模态补全门面。 */
+  private final AiVisionFacade ai;
   /** 提示词包 组合。 */
   private final PromptPackFacade promptPacks;
   /** 动作 JSON 解析。 */
@@ -136,7 +136,7 @@ public class CustomAiNodeHandler implements WorkflowNodeHandler {
     userPrompt.append("\n请输出 actions JSON。");
 
     log.info("自定义节点调用 AI nodeKey={}", nodeKey);
-    var result = ai.completeText(TextCompleteRequest.builder()
+    var result = ai.complete(VisionCompleteRequest.builder()
         .scene(ModelCallScenes.ADHOC)
         .systemPrompt(systemPrompt)
         .prompt(userPrompt.toString())

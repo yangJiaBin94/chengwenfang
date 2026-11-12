@@ -5,10 +5,10 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.chengwenfang.ai.facade.AiTextFacade;
+import com.chengwenfang.ai.facade.AiVisionFacade;
 import com.chengwenfang.ai.facade.constant.ModelCallScenes;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
-import com.chengwenfang.ai.facade.dto.view.TextCompleteResult;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
+import com.chengwenfang.ai.facade.dto.view.VisionCompleteResult;
 import com.chengwenfang.mode.hotnews.application.prompt.ArticleSkeletonPrompts;
 import com.chengwenfang.mode.hotnews.domain.HotNewsMarkdownUtil;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsArticleSkeletonView;
@@ -35,7 +35,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class ArticleSkeletonBuilder {
-  private final AiTextFacade ai;
+  private final AiVisionFacade ai;
   /** 提示词包门面：读取骨架配图规范。 */
   private final PromptPackFacade promptPacks;
 
@@ -83,7 +83,7 @@ public class ArticleSkeletonBuilder {
         user.put("themeContext", themeContext.trim());
       }
       user.put("references", payloadRefs);
-      TextCompleteResult result = ai.completeText(TextCompleteRequest.builder()
+      VisionCompleteResult result = ai.complete(VisionCompleteRequest.builder()
           .scene(ModelCallScenes.HOT_NEWS_ARTICLE_SKELETON)
           .systemPrompt(systemPrompt)
           .prompt(JSONUtil.toJsonStr(user))

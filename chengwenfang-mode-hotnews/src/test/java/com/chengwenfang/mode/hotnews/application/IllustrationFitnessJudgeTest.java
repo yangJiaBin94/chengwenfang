@@ -6,9 +6,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.chengwenfang.ai.facade.AiTextFacade;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
-import com.chengwenfang.ai.facade.dto.view.TextCompleteResult;
+import com.chengwenfang.ai.facade.AiVisionFacade;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
+import com.chengwenfang.ai.facade.dto.view.VisionCompleteResult;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -19,7 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class IllustrationFitnessJudgeTest {
 
   @Mock
-  private AiTextFacade ai;
+  private AiVisionFacade ai;
 
   @Test
   void same_prompt_reuses_image_without_ai() {
@@ -52,7 +52,7 @@ class IllustrationFitnessJudgeTest {
     assertThat(result.getReport().getReusedCount()).isEqualTo(1);
     assertThat(result.getReport().getRegenRequiredCount()).isZero();
     assertThat(result.getDraft()).contains("![](/api/images/img-cover)");
-    verify(ai, never()).completeText(any(TextCompleteRequest.class));
+    verify(ai, never()).complete(any(VisionCompleteRequest.class));
   }
 
   @Test
@@ -87,7 +87,7 @@ class IllustrationFitnessJudgeTest {
     assertThat(result.getReport().getReusedCount()).isEqualTo(1);
     assertThat(result.getDraft()).contains("![](/api/images/img-b)");
     assertThat(result.getDraft()).doesNotContain("![](/api/images/img-a)");
-    verify(ai, never()).completeText(any(TextCompleteRequest.class));
+    verify(ai, never()).complete(any(VisionCompleteRequest.class));
   }
 
   @Test
@@ -110,8 +110,8 @@ class IllustrationFitnessJudgeTest {
 
         ![](/api/images/img-cover)
         """;
-    when(ai.completeText(any(TextCompleteRequest.class)))
-        .thenReturn(TextCompleteResult.builder()
+    when(ai.complete(any(VisionCompleteRequest.class)))
+        .thenReturn(VisionCompleteResult.builder()
             .text("""
                 {"slots":[{"key":"cover","decision":"regenerate","reason":"封面冲突变了"}]}
                 """)

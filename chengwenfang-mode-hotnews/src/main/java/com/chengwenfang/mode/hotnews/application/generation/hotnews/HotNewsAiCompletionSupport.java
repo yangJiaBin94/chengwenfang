@@ -1,8 +1,8 @@
 package com.chengwenfang.mode.hotnews.application.generation.hotnews;
 
 import cn.hutool.core.util.StrUtil;
-import com.chengwenfang.ai.facade.AiTextFacade;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
+import com.chengwenfang.ai.facade.AiVisionFacade;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
 import com.chengwenfang.prompt.facade.PromptPackFacade;
 import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
 import java.util.List;
@@ -10,15 +10,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
- * 热点文本节点共用：组合 提示词包 + WritingRules 并调用文本模型。
+ * 热点补全节点共用：组合提示词包并调用多模态补全。
  */
 @Component
 @RequiredArgsConstructor
-public class HotNewsTextCompletionSupport {
+public class HotNewsAiCompletionSupport {
   /** 提示词包 组合。 */
   private final PromptPackFacade promptPacks;
-  /** 文本 AI。 */
-  private final AiTextFacade ai;
+  /** 多模态补全门面。 */
+  private final AiVisionFacade ai;
 
   /**
    * 组合绑定提示词包 正文。
@@ -31,7 +31,7 @@ public class HotNewsTextCompletionSupport {
   }
 
   /**
-   * 调用文本补全。
+   * 调用多模态补全。
    *
    * @param systemPrompt 系统提示
    * @param userPrompt   用户提示
@@ -39,7 +39,7 @@ public class HotNewsTextCompletionSupport {
    * @return 非空正文
    */
   public String complete(String systemPrompt, String userPrompt, String scene) {
-    var result = ai.completeText(TextCompleteRequest.builder()
+    var result = ai.complete(VisionCompleteRequest.builder()
         .scene(scene)
         .systemPrompt(systemPrompt)
         .prompt(userPrompt)

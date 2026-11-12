@@ -1,9 +1,9 @@
 package com.chengwenfang.quality.application.generation;
 
 import cn.hutool.core.util.StrUtil;
-import com.chengwenfang.ai.facade.AiTextFacade;
+import com.chengwenfang.ai.facade.AiVisionFacade;
 import com.chengwenfang.ai.facade.constant.ModelCallScenes;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
 import com.chengwenfang.job.domain.entity.JobEntity;
 import com.chengwenfang.job.facade.JobExecutionContext;
 import com.chengwenfang.job.facade.dto.job.HotArticleReviewRepairJobInput;
@@ -25,13 +25,13 @@ import org.springframework.stereotype.Service;
 public class HotArticleReviewRepairPipeline {
   /** 热点资讯门面。 */
   private final HotNewsFacade hotNews;
-  /** 文本 AI。 */
-  private final AiTextFacade ai;
+  /** 多模态补全门面。 */
+  private final AiVisionFacade ai;
   /** 热点审稿门面。 */
   private final HotArticleReviewFacade hotArticleReviews;
 
   /**
-   * 热点文章审核修复：调用文本 AI 生成修复稿；失败或空结果时任务失败。
+   * 热点文章审核修复：调用多模态 AI 生成修复稿；失败或空结果时任务失败。
    *
    * @param job     任务实体
    * @param context 执行上下文
@@ -98,7 +98,7 @@ public class HotArticleReviewRepairPipeline {
   private String requireAiText(String prompt, String scene) {
     String text;
     try {
-      var result = ai.completeText(new TextCompleteRequest(prompt, scene));
+      var result = ai.complete(new VisionCompleteRequest(prompt, scene));
       text = result == null ? null : result.getText();
     } catch (RuntimeException exception) {
       throw new IllegalStateException("文本生成失败，scene=" + scene + "：" + exception.getMessage(), exception);

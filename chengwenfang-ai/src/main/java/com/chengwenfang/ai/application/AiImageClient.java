@@ -164,17 +164,17 @@ public class AiImageClient {
   /**
    * 解析单次上游调用超时秒数：以 application.yml 为准。
    *
-   * @param kind 文本 / 图像生成 / 多模态
+   * @param kind 图像生成 / 多模态 / 嵌入
    * @return 超时秒数，至少为 1
    */
   private int resolveTimeoutSeconds(AiProviderKind kind) {
     int configured;
     if (kind == AiProviderKind.IMAGE) {
       configured = properties.getAiImageTimeoutSeconds();
-    } else if (kind == AiProviderKind.VISION) {
-      configured = properties.getAiVisionTimeoutSeconds();
+    } else if (kind == AiProviderKind.EMBEDDING) {
+      configured = properties.getAiEmbeddingTimeoutSeconds();
     } else {
-      configured = properties.getAiTextTimeoutSeconds();
+      configured = properties.getAiVisionTimeoutSeconds();
     }
     return Math.max(1, configured);
   }

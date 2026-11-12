@@ -2,8 +2,8 @@ package com.chengwenfang.mode.course.application.course;
 
 import com.chengwenfang.mode.course.application.prompt.CoursePrompts;
 
-import com.chengwenfang.ai.facade.AiTextFacade;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
+import com.chengwenfang.ai.facade.AiVisionFacade;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
 import com.chengwenfang.prompt.facade.PromptPackFacade;
 import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
 import java.util.ArrayList;
@@ -25,15 +25,15 @@ public class WechatChunkConverter {
   private static final int TEXT_MIN_TIMEOUT_SECONDS = 180;
 
   /** 文本补全门面。 */
-  private final AiTextFacade ai;
+  private final AiVisionFacade ai;
   /** 提示词包 提示词组合。 */
   private final PromptPackFacade promptPacks;
 
   /**
-   * @param ai     文本 AI
+   * @param ai     多模态补全门面
    * @param promptPacks 提示词包门面
    */
-  public WechatChunkConverter(AiTextFacade ai, PromptPackFacade promptPacks) {
+  public WechatChunkConverter(AiVisionFacade ai, PromptPackFacade promptPacks) {
     this.ai = ai;
     this.promptPacks = promptPacks;
   }
@@ -120,7 +120,7 @@ public class WechatChunkConverter {
 
   private String complete(String promptPackText, String userPrompt, String scene) {
     String systemPrompt = CoursePrompts.systemPrompt(promptPackText);
-    var result = ai.completeText(TextCompleteRequest.builder()
+    var result = ai.complete(VisionCompleteRequest.builder()
         .prompt(userPrompt.strip())
         .systemPrompt(systemPrompt)
         .scene(scene)

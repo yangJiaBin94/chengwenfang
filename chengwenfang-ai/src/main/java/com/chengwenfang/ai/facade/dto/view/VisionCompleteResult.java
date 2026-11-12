@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 多模态看图补全结果。
+ * 多模态补全结果。
  */
 @Data
 @Builder

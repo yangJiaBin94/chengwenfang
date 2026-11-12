@@ -11,10 +11,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AiSettingsUpdateRequest {
-  /** 文本侧配置补丁。 */
-  private ProviderConfigPatch text;
   /** 图像生成侧配置补丁。 */
   private ProviderConfigPatch image;
-  /** 多模态看图侧配置补丁。 */
+  /** 多模态补全侧配置补丁。 */
   private ProviderConfigPatch vision;
+  /** 文本嵌入侧配置补丁。 */
+  private ProviderConfigPatch embedding;
 }

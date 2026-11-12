@@ -16,8 +16,8 @@ Source freeze commit: `backup/main-20260907-before-java-rewrite` (`f04f797`).
 
 - `GET /api/settings/ai`
 - `PUT /api/settings/ai`
-- `POST /api/settings/ai/{kind}/test` (`kind` = `text` | `image`)
-- `POST /api/ai/text`
+- `POST /api/settings/ai/{kind}/test` (`kind` = `image` | `vision` | `embedding`)
+- `POST /api/ai/vision`（多模态补全，图片可选）
 - `POST /api/ai/image`
 
 API keys: responses never return plaintext; empty key on PUT keeps stored value.

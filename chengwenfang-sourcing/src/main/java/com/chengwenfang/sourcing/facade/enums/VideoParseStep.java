@@ -25,7 +25,7 @@ public enum VideoParseStep {
   EXTRACT_FRAMES("extract_frames", "提取关键帧"),
   /** 多模态画面总结。 */
   VISION_SUMMARIZE("vision_summarize", "画面理解"),
-  /** 文本 AI 总结要点（语音链路）。 */
+  /** 多模态 AI 总结要点（语音链路）。 */
   SUMMARIZE("summarize", "总结内容");
 
   private final String value;

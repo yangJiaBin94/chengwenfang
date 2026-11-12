@@ -78,8 +78,8 @@ public class CourseAuditEngine {
     private final String detail;
     /** 状态（pass/warn/fail）。 */
     private final String status;
-    /** 是否可由文本 AI 修复。 */
-    private final boolean fixableByTextAi;
+    /** 是否可由 AI 修复。 */
+    private final boolean fixableByAi;
     /** 问题位置。 */
     private final String location;
     /** 修复建议。 */
@@ -90,7 +90,7 @@ public class CourseAuditEngine {
      * @param title           标题
      * @param detail          详情
      * @param status          状态
-     * @param fixableByTextAi 是否可由文本 AI 修复
+     * @param fixableByAi 是否可由 AI 修复
      * @param location        问题位置
      * @param suggestion      修复建议
      */
@@ -99,14 +99,14 @@ public class CourseAuditEngine {
         String title,
         String detail,
         String status,
-        boolean fixableByTextAi,
+        boolean fixableByAi,
         String location,
         String suggestion) {
       this.code = code;
       this.title = title;
       this.detail = detail;
       this.status = status;
-      this.fixableByTextAi = fixableByTextAi;
+      this.fixableByAi = fixableByAi;
       this.location = location;
       this.suggestion = suggestion;
     }
@@ -341,7 +341,7 @@ public class CourseAuditEngine {
           m.put("severity", item.status());
           m.put("message", item.detail());
           m.put("blocking", item.blocking());
-          m.put("fixableByTextAi", item.fixableByTextAi());
+          m.put("fixableByAi", item.fixableByAi());
           m.put("location", item.location());
           m.put("suggestion", item.suggestion());
           return m;
@@ -360,7 +360,7 @@ public class CourseAuditEngine {
       m.put("title", item.title());
       m.put("detail", item.detail());
       m.put("status", item.status());
-      m.put("fixableByTextAi", item.fixableByTextAi());
+      m.put("fixableByAi", item.fixableByAi());
       m.put("location", item.location());
       m.put("suggestion", item.suggestion());
       m.put("blocking", item.blocking());

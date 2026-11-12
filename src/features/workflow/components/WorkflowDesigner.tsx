@@ -357,7 +357,7 @@ export function WorkflowDesigner({
                     <dt>模型类型</dt>
                     <dd>
                       {selectedType.modelType === "text"
-                        ? "文本 AI"
+                        ? "多模态补全"
                         : selectedType.modelType === "image"
                           ? "图片 AI"
                           : "确定性代码"}

@@ -48,6 +48,7 @@
     <module>chengwenfang-notification</module>
     <module>chengwenfang-publishing</module>
     <module>chengwenfang-mode-course</module>
+    <module>chengwenfang-knowledge</module>
     <module>chengwenfang-app</module>
   </modules>
 
@@ -151,6 +152,11 @@
       <dependency>
         <groupId>com.chengwenfang</groupId>
         <artifactId>chengwenfang-mode-course</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.chengwenfang</groupId>
+        <artifactId>chengwenfang-knowledge</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

@@ -270,7 +270,7 @@ export function TabContent({
       }
       if (
         !currentAudit.items.some(
-          (item) => item.status !== "pass" && item.fixableByTextAi,
+          (item) => item.status !== "pass" && item.fixableByAi,
         )
       ) {
         setFixAuditSummary({ before: beforeAudit, after: currentAudit });

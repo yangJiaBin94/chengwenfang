@@ -19,7 +19,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
     "com.chengwenfang.notification.infrastructure.mapper",
     "com.chengwenfang.quality.infrastructure.mapper",
     "com.chengwenfang.sourcing.infrastructure.mapper",
-    "com.chengwenfang.mode.course.infrastructure.mapper"
+    "com.chengwenfang.mode.course.infrastructure.mapper",
+    "com.chengwenfang.knowledge.infrastructure.mapper"
 })
 public class ChengwenfangApplication {
   public static void main(String[] args) {

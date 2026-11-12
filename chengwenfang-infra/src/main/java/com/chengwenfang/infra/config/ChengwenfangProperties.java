@@ -45,12 +45,14 @@ public class ChengwenfangProperties {
   private boolean crawlerAllowLoopback = false;
   /** HTML 搜索基址（默认 DuckDuckGo；测试可用 WireMock）。 */
   private String searchBaseUrl = "https://html.duckduckgo.com";
-  /** 文本模型单次调用超时（秒），来自 application.yml，不走库表。 */
-  private int aiTextTimeoutSeconds = 120;
   /** 图像生成模型单次调用超时（秒），来自 application.yml，不走库表。 */
   private int aiImageTimeoutSeconds = 180;
-  /** 多模态看图模型单次调用超时（秒），来自 application.yml，不走库表。 */
+  /** 多模态补全模型单次调用超时（秒），来自 application.yml，不走库表。 */
   private int aiVisionTimeoutSeconds = 180;
+  /** 文本嵌入模型单次调用超时（秒），来自 application.yml，不走库表。 */
+  private int aiEmbeddingTimeoutSeconds = 60;
+  /** 知识库向量库（Qdrant）连接与集合配置。 */
+  private QdrantSettings qdrant = new QdrantSettings();
   /** 线程池相关配置（渠道采集等）。 */
   private ExecutorSettings executor = new ExecutorSettings();
   /** 资料池视频解析（本机 Python CLI）。 */
@@ -108,6 +110,25 @@ public class ChengwenfangProperties {
     private List<String> skipHosts = new ArrayList<>();
     /** 同主机并发上限。 */
     private int perHostConcurrency = 2;
+  }
+
+  /** Qdrant 向量库配置（知识库 RAG）。 */
+  @Data
+  public static class QdrantSettings {
+    /** 为 true 时使用 Qdrant；false 时回退内存向量存储。 */
+    private boolean enabled = true;
+    /** Qdrant 主机名或 IP。 */
+    private String host = "127.0.0.1";
+    /** HTTP REST 端口（管理/健康检查）。 */
+    private int httpPort = 6333;
+    /** gRPC 端口（LangChain4j 嵌入存储客户端）。 */
+    private int grpcPort = 6334;
+    /** 集合名称。 */
+    private String collection = "chengwenfang_knowledge";
+    /** 是否使用 TLS 连接 gRPC。 */
+    private boolean useTls = false;
+    /** 可选 API Key（Qdrant Cloud 等）。 */
+    private String apiKey = "";
   }
 
   /** 微信公众号 API 配置。 */

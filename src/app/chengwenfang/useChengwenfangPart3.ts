@@ -494,7 +494,7 @@ export function useChengwenfangPart3(s: Record<string, any>) {
     (job) => job.status === "pending" || job.status === "running",
   ).length;
   const aiReady = Boolean(
-    aiSettings.text.apiKeyConfigured || aiSettings.text.apiKey.trim(),
+    aiSettings.vision.apiKeyConfigured || aiSettings.vision.apiKey.trim(),
   );
   const recentSuccessArticles = useMemo(() => {
     const byId = new Map<string, JobData>();

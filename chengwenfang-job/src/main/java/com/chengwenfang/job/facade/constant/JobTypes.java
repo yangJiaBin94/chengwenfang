@@ -21,6 +21,10 @@ public final class JobTypes {
   public static final String IMAGE_GENERATION = "image_generation";
   public static final String ARTICLE_REPAIR = "article_repair";
   public static final String THEME_CURRICULUM_GENERATION = "theme_curriculum_generation";
+  /** 单条知识库文档索引。 */
+  public static final String KNOWLEDGE_INDEX_DOCUMENT = "knowledge_index_document";
+  /** 知识库全量/按来源重建索引。 */
+  public static final String KNOWLEDGE_REINDEX_ALL = "knowledge_reindex_all";
 
   public static final Set<String> ALL = Set.of(
       HOT_NEWS_FETCH,
@@ -37,7 +41,9 @@ public final class JobTypes {
       WECHAT_ARTICLE_GENERATION,
       IMAGE_GENERATION,
       ARTICLE_REPAIR,
-      THEME_CURRICULUM_GENERATION
+      THEME_CURRICULUM_GENERATION,
+      KNOWLEDGE_INDEX_DOCUMENT,
+      KNOWLEDGE_REINDEX_ALL
   );
 
   private JobTypes() {}

@@ -1,13 +1,13 @@
 package com.chengwenfang.ai.facade.enums;
 
-/** AI 提供商配置 kind：text / image / vision。 */
+/** AI 提供商配置 kind：image / vision / embedding。 */
 public enum AiProviderKind {
-  /** 文本模型。 */
-  TEXT("text"),
   /** 图像生成模型。 */
   IMAGE("image"),
-  /** 多模态看图理解模型。 */
-  VISION("vision");
+  /** 多模态补全模型（可含图）。 */
+  VISION("vision"),
+  /** 文本嵌入模型。 */
+  EMBEDDING("embedding");
 
   private final String value;
 

@@ -3,10 +3,10 @@ package com.chengwenfang.mode.hotnews.application;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.chengwenfang.ai.facade.AiTextFacade;
+import com.chengwenfang.ai.facade.AiVisionFacade;
 import com.chengwenfang.ai.facade.constant.ModelCallScenes;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
-import com.chengwenfang.ai.facade.dto.view.TextCompleteResult;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
+import com.chengwenfang.ai.facade.dto.view.VisionCompleteResult;
 import com.chengwenfang.mode.hotnews.application.prompt.SourceVideoPrompts;
 import com.chengwenfang.mode.hotnews.domain.ChineseTextNormalizer;
 import com.chengwenfang.sourcing.facade.enums.SourceContentIntent;
@@ -21,7 +21,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class SourceVideoContentAssistService {
-  private final AiTextFacade ai;
+  private final AiVisionFacade ai;
 
   /**
    * 将口播或画面摘要整理为事实速览。
@@ -38,7 +38,7 @@ public class SourceVideoContentAssistService {
     }
     String clipped = body.length() > 10000 ? body.substring(0, 10000) : body;
     try {
-      TextCompleteResult result = ai.completeText(TextCompleteRequest.builder()
+      VisionCompleteResult result = ai.complete(VisionCompleteRequest.builder()
           .scene(ModelCallScenes.HOT_NEWS_SOURCE_VIDEO_FACT_BRIEF)
           .systemPrompt(SourceVideoPrompts.FACT_SYSTEM)
           .prompt("标题：" + StrUtil.nullToEmpty(title) + "\n\n材料：\n" + clipped)
@@ -74,7 +74,7 @@ public class SourceVideoContentAssistService {
     }
     String clipped = material.length() > 8000 ? material.substring(0, 8000) : material;
     try {
-      TextCompleteResult result = ai.completeText(TextCompleteRequest.builder()
+      VisionCompleteResult result = ai.complete(VisionCompleteRequest.builder()
           .scene(ModelCallScenes.HOT_NEWS_SOURCE_VIDEO_PROMO_JUDGE)
           .systemPrompt(SourceVideoPrompts.PROMO_SYSTEM)
           .prompt("标题：" + StrUtil.nullToEmpty(title)

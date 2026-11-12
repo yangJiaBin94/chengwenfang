@@ -6,7 +6,6 @@ import {
   ChevronRight,
   Download,
   Eye,
-  FileText,
   Image,
   Search,
   Upload,
@@ -29,8 +28,8 @@ import {
 } from "../api";
 import type { LayoutThemeData } from "../api";
 import {
+  embeddingProtocolOptions,
   imageProtocolOptions,
-  textProtocolOptions,
   visionProtocolOptions,
 } from "../model";
 import type { AiProviderConfig, AiSettings, AiSettingsKind } from "../model";
@@ -84,7 +83,7 @@ export function AiSettingsPage({
     if (initialSection) setSettingsSection(initialSection);
   }, [initialSection]);
   const [draft, setDraft] = useState(settings);
-  const [activeKind, setActiveKind] = useState<AiSettingsKind>("text");
+  const [activeKind, setActiveKind] = useState<AiSettingsKind>("vision");
   const [testState, setTestState] = useState<
     Record<
       AiSettingsKind,
@@ -95,9 +94,9 @@ export function AiSettingsPage({
       }
     >
   >({
-    text: { status: "idle", message: "" },
     image: { status: "idle", message: "" },
     vision: { status: "idle", message: "" },
+    embedding: { status: "idle", message: "" },
   });
   const [saveMessage, setSaveMessage] = useState("");
   const [saving, setSaving] = useState(false);
@@ -253,8 +252,7 @@ export function AiSettingsPage({
               <span className="section-kicker">Provider Configuration</span>
               <h2>AI 供应商配置</h2>
               <p>
-                文本、图片与多模态使用独立供应商。成文坊会根据处理场景自动选择对应
-                AI，不混用配置。
+                写作补全与看图共用多模态供应商；图片生成与向量嵌入各自独立配置。
               </p>
             </div>
             <div className="save-settings-wrap">
@@ -279,10 +277,10 @@ export function AiSettingsPage({
               {(
                 [
                   {
-                    kind: "text" as const,
-                    title: "文本 AI",
-                    hint: "生成 · 审核 · 修复 · 语音总结",
-                    icon: <FileText size={16} />,
+                    kind: "vision" as const,
+                    title: "多模态 AI",
+                    hint: "写作补全 · 审核修复 · 看图理解",
+                    icon: <Eye size={16} />,
                   },
                   {
                     kind: "image" as const,
@@ -291,10 +289,10 @@ export function AiSettingsPage({
                     icon: <Image size={16} />,
                   },
                   {
-                    kind: "vision" as const,
-                    title: "多模态 AI",
-                    hint: "视频画面理解",
-                    icon: <Eye size={16} />,
+                    kind: "embedding" as const,
+                    title: "向量嵌入",
+                    hint: "知识库检索 · RAG",
+                    icon: <Search size={16} />,
                   },
                 ] as const
               ).map((tab) => {
@@ -327,32 +325,32 @@ export function AiSettingsPage({
             <ProviderCard
               kind={activeKind}
               title={
-                activeKind === "text"
-                  ? "文本 AI"
-                  : activeKind === "image"
-                    ? "图片 AI"
+                activeKind === "image"
+                  ? "图片 AI"
+                  : activeKind === "embedding"
+                    ? "向量嵌入"
                     : "多模态 AI"
               }
               badge={
-                activeKind === "text"
-                  ? "文本处理"
-                  : activeKind === "image"
-                    ? "图片处理"
-                    : "看图理解"
+                activeKind === "image"
+                  ? "图片处理"
+                  : activeKind === "embedding"
+                    ? "知识库索引"
+                    : "补全与看图"
               }
               description={
-                activeKind === "text"
-                  ? "课程原稿、公众号文章、AI 审核/修复，以及有口播视频的文本总结"
-                  : activeKind === "image"
-                    ? "课程插图、公众号封面和配套视觉资产"
-                    : "无口播/动画视频的关键帧理解与画面要点总结"
+                activeKind === "image"
+                  ? "课程插图、公众号封面和配套视觉资产"
+                  : activeKind === "embedding"
+                    ? "知识库分块向量化与语义检索，需配置 OpenAI 兼容 Embeddings 模型"
+                    : "课程/热点写作补全、审核修复，以及视频关键帧与网页截图理解"
               }
               config={draft[activeKind]}
               protocols={
-                activeKind === "text"
-                  ? textProtocolOptions
-                  : activeKind === "image"
-                    ? imageProtocolOptions
+                activeKind === "image"
+                  ? imageProtocolOptions
+                  : activeKind === "embedding"
+                    ? embeddingProtocolOptions
                     : visionProtocolOptions
               }
               testing={testing === activeKind}

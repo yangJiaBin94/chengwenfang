@@ -9,7 +9,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/** AI 上游提供方配置（表 {@code ai_provider_configs}），按 kind 区分 text/image。 */
+/** AI 上游提供方配置（表 {@code ai_provider_configs}），按 kind 区分 image/vision/embedding。 */
 @TableName("ai_provider_configs")
 @Data
 @Builder

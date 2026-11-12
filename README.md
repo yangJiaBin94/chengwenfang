@@ -73,7 +73,7 @@
   </a>
 </p>
 
-**设置** — 文本 / 图片 / 多模态 AI 分供应商（Key 已脱敏）。
+**设置** — 多模态 / 图片 / 嵌入 AI 分供应商（Key 已脱敏）。
 
 <p align="center">
   <a href="docs/screenshots/04-settings-ai.png">
@@ -109,7 +109,7 @@
 
 | 部署档 | Docker 命令 | 容器 | 适合 |
 |--------|-------------|------|------|
-| **仅课程（默认）** | `docker compose up -d --wait` | **只有** MySQL + Redis | 课程写作主流程 |
+| **仅课程（默认）** | `docker compose up -d --wait` | MySQL + Redis + Qdrant（6333/6334） | 课程写作主流程 |
 | **热点满血** | `docker compose --profile all up -d --wait` | 再加 SearXNG + Lightpanda | 雷达搜索 / JS 页正文回退；另需 [热点模式](#热点模式可选加装) 的 Python CLI |
 
 Docker Desktop 里若只看到 `mysql` / `redis`，说明走的是「仅课程」档，**不是漏装**。要 SearXNG / Lightpanda：在同一仓库根目录执行上面的 `--profile all`（或 `./scripts/start.sh --all-deps`）。
@@ -121,7 +121,7 @@ Docker Desktop 里若只看到 `mysql` / `redis`，说明走的是「仅课程�
 ```powershell
 # PowerShell · 仓库根目录
 . .\scripts\use-utf8.ps1
-docker compose up -d --wait          # 仅 MySQL + Redis
+docker compose up -d --wait          # MySQL + Redis + Qdrant（知识库向量 6333/6334）
 npm install
 powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap\Initialize-ChengwenfangSeed.ps1
 
@@ -135,7 +135,7 @@ npm run dev:frontend
 
 ```bash
 # 仓库根目录；compose.yml 已固定 name=chengwenfang
-docker compose up -d --wait          # 仅 MySQL + Redis
+docker compose up -d --wait          # MySQL + Redis + Qdrant（知识库向量 6333/6334）
 npm install
 chmod +x scripts/bootstrap/Initialize-ChengwenfangSeed.sh
 ./scripts/bootstrap/Initialize-ChengwenfangSeed.sh

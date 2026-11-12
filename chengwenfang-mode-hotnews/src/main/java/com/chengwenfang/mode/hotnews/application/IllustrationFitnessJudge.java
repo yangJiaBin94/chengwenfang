@@ -4,10 +4,10 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.chengwenfang.ai.facade.AiTextFacade;
+import com.chengwenfang.ai.facade.AiVisionFacade;
 import com.chengwenfang.ai.facade.constant.ModelCallScenes;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
-import com.chengwenfang.ai.facade.dto.view.TextCompleteResult;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
+import com.chengwenfang.ai.facade.dto.view.VisionCompleteResult;
 import com.chengwenfang.common.LlmJsonSupport;
 import com.chengwenfang.mode.hotnews.application.prompt.IllustrationFitnessPrompts;
 import com.chengwenfang.mode.hotnews.domain.HotNewsMarkdownUtil;
@@ -32,8 +32,8 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class IllustrationFitnessJudge {
-  /** 文本 AI。 */
-  private final AiTextFacade ai;
+  /** 多模态补全门面。 */
+  private final AiVisionFacade ai;
 
   /**
    * 对照旧稿/新稿裁定插图，并产出合并后的新稿与报告。
@@ -168,7 +168,7 @@ public class IllustrationFitnessJudge {
     }
     payload.put("slots", slotPayload);
     try {
-      TextCompleteResult result = ai.completeText(TextCompleteRequest.builder()
+      VisionCompleteResult result = ai.complete(VisionCompleteRequest.builder()
           .systemPrompt(IllustrationFitnessPrompts.SYSTEM)
           .prompt(JSONUtil.toJsonStr(payload))
           .scene(ModelCallScenes.HOT_NEWS_ILLUSTRATION_FITNESS)

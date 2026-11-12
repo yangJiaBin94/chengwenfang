@@ -4,10 +4,10 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.chengwenfang.ai.facade.AiTextFacade;
+import com.chengwenfang.ai.facade.AiVisionFacade;
 import com.chengwenfang.ai.facade.constant.ModelCallScenes;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
-import com.chengwenfang.ai.facade.dto.view.TextCompleteResult;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
+import com.chengwenfang.ai.facade.dto.view.VisionCompleteResult;
 import com.chengwenfang.content.facade.dto.request.HotNewsCoreIntentSuggestRequest;
 import com.chengwenfang.content.facade.dto.view.HotNewsCoreIntentSuggestView;
 import com.chengwenfang.content.facade.dto.view.ThemeCoreIntentView;
@@ -36,7 +36,7 @@ public class HotNewsThemeCoreIntentAssistService {
       规则：summary 不超过 80 字；wants/avoids 各 2～6 条短短语；避免空泛「关注新闻」；avoids 须点名百科/机构介绍/纯营销等噪声。
       """;
 
-  private final AiTextFacade ai;
+  private final AiVisionFacade ai;
   private final PromptPackFacade promptPacks;
 
   /**
@@ -74,7 +74,7 @@ public class HotNewsThemeCoreIntentAssistService {
         StrUtil.blankToDefault(description, "无"));
     String systemPrompt = resolveSystemPrompt();
     try {
-      TextCompleteResult result = ai.completeText(TextCompleteRequest.builder()
+      VisionCompleteResult result = ai.complete(VisionCompleteRequest.builder()
           .systemPrompt(systemPrompt)
           .prompt(userPrompt)
           .scene(ModelCallScenes.HOT_NEWS_THEME_CORE_INTENT)

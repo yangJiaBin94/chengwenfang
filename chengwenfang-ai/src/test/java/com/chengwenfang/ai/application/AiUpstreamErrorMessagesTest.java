@@ -11,7 +11,7 @@ class AiUpstreamErrorMessagesTest {
   void humanize_htmlRequestBlocked_returnsShortChinese() {
     String raw =
         """
-        文本补全失败：<!DOCTYPE html>
+        多模态补全失败：<!DOCTYPE html>
         <html lang="en"><head><title>Error - Request Blocked</title></head>
         <body><h1>Request Blocked</h1>
         <a href="https://www.deepseek.com/">Visit the Official DeepSeek Website</a>
@@ -38,7 +38,7 @@ class AiUpstreamErrorMessagesTest {
 
   @Test
   void humanize_shortChinese_passthrough() {
-    assertThat(AiUpstreamErrorMessages.humanize("未配置文本模型 API Key"))
-        .isEqualTo("未配置文本模型 API Key");
+    assertThat(AiUpstreamErrorMessages.humanize("未配置多模态模型 API Key"))
+        .isEqualTo("未配置多模态模型 API Key");
   }
 }

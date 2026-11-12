@@ -549,7 +549,7 @@ export function PromptPackSettingsPanel() {
                   readOnly={viewingSystemPromptPack}
                   onChange={(event) => setPromptPackInstructions(event.target.value)}
                   rows={7}
-                  placeholder="输入文本 AI 在生成文章时需要遵循的规则"
+                  placeholder="输入多模态 AI 在生成文章时需要遵循的规则"
                 />
                 <small>{promptPackInstructions.length} 字</small>
               </label>
@@ -575,7 +575,7 @@ export function PromptPackSettingsPanel() {
   );
 }
 
-/** 当前选中类型的供应商表单（文本 / 图片 / 多模态共用）。 */
+/** 当前选中类型的供应商表单（多模态 / 图片 / 嵌入共用）。 */
 
 export function ProviderCard({
   kind,
@@ -647,10 +647,10 @@ export function ProviderCard({
             value={config.model}
             onChange={(event) => onChange("model", event.target.value)}
             placeholder={
-              kind === "text"
-                ? "例如：gpt-5.4"
-                : kind === "vision"
-                  ? "例如：gpt-4o（需支持看图）"
+              kind === "vision"
+                ? "例如：gpt-4o（写作补全与看图）"
+                : kind === "embedding"
+                  ? "例如：text-embedding-3-small"
                   : "例如：gpt-image-2 / flux / 自定义模型名"
             }
           />
@@ -710,8 +710,8 @@ export function ProviderCard({
           (kind === "image"
             ? "测试会真实生成一张图片，可能产生少量费用。"
             : kind === "vision"
-              ? "测试会发送一张最小图片，模型需支持多模态输入。"
-              : "配置以 API Key 保存，不需要 OAuth。切换上方类型可分别配置三种 AI。")}
+              ? "测试先发短文本；再尝试最小图片。纯文本通过即视为连通，看图失败会在结果里提示。"
+              : "配置以 API Key 保存，不需要 OAuth。切换上方类型可分别配置。")}
       </p>
     </article>
   );

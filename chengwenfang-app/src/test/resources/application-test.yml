@@ -23,6 +23,8 @@ chengwenfang:
   sse-poll-seconds: 0.1
   # 允许爬虫访问环回（WireMock 等）
   crawler-allow-loopback: true
+  qdrant:
+    enabled: false
 
 logging:
   level:

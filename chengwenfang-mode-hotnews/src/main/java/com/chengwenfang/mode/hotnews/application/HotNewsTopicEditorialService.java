@@ -4,10 +4,10 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.DigestUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.chengwenfang.ai.facade.AiTextFacade;
+import com.chengwenfang.ai.facade.AiVisionFacade;
 import com.chengwenfang.ai.facade.constant.ModelCallScenes;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
-import com.chengwenfang.ai.facade.dto.view.TextCompleteResult;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
+import com.chengwenfang.ai.facade.dto.view.VisionCompleteResult;
 import com.chengwenfang.mode.hotnews.application.editorial.TopicEditorialBatchRequest;
 import com.chengwenfang.mode.hotnews.application.prompt.TopicEditorialPrompts;
 import com.chengwenfang.mode.hotnews.application.editorial.TopicEditorialBatchResponse;
@@ -37,7 +37,7 @@ public class HotNewsTopicEditorialService {
   private static final Pattern CHINESE = Pattern.compile("[\\u4e00-\\u9fff]");
   private static final Pattern LATIN = Pattern.compile("[A-Za-z]");
   private final TopicClusterMapper topicMapper;
-  private final AiTextFacade ai;
+  private final AiVisionFacade ai;
 
   /**
    * 对主题下高分可见选题做中文标题/速览提炼；已提炼且源未变则跳过。
@@ -128,7 +128,7 @@ public class HotNewsTopicEditorialService {
             .build())
         .build();
 
-    TextCompleteResult result = ai.completeText(TextCompleteRequest.builder()
+    VisionCompleteResult result = ai.complete(VisionCompleteRequest.builder()
         .scene(ModelCallScenes.HOT_NEWS_TOPIC_TRANSLATION)
         .systemPrompt(TopicEditorialPrompts.SYSTEM_PROMPT)
         .prompt(JSONUtil.toJsonStr(user))

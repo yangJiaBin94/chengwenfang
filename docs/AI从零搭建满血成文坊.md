@@ -36,7 +36,7 @@
 - [ ] 存在 `scripts/article-extract/.venv/Scripts/python.exe`（Windows）且能 `import trafilatura`  
 - [ ] 存在 `scripts/video-transcript/.venv`，且本机 `ffmpeg -version` 可用；venv 内可 `import whisper`  
 - [ ] 存在 `scripts/page-screenshot/.venv`，且已 `playwright install chromium` + `import fitz`（PyMuPDF）；试跑 `-m page_screenshot` 能出 PNG  
-- [ ] 向用户说明：须在前端「设置」配置文本 AI + 多模态 Vision 后，生成/解析/截图摘要才真正可用；成文佐证截屏共用 page-screenshot CLI  
+- [ ] 向用户说明：须在前端「设置」配置多模态 AI（写作补全与看图共用）后，生成/解析/截图摘要才真正可用；成文佐证截屏共用 page-screenshot CLI  
 
 ---
 
@@ -266,7 +266,7 @@ chmod +x scripts/bootstrap/Initialize-ChengwenfangSeed.sh
 AI **不能**代替用户填写真实密钥。完成后请用户：
 
 1. 打开 `http://127.0.0.1:5173` → **设置**  
-   - 配置文本 AI、图像 AI  
+   - 配置多模态 AI、图像 AI  
    - 热点「画面解析」需要多模态（Vision）时一并配置  
    - 使用页面上的连接测试  
 2. **热点资讯 → 来源管理**（若用本地 SearXNG）  

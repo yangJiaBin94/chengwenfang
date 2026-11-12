@@ -198,6 +198,13 @@ describe("parseRoute U01–U20", () => {
     });
   });
 
+  it("/knowledge → knowledge", () => {
+    expect(parseRoute("/knowledge")).toEqual({
+      page: "knowledge",
+      params: {},
+    });
+  });
+
   it("U19 notifications are header-mounted (no URL path)", () => {
     expect(NOTIFICATIONS_PAGE).toBe("notifications");
     // 无独立路由；任意已知路径都不会解析为 notifications

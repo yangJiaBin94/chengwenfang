@@ -542,6 +542,13 @@ export function useChengwenfangPart2(s: Record<string, any>) {
       return;
     }
 
+    if (page === "knowledge") {
+      setRouteCourseId(null);
+      setRouteWorkflowId(null);
+      setActiveNav("knowledge");
+      return;
+    }
+
     if (page === "executions") {
       setRouteCourseId(null);
       setRouteWorkflowId(null);

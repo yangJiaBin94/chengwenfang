@@ -1,9 +1,9 @@
 package com.chengwenfang.mode.hotnews.application.generation;
 
 import cn.hutool.core.util.StrUtil;
-import com.chengwenfang.ai.facade.AiTextFacade;
+import com.chengwenfang.ai.facade.AiVisionFacade;
 import com.chengwenfang.ai.facade.constant.ModelCallScenes;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
 import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.job.domain.entity.JobEntity;
 import com.chengwenfang.job.facade.JobExecutionContext;
@@ -42,13 +42,13 @@ public class HotNewsRewritePipeline {
   private final HotNewsWorkContentService contents;
   /** 选题资料查询。 */
   private final HotNewsResearchService research;
-  /** 文本 AI。 */
-  private final AiTextFacade ai;
+  /** 多模态补全门面。 */
+  private final AiVisionFacade ai;
   /** 插图适配裁定。 */
   private final IllustrationFitnessJudge fitnessJudge;
 
   /**
-   * 执行热点文章改写管道；文本 AI 失败或空结果时任务失败。
+   * 执行热点文章改写管道；多模态 AI 失败或空结果时任务失败。
    *
    * @param job     任务实体
    * @param context 执行上下文
@@ -170,7 +170,7 @@ public class HotNewsRewritePipeline {
   }
 
   /**
-   * 调用文本 AI；失败或空结果抛业务异常。
+   * 调用多模态 AI；失败或空结果抛业务异常。
    *
    * @param prompt 用户提示
    * @param scene  模型场景
@@ -179,7 +179,7 @@ public class HotNewsRewritePipeline {
   private String requireAiText(String prompt, String scene) {
     String text;
     try {
-      var result = ai.completeText(TextCompleteRequest.builder()
+      var result = ai.complete(VisionCompleteRequest.builder()
           .systemPrompt(DraftOptimizeRewritePrompts.SYSTEM)
           .prompt(prompt)
           .scene(scene)

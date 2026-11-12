@@ -5,10 +5,10 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.chengwenfang.ai.facade.AiTextFacade;
+import com.chengwenfang.ai.facade.AiVisionFacade;
 import com.chengwenfang.ai.facade.constant.ModelCallScenes;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
-import com.chengwenfang.ai.facade.dto.view.TextCompleteResult;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
+import com.chengwenfang.ai.facade.dto.view.VisionCompleteResult;
 import com.chengwenfang.crawler.facade.FetchFacade;
 import com.chengwenfang.crawler.facade.MarketingPageFilter;
 import com.chengwenfang.crawler.facade.constant.ChannelFetchDefaults;
@@ -49,7 +49,7 @@ import org.springframework.stereotype.Service;
 public class ResearchSupplementAgent {
 
   /** AI 文本门面。 */
-  private final AiTextFacade ai;
+  private final AiVisionFacade ai;
   /** 搜索渠道采集。 */
   private final ResearchCandidateCollector collector;
   /** 网页抓取。 */
@@ -355,7 +355,7 @@ public class ResearchSupplementAgent {
             "maxQueriesPerRound", HotNewsResearchAgentLimits.MAX_QUERIES_PER_ROUND,
             "maxHits", HotNewsResearchAgentLimits.MAX_HITS,
             "currentHits", hitByUrl.size()));
-    TextCompleteResult result = ai.completeText(TextCompleteRequest.builder()
+    VisionCompleteResult result = ai.complete(VisionCompleteRequest.builder()
         .scene(ModelCallScenes.HOT_NEWS_TOPIC_RESEARCH_AGENT)
         .systemPrompt(ResearchSupplementAgentPrompts.SYSTEM)
         .prompt(JSONUtil.toJsonStr(payload))

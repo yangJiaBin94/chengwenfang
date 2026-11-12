@@ -21,8 +21,8 @@ public class AuditIssueView {
   private String message;
   /** 是否阻断。 */
   private Boolean blocking;
-  /** 是否可由文本 AI 修复。 */
-  private Boolean fixableByTextAi;
+  /** 是否可由 AI 修复。 */
+  private Boolean fixableByAi;
   /** 位置。 */
   private String location;
   /** 建议。 */

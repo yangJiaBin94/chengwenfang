@@ -23,7 +23,8 @@ export type AppPage =
   | "executions"
   | "settings"
   | "recycle-bin"
-  | "notifications";
+  | "notifications"
+  | "knowledge";
 
 /** 设置分区（含旧 key publishing → layoutThemes 归一化后的结果）。 */
 export type SettingsSection = "ai" | "promptPacks" | "layoutThemes" | "wechatMp";
@@ -236,6 +237,10 @@ export function parseRoute(pathname: string, search = ""): ParsedRoute {
 
   if (path === "/recycle-bin") {
     return { page: "recycle-bin", params: {} };
+  }
+
+  if (path === "/knowledge") {
+    return { page: "knowledge", params: {} };
   }
 
   if (path === "/modes/course-system") {

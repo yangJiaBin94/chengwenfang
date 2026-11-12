@@ -8,6 +8,7 @@ import { HotNewsModeShell } from "../features/hotnews/pages/HotNewsModeShell";
 import { AppDialog } from "./appShellUi";
 import { DashboardPage } from "../features/dashboard/pages/DashboardPage";
 import { RecycleBinPage } from "../features/recycle-bin/pages/RecycleBinPage";
+import { KnowledgePage } from "../features/knowledge/pages/KnowledgePage";
 import { AppSidebar } from "./AppSidebar";
 import { useChengwenfangApp } from "./chengwenfang/useChengwenfangApp";
 import { retryFailedJob } from "../shared/api/jobs";
@@ -234,6 +235,8 @@ export function App() {
               <h1>
                 {activeNav === "dashboard" || activeNav === "settings"
                   ? "内容生产台"
+                  : activeNav === "knowledge"
+                    ? "知识库"
                   : activeNav === "hot-news"
                     ? "热点资讯模式"
                     : activeNav === "executions"
@@ -345,6 +348,8 @@ export function App() {
               setThemeDeletedNotice={setThemeDeletedNotice}
               showNotice={showNotice}
             />
+          ) : activeNav === "knowledge" ? (
+            <KnowledgePage navigate={navigate} showNotice={showNotice} />
           ) : activeNav === "executions" ? (
             <ExecutionTrajectoryPage
               jobs={generationJobs}

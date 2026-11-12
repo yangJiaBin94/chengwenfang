@@ -4,9 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import com.chengwenfang.ai.facade.AiTextFacade;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
-import com.chengwenfang.ai.facade.dto.view.TextCompleteResult;
+import com.chengwenfang.ai.facade.AiVisionFacade;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
+import com.chengwenfang.ai.facade.dto.view.VisionCompleteResult;
 import com.chengwenfang.mode.hotnews.application.model.ResearchCandidate;
 import com.chengwenfang.mode.hotnews.application.research.ResearchKeywordPlan;
 import com.chengwenfang.mode.hotnews.facade.enums.ResearchItemKind;
@@ -22,14 +22,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ResearchRelevanceFilterTest {
 
   @Mock
-  private AiTextFacade ai;
+  private AiVisionFacade ai;
 
   @InjectMocks
   private ResearchRelevanceFilter filter;
 
   @Test
   void all_rejected_returns_empty_not_fallback() {
-    when(ai.completeText(any(TextCompleteRequest.class))).thenReturn(TextCompleteResult.builder()
+    when(ai.complete(any(VisionCompleteRequest.class))).thenReturn(VisionCompleteResult.builder()
         .text("""
             {"items":[
               {"id":"0","relevant":false,"reason":"水果"},
@@ -49,7 +49,7 @@ class ResearchRelevanceFilterTest {
 
   @Test
   void empty_parse_fails_open_keeps_all() {
-    when(ai.completeText(any(TextCompleteRequest.class))).thenReturn(TextCompleteResult.builder()
+    when(ai.complete(any(VisionCompleteRequest.class))).thenReturn(VisionCompleteResult.builder()
         .text("不是合法 JSON")
         .build());
 

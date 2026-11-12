@@ -15,7 +15,18 @@ class AiProviderKindTest {
   }
 
   @Test
+  void parsesEmbedding() {
+    assertEquals(AiProviderKind.EMBEDDING, AiProviderKind.from("embedding"));
+    assertEquals("embedding", AiProviderKind.EMBEDDING.getValue());
+  }
+
+  @Test
   void rejectsUnknown() {
     assertThrows(IllegalArgumentException.class, () -> AiProviderKind.from("audio"));
+  }
+
+  @Test
+  void rejectsLegacyTextKind() {
+    assertThrows(IllegalArgumentException.class, () -> AiProviderKind.from("text"));
   }
 }

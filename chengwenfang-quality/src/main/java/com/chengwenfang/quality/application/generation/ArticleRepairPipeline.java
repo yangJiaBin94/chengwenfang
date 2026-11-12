@@ -2,9 +2,9 @@ package com.chengwenfang.quality.application.generation;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
-import com.chengwenfang.ai.facade.AiTextFacade;
+import com.chengwenfang.ai.facade.AiVisionFacade;
 import com.chengwenfang.ai.facade.constant.ModelCallScenes;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
 import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.content.facade.ContentFacade;
 import com.chengwenfang.content.facade.dto.view.ArticleView;
@@ -33,8 +33,8 @@ import org.springframework.stereotype.Service;
 public class ArticleRepairPipeline {
   /** 内容门面。 */
   private final ContentFacade content;
-  /** 文本 AI。 */
-  private final AiTextFacade ai;
+  /** 多模态补全门面。 */
+  private final AiVisionFacade ai;
   /** 规则审计门面。 */
   private final AuditFacade audit;
 
@@ -81,7 +81,7 @@ public class ArticleRepairPipeline {
     step(job, context, "model", 50, "调用模型修复");
     String repaired;
     try {
-      var aiResult = ai.completeText(new TextCompleteRequest(
+      var aiResult = ai.complete(new VisionCompleteRequest(
           "Fix forbidden symbols in this article. Replace // with —— style notes and -> with →.\n\n"
               + beforeContent,
           ModelCallScenes.ARTICLE_REPAIR));

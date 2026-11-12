@@ -177,7 +177,7 @@ export type AuditItemData = {
   detail: string;
   status: "pass" | "warn" | "fail";
   fixable: boolean;
-  fixableByTextAi: boolean;
+  fixableByAi: boolean;
   blocking: boolean;
   location?: string | null;
   suggestion?: string | null;

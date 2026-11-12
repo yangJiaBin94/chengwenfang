@@ -8,9 +8,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.chengwenfang.ai.facade.AiTextFacade;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
-import com.chengwenfang.ai.facade.dto.view.TextCompleteResult;
+import com.chengwenfang.ai.facade.AiVisionFacade;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
+import com.chengwenfang.ai.facade.dto.view.VisionCompleteResult;
 import com.chengwenfang.crawler.facade.ArticleContentFacade;
 import com.chengwenfang.crawler.facade.PageScreenshotFacade;
 import com.chengwenfang.crawler.facade.dto.request.ArticleContentRequest;
@@ -33,7 +33,7 @@ class ResearchArticleEnricherTest {
   @Mock
   private ArticleContentFacade articleContent;
   @Mock
-  private AiTextFacade ai;
+  private AiVisionFacade ai;
   @Mock
   private PageScreenshotFacade pageScreenshot;
   @Mock
@@ -50,7 +50,7 @@ class ResearchArticleEnricherTest {
             .text("11月3日，皇冠新材上市首日高开，截至午前涨幅一度超过250%，发行价16.98元。")
             .source(ArticleContentSource.JINA)
             .build());
-    when(ai.completeText(any(TextCompleteRequest.class))).thenReturn(TextCompleteResult.builder()
+    when(ai.complete(any(VisionCompleteRequest.class))).thenReturn(VisionCompleteResult.builder()
         .text("皇冠新材上市首日大涨，午前涨幅超250%，发行价16.98元。")
         .build());
 
@@ -89,7 +89,7 @@ class ResearchArticleEnricherTest {
     enricher.enrichArticles(List.of(candidate));
 
     assertThat(candidate.getSummary()).isEqualTo("原有搜索摘要仍可用");
-    verify(ai, never()).completeText(any());
+    verify(ai, never()).complete(any());
     verify(pageScreenshot, never()).capture(any());
   }
 
@@ -134,7 +134,7 @@ class ResearchArticleEnricherTest {
             .text("* [财经](http://a.com) * [焦点](http://b.com) * [股票](http://c.com) 以及一堆菜单")
             .source(ArticleContentSource.JINA)
             .build());
-    when(ai.completeText(any(TextCompleteRequest.class))).thenReturn(TextCompleteResult.builder()
+    when(ai.complete(any(VisionCompleteRequest.class))).thenReturn(VisionCompleteResult.builder()
         .text("信息不足，无法形成可靠摘要（正文仅为网站导航链接，除标题外无可核对的具体事实）。")
         .build());
     when(pageScreenshot.capture("https://finance.eastmoney.com/a/x.html")).thenReturn(
@@ -163,7 +163,7 @@ class ResearchArticleEnricherTest {
             .text("某公司发布三季报，营收同比增长12%。")
             .source(ArticleContentSource.TRAFILATURA)
             .build());
-    when(ai.completeText(any(TextCompleteRequest.class))).thenReturn(TextCompleteResult.builder()
+    when(ai.complete(any(VisionCompleteRequest.class))).thenReturn(VisionCompleteResult.builder()
         .text("该公司三季报营收同比增长12%。")
         .build());
 

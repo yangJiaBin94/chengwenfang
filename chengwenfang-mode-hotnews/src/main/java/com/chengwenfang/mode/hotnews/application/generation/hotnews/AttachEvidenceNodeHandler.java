@@ -45,7 +45,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class AttachEvidenceNodeHandler implements HotNewsNodeHandler {
   /** 文本补全。 */
-  private final HotNewsTextCompletionSupport textCompletion;
+  private final HotNewsAiCompletionSupport textCompletion;
   /** 产物复用。 */
   private final HotNewsArtifactReuseSupport artifactReuse;
   /** 网页正文抽取。 */

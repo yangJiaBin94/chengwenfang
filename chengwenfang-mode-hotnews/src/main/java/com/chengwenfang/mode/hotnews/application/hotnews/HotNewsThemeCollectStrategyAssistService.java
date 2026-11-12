@@ -4,10 +4,10 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.chengwenfang.ai.facade.AiTextFacade;
+import com.chengwenfang.ai.facade.AiVisionFacade;
 import com.chengwenfang.ai.facade.constant.ModelCallScenes;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
-import com.chengwenfang.ai.facade.dto.view.TextCompleteResult;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
+import com.chengwenfang.ai.facade.dto.view.VisionCompleteResult;
 import com.chengwenfang.content.facade.dto.request.HotNewsCollectStrategySuggestRequest;
 import com.chengwenfang.content.facade.dto.view.HotNewsCollectStrategySuggestView;
 import com.chengwenfang.content.facade.dto.view.ThemeCollectStrategyView;
@@ -36,7 +36,7 @@ public class HotNewsThemeCollectStrategyAssistService {
       只返回合法 JSON：{"mode":"structured|unstructured","rationale":"不超过60字理由"}
       """;
 
-  private final AiTextFacade ai;
+  private final AiVisionFacade ai;
   private final PromptPackFacade promptPacks;
 
   /**
@@ -76,7 +76,7 @@ public class HotNewsThemeCollectStrategyAssistService {
             ? "无"
             : String.join("、", body.getMaterialAvoids()));
     try {
-      TextCompleteResult result = ai.completeText(TextCompleteRequest.builder()
+      VisionCompleteResult result = ai.complete(VisionCompleteRequest.builder()
           .systemPrompt(resolveSystemPrompt())
           .prompt(userPrompt)
           .scene(ModelCallScenes.HOT_NEWS_THEME_COLLECT_STRATEGY)

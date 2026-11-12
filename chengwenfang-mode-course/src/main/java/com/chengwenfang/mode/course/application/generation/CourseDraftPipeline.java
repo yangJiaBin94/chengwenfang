@@ -1,8 +1,8 @@
 package com.chengwenfang.mode.course.application.generation;
 
 import cn.hutool.core.util.StrUtil;
-import com.chengwenfang.ai.facade.AiTextFacade;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
+import com.chengwenfang.ai.facade.AiVisionFacade;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
 import com.chengwenfang.content.facade.ContentFacade;
 import com.chengwenfang.content.facade.dto.view.ArticleView;
 import com.chengwenfang.content.facade.enums.ArticleKind;
@@ -20,8 +20,8 @@ import org.springframework.stereotype.Service;
 public class CourseDraftPipeline {
   /** 内容门面。 */
   private final ContentFacade content;
-  /** 文本 AI。 */
-  private final AiTextFacade ai;
+  /** 多模态补全门面。 */
+  private final AiVisionFacade ai;
 
   /**
    * 执行课程草稿生成管道。
@@ -72,7 +72,7 @@ public class CourseDraftPipeline {
   private String requireAiText(String prompt, String scene) {
     String text;
     try {
-      var result = ai.completeText(new TextCompleteRequest(prompt, scene));
+      var result = ai.complete(new VisionCompleteRequest(prompt, scene));
       text = result == null ? null : result.getText();
     } catch (RuntimeException exception) {
       throw new IllegalStateException("文本生成失败，scene=" + scene + "：" + exception.getMessage(), exception);

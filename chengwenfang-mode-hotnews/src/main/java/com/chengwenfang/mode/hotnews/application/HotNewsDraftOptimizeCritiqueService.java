@@ -4,10 +4,10 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
-import com.chengwenfang.ai.facade.AiTextFacade;
+import com.chengwenfang.ai.facade.AiVisionFacade;
 import com.chengwenfang.ai.facade.constant.ModelCallScenes;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
-import com.chengwenfang.ai.facade.dto.view.TextCompleteResult;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
+import com.chengwenfang.ai.facade.dto.view.VisionCompleteResult;
 import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.common.LlmJsonSupport;
 import com.chengwenfang.mode.hotnews.application.prompt.DraftOptimizeCritiquePrompts;
@@ -48,8 +48,8 @@ public class HotNewsDraftOptimizeCritiqueService {
   private final HotNewsResearchService research;
   /** JSON 编解码。 */
   private final HotNewsCodec codec;
-  /** 文本 AI。 */
-  private final AiTextFacade ai;
+  /** 多模态补全门面。 */
+  private final AiVisionFacade ai;
 
   /**
    * 对当前原稿做优化诊断并写入 generationSettings.lastOptimizeCritique。
@@ -76,7 +76,7 @@ public class HotNewsDraftOptimizeCritiqueService {
         : research.listArticleReferenceItems(article.getTopicId());
     String userPrompt = buildUserPrompt(draft, notes, skeleton, references);
     try {
-      TextCompleteResult result = ai.completeText(TextCompleteRequest.builder()
+      VisionCompleteResult result = ai.complete(VisionCompleteRequest.builder()
           .systemPrompt(DraftOptimizeCritiquePrompts.SYSTEM)
           .prompt(userPrompt)
           .scene(ModelCallScenes.HOT_NEWS_DRAFT_OPTIMIZE_CRITIQUE)

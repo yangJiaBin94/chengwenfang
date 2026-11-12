@@ -89,11 +89,6 @@ public final class FormalAiWireMock {
   public static void pointProviders(SettingsPutter putter, WireMockServer server) throws Exception {
     String base = server.baseUrl() + "/v1";
     putter.put(Map.of(
-        "text", Map.of(
-            "baseUrl", base,
-            "apiKey", "test-key",
-            "model", "gpt-test",
-            "protocol", "openai_chat"),
         "image", Map.of(
             "baseUrl", base,
             "apiKey", "test-key",
@@ -102,7 +97,7 @@ public final class FormalAiWireMock {
         "vision", Map.of(
             "baseUrl", base,
             "apiKey", "test-key",
-            "model", "gpt-vision-test",
+            "model", "gpt-test",
             "protocol", "openai_chat")));
   }
 

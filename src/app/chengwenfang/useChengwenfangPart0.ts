@@ -345,13 +345,23 @@ export function useChengwenfangPart0() {
           const legacy = window.localStorage.getItem("chengwenfang-ai-settings");
           if (legacy) {
             try {
-              const parsed = JSON.parse(legacy) as Partial<AiSettings>;
+              const parsed = JSON.parse(legacy) as Partial<AiSettings> & {
+                text?: AiSettings["vision"];
+              };
+              const legacyText = parsed.text;
+              // 历史上写作主力是 text：有密钥则覆盖 vision
+              const visionSeed =
+                legacyText && (legacyText.apiKeyConfigured || legacyText.apiKey?.trim())
+                  ? { ...defaultAiSettings.vision, ...parsed.vision, ...legacyText }
+                  : { ...defaultAiSettings.vision, ...parsed.vision };
               const migrated = await saveAiSettingsToDatabase({
                 ...defaultAiSettings,
-                ...parsed,
-                text: { ...defaultAiSettings.text, ...parsed.text },
                 image: { ...defaultAiSettings.image, ...parsed.image },
-                vision: { ...defaultAiSettings.vision, ...parsed.vision },
+                vision: visionSeed,
+                embedding: {
+                  ...defaultAiSettings.embedding,
+                  ...parsed.embedding,
+                },
               });
               window.localStorage.removeItem("chengwenfang-ai-settings");
               if (!cancelled) {

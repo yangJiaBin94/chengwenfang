@@ -5,11 +5,11 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.chengwenfang.ai.facade.AiTextFacade;
+import com.chengwenfang.ai.facade.AiVisionFacade;
 import com.chengwenfang.ai.facade.constant.ModelCallScenes;
 import com.chengwenfang.mode.hotnews.application.prompt.ThemeScoringRubricPrompts;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
-import com.chengwenfang.ai.facade.dto.view.TextCompleteResult;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
+import com.chengwenfang.ai.facade.dto.view.VisionCompleteResult;
 import com.chengwenfang.content.facade.ScoringRubricSupport;
 import com.chengwenfang.content.facade.dto.request.HotNewsScoringRubricSuggestRequest;
 import com.chengwenfang.content.facade.dto.view.HotNewsScoringRubricSuggestView;
@@ -35,8 +35,8 @@ import org.springframework.stereotype.Service;
 public class HotNewsThemeScoringRubricAssistService {
   private static final Pattern KEY_SANITIZE = Pattern.compile("[^a-z0-9_]+");
 
-  /** 文本 AI。 */
-  private final AiTextFacade ai;
+  /** 多模态补全门面。 */
+  private final AiVisionFacade ai;
 
   /**
    * 生成评分量表。
@@ -86,7 +86,7 @@ public class HotNewsThemeScoringRubricAssistService {
         StrUtil.blankToDefault(body.getContentStance(), "无"),
         StrUtil.blankToDefault(body.getOutOfScope(), "无"));
     try {
-      TextCompleteResult result = ai.completeText(TextCompleteRequest.builder()
+      VisionCompleteResult result = ai.complete(VisionCompleteRequest.builder()
           .systemPrompt(ThemeScoringRubricPrompts.SYSTEM_PROMPT)
           .prompt(userPrompt)
           .scene(ModelCallScenes.HOT_NEWS_THEME_SCORING_RUBRIC)

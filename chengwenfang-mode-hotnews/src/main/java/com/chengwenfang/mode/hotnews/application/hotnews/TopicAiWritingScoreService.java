@@ -5,11 +5,11 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.chengwenfang.ai.facade.AiTextFacade;
+import com.chengwenfang.ai.facade.AiVisionFacade;
 import com.chengwenfang.ai.facade.constant.ModelCallScenes;
 import com.chengwenfang.mode.hotnews.application.prompt.TopicWritingScorePrompts;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
-import com.chengwenfang.ai.facade.dto.view.TextCompleteResult;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
+import com.chengwenfang.ai.facade.dto.view.VisionCompleteResult;
 import com.chengwenfang.content.facade.ContentFacade;
 import com.chengwenfang.content.facade.HotNewsThemeBriefingSupport;
 import com.chengwenfang.content.facade.ScoringRubricSupport;
@@ -40,7 +40,7 @@ import org.springframework.stereotype.Service;
 public class TopicAiWritingScoreService {
   private final ContentFacade content;
   private final HotNewsFacade hotNews;
-  private final AiTextFacade ai;
+  private final AiVisionFacade ai;
 
   /**
    * 对本雷达批次选题按主题量表 AI 评分。
@@ -130,7 +130,7 @@ public class TopicAiWritingScoreService {
       ScoringRubricView rubric, String themeContext, HotNewsTopicView topic) {
     List<TopicDimensionScore> snapshot = snapshotDims(rubric);
     try {
-      TextCompleteResult result = ai.completeText(TextCompleteRequest.builder()
+      VisionCompleteResult result = ai.complete(VisionCompleteRequest.builder()
           .systemPrompt(TopicWritingScorePrompts.SYSTEM_PROMPT)
           .prompt(buildUserPrompt(rubric, themeContext, topic))
           .scene(ModelCallScenes.HOT_NEWS_TOPIC_WRITING_SCORE)

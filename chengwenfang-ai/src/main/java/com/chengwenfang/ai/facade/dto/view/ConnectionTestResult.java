@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 public class ConnectionTestResult {
   /** 是否成功。 */
   private boolean ok;
-  /** 探测的 kind：text / image。 */
+  /** 探测的 kind：image / vision / embedding。 */
   private String kind;
   /** 文本侧探测预览。 */
   private String preview;

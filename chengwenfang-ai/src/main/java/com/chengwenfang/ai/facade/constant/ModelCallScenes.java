@@ -102,5 +102,12 @@ public final class ModelCallScenes {
   /** 热点审稿修复。 */
   public static final String HOT_NEWS_REVIEW_REPAIR = "hot_news_review_repair";
 
+  /** 知识库 RAG 对话。 */
+  public static final String KNOWLEDGE_RAG_CHAT = "knowledge_rag_chat";
+  /** 知识库检索 query 改写。 */
+  public static final String KNOWLEDGE_QUERY_REWRITE = "knowledge_query_rewrite";
+  /** 文本嵌入向量。 */
+  public static final String EMBEDDING = "embedding";
+
   private ModelCallScenes() {}
 }

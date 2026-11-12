@@ -1,9 +1,9 @@
 package com.chengwenfang.mode.hotnews.application.generation.radarcollect;
 
 import cn.hutool.core.util.StrUtil;
-import com.chengwenfang.ai.facade.AiTextFacade;
+import com.chengwenfang.ai.facade.AiVisionFacade;
 import com.chengwenfang.ai.facade.constant.ModelCallScenes;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
 import com.chengwenfang.mode.hotnews.application.generation.radarcollect.model.AiThemeSeedAiResult;
 import com.chengwenfang.mode.hotnews.application.generation.radarcollect.model.AiThemeSeedBatchAiResult;
 import com.chengwenfang.mode.hotnews.application.generation.radarcollect.model.ArticlePublishDateAiResult;
@@ -58,8 +58,8 @@ public class RadarCollectAiSupport {
 
   /** 提示词包门面。 */
   private final PromptPackFacade promptPacks;
-  /** 文本 AI。 */
-  private final AiTextFacade ai;
+  /** 多模态补全门面。 */
+  private final AiVisionFacade ai;
 
   /**
    * 生成文章事实速览。
@@ -413,7 +413,7 @@ public class RadarCollectAiSupport {
    */
   private String complete(String systemPrompt, String userPrompt, String scene) {
     try {
-      var result = ai.completeText(TextCompleteRequest.builder()
+      var result = ai.complete(VisionCompleteRequest.builder()
           .scene(scene)
           .systemPrompt(systemPrompt)
           .prompt(userPrompt)

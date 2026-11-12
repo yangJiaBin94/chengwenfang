@@ -2,10 +2,10 @@ package com.chengwenfang.mode.hotnews.application.generation.radarcollect;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
-import com.chengwenfang.ai.facade.AiTextFacade;
+import com.chengwenfang.ai.facade.AiVisionFacade;
 import com.chengwenfang.ai.facade.constant.ModelCallScenes;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
-import com.chengwenfang.ai.facade.dto.view.TextCompleteResult;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
+import com.chengwenfang.ai.facade.dto.view.VisionCompleteResult;
 import com.chengwenfang.common.IdsUtil;
 import com.chengwenfang.common.LlmJsonSupport;
 import com.chengwenfang.common.SearchQueryNormalizer;
@@ -77,7 +77,7 @@ public class PlanSearchRadarNodeHandler implements RadarCollectNodeHandler {
       """;
 
   private final FetchFacade fetchFacade;
-  private final AiTextFacade ai;
+  private final AiVisionFacade ai;
   private final JobFacade jobs;
   /** 热点门面（解析主题真实搜索渠道）。 */
   private final HotNewsFacade hotNews;
@@ -316,7 +316,7 @@ public class PlanSearchRadarNodeHandler implements RadarCollectNodeHandler {
 
   private <T> T completeJson(String system, String user, String scene, Class<T> type) {
     try {
-      TextCompleteResult result = ai.completeText(TextCompleteRequest.builder()
+      VisionCompleteResult result = ai.complete(VisionCompleteRequest.builder()
           .systemPrompt(system)
           .prompt(user)
           .scene(scene)

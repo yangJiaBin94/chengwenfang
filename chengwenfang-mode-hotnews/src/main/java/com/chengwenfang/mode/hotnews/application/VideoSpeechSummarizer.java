@@ -1,10 +1,10 @@
 package com.chengwenfang.mode.hotnews.application;
 
 import cn.hutool.core.util.StrUtil;
-import com.chengwenfang.ai.facade.AiTextFacade;
+import com.chengwenfang.ai.facade.AiVisionFacade;
 import com.chengwenfang.ai.facade.constant.ModelCallScenes;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
-import com.chengwenfang.ai.facade.dto.view.TextCompleteResult;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
+import com.chengwenfang.ai.facade.dto.view.VisionCompleteResult;
 import com.chengwenfang.mode.hotnews.application.prompt.VideoSpeechPrompts;
 import com.chengwenfang.mode.hotnews.domain.ChineseTextNormalizer;
 import com.chengwenfang.mode.hotnews.facade.VideoParseSink;
@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class VideoSpeechSummarizer {
   /** 文本模型门面。 */
-  private final AiTextFacade ai;
+  private final AiVisionFacade ai;
   /** 解析状态落库。 */
   private final VideoTranscriptStore store;
 
@@ -73,7 +73,7 @@ public class VideoSpeechSummarizer {
    */
   public String summarizeSpeech(String rawText, String title) {
     String clipped = rawText.length() > 12000 ? rawText.substring(0, 12000) : rawText;
-    TextCompleteResult result = ai.completeText(TextCompleteRequest.builder()
+    VisionCompleteResult result = ai.complete(VisionCompleteRequest.builder()
         .scene(ModelCallScenes.HOT_NEWS_VIDEO_PARSE_SUMMARIZE)
         .systemPrompt(VideoSpeechPrompts.SUMMARIZE_SYSTEM)
         .prompt("视频标题：" + StrUtil.nullToEmpty(title) + "\n\n原文：\n" + clipped)

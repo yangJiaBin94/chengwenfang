@@ -4,10 +4,10 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.chengwenfang.ai.facade.AiTextFacade;
+import com.chengwenfang.ai.facade.AiVisionFacade;
 import com.chengwenfang.ai.facade.constant.ModelCallScenes;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
-import com.chengwenfang.ai.facade.dto.view.TextCompleteResult;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
+import com.chengwenfang.ai.facade.dto.view.VisionCompleteResult;
 import com.chengwenfang.content.facade.ContentFacade;
 import com.chengwenfang.content.facade.dto.view.ContentThemeView;
 import com.chengwenfang.content.facade.dto.view.CurriculumDraftView;
@@ -30,7 +30,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ThemeCurriculumOrchestrator {
   private final ContentFacade content;
-  private final AiTextFacade ai;
+  private final AiVisionFacade ai;
 
   /**
    * 执行课表生成并写入主题草案。
@@ -88,7 +88,7 @@ public class ThemeCurriculumOrchestrator {
         """;
     String prompt = "主题名称：" + theme.getName() + "\n主题描述：" + theme.getDescription()
         + "\n问卷 JSON：\n" + briefingJson;
-    TextCompleteResult result = ai.completeText(TextCompleteRequest.builder()
+    VisionCompleteResult result = ai.complete(VisionCompleteRequest.builder()
         .prompt(prompt)
         .systemPrompt(system)
         .scene(ModelCallScenes.THEME_CURRICULUM_GENERATION)

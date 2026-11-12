@@ -13,6 +13,8 @@ import com.chengwenfang.content.facade.constant.ContentModeIds;
 import com.chengwenfang.content.facade.constant.OutputFormatCodes;
 import com.chengwenfang.content.facade.constant.OutputTrackKinds;
 import com.chengwenfang.content.facade.dto.WorkOutputRef;
+import com.chengwenfang.content.facade.dto.view.WorkOutputKnowledgeSnapshot;
+import com.chengwenfang.content.facade.event.WorkOutputContentChangedEvent;
 import com.chengwenfang.content.facade.enums.ArticleKind;
 import com.chengwenfang.content.infrastructure.mapper.WorkMapper;
 import com.chengwenfang.content.infrastructure.mapper.WorkOutputMapper;
@@ -20,7 +22,10 @@ import com.chengwenfang.content.infrastructure.mapper.WorkOutputVersionMapper;
 import com.chengwenfang.file.facade.FileFacade;
 import com.chengwenfang.file.facade.dto.view.StoredFileView;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +39,7 @@ public class WorkContentStoreImpl implements WorkContentStore {
   private final WorkOutputVersionMapper versionMapper;
   private final WorkMapper workMapper;
   private final FileFacade files;
+  private final ApplicationEventPublisher eventPublisher;
 
   @Override
   public String readCurrent(String outputId) {
@@ -105,6 +111,16 @@ public class WorkContentStoreImpl implements WorkContentStore {
     output.setVersionToken(token + 1);
     output.setUpdatedAt(now);
     outputMapper.updateById(output);
+      // 主轨正文变更时通知知识库等下游联动
+    if (ChannelCodes.MASTER.equals(output.getChannelCode())) {
+      eventPublisher.publishEvent(WorkOutputContentChangedEvent.builder()
+          .outputId(outputId)
+          .workId(output.getWorkId())
+          .channelCode(output.getChannelCode())
+          .versionNo(nextNo)
+          .contentHash(contentHash)
+          .build());
+    }
     return nextNo;
   }
 
@@ -218,6 +234,96 @@ public class WorkContentStoreImpl implements WorkContentStore {
    * @param workOrOutputId 作品 id 或产出 id
    * @return 产出 id；无法解析时 null
    */
+  /**
+   * 加载主轨产出知识快照。
+   *
+   * @param outputId 产出 ID
+   * @return 快照；不可用则 null
+   */
+  public WorkOutputKnowledgeSnapshot loadMasterKnowledgeSnapshot(String outputId) {
+    if (StrUtil.isBlank(outputId)) {
+      return null;
+    }
+    WorkOutputEntity output = outputMapper.selectById(outputId);
+    if (output == null || !ChannelCodes.MASTER.equals(output.getChannelCode())) {
+      return null;
+    }
+    return buildKnowledgeSnapshot(output);
+  }
+
+  /**
+   * 列出全部有正文的主轨产出快照。
+   *
+   * @return 快照列表
+   */
+  public List<WorkOutputKnowledgeSnapshot> listMasterKnowledgeSnapshots() {
+    List<WorkOutputEntity> outputs = outputMapper.selectList(new LambdaQueryWrapper<WorkOutputEntity>()
+        .eq(WorkOutputEntity::getChannelCode, ChannelCodes.MASTER)
+        .gt(WorkOutputEntity::getCurrentVersionNo, 0));
+    List<WorkOutputKnowledgeSnapshot> snapshots = new ArrayList<>();
+    for (WorkOutputEntity output : outputs) {
+      WorkOutputKnowledgeSnapshot snapshot = buildKnowledgeSnapshot(output);
+      if (snapshot != null) {
+        snapshots.add(snapshot);
+      }
+    }
+    return snapshots;
+  }
+
+  /**
+   * 由产出行组装知识快照（正文非空才返回）。
+   *
+   * @param output 产出实体
+   * @return 快照；正文为空则 null
+   */
+  private WorkOutputKnowledgeSnapshot buildKnowledgeSnapshot(WorkOutputEntity output) {
+    if (output == null) {
+      return null;
+    }
+    int versionNo = output.getCurrentVersionNo() == null ? 0 : output.getCurrentVersionNo();
+    if (versionNo <= 0) {
+      return null;
+    }
+    String content = readCurrent(output.getId());
+    if (StrUtil.isBlank(content)) {
+      return null;
+    }
+    WorkEntity work = workMapper.selectById(output.getWorkId());
+    String modeCode = work == null ? null : work.getModeCode();
+    String themeId = work == null ? null : work.getThemeId();
+    String title = StrUtil.firstNonBlank(output.getTitle(), work == null ? null : work.getTitle());
+    return WorkOutputKnowledgeSnapshot.builder()
+        .outputId(output.getId())
+        .workId(output.getWorkId())
+        .modeCode(modeCode)
+        .themeId(themeId)
+        .title(StrUtil.blankToDefault(title, ""))
+        .channelCode(output.getChannelCode())
+        .currentVersionNo(versionNo)
+        .contentHash(output.getContentHash())
+        .content(content)
+        .deepLink(buildKnowledgeDeepLink(output.getId(), output.getWorkId(), modeCode))
+        .build();
+  }
+
+  /**
+   * 按模式生成前端深链。
+   *
+   * @param outputId 产出 ID
+   * @param workId   作品 ID
+   * @param modeCode 模式 code
+   * @return 路径
+   */
+  private static String buildKnowledgeDeepLink(String outputId, String workId, String modeCode) {
+    if (ContentModeIds.isCourseSystem(modeCode, modeCode) && StrUtil.isNotBlank(workId)) {
+      return "/modes/course-system/courses/" + workId;
+    }
+    if (ContentModeIds.isHotNews(modeCode, modeCode) && StrUtil.isNotBlank(workId)) {
+      return "/modes/hot-news/articles/" + workId;
+    }
+    return "/knowledge?doc=" + outputId;
+  }
+
   public String resolvePublishingOutputId(String workOrOutputId) {
     if (StrUtil.isBlank(workOrOutputId)) {
       return null;

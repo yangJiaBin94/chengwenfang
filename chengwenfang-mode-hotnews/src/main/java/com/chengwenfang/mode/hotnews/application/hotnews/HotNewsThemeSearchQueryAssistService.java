@@ -5,10 +5,10 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.chengwenfang.ai.facade.AiTextFacade;
+import com.chengwenfang.ai.facade.AiVisionFacade;
 import com.chengwenfang.ai.facade.constant.ModelCallScenes;
-import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
-import com.chengwenfang.ai.facade.dto.view.TextCompleteResult;
+import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
+import com.chengwenfang.ai.facade.dto.view.VisionCompleteResult;
 import com.chengwenfang.common.SearchQueryNormalizer;
 import com.chengwenfang.content.facade.dto.request.HotNewsSearchQuerySuggestRequest;
 import com.chengwenfang.content.facade.dto.view.HotNewsSearchQuerySuggestView;
@@ -31,8 +31,8 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class HotNewsThemeSearchQueryAssistService {
-  /** 文本 AI。 */
-  private final AiTextFacade ai;
+  /** 多模态补全门面。 */
+  private final AiVisionFacade ai;
   /** 提示词包门面（读取主题搜索词生成指令）。 */
   private final PromptPackFacade promptPacks;
 
@@ -108,7 +108,7 @@ public class HotNewsThemeSearchQueryAssistService {
       return List.of();
     }
     try {
-      TextCompleteResult result = ai.completeText(TextCompleteRequest.builder()
+      VisionCompleteResult result = ai.complete(VisionCompleteRequest.builder()
           .systemPrompt(systemPrompt)
           .prompt(userPrompt)
           .scene(ModelCallScenes.HOT_NEWS_THEME_SEARCH_QUERIES)
