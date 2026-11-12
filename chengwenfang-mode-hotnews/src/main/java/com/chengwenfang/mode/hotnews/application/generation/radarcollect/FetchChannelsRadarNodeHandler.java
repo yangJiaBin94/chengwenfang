@@ -25,8 +25,8 @@ import com.chengwenfang.sourcing.facade.dto.view.QuerySiteBlockView;
 import com.chengwenfang.sourcing.facade.enums.SourceMediaType;
 import com.chengwenfang.infra.config.ChengwenfangProperties;
 import com.chengwenfang.job.facade.JobFacade;
-import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
-import com.chengwenfang.skill.facade.enums.HotNewsRadarCollectNodeType;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
+import com.chengwenfang.prompt.facade.enums.HotNewsRadarCollectNodeType;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -101,7 +101,7 @@ public class FetchChannelsRadarNodeHandler implements RadarCollectNodeHandler {
   public void execute(
       RadarCollectSessionStore.Session session,
       Map<String, Object> lightState,
-      List<SkillPromptBindingView> skillBindings,
+      List<PromptPackPromptBindingView> promptPackBindings,
       String nodeKey,
       String nodeName) {
     List<ChannelView> channels = hotNews.loadChannels(session.getThemeId(), session.getChannelIds());

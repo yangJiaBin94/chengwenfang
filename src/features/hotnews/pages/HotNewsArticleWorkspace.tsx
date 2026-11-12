@@ -36,8 +36,10 @@ import {
   resolveHotNewsDocumentIdFromLocation,
   runHotNewsAudit,
   submitHotArticleReviewDecision,
+  critiqueHotNewsDraftOptimize,
   saveHotNewsArticleContent,
   startHotNewsArticleGeneration,
+  startHotNewsArticleRewrite,
   updateHotNewsGenerationSettings,
   withDocumentIdQuery,
 } from "../api";
@@ -52,6 +54,7 @@ import type {
   HotNewsAudit,
   HotNewsBrief,
   HotNewsGeneratedImage,
+  HotNewsOptimizeCritique,
   HotNewsPublishingSnapshot,
   HotNewsTopic,
   HotNewsWorkflowNode,
@@ -61,7 +64,10 @@ import {
   HOT_NEWS_DOCUMENT_KIND_WECHAT,
 } from "../model";
 import { PublishingWorkspace } from "../../publishing/components/PublishingWorkspace";
-import { loadJobEventHistory } from "../../../shared/api/jobs";
+import {
+  loadJobEventHistory,
+  waitForBackgroundJob,
+} from "../../../shared/api/jobs";
 import { formatLocaleDateTime } from "../../../shared/format/time";
 import { usePolling } from "../../../shared/hooks/usePolling";
 import {
@@ -146,9 +152,41 @@ export function HotNewsArticleWorkspace({
   const [snapshots, setSnapshots] = useState<HotNewsPublishingSnapshot[]>([]);
   const [selectedSnapshot, setSelectedSnapshot] =
     useState<HotNewsPublishingSnapshot | null>(null);
+  const [optimizeOpen, setOptimizeOpen] = useState(false);
+  const [optimizeCritique, setOptimizeCritique] =
+    useState<HotNewsOptimizeCritique | null>(null);
+  const [optimizeAdvice, setOptimizeAdvice] = useState("");
+  const [optimizeBusy, setOptimizeBusy] = useState(false);
+  const [optimizeRewriting, setOptimizeRewriting] = useState(false);
+  const [optimizeProgressText, setOptimizeProgressText] = useState<string | null>(
+    null,
+  );
+  const [optimizeError, setOptimizeError] = useState<string | null>(null);
   const activeJobIdRef = useRef<string | null>(null);
   /** 跨刷新保留 documentId（含深链 ?documentId= / ?job=） */
   const documentIdRef = useRef<string | null>(null);
+
+  /**
+   * 按指定版本重拉配套图片；versionNo 空则按当前文章版本。
+   *
+   * @param documentId 公众号轨产出 id
+   * @param versionNo 版本号；≤0 或不传则不带 versionNo（全量目录）
+   */
+  async function refreshImages(
+    documentId?: string | null,
+    versionNo?: number | null,
+  ) {
+    const resolvedVersion =
+      versionNo != null && versionNo > 0
+        ? versionNo
+        : null;
+    const imageHistory = await listHotNewsArticleImages(
+      articleId,
+      documentId,
+      resolvedVersion,
+    );
+    setImages(imageHistory);
+  }
 
   async function reload() {
     // 深链首次从 query/job 解析；之后用 ref / 已加载 article
@@ -173,7 +211,11 @@ export function HotNewsArticleWorkspace({
       listHotNewsBriefs(loaded.topicId),
       getHotNewsArticleSkeleton(loaded.topicId).catch(() => null),
       listHotNewsArticleVersions(articleId, loaded.documentId),
-      listHotNewsArticleImages(articleId, loaded.documentId),
+      listHotNewsArticleImages(
+        articleId,
+        loaded.documentId,
+        loaded.currentVersionNo > 0 ? loaded.currentVersionNo : null,
+      ),
       getHotNewsAudit(articleId, loaded.documentId).catch(() => null),
       getHotNewsHumanReview(articleId, loaded.documentId).catch(() => null),
       listHotNewsPublishingSnapshots(articleId, loaded.documentId).catch(() => []),
@@ -197,6 +239,21 @@ export function HotNewsArticleWorkspace({
     setReviewStatus(
       review?.contentHash === loaded.contentHash ? review.status : null,
     );
+    // 回填上次诊断，标题旁可直接「查看优化建议」
+    const stored = loaded.generationSettings?.lastOptimizeCritique;
+    if (stored && typeof stored === "object") {
+      setOptimizeCritique({
+        articleId,
+        overallScore: stored.overallScore,
+        dimensionScores: stored.dimensionScores,
+        issues: stored.issues,
+        editableAdvice: stored.editableAdvice,
+      });
+      setOptimizeAdvice(String(stored.editableAdvice || ""));
+    } else {
+      setOptimizeCritique(null);
+      setOptimizeAdvice("");
+    }
     if (loaded.workflowRunId)
       setNodes(
         await listHotNewsWorkflowNodes(loaded.workflowRunId).catch(() => []),
@@ -382,6 +439,11 @@ export function HotNewsArticleWorkspace({
       setDirty(false);
       setMode("preview");
       setVersions(await listHotNewsArticleVersions(next.id, next.documentId));
+      // 新版本可能仍引用旧图：按新 versionNo 重拉，避免配套图片页停在上一版
+      await refreshImages(
+        next.documentId,
+        next.currentVersionNo > 0 ? next.currentVersionNo : null,
+      );
       setAudit(null);
       setReviewStatus(null);
       showNotice("内容已保存", `已保存为 V${next.currentVersionNo}`);
@@ -504,6 +566,149 @@ export function HotNewsArticleWorkspace({
     setSnapshots((current) => [item, ...current]);
     showNotice("发布快照已生成", "当前文章与主题已经冻结。");
   }
+
+  function openOptimizePanel() {
+    if (!optimizeCritique) {
+      const stored = article?.generationSettings?.lastOptimizeCritique;
+      if (stored && typeof stored === "object") {
+        setOptimizeCritique({
+          articleId,
+          overallScore: stored.overallScore,
+          dimensionScores: stored.dimensionScores,
+          issues: stored.issues,
+          editableAdvice: stored.editableAdvice,
+        });
+        setOptimizeAdvice(String(stored.editableAdvice || ""));
+      }
+    }
+    setOptimizeOpen(true);
+  }
+
+  function mapRewriteProgress(step: string, message?: string): string {
+    const key = String(step || "").toLowerCase();
+    // 与 HotNewsRewritePipeline / 生成图节点 step 名对齐；不用宽泛的 "text"/"fit"
+    if (key === "rewrite" || key.includes("rewrite")) return "优化文本中…";
+    if (key === "illustration_fit" || key.includes("illustration")) return "裁定插图中…";
+    if (key === "save" || key === "completed") return "保存改写稿…";
+    if (
+      key.includes("plan_images")
+      || key.includes("generate_images")
+      || key.includes("validate_images")
+    ) {
+      return "重新生图中…";
+    }
+    if (key.includes("wechat")) {
+      return "生成公众号优化版中…";
+    }
+    const trimmed = String(message || "").trim();
+    return trimmed || "重新生成中…";
+  }
+
+  async function runOptimizeCritique() {
+    // 弹窗内「重新诊断」与标题旁首次生成一致：先关弹窗，进度落在页内按钮
+    setOptimizeOpen(false);
+    setOptimizeBusy(true);
+    setOptimizeError(null);
+    try {
+      const result = await critiqueHotNewsDraftOptimize(articleId);
+      setOptimizeCritique(result);
+      setOptimizeAdvice(result.editableAdvice || "");
+      setArticle((current) =>
+        current
+          ? {
+              ...current,
+              generationSettings: {
+                ...current.generationSettings,
+                lastOptimizeCritique: {
+                  overallScore: result.overallScore,
+                  dimensionScores: result.dimensionScores,
+                  issues: result.issues,
+                  editableAdvice: result.editableAdvice,
+                },
+              },
+            }
+          : current,
+      );
+    } catch (error) {
+      setOptimizeError(
+        error instanceof Error ? error.message : "诊断失败，请稍后重试",
+      );
+      showNotice(
+        "优化建议生成失败",
+        error instanceof Error ? error.message : "请稍后重试",
+      );
+    } finally {
+      setOptimizeBusy(false);
+    }
+  }
+
+  async function runOptimizeRewrite() {
+    if (!optimizeAdvice.trim()) {
+      setOptimizeError("请先填写或生成优化建议");
+      return;
+    }
+    setOptimizeOpen(false);
+    setOptimizeRewriting(true);
+    setOptimizeError(null);
+    setOptimizeProgressText("优化文本中…");
+    try {
+      const job = await startHotNewsArticleRewrite(articleId, {
+        advice: optimizeAdvice.trim(),
+      });
+      const finished = await waitForBackgroundJob(job.id, (event) => {
+        setOptimizeProgressText(mapRewriteProgress(event.step, event.message));
+      });
+      if (finished.status !== "succeeded") {
+        throw new Error(finished.errorMessage || "改写任务失败");
+      }
+      const imagesJobId = String(finished.output?.imagesRegenJobId || "").trim();
+      if (imagesJobId) {
+        setOptimizeProgressText("重新生图中…");
+        await waitForBackgroundJob(imagesJobId, (event) => {
+          setOptimizeProgressText(mapRewriteProgress(event.step, event.message) || "重新生图中…");
+        });
+      }
+      setOptimizeProgressText("生成公众号优化版中…");
+      const wechatJob = await startHotNewsArticleGeneration(articleId, {
+        scope: "wechat",
+        wordCountOption: wordOption,
+        imageCountOption: imageOption,
+        documentId: article?.documentId,
+      });
+      await waitForBackgroundJob(wechatJob.id, (event) => {
+        setOptimizeProgressText(
+          mapRewriteProgress(event.step, event.message) || "生成公众号优化版中…",
+        );
+      });
+      await reload();
+      setDirty(false);
+      setMode("preview");
+      setOptimizeCritique(null);
+      setOptimizeAdvice("");
+      showNotice(
+        "已按建议重新生成",
+        "热点原稿与公众号优化版均已更新。",
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "重新生成失败，请稍后重试";
+      setOptimizeError(message);
+      showNotice("重新生成失败", message);
+    } finally {
+      setOptimizeRewriting(false);
+      setOptimizeProgressText(null);
+    }
+  }
+
+  const optimizeStatus =
+    optimizeRewriting
+      ? "rewriting"
+      : optimizeBusy
+        ? "generating"
+        : optimizeCritique
+          ? "ready"
+          : "idle";
+
   return (
     <HotNewsArticleWorkspaceView
       article={article}
@@ -561,6 +766,30 @@ export function HotNewsArticleWorkspace({
       versions={versions}
       wechat={wechat}
       wordOption={wordOption}
+      optimizeOpen={optimizeOpen}
+      setOptimizeOpen={setOptimizeOpen}
+      openOptimizePanel={openOptimizePanel}
+      optimizeCritique={optimizeCritique}
+      optimizeAdvice={optimizeAdvice}
+      setOptimizeAdvice={setOptimizeAdvice}
+      optimizeBusy={optimizeBusy}
+      optimizeStatus={optimizeStatus}
+      optimizeProgressText={optimizeProgressText}
+      optimizeError={optimizeError}
+      runOptimizeCritique={runOptimizeCritique}
+      runOptimizeRewrite={runOptimizeRewrite}
+      restoreVersion={(item: HotNewsArticleVersion) => {
+        setDraft(item.draftContent || "");
+        setWechat(item.content);
+        setTab(item.draftContent ? "draft" : "article");
+        setMode("edit");
+        setDirty(true);
+        // 预览恢复内容时，配套图片跟该历史版本正文引用走
+        void refreshImages(
+          article?.documentId,
+          item.versionNo > 0 ? item.versionNo : null,
+        ).catch(() => setImages([]));
+      }}
     />
   );
 }

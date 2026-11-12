@@ -6,7 +6,6 @@ import com.chengwenfang.mode.hotnews.facade.dto.request.HotNewsArticleUpdateRequ
 import com.chengwenfang.mode.hotnews.facade.dto.request.HotNewsGenerationSettingsRequest;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsArticleVersionView;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsArticleView;
-import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsRewriteResultView;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -174,18 +173,6 @@ public class HotNewsArticleDocumentService {
   public HotNewsArticleView applyAiRewrite(
       String articleId, String rewrittenDraft, String instruction) {
     return rewrites.applyAiRewrite(articleId, rewrittenDraft, instruction);
-  }
-
-  /**
-   * 基于指令生成改写候选草稿（本地拼接说明）。
-   *
-   * @param articleId   文章主键
-   * @param instruction 改写说明
-   * @return 改写结果视图
-   */
-  @Transactional
-  public HotNewsRewriteResultView createRewriteCandidate(String articleId, String instruction) {
-    return rewrites.createRewriteCandidate(articleId, instruction);
   }
 
   /**

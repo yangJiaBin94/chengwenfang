@@ -1,14 +1,14 @@
 package com.chengwenfang.app.bootstrap;
 
-import com.chengwenfang.skill.facade.BuiltinConfigFacade;
-import com.chengwenfang.skill.facade.dto.view.BuiltinInspectView;
+import com.chengwenfang.prompt.facade.BuiltinConfigFacade;
+import com.chengwenfang.prompt.facade.dto.view.BuiltinInspectView;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
- * 只读查询内置 Skill / 工作流是否就绪，供 HTTP 系统面板使用。
- * <p>仅依赖 {@link BuiltinConfigFacade}，不穿透 skill.application。
+ * 只读查询内置提示词包 / 工作流是否就绪，供 HTTP 系统面板使用。
+ * <p>仅依赖 {@link BuiltinConfigFacade}，不穿透 prompt.application。
  */
 @Component
 @RequiredArgsConstructor
@@ -27,8 +27,8 @@ public class BuiltinReadyQuery {
         .ready(source.isReady())
         .issues(source.getIssues() == null ? List.of() : source.getIssues())
         .bootstrapHint(source.getBootstrapHint())
-        .skillCount(source.getSkillCount())
-        .expectedSkillCount(source.getExpectedSkillCount())
+        .promptPackCount(source.getPromptPackCount())
+        .expectedPromptPackCount(source.getExpectedPromptPackCount())
         .workflowReady(source.isWorkflowReady())
         .build();
   }

@@ -11,7 +11,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @MapperScan({
     "com.chengwenfang.job.infrastructure.mapper",
     "com.chengwenfang.ai.infrastructure.mapper",
-    "com.chengwenfang.skill.infrastructure.mapper",
+    "com.chengwenfang.prompt.infrastructure.mapper",
     "com.chengwenfang.content.infrastructure.mapper",
     "com.chengwenfang.file.infrastructure.mapper",
     "com.chengwenfang.mode.hotnews.infrastructure.mapper",

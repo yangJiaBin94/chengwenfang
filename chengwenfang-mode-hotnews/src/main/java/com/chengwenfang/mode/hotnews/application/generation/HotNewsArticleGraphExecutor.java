@@ -3,10 +3,11 @@ package com.chengwenfang.mode.hotnews.application.generation;
 import com.chengwenfang.mode.hotnews.application.generation.hotnews.HotNewsGraphState;
 import com.chengwenfang.mode.hotnews.application.generation.hotnews.HotNewsGraphStateKeys;
 import com.chengwenfang.mode.hotnews.application.generation.hotnews.HotNewsNodeHandler;
-import com.chengwenfang.skill.facade.constant.WorkflowNodeHandlerOrders;
-import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
-import com.chengwenfang.skill.facade.enums.HotNewsWorkflowNodeType;
-import com.chengwenfang.skill.facade.spi.WorkflowNodeHandler;
+import com.chengwenfang.mode.hotnews.facade.constant.HotNewsGenerationScopes;
+import com.chengwenfang.prompt.facade.constant.WorkflowNodeHandlerOrders;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
+import com.chengwenfang.prompt.facade.enums.HotNewsWorkflowNodeType;
+import com.chengwenfang.prompt.facade.spi.WorkflowNodeHandler;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
@@ -60,7 +61,7 @@ public class HotNewsArticleGraphExecutor implements WorkflowNodeHandler {
    * @param typeKey        节点类型键
    * @param nodeKey        节点实例键
    * @param nodeName       展示名
-   * @param skillBindings  原始 Skill 绑定 Map 列表（工作流快照格式）
+   * @param promptPackBindings  原始 提示词包绑定 Map 列表（工作流快照格式）
    * @param state          图运行状态
    * @param config         节点配置（当前策略未强依赖）
    * @return 状态增量
@@ -70,11 +71,24 @@ public class HotNewsArticleGraphExecutor implements WorkflowNodeHandler {
       String typeKey,
       String nodeKey,
       String nodeName,
-      List<Map<String, Object>> skillBindings,
+      List<Map<String, Object>> promptPackBindings,
       Map<String, Object> state,
       Map<String, Object> config) {
     HotNewsWorkflowNodeType nodeType = HotNewsWorkflowNodeType.from(typeKey)
         .orElseThrow(() -> new IllegalArgumentException("未知热点节点类型：" + typeKey));
+    HotNewsGraphState graphState = HotNewsGraphState.fromMap(state);
+    // scope=images 时跳过成文/审校等节点，避免覆盖已有原稿
+    if (!HotNewsGenerationScopes.shouldExecute(graphState.getScope(), nodeType)) {
+      log.info(
+          "scope={} 跳过热点节点 typeKey={} nodeKey={}",
+          HotNewsGenerationScopes.normalize(graphState.getScope()),
+          typeKey,
+          nodeKey);
+      Map<String, Object> skipped = new LinkedHashMap<>();
+      skipped.put(HotNewsGraphStateKeys.HOT_NEWS_STEP, typeKey);
+      skipped.put(HotNewsGraphStateKeys.SCOPE, HotNewsGenerationScopes.normalize(graphState.getScope()));
+      return skipped;
+    }
     HotNewsNodeHandler handler = handlersByType.get(nodeType);
     if (handler == null) {
       // 未注册处理器的历史节点：仅回写步骤标记，便于扩展时再挂策略
@@ -83,9 +97,8 @@ public class HotNewsArticleGraphExecutor implements WorkflowNodeHandler {
       skipped.put(HotNewsGraphStateKeys.HOT_NEWS_STEP, typeKey);
       return skipped;
     }
-    log.info("热点图节点分发 typeKey={} nodeKey={}", typeKey, nodeKey);
-    HotNewsGraphState graphState = HotNewsGraphState.fromMap(state);
-    List<SkillPromptBindingView> bindings = toPromptBindings(skillBindings);
+    log.info("热点图节点分发 typeKey={} nodeKey={} scope={}", typeKey, nodeKey, graphState.getScope());
+    List<PromptPackPromptBindingView> bindings = toPromptBindings(promptPackBindings);
     // 策略执行并合并状态
     handler.execute(graphState, bindings, nodeKey, nodeName);
     Map<String, Object> output = graphState.toMap();
@@ -94,6 +107,9 @@ public class HotNewsArticleGraphExecutor implements WorkflowNodeHandler {
       output.put(nodeType.getValue(), graphState.getDraft());
     }
     if (nodeType == HotNewsWorkflowNodeType.REVIEW_DRAFT && graphState.getDraft() != null) {
+      output.put(nodeType.getValue(), graphState.getDraft());
+    }
+    if (nodeType == HotNewsWorkflowNodeType.ATTACH_EVIDENCE && graphState.getDraft() != null) {
       output.put(nodeType.getValue(), graphState.getDraft());
     }
     if (nodeType == HotNewsWorkflowNodeType.GENERATE_WECHAT && graphState.getWechat() != null) {
@@ -105,21 +121,21 @@ public class HotNewsArticleGraphExecutor implements WorkflowNodeHandler {
   /**
    * 将快照中的绑定 Map 转为类型化绑定视图。
    *
-   * @param skillBindings 原始绑定列表
+   * @param promptPackBindings 原始绑定列表
    * @return 绑定视图列表
    */
-  private static List<SkillPromptBindingView> toPromptBindings(List<Map<String, Object>> skillBindings) {
-    if (skillBindings == null || skillBindings.isEmpty()) {
+  private static List<PromptPackPromptBindingView> toPromptBindings(List<Map<String, Object>> promptPackBindings) {
+    if (promptPackBindings == null || promptPackBindings.isEmpty()) {
       return List.of();
     }
-    List<SkillPromptBindingView> result = new ArrayList<>();
-    for (Map<String, Object> binding : skillBindings) {
+    List<PromptPackPromptBindingView> result = new ArrayList<>();
+    for (Map<String, Object> binding : promptPackBindings) {
       if (binding == null) {
         continue;
       }
       Object priority = binding.get("priority");
-      result.add(SkillPromptBindingView.builder()
-          .skillId(binding.get("skillId") == null ? null : String.valueOf(binding.get("skillId")))
+      result.add(PromptPackPromptBindingView.builder()
+          .promptPackId(binding.get("promptPackId") == null ? null : String.valueOf(binding.get("promptPackId")))
           .priority(priority instanceof Number number ? number.intValue() : 100)
           .enabled(binding.get("enabled") == null || Boolean.TRUE.equals(binding.get("enabled")))
           .build());

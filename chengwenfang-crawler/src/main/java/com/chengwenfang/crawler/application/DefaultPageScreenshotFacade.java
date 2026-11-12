@@ -37,6 +37,14 @@ public class DefaultPageScreenshotFacade implements PageScreenshotFacade {
    * {@inheritDoc}
    */
   @Override
+  public PageScreenshotResult captureEvidence(String url, String findText) {
+    return client.captureEvidence(url, findText);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
   public void cleanup(List<String> paths) {
     client.cleanup(paths);
   }

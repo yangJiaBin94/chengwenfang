@@ -26,8 +26,8 @@ public final class HotNewsGraphStateKeys {
   public static final String SKELETON_JSON = "skeletonJson";
   /** 参考资料 JSON。 */
   public static final String REFERENCES_JSON = "referencesJson";
-  /** Skill 快照摘要。 */
-  public static final String SKILL_SNAPSHOT_SUMMARY = "skillSnapshotSummary";
+  /** 提示词包 快照摘要。 */
+  public static final String PROMPT_PACK_SNAPSHOT_SUMMARY = "promptPackSnapshotSummary";
   /** 事实包 JSON。 */
   public static final String FACTS_JSON = "factsJson";
   /** 文章定位说明。 */
@@ -62,4 +62,6 @@ public final class HotNewsGraphStateKeys {
   public static final String COMMITTED = "committed";
   /** 当前热点步骤 typeKey。 */
   public static final String HOT_NEWS_STEP = "hotNewsStep";
+  /** 生成范围（full / images 等）。 */
+  public static final String SCOPE = "scope";
 }

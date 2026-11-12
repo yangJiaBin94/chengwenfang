@@ -42,8 +42,8 @@ public class HotNewsGraphState {
   private String skeletonJson;
   /** 参考资料 JSON（供 prompt）。 */
   private String referencesJson;
-  /** Skill 快照摘要。 */
-  private String skillSnapshotSummary;
+  /** 提示词包 快照摘要。 */
+  private String promptPackSnapshotSummary;
   /** 事实包 JSON。 */
   private String factsJson;
   /** 文章定位说明。 */
@@ -56,6 +56,8 @@ public class HotNewsGraphState {
   private String wordCountOption;
   /** 插图档。 */
   private String imageCountOption;
+  /** 生成范围（full / images 等）。 */
+  private String scope;
   /** 原稿。 */
   private String draft;
   /** 公众号正文。 */
@@ -99,13 +101,14 @@ public class HotNewsGraphState {
     state.skeleton = resolveSkeleton(
         source.get(HotNewsGraphStateKeys.SKELETON), state.skeletonJson);
     state.referencesJson = Convert.toStr(source.get(HotNewsGraphStateKeys.REFERENCES_JSON), "");
-    state.skillSnapshotSummary = Convert.toStr(source.get(HotNewsGraphStateKeys.SKILL_SNAPSHOT_SUMMARY), "");
+    state.promptPackSnapshotSummary = Convert.toStr(source.get(HotNewsGraphStateKeys.PROMPT_PACK_SNAPSHOT_SUMMARY), "");
     state.factsJson = Convert.toStr(source.get(HotNewsGraphStateKeys.FACTS_JSON), "");
     state.positioning = Convert.toStr(source.get(HotNewsGraphStateKeys.POSITIONING), "");
     state.draftPlan = Convert.toStr(source.get(HotNewsGraphStateKeys.DRAFT_PLAN), "");
     state.imagePlan = Convert.toStr(source.get(HotNewsGraphStateKeys.IMAGE_PLAN), "");
     state.wordCountOption = Convert.toStr(source.get(HotNewsGraphStateKeys.WORD_COUNT_OPTION), "");
     state.imageCountOption = Convert.toStr(source.get(HotNewsGraphStateKeys.IMAGE_COUNT_OPTION), "");
+    state.scope = Convert.toStr(source.get(HotNewsGraphStateKeys.SCOPE), "");
     state.draft = Convert.toStr(source.get(HotNewsGraphStateKeys.DRAFT), "");
     state.wechat = Convert.toStr(source.get(HotNewsGraphStateKeys.WECHAT), "");
     if (source.get(HotNewsGraphStateKeys.REVIEW_PASSED) instanceof Boolean reviewFlag) {
@@ -167,13 +170,14 @@ public class HotNewsGraphState {
     }
     putIfPresent(output, HotNewsGraphStateKeys.SKELETON_JSON, skeletonJson);
     putIfPresent(output, HotNewsGraphStateKeys.REFERENCES_JSON, referencesJson);
-    putIfPresent(output, HotNewsGraphStateKeys.SKILL_SNAPSHOT_SUMMARY, skillSnapshotSummary);
+    putIfPresent(output, HotNewsGraphStateKeys.PROMPT_PACK_SNAPSHOT_SUMMARY, promptPackSnapshotSummary);
     putIfPresent(output, HotNewsGraphStateKeys.FACTS_JSON, factsJson);
     putIfPresent(output, HotNewsGraphStateKeys.POSITIONING, positioning);
     putIfPresent(output, HotNewsGraphStateKeys.DRAFT_PLAN, draftPlan);
     putIfPresent(output, HotNewsGraphStateKeys.IMAGE_PLAN, imagePlan);
     putIfPresent(output, HotNewsGraphStateKeys.WORD_COUNT_OPTION, wordCountOption);
     putIfPresent(output, HotNewsGraphStateKeys.IMAGE_COUNT_OPTION, imageCountOption);
+    putIfPresent(output, HotNewsGraphStateKeys.SCOPE, scope);
     putIfPresent(output, HotNewsGraphStateKeys.DRAFT, draft);
     putIfPresent(output, HotNewsGraphStateKeys.WECHAT, wechat);
     if (reviewPassed != null) {

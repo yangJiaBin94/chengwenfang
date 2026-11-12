@@ -40,7 +40,7 @@ Maven 模块按业务域切分；**模块内**统一 `facade / application / dom
 | 内容核心 | `chengwenfang-publishing` | 排版主题、渲染、渠道账号、`ChannelPublisher` / `OutputRenderer` |
 | 内容核心 | `chengwenfang-sourcing` | 信源频道、抓取运行、条目、拉黑、视频转写表 |
 | 平台 | `chengwenfang-notification` | 站内通知、`NotificationTargetResolver` SPI |
-| 平台 | `chengwenfang-skill-workflow` | Skill、工作流定义/运行、`WorkflowNodeHandler` 注册表 |
+| 平台 | `chengwenfang-prompt-workflow` | PromptPack（提示词包）、工作流定义/运行、`WorkflowNodeHandler` 注册表 |
 | 平台 | `chengwenfang-file` / `job` / `ai` / `crawler` | 文件正文、任务队列、AI、抓取搜索 |
 | 平台 | `chengwenfang-common` / `infra` | 通用 DTO/异常；配置与存储 |
 

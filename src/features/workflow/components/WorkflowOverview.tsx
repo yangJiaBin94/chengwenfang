@@ -24,8 +24,8 @@ import {
   Workflow,
   X,
 } from "lucide-react";
-import { listSkills } from "../../settings/api";
-import type { Skill } from "../../settings/api";
+import { listPromptPacks } from "../../settings/api";
+import type { PromptPack } from "../../settings/api";
 import {
   createWorkflow,
   listWorkflowRuns,
@@ -71,6 +71,7 @@ import {
   CompactFlow,
   formatDate,
   WorkflowMetric,
+  formatSuccessRate,
 } from "./workflowUi";
 
 export function WorkflowOverview({
@@ -105,16 +106,19 @@ export function WorkflowOverview({
         />
         <WorkflowMetric
           label="成功率"
-          value={`${detail.metrics.successRate}%`}
+          value={formatSuccessRate(detail.metrics.successRate)}
           note="最近 1000 次运行"
         />
       </div>
-      <div className="workflow-overview-grid">
+      <div className="workflow-overview-stack">
         <article className="workflow-panel">
           <header>
             <div>
               <h3>当前发布流程</h3>
-              <p>正式任务严格使用该不可变快照。</p>
+              <p>
+                正式任务严格使用该不可变快照 · 共 {detail.definition.nodes.length}{" "}
+                步
+              </p>
             </div>
             <button className="ghost-button" onClick={() => onTab("designer")}>
               查看流程
@@ -123,8 +127,11 @@ export function WorkflowOverview({
           </header>
           <CompactFlow nodes={detail.definition.nodes} />
         </article>
-        <aside className="workflow-panel workflow-summary-panel">
-          <h3>配置摘要</h3>
+        <aside className="workflow-panel workflow-summary-bar">
+          <div className="workflow-summary-bar-copy">
+            <h3>配置摘要</h3>
+            <p>发布前核对场景、绑定与校验结果。</p>
+          </div>
           <dl>
             <div>
               <dt>业务场景</dt>
@@ -135,10 +142,10 @@ export function WorkflowOverview({
               <dd>R{draft.revision}</dd>
             </div>
             <div>
-              <dt>绑定 Skill</dt>
+              <dt>绑定提示词包</dt>
               <dd>
                 {detail.definition.nodes.reduce(
-                  (total, node) => total + (node.skillBindings?.length ?? 0),
+                  (total, node) => total + (node.promptPackBindings?.length ?? 0),
                   0,
                 )}{" "}
                 项

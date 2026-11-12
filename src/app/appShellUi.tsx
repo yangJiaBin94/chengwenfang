@@ -79,8 +79,8 @@ import {
 } from "../features/hotnews/api";
 import { defaultAiSettings } from "../features/settings/model";
 import type { AiSettings } from "../features/settings/model";
-import { listSkills } from "../features/settings/api";
-import type { Skill } from "../features/settings/api";
+import { listPromptPacks } from "../features/settings/api";
+import type { PromptPack } from "../features/settings/api";
 import { WorkflowPage } from "../features/workflow/pages/WorkflowPage";
 import { NotificationCenter } from "../features/notifications/pages/NotificationCenter";
 import {

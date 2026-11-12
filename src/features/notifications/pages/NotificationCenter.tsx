@@ -41,6 +41,30 @@ function resolveJobType(metadata: Record<string, unknown> | undefined): string {
   return metadata?.jobType != null ? String(metadata.jobType).trim() : "";
 }
 
+/**
+ * 详情弹窗标题：去掉尾部重复的任务名，只保留事件类型（如「热点文章生成失败」）。
+ *
+ * @param title 完整通知标题
+ * @param courseTitle 任务/文章名
+ */
+function notificationEventTitle(title: string, courseTitle?: string | null): string {
+  const full = String(title || "").trim();
+  const subject = String(courseTitle || "").trim();
+  if (!full) return "任务通知";
+  if (subject && full.endsWith(subject)) {
+    const stripped = full
+      .slice(0, full.length - subject.length)
+      .replace(/[：:]\s*$/, "")
+      .trim();
+    if (stripped) return stripped;
+  }
+  const sep = full.indexOf("：");
+  if (sep > 0 && subject && full.slice(sep + 1).trim() === subject) {
+    return full.slice(0, sep).trim();
+  }
+  return full;
+}
+
 /** 是否为热点文章相关通知（成文/改写/审核；旧数据看 type 或 articleId）。 */
 function isHotNewsArticleNotification(item: Pick<NotificationData, "type" | "metadata">) {
   if (
@@ -608,7 +632,9 @@ export function NotificationCenter({
                   <AlertTriangle size={17} />
                 </span>
                 <div>
-                  <h3 id="notification-detail-title">{detail.title}</h3>
+                  <h3 id="notification-detail-title">
+                    {notificationEventTitle(detail.title, detail.courseTitle)}
+                  </h3>
                   <small>
                     {formatNotificationRelativeTime(detail.createdAt)} ·{" "}
                     {detail.seriesName || "任务通知"}
@@ -620,18 +646,20 @@ export function NotificationCenter({
               </button>
             </header>
             <div className="notification-detail-content">
-              <strong>失败原因</strong>
-              <p>
-                {toUserFailureMessage(
-                  detail.message || "任务执行失败，暂无更多错误信息。",
-                )}
-              </p>
-              <dl>
-                <div>
-                  <dt>任务</dt>
-                  <dd>{detail.courseTitle || "未命名任务"}</dd>
-                </div>
-              </dl>
+              <section className="notification-detail-block">
+                <strong>{detail.level === "error" ? "失败原因" : "说明"}</strong>
+                <p>
+                  {detail.level === "error"
+                    ? toUserFailureMessage(
+                        detail.message || "任务执行失败，暂无更多错误信息。",
+                      )
+                    : detail.message || "暂无更多信息。"}
+                </p>
+              </section>
+              <section className="notification-detail-block">
+                <strong>任务</strong>
+                <p>{detail.courseTitle || detail.title || "未命名任务"}</p>
+              </section>
             </div>
             <footer>
               <button

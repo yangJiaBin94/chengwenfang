@@ -1,14 +1,14 @@
 package com.chengwenfang.app.adapter.web.hotnews;
 
 import com.chengwenfang.job.facade.dto.job.HotNewsFetchJobInput;
-import com.chengwenfang.skill.facade.WorkflowFacade;
-import com.chengwenfang.skill.facade.enums.WorkflowFeatureBinding;
+import com.chengwenfang.prompt.facade.WorkflowFacade;
+import com.chengwenfang.prompt.facade.enums.WorkflowFeatureBinding;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-/** 雷达采集入参补全：按功能绑定反查已启用工作流与 Skill 快照。 */
+/** 雷达采集入参补全：按功能绑定反查已启用工作流与 提示词包 快照。 */
 @Component
 @RequiredArgsConstructor
 public class HotNewsFetchInputEnricher {
@@ -16,7 +16,7 @@ public class HotNewsFetchInputEnricher {
   private final WorkflowFacade workflows;
 
   /**
-   * 为采集任务补全 workflowId / skillSnapshot。
+   * 为采集任务补全 workflowId / promptPackSnapshot。
    *
    * @param themeId    主题 ID
    * @param channelIds 渠道 ID
@@ -34,9 +34,9 @@ public class HotNewsFetchInputEnricher {
     if (published.getPublishedVersionId() != null) {
       input.put("workflowVersionId", published.getPublishedVersionId());
     }
-    List<Map<String, Object>> skillSnapshot = workflows.skillSnapshotForWorkflow(published.getId());
-    if (!skillSnapshot.isEmpty()) {
-      input.put("skillSnapshot", skillSnapshot);
+    List<Map<String, Object>> promptPackSnapshot = workflows.promptPackSnapshotForWorkflow(published.getId());
+    if (!promptPackSnapshot.isEmpty()) {
+      input.put("promptPackSnapshot", promptPackSnapshot);
     }
     return input;
   }

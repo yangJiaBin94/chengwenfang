@@ -2,7 +2,7 @@
   "priority": 20,
   "matchAny": [
     "拟定「文章骨架」",
-    "配图规范 Skill"
+    "配图规范 提示词包"
   ],
   "parser": "skeleton",
   "content": {

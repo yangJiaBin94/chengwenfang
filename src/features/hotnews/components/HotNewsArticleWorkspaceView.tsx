@@ -28,7 +28,6 @@ import {
   getHotNewsAudit,
   getHotNewsHumanReview,
   getHotNewsTopic,
-  listHotNewsArticleImages,
   listHotNewsArticleGenerationRuns,
   listHotNewsArticleVersions,
   listHotNewsBriefs,
@@ -69,6 +68,7 @@ import {
   WorkspaceBriefBlock,
   SkeletonModal,
   ContentPanel,
+  OptimizeCritiqueModal,
   ReviewPanel,
   VersionModal,
   SnapshotModal,
@@ -142,6 +142,19 @@ export function HotNewsArticleWorkspaceView(props: Record<string, any>) {
     versions,
     wechat,
     wordOption,
+    optimizeOpen,
+    setOptimizeOpen,
+    openOptimizePanel,
+    optimizeCritique,
+    optimizeAdvice,
+    setOptimizeAdvice,
+    optimizeBusy,
+    optimizeStatus,
+    optimizeProgressText,
+    optimizeError,
+    runOptimizeCritique,
+    runOptimizeRewrite,
+    restoreVersion,
   } = props;
   return (
     <main className="page-shell hot-article-workspace">
@@ -311,8 +324,34 @@ export function HotNewsArticleWorkspaceView(props: Record<string, any>) {
               setDirty(false);
               setMode("preview");
             }}
+            optimizeStatus={tab === "draft" ? optimizeStatus : undefined}
+            optimizeProgressText={
+              tab === "draft" ? optimizeProgressText : undefined
+            }
+            onGenerateOptimize={
+              tab === "draft"
+                ? () => void runOptimizeCritique?.()
+                : undefined
+            }
+            onOpenOptimize={
+              tab === "draft"
+                ? () => (openOptimizePanel ? openOptimizePanel() : setOptimizeOpen?.(true))
+                : undefined
+            }
           />
         )}
+        {optimizeOpen ? (
+          <OptimizeCritiqueModal
+            critique={optimizeCritique}
+            advice={optimizeAdvice || ""}
+            busy={Boolean(optimizeBusy)}
+            error={optimizeError}
+            onAdviceChange={(value) => setOptimizeAdvice?.(value)}
+            onCritique={() => void runOptimizeCritique?.()}
+            onRewrite={() => void runOptimizeRewrite?.()}
+            onClose={() => setOptimizeOpen?.(false)}
+          />
+        ) : null}
         {tab === "images" && (
           <div className="image-grid hot-aligned-image-grid">
             {images.length ? (
@@ -327,18 +366,29 @@ export function HotNewsArticleWorkspaceView(props: Record<string, any>) {
                         : `正文插图 ${item.sequenceNo || ""}`
                     }
                   />
-                  <strong>
-                    {item.kind === "cover"
-                      ? "封面图"
-                      : `正文插图 ${item.sequenceNo}`}
-                  </strong>
-                  <small>
-                    AI 生成图 · {item.width} x {item.height} · {item.prompt}
-                  </small>
+                  <div className="image-tile-meta">
+                    <strong>
+                      {item.kind === "cover"
+                        ? "封面图"
+                        : `正文插图 ${item.sequenceNo}`}
+                    </strong>
+                    <small>
+                      AI 生成图 · {item.width} x {item.height}
+                    </small>
+                    {item.prompt ? (
+                      <small className="image-prompt" title={item.prompt}>
+                        {item.prompt}
+                      </small>
+                    ) : null}
+                  </div>
                 </div>
               ))
             ) : (
-              <div className="empty-version">尚未生成配套图片。</div>
+              <div className="empty-version">
+                {/\/api\/images\//.test(`${draft || ""}\n${wechat || ""}`)
+                  ? "当前版本引用的配图暂不可用。"
+                  : "当前版本尚未生成配套图片。"}
+              </div>
             )}
           </div>
         )}
@@ -395,6 +445,10 @@ export function HotNewsArticleWorkspaceView(props: Record<string, any>) {
                     </button>
                     <button
                       onClick={() => {
+                        if (restoreVersion) {
+                          restoreVersion(item);
+                          return;
+                        }
                         setDraft(item.draftContent || "");
                         setWechat(item.content);
                         setTab(item.draftContent ? "draft" : "article");

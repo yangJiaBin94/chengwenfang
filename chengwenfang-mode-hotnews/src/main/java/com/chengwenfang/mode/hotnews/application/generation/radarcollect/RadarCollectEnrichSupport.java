@@ -11,7 +11,7 @@ import com.chengwenfang.mode.hotnews.facade.VideoTranscriptFacade;
 import com.chengwenfang.sourcing.facade.enums.SourceMediaType;
 import com.chengwenfang.sourcing.facade.enums.VideoParseStatus;
 import com.chengwenfang.sourcing.facade.enums.VideoParseStep;
-import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -37,13 +37,13 @@ public class RadarCollectEnrichSupport {
    * 丰富单条候选：打标后的解析与速览；失败则标记 discarded。
    *
    * @param candidate     候选
-   * @param skillBindings 节点 Skill
+   * @param promptPackBindings 节点 提示词包
    * @param allowVideo    是否允许本轮占用视频配额
    * @return true 表示消耗了一次视频配额
    */
   public boolean enrichOne(
       RadarCollectCandidate candidate,
-      List<SkillPromptBindingView> skillBindings,
+      List<PromptPackPromptBindingView> promptPackBindings,
       boolean allowVideo) {
     if (candidate == null || candidate.isDiscarded()) {
       return false;
@@ -54,9 +54,9 @@ public class RadarCollectEnrichSupport {
         discard(candidate, "视频配额未处理");
         return false;
       }
-      return enrichVideo(candidate, skillBindings);
+      return enrichVideo(candidate, promptPackBindings);
     }
-    enrichArticle(candidate, skillBindings);
+    enrichArticle(candidate, promptPackBindings);
     return false;
   }
 
@@ -64,10 +64,10 @@ public class RadarCollectEnrichSupport {
    * 文章：正文瀑布 + 发布日补全 + 事实速览。
    *
    * @param candidate     候选
-   * @param skillBindings Skill
+   * @param promptPackBindings 提示词包
    */
   private void enrichArticle(
-      RadarCollectCandidate candidate, List<SkillPromptBindingView> skillBindings) {
+      RadarCollectCandidate candidate, List<PromptPackPromptBindingView> promptPackBindings) {
     ArticleContentResult content = articleContent.resolve(ArticleContentRequest.builder()
         .url(candidate.getUrl())
         .fallbackSummary(candidate.getFetchSummary())
@@ -98,7 +98,7 @@ public class RadarCollectEnrichSupport {
           candidate.getTitle(),
           candidate.getUrl());
     } else {
-      fillPublishDate(candidate, skillBindings, content);
+      fillPublishDate(candidate, promptPackBindings, content);
     }
     ArticlePublishDateSource dateSource = ArticlePublishDateSource.from(
         candidate.getPublishDateSource());
@@ -111,7 +111,7 @@ public class RadarCollectEnrichSupport {
         dateSource.getLabel(),
         candidate.getTitle(),
         candidate.getUrl());
-    String brief = aiSupport.articleFactBrief(skillBindings, candidate.getTitle(), content.getText());
+    String brief = aiSupport.articleFactBrief(promptPackBindings, candidate.getTitle(), content.getText());
     if (StrUtil.isBlank(brief) || brief.contains("信息不足")) {
       discard(candidate, "文章事实速览失败");
       return;
@@ -123,12 +123,12 @@ public class RadarCollectEnrichSupport {
    * 发布日：Pass1 按来源文本 → AI；Jina 抽空则 Pass2 再爬 HTML；仍空回退 metadata.date。
    *
    * @param candidate     候选
-   * @param skillBindings Skill
+   * @param promptPackBindings 提示词包
    * @param content       正文结果
    */
   private void fillPublishDate(
       RadarCollectCandidate candidate,
-      List<SkillPromptBindingView> skillBindings,
+      List<PromptPackPromptBindingView> promptPackBindings,
       ArticleContentResult content) {
     ArticleContentSource source = content.getSource() == null
         ? ArticleContentSource.NONE
@@ -138,7 +138,7 @@ public class RadarCollectEnrichSupport {
     LocalDateTime published = null;
     if (StrUtil.isNotBlank(dateInput)) {
       published = aiSupport.extractPublishDate(
-          skillBindings, candidate.getTitle(), dateInput);
+          promptPackBindings, candidate.getTitle(), dateInput);
       if (published != null) {
         candidate.setPublishedAt(published);
         applyPublishDateSource(candidate, ArticlePublishDateSource.AI_CONTENT);
@@ -169,7 +169,7 @@ public class RadarCollectEnrichSupport {
       String htmlDateInput = articleContent.fetchRawHtmlDateInputText(candidate.getUrl());
       if (StrUtil.isNotBlank(htmlDateInput)) {
         published = aiSupport.extractPublishDate(
-            skillBindings, candidate.getTitle(), htmlDateInput);
+            promptPackBindings, candidate.getTitle(), htmlDateInput);
         if (published != null) {
           candidate.setPublishedAt(published);
           applyPublishDateSource(candidate, ArticlePublishDateSource.AI_HTML);
@@ -242,7 +242,7 @@ public class RadarCollectEnrichSupport {
   }
 
   private boolean enrichVideo(
-      RadarCollectCandidate candidate, List<SkillPromptBindingView> skillBindings) {
+      RadarCollectCandidate candidate, List<PromptPackPromptBindingView> promptPackBindings) {
     InMemoryVideoSink sink = new InMemoryVideoSink(candidate);
     try {
       videoTranscript.parseSink(sink, VideoParseStep.FETCH_SUBTITLE, (step, msg) -> { });
@@ -260,7 +260,7 @@ public class RadarCollectEnrichSupport {
       return true;
     }
     candidate.setRawText(raw);
-    String brief = aiSupport.videoFactBrief(skillBindings, candidate.getTitle(), raw);
+    String brief = aiSupport.videoFactBrief(promptPackBindings, candidate.getTitle(), raw);
     if (StrUtil.isBlank(brief) || brief.contains("信息不足")) {
       discard(candidate, "视频事实速览失败");
       return true;

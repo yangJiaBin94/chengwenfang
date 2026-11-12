@@ -7,8 +7,8 @@ import cn.hutool.json.JSONUtil;
 import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.mode.hotnews.facade.constant.HotNewsArtifactTypes;
 import com.chengwenfang.mode.hotnews.facade.constant.HotNewsErrorCodes;
-import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
-import com.chengwenfang.skill.facade.enums.HotNewsWorkflowNodeType;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
+import com.chengwenfang.prompt.facade.enums.HotNewsWorkflowNodeType;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +36,7 @@ public class PrepareFactsNodeHandler implements HotNewsNodeHandler {
   @Override
   public void execute(
       HotNewsGraphState state,
-      List<SkillPromptBindingView> skillBindings,
+      List<PromptPackPromptBindingView> promptPackBindings,
       String nodeKey,
       String nodeName) {
     if (StrUtil.isBlank(state.getSkeletonJson())) {
@@ -58,8 +58,8 @@ public class PrepareFactsNodeHandler implements HotNewsNodeHandler {
       state.setFactsJson(reused);
       return;
     }
-    String skillPrompt = textCompletion.composeSkillPrompt(skillBindings);
-    String systemPrompt = HotNewsWritingPrompts.systemPrompt(skillPrompt, state.getThemeContext());
+    String promptPackText = textCompletion.composePromptPackText(promptPackBindings);
+    String systemPrompt = HotNewsWritingPrompts.systemPrompt(promptPackText, state.getThemeContext());
     String userPrompt = """
         根据文章骨架与参考资料，整理「已确认可用事实包」（JSON）。
         要求：

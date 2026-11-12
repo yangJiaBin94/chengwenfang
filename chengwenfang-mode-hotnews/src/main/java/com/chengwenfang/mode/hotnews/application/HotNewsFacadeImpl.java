@@ -13,6 +13,7 @@ import com.chengwenfang.sourcing.facade.dto.request.HotNewsChannelPatchRequest;
 import com.chengwenfang.sourcing.facade.dto.request.HotNewsChannelUpsertRequest;
 import com.chengwenfang.mode.hotnews.facade.dto.request.HotNewsGenerationRunRequest;
 import com.chengwenfang.mode.hotnews.facade.dto.request.HotNewsGenerationSettingsRequest;
+import com.chengwenfang.mode.hotnews.facade.dto.request.HotNewsOptimizeCritiqueRequest;
 import com.chengwenfang.mode.hotnews.facade.dto.request.HotNewsRewriteRequest;
 import com.chengwenfang.mode.hotnews.facade.dto.request.ManualResearchItemRequest;
 import com.chengwenfang.sourcing.facade.dto.request.QuerySiteBlockUpsertRequest;
@@ -37,7 +38,7 @@ import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsResearchConflictView
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsResearchItemPageView;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsResearchItemView;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsResearchRunView;
-import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsRewriteResultView;
+import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsOptimizeCritiqueView;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsTopicPageView;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsTopicSourceView;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsTopicView;
@@ -441,6 +442,13 @@ public class HotNewsFacadeImpl implements HotNewsFacade {
 
   @Override
   @Transactional
+  public HotNewsOptimizeCritiqueView critiqueDraftOptimize(
+      String articleId, HotNewsOptimizeCritiqueRequest body) {
+    return articles.critiqueDraftOptimize(articleId, body);
+  }
+
+  @Override
+  @Transactional
   public JobView startArticleRewrite(String articleId, HotNewsRewriteRequest body) {
     return articles.startArticleRewrite(articleId, body);
   }
@@ -450,12 +458,6 @@ public class HotNewsFacadeImpl implements HotNewsFacade {
   public HotNewsArticleView applyAiRewrite(
       String articleId, String rewrittenDraft, String instruction) {
     return articles.applyAiRewrite(articleId, rewrittenDraft, instruction);
-  }
-
-  @Override
-  @Transactional
-  public HotNewsRewriteResultView createRewriteCandidate(String articleId, String instruction) {
-    return articles.createRewriteCandidate(articleId, instruction);
   }
 
   @Override

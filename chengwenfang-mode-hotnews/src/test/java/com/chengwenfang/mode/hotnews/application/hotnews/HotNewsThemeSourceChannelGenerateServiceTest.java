@@ -22,10 +22,10 @@ import com.chengwenfang.mode.hotnews.facade.HotNewsFacade;
 import com.chengwenfang.sourcing.facade.dto.request.HotNewsChannelCreateRequest;
 import com.chengwenfang.sourcing.facade.dto.view.HotNewsChannelView;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsSourceChannelGenerateView;
-import com.chengwenfang.skill.facade.SkillFacade;
-import com.chengwenfang.skill.facade.constant.HotNewsSkillNames;
-import com.chengwenfang.skill.facade.constant.HotNewsWorkflowKeys;
-import com.chengwenfang.skill.facade.dto.view.SkillView;
+import com.chengwenfang.prompt.facade.PromptPackFacade;
+import com.chengwenfang.prompt.facade.constant.HotNewsPromptPackNames;
+import com.chengwenfang.prompt.facade.constant.HotNewsWorkflowKeys;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackView;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,7 +37,7 @@ import org.mockito.ArgumentCaptor;
  */
 class HotNewsThemeSourceChannelGenerateServiceTest {
   private AiTextFacade ai;
-  private SkillFacade skills;
+  private PromptPackFacade promptPacks;
   private ContentFacade content;
   private HotNewsFacade hotNews;
   private FetchFacade fetchFacade;
@@ -46,18 +46,18 @@ class HotNewsThemeSourceChannelGenerateServiceTest {
   @BeforeEach
   void setUp() {
     ai = mock(AiTextFacade.class);
-    skills = mock(SkillFacade.class);
+    promptPacks = mock(PromptPackFacade.class);
     content = mock(ContentFacade.class);
     hotNews = mock(HotNewsFacade.class);
     fetchFacade = mock(FetchFacade.class);
-    ChannelSuggestionPromptBuilder prompts = new ChannelSuggestionPromptBuilder(ai, skills);
+    ChannelSuggestionPromptBuilder prompts = new ChannelSuggestionPromptBuilder(ai, promptPacks);
     ChannelSuggestionValidator validator =
         new ChannelSuggestionValidator(hotNews, fetchFacade);
     ChannelSuggestionPersister persister =
         new ChannelSuggestionPersister(content, hotNews, prompts, validator);
     service = new HotNewsThemeSourceChannelGenerateService(persister, validator);
-    when(skills.listSkills()).thenReturn(List.of(SkillView.builder()
-        .name(HotNewsSkillNames.THEME_SOURCE_CHANNELS)
+    when(promptPacks.listPromptPacks()).thenReturn(List.of(PromptPackView.builder()
+        .name(HotNewsPromptPackNames.THEME_SOURCE_CHANNELS)
         .scene(HotNewsWorkflowKeys.SCENE)
         .enabled(true)
         .systemInstructions("你是来源渠道推荐助手，只返回合法 JSON。")

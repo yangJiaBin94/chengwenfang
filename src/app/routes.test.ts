@@ -171,9 +171,9 @@ describe("parseRoute U01–U20", () => {
       page: "settings",
       params: { section: "ai" },
     });
-    expect(parseRoute("/settings", "section=skills")).toEqual({
+    expect(parseRoute("/settings", "section=promptPacks")).toEqual({
       page: "settings",
-      params: { section: "skills" },
+      params: { section: "promptPacks" },
     });
     expect(parseRoute("/settings", "?section=layoutThemes")).toEqual({
       page: "settings",

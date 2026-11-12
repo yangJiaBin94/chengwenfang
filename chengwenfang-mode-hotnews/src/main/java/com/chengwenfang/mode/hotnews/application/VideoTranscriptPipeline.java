@@ -44,6 +44,8 @@ public class VideoTranscriptPipeline {
   private final VideoTranscriptStore store;
   /** 时长缓存与探测。 */
   private final VideoDurationCache durationCache;
+  /** 解析共享行（含抽帧文件 id）。 */
+  private final VideoParseRunService videoParseRuns;
 
   /**
    * 清理 {@code runtimeDir/video-transcript} 下超过保留天数的条目工作目录。
@@ -213,6 +215,8 @@ public class VideoTranscriptPipeline {
         }
         try {
           speechSummarizer.finishSpeechSummarize(item, rawText);
+          // 口播成功后仍补抽帧，供成文佐证复用
+          ensureEvidenceFramesPersisted(item, workDir, progressHook);
           return;
         } catch (Exception exception) {
           store.fail(item, step, "AI 总结失败: " + exception.getMessage());
@@ -229,6 +233,8 @@ public class VideoTranscriptPipeline {
           item.setVideoContentKind(VideoContentKind.SPEECH.getValue());
           item.persist();
           speechSummarizer.finishWithSpeechSummarize(item, rawText, progressHook);
+          // 字幕口播成功后也补抽帧，供成文佐证复用
+          ensureEvidenceFramesPersisted(item, workDir, progressHook);
           return;
         }
         // 无有效字幕：继续 ASR
@@ -282,6 +288,7 @@ public class VideoTranscriptPipeline {
       store.markRunning(item, step);
 
       if (step == VideoParseStep.VISION_SUMMARIZE) {
+        persistFramesQuietly(item, workDir);
         try {
           visionSummarizer.finishVisionSummarize(item, workDir);
           return;
@@ -296,6 +303,80 @@ public class VideoTranscriptPipeline {
         store.fail(item, step, StrUtil.blankToDefault(result.getError(), "步骤失败"));
         return;
       }
+      if (step == VideoParseStep.EXTRACT_FRAMES) {
+        persistFramesQuietly(item, workDir);
+      }
+    }
+  }
+
+  /**
+   * 口播链路成功后：若尚无保留抽帧则下载视频并抽帧落盘（失败不推翻口播成功）。
+   *
+   * @param item         条目
+   * @param workDir      工作目录
+   * @param progressHook 进度回调
+   */
+  private void ensureEvidenceFramesPersisted(
+      VideoParseSink item,
+      Path workDir,
+      BiConsumer<String, String> progressHook) {
+    try {
+      if (videoParseRuns.hasPersistedFrames(item.getId())) {
+        // 旧数据或上次描述失败：本地仍有帧文件时补写描述
+        if (!videoParseRuns.hasUsableFrameCaptions(item.getId())
+            && VideoVisionSummarizer.hasFrameFiles(workDir)) {
+          persistFramesQuietly(item, workDir);
+        }
+        return;
+      }
+      if (VideoVisionSummarizer.hasFrameFiles(workDir)) {
+        persistFramesQuietly(item, workDir);
+        if (videoParseRuns.hasPersistedFrames(item.getId())) {
+          return;
+        }
+      }
+      notify(progressHook, VideoParseStep.DOWNLOAD_VIDEO.getValue(),
+          "保留佐证抽帧·下载视频：" + displayName(item));
+      if (!Files.isRegularFile(workDir.resolve("video.mp4"))) {
+        VideoTranscriptCliResult download = cliRunner.run(
+            item.getUrl(), workDir, VideoParseStep.DOWNLOAD_VIDEO);
+        if (!download.isOk()) {
+          log.warn(
+              "口播后补抽帧下载失败 itemId={} err={}",
+              item.getId(),
+              download.getError());
+          return;
+        }
+      }
+      notify(progressHook, VideoParseStep.EXTRACT_FRAMES.getValue(),
+          "保留佐证抽帧·提取关键帧：" + displayName(item));
+      VideoTranscriptCliResult frames = cliRunner.run(
+          item.getUrl(), workDir, VideoParseStep.EXTRACT_FRAMES);
+      if (!frames.isOk()) {
+        log.warn(
+            "口播后补抽帧失败 itemId={} err={}",
+            item.getId(),
+            frames.getError());
+        return;
+      }
+      persistFramesQuietly(item, workDir);
+    } catch (Exception exception) {
+      log.warn("口播后补抽帧异常 itemId={} err={}", item.getId(), exception.getMessage());
+    }
+  }
+
+  /**
+   * 为关键帧生成描述并写入 stored_files；失败只打日志。
+   *
+   * @param item    条目
+   * @param workDir 工作目录
+   */
+  private void persistFramesQuietly(VideoParseSink item, Path workDir) {
+    try {
+      List<String> captions = visionSummarizer.captionFramesQuietly(workDir, item.getTitle());
+      videoParseRuns.persistFramesFromWorkDir(item.getId(), workDir, captions);
+    } catch (Exception exception) {
+      log.warn("视频抽帧落盘异常 itemId={} err={}", item.getId(), exception.getMessage());
     }
   }
 

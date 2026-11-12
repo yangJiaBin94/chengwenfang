@@ -18,6 +18,19 @@ public class HotNewsArticleRewriteJobOutput extends LinkedHashMap<String, Object
    * @return 出参 Map 子类
    */
   public static HotNewsArticleRewriteJobOutput from(Object articleView, String instruction) {
+    return from(articleView, instruction, null);
+  }
+
+  /**
+   * 由文章视图、改写指令与插图报告组装出参。
+   *
+   * @param articleView         文章视图
+   * @param instruction         改写指令/建议摘要
+   * @param illustrationReuse   插图复用报告；可空
+   * @return 出参 Map 子类
+   */
+  public static HotNewsArticleRewriteJobOutput from(
+      Object articleView, String instruction, Object illustrationReuse) {
     HotNewsArticleRewriteJobOutput output = new HotNewsArticleRewriteJobOutput();
     if (articleView != null) {
       Map<String, Object> beanMap = BeanUtil.beanToMap(articleView, new LinkedHashMap<>(), false, true);
@@ -25,6 +38,9 @@ public class HotNewsArticleRewriteJobOutput extends LinkedHashMap<String, Object
     }
     output.put("instruction", instruction);
     output.put("rewritten", true);
+    if (illustrationReuse != null) {
+      output.put("illustrationReuse", illustrationReuse);
+    }
     return output;
   }
 }

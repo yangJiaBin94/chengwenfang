@@ -1,6 +1,7 @@
 package com.chengwenfang.mode.hotnews.application;
 
 import cn.hutool.core.util.StrUtil;
+import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.job.facade.JobFacade;
 import com.chengwenfang.job.facade.constant.JobEntityTypes;
 import com.chengwenfang.job.facade.constant.JobTypes;
@@ -11,26 +12,33 @@ import com.chengwenfang.mode.hotnews.domain.entity.HotNewsArticleEntity;
 import com.chengwenfang.mode.hotnews.facade.constant.HotNewsArticleContentKinds;
 import com.chengwenfang.mode.hotnews.facade.constant.HotNewsArticleStatuses;
 import com.chengwenfang.mode.hotnews.facade.constant.HotNewsDocumentVersionSources;
+import com.chengwenfang.mode.hotnews.facade.constant.HotNewsErrorCodes;
+import com.chengwenfang.mode.hotnews.facade.constant.HotNewsGenerationSettingsKeys;
 import com.chengwenfang.mode.hotnews.facade.dto.request.HotNewsRewriteRequest;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsArticleView;
-import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsRewriteResultView;
 import java.time.LocalDateTime;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 热点文章 AI 改写入队与候选稿落库。
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class HotNewsRewriteCandidateService {
-
+  /** 任务门面。 */
   private final JobFacade jobs;
+  /** JSON 编解码。 */
   private final HotNewsCodec codec;
+  /** 正文读写。 */
   private final HotNewsWorkContentService contents;
+  /** 生成设置。 */
   private final HotNewsGenerationSettingsService generationSettings;
+  /** 文章视图组装。 */
   private final HotNewsArticleViewAssembler views;
 
   /**
@@ -42,19 +50,34 @@ public class HotNewsRewriteCandidateService {
    */
   @Transactional
   public JobView startArticleRewrite(String articleId, HotNewsRewriteRequest body) {
-    contents.requireArticle(articleId);
+    HotNewsArticleEntity article = contents.requireArticle(articleId);
+    String draft = contents.resolveHotBody(
+        article, HotNewsArticleContentKinds.DRAFT, article.getDraftContent());
+    if (StrUtil.isBlank(draft)) {
+      throw new BusinessException(HotNewsErrorCodes.DRAFT_EMPTY, "热点原稿为空，无法改写", 400);
+    }
     String instruction =
         body == null
             ? ""
             : StrUtil.nullToEmpty(body.getInstruction());
-    return jobs.create(
+    String advice =
+        body == null
+            ? ""
+            : StrUtil.nullToEmpty(body.getAdvice());
+    String defaultInstruction = StrUtil.isNotBlank(advice)
+        ? "按优化建议改写热点原稿，保持事实不变"
+        : "优化热点文章表达，保持事实不变";
+    JobView job = jobs.create(
         JobTypes.HOT_NEWS_ARTICLE_REWRITE,
         JobEntityTypes.HOT_NEWS_ARTICLE,
         articleId,
         HotNewsArticleRewriteJobInput.builder()
             .articleId(articleId)
-            .instruction(StrUtil.blankToDefault(instruction, "优化热点文章表达，保持事实不变"))
+            .instruction(StrUtil.blankToDefault(instruction, defaultInstruction))
+            .advice(advice)
             .build());
+    log.info("热点改写任务已入队 articleId={} jobId={}", articleId, job.getId());
+    return job;
   }
 
   /**
@@ -82,72 +105,16 @@ public class HotNewsRewriteCandidateService {
     article.setWordCount(HotNewsMarkdownUtil.countBodyChars(wechatBase));
     article.setCurrentVersionNo(nextVersion);
     Map<String, Object> settings = codec.readMap(generationSettings.preferGenerationSettingsJson(article));
-    settings.put("lastRewriteInstruction", hint);
-    settings.put("rewrittenAt", now.toString());
+    settings.put(HotNewsGenerationSettingsKeys.LAST_REWRITE_INSTRUCTION, hint);
+    settings.put(HotNewsGenerationSettingsKeys.REWRITTEN_AT, now.toString());
+    // 正文已变，显式清空旧诊断（含 DB 列），避免面板回填过期打分
+    settings.put(HotNewsGenerationSettingsKeys.LAST_OPTIMIZE_CRITIQUE, null);
     article.setGenerationSettingsJson(codec.writeJson(settings));
     article.setStatus(HotNewsArticleStatuses.REWRITTEN);
     article.setUpdatedAt(now);
     contents.mirrorHotNewsDocuments(
         article, HotNewsDocumentVersionSources.REWRITE_CANDIDATE, "Hot news AI rewrite");
+    log.info("热点 AI 改写稿已落库 articleId={} versionNo={}", articleId, nextVersion);
     return views.articleView(article);
-  }
-
-  /**
-   * 基于指令生成改写候选草稿（本地拼接说明）。
-   *
-   * @param articleId   文章主键
-   * @param instruction 改写说明
-   * @return 改写结果视图
-   */
-  @Transactional
-  public HotNewsRewriteResultView createRewriteCandidate(String articleId, String instruction) {
-    HotNewsArticleEntity article = contents.requireArticle(articleId);
-    LocalDateTime now = LocalDateTime.now();
-    String draftBase = contents.resolveHotBody(article, HotNewsArticleContentKinds.DRAFT, article.getDraftContent());
-    String wechatBase = contents.resolveHotBody(article, HotNewsArticleContentKinds.WECHAT, article.getContent());
-    String base = StrUtil.isBlank(draftBase) ? wechatBase : draftBase;
-    String hint = StrUtil.blankToDefault(instruction, "按热点改写要求优化表达").trim();
-    String rewritten = StrUtil.isBlank(base)
-        ? "# 改写稿\n\n" + hint + "\n"
-        : base + "\n\n---\n改写说明：" + hint + "\n";
-    int nextVersion = (article.getCurrentVersionNo() == null ? 1 : article.getCurrentVersionNo()) + 1;
-    article.setDraftContent(rewritten);
-    article.setDraftContentHash(HotNewsCodec.sha256(rewritten));
-    article.setContent(wechatBase);
-    article.setContentHash(HotNewsCodec.sha256(wechatBase));
-    article.setCurrentVersionNo(nextVersion);
-    Map<String, Object> settings = codec.readMap(generationSettings.preferGenerationSettingsJson(article));
-    settings.put("lastRewriteInstruction", hint);
-    settings.put("rewrittenAt", now.toString());
-    article.setGenerationSettingsJson(codec.writeJson(settings));
-    article.setStatus(HotNewsArticleStatuses.REWRITTEN);
-    article.setUpdatedAt(now);
-    contents.mirrorHotNewsDocuments(
-        article, HotNewsDocumentVersionSources.REWRITE_CANDIDATE, "Hot news rewrite candidate");
-
-    HotNewsArticleView view = views.articleView(article);
-    return HotNewsRewriteResultView.builder()
-        .id(view.getId())
-        .documentId(view.getDocumentId())
-        .draftDocumentId(view.getDraftDocumentId())
-        .topicId(view.getTopicId())
-        .briefId(view.getBriefId())
-        .title(view.getTitle())
-        .draftContent(view.getDraftContent())
-        .draftContentHash(view.getDraftContentHash())
-        .draftWordCount(view.getDraftWordCount())
-        .content(view.getContent())
-        .contentHash(view.getContentHash())
-        .wordCount(view.getWordCount())
-        .currentVersionNo(view.getCurrentVersionNo())
-        .status(view.getStatus())
-        .workflowRunId(view.getWorkflowRunId())
-        .sourceSnapshot(view.getSourceSnapshot())
-        .generationSettings(view.getGenerationSettings())
-        .createdAt(view.getCreatedAt())
-        .updatedAt(view.getUpdatedAt())
-        .instruction(hint)
-        .rewritten(true)
-        .build();
   }
 }

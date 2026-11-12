@@ -27,8 +27,8 @@ import com.chengwenfang.mode.hotnews.application.search.TavilySearchContext;
 import com.chengwenfang.mode.hotnews.domain.ResearchContentClassifier;
 import com.chengwenfang.mode.hotnews.facade.HotNewsFacade;
 import com.chengwenfang.mode.hotnews.facade.enums.TavilySearchScene;
-import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
-import com.chengwenfang.skill.facade.enums.HotNewsRadarCollectNodeType;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
+import com.chengwenfang.prompt.facade.enums.HotNewsRadarCollectNodeType;
 import com.chengwenfang.sourcing.facade.dto.view.ChannelView;
 import com.chengwenfang.sourcing.facade.enums.SourceMediaType;
 import java.util.ArrayList;
@@ -95,7 +95,7 @@ public class PlanSearchRadarNodeHandler implements RadarCollectNodeHandler {
   public void execute(
       RadarCollectSessionStore.Session session,
       Map<String, Object> lightState,
-      List<SkillPromptBindingView> skillBindings,
+      List<PromptPackPromptBindingView> promptPackBindings,
       String nodeKey,
       String nodeName) {
     String jobId = StrUtil.blankToDefault(

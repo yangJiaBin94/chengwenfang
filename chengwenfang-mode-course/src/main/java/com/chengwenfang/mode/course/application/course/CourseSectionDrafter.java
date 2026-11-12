@@ -6,9 +6,9 @@ import cn.hutool.core.util.StrUtil;
 import com.chengwenfang.ai.facade.AiTextFacade;
 import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
 import com.chengwenfang.mode.course.application.generation.course.CourseGraphState;
-import com.chengwenfang.skill.facade.SkillFacade;
-import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
-import com.chengwenfang.skill.facade.enums.CourseWorkflowNodeType;
+import com.chengwenfang.prompt.facade.PromptPackFacade;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
+import com.chengwenfang.prompt.facade.enums.CourseWorkflowNodeType;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -41,8 +41,8 @@ public class CourseSectionDrafter {
       new DraftSection(CourseWorkflowNodeType.DRAFT_PREVIEW, "下节课预告",
           "按路线预告下一课，不提前展开。标题必须为「下节课预告」。"));
 
-  /** Skill 门面。 */
-  private final SkillFacade skills;
+  /** 提示词包门面。 */
+  private final PromptPackFacade promptPacks;
   /** 文本 AI。 */
   private final AiTextFacade ai;
   /** 上下文与进度协作。 */
@@ -53,12 +53,12 @@ public class CourseSectionDrafter {
    *
    * @param state         图状态
    * @param typeKey       分段 typeKey
-   * @param skillBindings 节点绑定；为空时从快照节点读取
+   * @param promptPackBindings 节点绑定；为空时从快照节点读取
    */
   public void generateDraftSection(
       CourseGraphState state,
       String typeKey,
-      List<SkillPromptBindingView> skillBindings) {
+      List<PromptPackPromptBindingView> promptPackBindings) {
     if (Boolean.TRUE.equals(state.getResumeImagesOnly())) {
       return;
     }
@@ -69,9 +69,9 @@ public class CourseSectionDrafter {
     CourseGenerationContext ctx = contextLoader.resolveContext(state);
     Map<String, Object> snapshot = state.getWorkflowSnapshot();
     Map<String, Object> node = CourseGraphContextLoader.findNodeByTypeKey(snapshot, section.typeKey());
-    List<SkillPromptBindingView> bindings = (skillBindings == null || skillBindings.isEmpty())
-        ? CourseGraphContextLoader.skillBindingsOf(node)
-        : skillBindings;
+    List<PromptPackPromptBindingView> bindings = (promptPackBindings == null || promptPackBindings.isEmpty())
+        ? CourseGraphContextLoader.promptPackBindingsOf(node)
+        : promptPackBindings;
     List<String> draftParts = state.getDraftParts() == null
         ? new ArrayList<>()
         : new ArrayList<>(state.getDraftParts());
@@ -98,7 +98,7 @@ public class CourseSectionDrafter {
       // 用传入绑定覆盖节点绑定（图执行器传入节点级绑定）
       Map<String, Object> effectiveNode = node == null ? new LinkedHashMap<>() : new LinkedHashMap<>(node);
       if (bindings != null && !bindings.isEmpty()) {
-        effectiveNode.put("skillBindings", CourseGraphContextLoader.bindingsToMaps(bindings));
+        effectiveNode.put("promptPackBindings", CourseGraphContextLoader.bindingsToMaps(bindings));
       }
       text = generateDraftSectionOnce(
           ctx, section, effectiveNode, previousTail, repairFeedback, budget);
@@ -161,8 +161,8 @@ public class CourseSectionDrafter {
       String sectionFeedback,
       String previousCandidate,
       int[] budget) {
-    String skillPrompt = skills.composePromptFromBindings(
-        CourseGraphContextLoader.skillBindingsOf(node));
+    String promptPackText = promptPacks.composePromptFromBindings(
+        CourseGraphContextLoader.promptPackBindingsOf(node));
     String heading = sectionHeading(ctx, section);
     String goal = sectionGoal(ctx, section, budget);
     int minWords = CourseMarkdownUtil.minBodyChars(ctx.wordCountOption());
@@ -221,7 +221,7 @@ public class CourseSectionDrafter {
         ctx.maxBodyChars(),
         ctx.minImages(),
         ctx.maxImages());
-    return completeText(skillPrompt, userPrompt, section.typeKey());
+    return completeText(promptPackText, userPrompt, section.typeKey());
   }
 
   /**
@@ -310,13 +310,13 @@ public class CourseSectionDrafter {
   /**
    * 文本补全（系统提示 + 用户提示）。
    *
-   * @param skillPrompt Skill 拼装提示
+   * @param promptPackText 提示词包 拼装提示
    * @param userPrompt  用户提示
    * @param scene       调用场景
    * @return 模型文本
    */
-  String completeText(String skillPrompt, String userPrompt, String scene) {
-    String systemPrompt = CoursePrompts.systemPrompt(skillPrompt);
+  String completeText(String promptPackText, String userPrompt, String scene) {
+    String systemPrompt = CoursePrompts.systemPrompt(promptPackText);
     var result = ai.completeText(TextCompleteRequest.builder()
         .prompt(userPrompt.strip())
         .systemPrompt(systemPrompt)

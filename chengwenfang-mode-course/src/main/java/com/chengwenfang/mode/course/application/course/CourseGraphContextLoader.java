@@ -5,10 +5,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.chengwenfang.mode.course.application.generation.course.CourseGraphState;
 import com.chengwenfang.job.facade.JobFacade;
-import com.chengwenfang.skill.facade.WorkflowFacade;
-import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
-import com.chengwenfang.skill.facade.dto.view.WorkflowDefinitionDataView;
-import com.chengwenfang.skill.facade.enums.CourseWorkflowNodeType;
+import com.chengwenfang.prompt.facade.WorkflowFacade;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
+import com.chengwenfang.prompt.facade.dto.view.WorkflowDefinitionDataView;
+import com.chengwenfang.prompt.facade.enums.CourseWorkflowNodeType;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -37,9 +37,9 @@ public class CourseGraphContextLoader {
    * 加载已发布工作流快照与课程上下文；续跑配图时回填原稿/公众号。
    *
    * @param state         图状态
-   * @param skillBindings 未使用（节点签名对齐）
+   * @param promptPackBindings 未使用（节点签名对齐）
    */
-  public void snapshotContext(CourseGraphState state, List<SkillPromptBindingView> skillBindings) {
+  public void snapshotContext(CourseGraphState state, List<PromptPackPromptBindingView> promptPackBindings) {
     String courseId = state.getCourseId();
     String workflowId = state.getWorkflowId();
     log.info("课程图节点 snapshot_context courseId={} workflowId={}", courseId, workflowId);
@@ -231,23 +231,23 @@ public class CourseGraphContextLoader {
   }
 
   /**
-   * 从节点 Map 解析 skillBindings。
+   * 从节点 Map 解析 promptPackBindings。
    *
    * @param node 节点
    * @return 绑定列表；无则空列表
    */
   @SuppressWarnings("unchecked")
-  public static List<SkillPromptBindingView> skillBindingsOf(Map<String, Object> node) {
-    if (node == null || !(node.get("skillBindings") instanceof List<?> list)) {
+  public static List<PromptPackPromptBindingView> promptPackBindingsOf(Map<String, Object> node) {
+    if (node == null || !(node.get("promptPackBindings") instanceof List<?> list)) {
       return List.of();
     }
-    List<SkillPromptBindingView> out = new ArrayList<>();
+    List<PromptPackPromptBindingView> out = new ArrayList<>();
     for (Object item : list) {
       if (item instanceof Map<?, ?> map) {
         Map<String, Object> binding = (Map<String, Object>) map;
         Object priority = binding.get("priority");
-        out.add(SkillPromptBindingView.builder()
-            .skillId(binding.get("skillId") == null ? null : String.valueOf(binding.get("skillId")))
+        out.add(PromptPackPromptBindingView.builder()
+            .promptPackId(binding.get("promptPackId") == null ? null : String.valueOf(binding.get("promptPackId")))
             .priority(priority instanceof Number number ? number.intValue() : 100)
             .enabled(binding.get("enabled") == null || Boolean.TRUE.equals(binding.get("enabled")))
             .build());
@@ -262,14 +262,14 @@ public class CourseGraphContextLoader {
    * @param bindings 绑定列表
    * @return Map 列表
    */
-  public static List<Map<String, Object>> bindingsToMaps(List<SkillPromptBindingView> bindings) {
+  public static List<Map<String, Object>> bindingsToMaps(List<PromptPackPromptBindingView> bindings) {
     List<Map<String, Object>> out = new ArrayList<>();
-    for (SkillPromptBindingView binding : bindings) {
+    for (PromptPackPromptBindingView binding : bindings) {
       if (binding == null) {
         continue;
       }
       Map<String, Object> row = new LinkedHashMap<>();
-      row.put("skillId", binding.getSkillId());
+      row.put("promptPackId", binding.getPromptPackId());
       row.put("priority", binding.getPriority() == null ? 100 : binding.getPriority());
       row.put("enabled", binding.getEnabled() == null || binding.getEnabled());
       out.add(row);

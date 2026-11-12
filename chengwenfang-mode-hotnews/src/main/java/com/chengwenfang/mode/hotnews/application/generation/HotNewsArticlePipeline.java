@@ -6,10 +6,12 @@ import com.chengwenfang.job.facade.JobExecutionContext;
 import com.chengwenfang.job.facade.dto.job.HotNewsArticleGenerationJobInput;
 import com.chengwenfang.job.facade.dto.job.HotNewsArticleGenerationJobOutput;
 import com.chengwenfang.job.facade.dto.job.JobPayloads;
-import com.chengwenfang.skill.facade.WorkflowFacade;
-import com.chengwenfang.skill.facade.dto.view.WorkflowGraphExecuteResult;
-import com.chengwenfang.skill.facade.enums.WorkflowFeatureBinding;
-import com.chengwenfang.skill.facade.enums.WorkflowRunStatus;
+import com.chengwenfang.mode.hotnews.facade.constant.HotNewsArticleJobKeys;
+import com.chengwenfang.mode.hotnews.facade.constant.HotNewsGenerationScopes;
+import com.chengwenfang.prompt.facade.WorkflowFacade;
+import com.chengwenfang.prompt.facade.dto.view.WorkflowGraphExecuteResult;
+import com.chengwenfang.prompt.facade.enums.WorkflowFeatureBinding;
+import com.chengwenfang.prompt.facade.enums.WorkflowRunStatus;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -64,13 +66,37 @@ public class HotNewsArticlePipeline {
         HotNewsArticleGenerationJobOutput.fromGraph(result.toJobOutput());
     output.put("articleId", articleId);
     output.putIfAbsent("partial", false);
+    // 显式带回 scope，供站内通知区分「仅配图 / 仅公众号 / 全文」
+    String scope = HotNewsGenerationScopes.normalize(StrUtil.firstNonBlank(
+        stringOrNull(output.get(HotNewsArticleJobKeys.SCOPE)),
+        stringOrNull(input.get(HotNewsArticleJobKeys.SCOPE))));
+    output.put(HotNewsArticleJobKeys.SCOPE, scope);
     // 透出 workflowRunId，便于执行轨迹页加载节点明细
     Object runId = output.get("runId");
     if (runId != null && StrUtil.isNotBlank(String.valueOf(runId))) {
       output.putIfAbsent("workflowRunId", String.valueOf(runId));
     }
     context.completeWith(output);
-    step(job, context, "done", 100, "热点文章生成完成");
+    step(job, context, "done", 100, doneStepMessage(scope));
+  }
+
+  /**
+   * 终态进度文案：按运行范围区分，避免仅配图/仅公众号也报「文章生成完成」。
+   *
+   * @param scope 规范化 scope
+   * @return 进度说明
+   */
+  private static String doneStepMessage(String scope) {
+    if (HotNewsGenerationScopes.isImages(scope)) {
+      return "配套图片生成完成";
+    }
+    if (HotNewsGenerationScopes.isWechat(scope)) {
+      return "公众号版本生成完成";
+    }
+    if (HotNewsGenerationScopes.DRAFT.equals(scope)) {
+      return "热点原稿生成完成";
+    }
+    return "热点文章生成完成";
   }
 
   /**

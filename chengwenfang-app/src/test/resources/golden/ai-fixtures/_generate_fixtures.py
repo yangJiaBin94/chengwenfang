@@ -140,7 +140,7 @@ add(
 add(
     "hot_news_theme_search_queries",
     priority=20,
-    # 勿加「资讯采集编辑」：来源渠道 Skill 正文也含该串，会抢先命中本规则。
+    # 勿加「资讯采集编辑」：来源渠道提示词包 正文也含该串，会抢先命中本规则。
     matchAny=["短搜索词"],
     parser="queries",
     content={
@@ -178,7 +178,7 @@ add(
 add(
     "hot_news_theme_source_channels",
     priority=20,
-    # 用用户提示独有句；勿仅靠「资讯采集编辑」（与搜索词 Skill 撞车）。
+    # 用用户提示独有句；勿仅靠「资讯采集编辑」（与搜索词提示词包 撞车）。
     matchAny=["已占用网页 URL（禁止再次推荐）", "已占用网页 URL"],
     parser="channels",
     content={
@@ -362,7 +362,7 @@ add(
 add(
     "hot_news_article_skeleton",
     priority=20,
-    matchAny=["文章骨架", "workingTitle", "配图规范 Skill"],
+    matchAny=["文章骨架", "workingTitle", "配图规范 提示词包"],
     parser="skeleton",
     content={
         "workingTitle": "Beam 发布",

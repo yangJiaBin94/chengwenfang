@@ -16,4 +16,6 @@ public final class HotNewsArticleJobKeys {
   public static final String DOCUMENT_ID = "documentId";
   /** 入参：草稿轨文档 ID。 */
   public static final String DRAFT_DOCUMENT_ID = "draftDocumentId";
+  /** 入参：生成范围（full / draft / wechat / images / audit）。 */
+  public static final String SCOPE = "scope";
 }

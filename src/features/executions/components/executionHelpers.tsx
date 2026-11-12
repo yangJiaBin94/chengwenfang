@@ -41,7 +41,7 @@ export const generationPipeline = [
     "读取项目与课程上下文",
     "读取项目规则、学习路线、相邻课程和现有内容",
   ],
-  ["skills", "加载生成 Skill", "加载系统级 Skill 和生成课程内容场景 Skill"],
+  ["promptPacks", "加载生成 PromptPack", "加载系统级 PromptPack 和生成课程内容场景 PromptPack"],
   [
     "plan_course",
     "设计课程定位与边界",
@@ -114,7 +114,7 @@ export function generationStepIndex(step: string | null | undefined, message = "
     safeStep === "graph_execute"
   )
     return 0;
-  if (safeStep === "load_skills" || safeStep === "load_skill_context") return 1;
+  if (safeStep === "load_prompt_packs") return 1;
   if (safeStep === "plan_course") return 2;
   if (safeStep === "review_course_plan") return 3;
   if (
@@ -275,8 +275,7 @@ export function eventStepTitle(step: string | null | undefined) {
     graph_finalize: "汇总工作流结果",
     snapshot_context: "读取并快照课程上下文",
     load_course_context: "读取课程上下文",
-    load_skills: "加载生成 Skill",
-    load_skill_context: "加载节点 Skill",
+    load_prompt_packs: "加载生成 PromptPack",
     plan_course: "设计课程计划",
     review_course_plan: "审校课程计划",
     draft_opening: "生成原稿：开场与目标",

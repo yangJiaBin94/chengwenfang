@@ -24,8 +24,8 @@ import {
   Workflow,
   X,
 } from "lucide-react";
-import { listSkills } from "../../settings/api";
-import type { Skill } from "../../settings/api";
+import { listPromptPacks } from "../../settings/api";
+import type { PromptPack } from "../../settings/api";
 import {
   createWorkflow,
   listWorkflowRuns,

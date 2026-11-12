@@ -24,7 +24,7 @@
     </dependency>
     <dependency>
       <groupId>com.chengwenfang</groupId>
-      <artifactId>chengwenfang-skill-workflow</artifactId>
+      <artifactId>chengwenfang-prompt-workflow</artifactId>
     </dependency>
     <dependency>
       <groupId>com.chengwenfang</groupId>

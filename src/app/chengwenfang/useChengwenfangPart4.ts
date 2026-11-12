@@ -80,8 +80,8 @@ import {
 } from "../../features/hotnews/api";
 import { defaultAiSettings } from "../../features/settings/model";
 import type { AiSettings } from "../../features/settings/model";
-import { listSkills } from "../../features/settings/api";
-import type { Skill } from "../../features/settings/api";
+import { listPromptPacks } from "../../features/settings/api";
+import type { PromptPack } from "../../features/settings/api";
 import { jobStatusLabel } from "../../features/executions/pages/ExecutionTrajectoryPage";
 import {
   type ArticleVersion,
@@ -221,8 +221,8 @@ export function useChengwenfangPart4(s: Record<string, any>) {
     setWechatConfigured,
     settingsSectionHint,
     setSettingsSectionHint,
-    homeSkillCount,
-    setHomeSkillCount,
+    homePromptPackCount,
+    setHomePromptPackCount,
     homeSelectedTopics,
     setHomeSelectedTopics,
     homeHotArticleCount,
@@ -261,13 +261,13 @@ export function useChengwenfangPart4(s: Record<string, any>) {
     let cancelled = false;
     (async () => {
       try {
-        const [skills, workflows, courseJobs] = await Promise.all([
-          listSkills().catch(() => [] as Skill[]),
+        const [promptPacks, workflows, courseJobs] = await Promise.all([
+          listPromptPacks().catch(() => [] as PromptPack[]),
           listWorkflows().catch(() => [] as WorkflowSummary[]),
           listCourseGenerationJobs().catch(() => [] as JobData[]),
         ]);
         if (cancelled) return;
-        setHomeSkillCount(skills.length);
+        setHomePromptPackCount(promptPacks.length);
         setGenerationJobs(courseJobs);
 
         // 首页固定关注：雷达采集 / 课程内容 / 热点成文
@@ -353,7 +353,7 @@ export function useChengwenfangPart4(s: Record<string, any>) {
         if (!cancelled) setHomeRecentSuccessJobs(successJobs);
       } catch {
         if (!cancelled) {
-          setHomeSkillCount(0);
+          setHomePromptPackCount(0);
           setHomeWorkflows([]);
           setHomeRecentTasks([]);
           setHomeRecentSuccessJobs([]);

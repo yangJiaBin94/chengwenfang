@@ -97,11 +97,11 @@ public class JobFacadeImpl implements JobFacade {
         .createdAt(LocalDateTime.now())
         .build();
     jobMapper.insert(job);
-    // queued 事件携带 skills，供执行页「本次使用的 Skill」展示
+    // queued 事件携带 promptPacks，供执行页「本次使用的 提示词包」展示
     Map<String, Object> queuedPayload = null;
-    Object skillSnapshot = inputMap.get("skillSnapshot");
-    if (skillSnapshot instanceof List<?> list && !list.isEmpty()) {
-      queuedPayload = Map.of("skills", skillSnapshot);
+    Object promptPackSnapshot = inputMap.get("promptPackSnapshot");
+    if (promptPackSnapshot instanceof List<?> list && !list.isEmpty()) {
+      queuedPayload = Map.of("promptPacks", promptPackSnapshot);
     }
     appendEvent(job.getId(), JobStatus.QUEUED.getValue(), JobStatus.QUEUED.getValue(), 0, "任务已创建", queuedPayload);
     log.info("创建任务 id={} type={} entity={}/{}", job.getId(), type, entityType, entityId);

@@ -30,7 +30,7 @@ public final class ErrorCodes {
   /** 功能所需工作流已停用或未发布。 */
   public static final String WORKFLOW_UNAVAILABLE = "workflow_unavailable";
 
-  public static final String SKILL_NOT_FOUND = "skill_not_found";
+  public static final String PROMPT_PACK_NOT_FOUND = "prompt_pack_not_found";
   public static final String ALERT_NOT_FOUND = "alert_not_found";
   public static final String CHANNEL_NOT_FOUND = "channel_not_found";
   /** 主题下来源渠道数量已达上限。 */

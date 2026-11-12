@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 文章发布日抽取 Skill 的固定 JSON 结构。
+ * 文章发布日抽取 提示词包 的固定 JSON 结构。
  */
 @Data
 @Builder

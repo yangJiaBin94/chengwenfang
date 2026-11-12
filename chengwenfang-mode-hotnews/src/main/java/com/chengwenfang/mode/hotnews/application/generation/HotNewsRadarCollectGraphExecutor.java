@@ -4,10 +4,10 @@ import cn.hutool.core.util.StrUtil;
 import com.chengwenfang.mode.hotnews.application.generation.radarcollect.RadarCollectGraphStateKeys;
 import com.chengwenfang.mode.hotnews.application.generation.radarcollect.RadarCollectNodeHandler;
 import com.chengwenfang.mode.hotnews.application.generation.radarcollect.RadarCollectSessionStore;
-import com.chengwenfang.skill.facade.constant.WorkflowNodeHandlerOrders;
-import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
-import com.chengwenfang.skill.facade.enums.HotNewsRadarCollectNodeType;
-import com.chengwenfang.skill.facade.spi.WorkflowNodeHandler;
+import com.chengwenfang.prompt.facade.constant.WorkflowNodeHandlerOrders;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
+import com.chengwenfang.prompt.facade.enums.HotNewsRadarCollectNodeType;
+import com.chengwenfang.prompt.facade.spi.WorkflowNodeHandler;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
@@ -63,7 +63,7 @@ public class HotNewsRadarCollectGraphExecutor implements WorkflowNodeHandler {
    * @param typeKey       节点类型
    * @param nodeKey       实例 key
    * @param nodeName      展示名
-   * @param skillBindings 原始绑定
+   * @param promptPackBindings 原始绑定
    * @param state         图状态
    * @param config        配置
    * @return 状态增量
@@ -73,7 +73,7 @@ public class HotNewsRadarCollectGraphExecutor implements WorkflowNodeHandler {
       String typeKey,
       String nodeKey,
       String nodeName,
-      List<Map<String, Object>> skillBindings,
+      List<Map<String, Object>> promptPackBindings,
       Map<String, Object> state,
       Map<String, Object> config) {
     HotNewsRadarCollectNodeType nodeType = HotNewsRadarCollectNodeType.from(typeKey)
@@ -89,7 +89,7 @@ public class HotNewsRadarCollectGraphExecutor implements WorkflowNodeHandler {
     }
     RadarCollectSessionStore.Session session = sessionStore.getOrCreate(jobId);
     log.info("雷达图节点分发 typeKey={} nodeKey={} jobId={}", typeKey, nodeKey, jobId);
-    handler.execute(session, lightState, toPromptBindings(skillBindings), nodeKey, nodeName);
+    handler.execute(session, lightState, toPromptBindings(promptPackBindings), nodeKey, nodeName);
     lightState.put(RadarCollectGraphStateKeys.RADAR_STEP, nodeType.getValue());
     if (nodeType == HotNewsRadarCollectNodeType.FINALIZE) {
       sessionStore.clear(jobId);
@@ -101,23 +101,23 @@ public class HotNewsRadarCollectGraphExecutor implements WorkflowNodeHandler {
   }
 
   /**
-   * 将节点 Skill 绑定原始 Map 转为提示词绑定视图。
+   * 将节点 提示词包绑定原始 Map 转为提示词绑定视图。
    *
-   * @param skillBindings 原始绑定列表；可空
+   * @param promptPackBindings 原始绑定列表；可空
    * @return 绑定视图列表
    */
-  private static List<SkillPromptBindingView> toPromptBindings(List<Map<String, Object>> skillBindings) {
-    if (skillBindings == null || skillBindings.isEmpty()) {
+  private static List<PromptPackPromptBindingView> toPromptBindings(List<Map<String, Object>> promptPackBindings) {
+    if (promptPackBindings == null || promptPackBindings.isEmpty()) {
       return List.of();
     }
-    List<SkillPromptBindingView> result = new ArrayList<>();
-    for (Map<String, Object> binding : skillBindings) {
+    List<PromptPackPromptBindingView> result = new ArrayList<>();
+    for (Map<String, Object> binding : promptPackBindings) {
       if (binding == null) {
         continue;
       }
       Object priority = binding.get("priority");
-      result.add(SkillPromptBindingView.builder()
-          .skillId(binding.get("skillId") == null ? null : String.valueOf(binding.get("skillId")))
+      result.add(PromptPackPromptBindingView.builder()
+          .promptPackId(binding.get("promptPackId") == null ? null : String.valueOf(binding.get("promptPackId")))
           .priority(priority instanceof Number number ? number.intValue() : 100)
           .enabled(binding.get("enabled") == null || Boolean.TRUE.equals(binding.get("enabled")))
           .build());

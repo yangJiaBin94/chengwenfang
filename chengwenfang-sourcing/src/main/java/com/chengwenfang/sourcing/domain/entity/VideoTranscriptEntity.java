@@ -42,6 +42,16 @@ public class VideoTranscriptEntity {
   /** 字幕或 ASR 原文文件 id。 */
   @TableField("text_file_id")
   private String textFileId;
+  /**
+   * 抽帧截图文件 id 列表 JSON（{@code ["uuid",…]}），成文佐证复用。
+   */
+  @TableField("frame_file_ids")
+  private String frameFileIds;
+  /**
+   * 与 {@link #frameFileIds} 等长的逐帧中文描述 JSON 数组。
+   */
+  @TableField("frame_captions")
+  private String frameCaptions;
   /** speech / visual。 */
   @TableField("content_kind")
   private String contentKind;

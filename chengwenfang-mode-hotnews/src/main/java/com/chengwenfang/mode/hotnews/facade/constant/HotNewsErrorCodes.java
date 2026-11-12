@@ -10,8 +10,8 @@ public final class HotNewsErrorCodes {
   public static final String ARTICLE_ID_REQUIRED = "article_id_required";
   /** 缺少文章骨架。 */
   public static final String ARTICLE_SKELETON_REQUIRED = "article_skeleton_required";
-  /** Skill 快照缺失或不可用。 */
-  public static final String SKILL_SNAPSHOT_REQUIRED = "hot_news_skill_snapshot_required";
+  /** 提示词包 快照缺失或不可用。 */
+  public static final String PROMPT_PACK_SNAPSHOT_REQUIRED = "hot_news_prompt_pack_snapshot_required";
   /** 事实包缺失。 */
   public static final String FACTS_REQUIRED = "hot_news_facts_required";
   /** 公众号审校未通过。 */
@@ -26,4 +26,10 @@ public final class HotNewsErrorCodes {
   public static final String SKELETON_STRUCTURE_REQUIRED = "hot_news_skeleton_structure_required";
   /** 提交版本时草稿或公众号正文不完整。 */
   public static final String COMMIT_INCOMPLETE = "hot_news_commit_incomplete";
+  /** 原稿为空，无法优化诊断。 */
+  public static final String DRAFT_EMPTY = "hot_news_draft_empty";
+  /** 优化诊断失败。 */
+  public static final String OPTIMIZE_CRITIQUE_FAILED = "hot_news_optimize_critique_failed";
+  /** 按建议改写失败。 */
+  public static final String OPTIMIZE_REWRITE_FAILED = "hot_news_optimize_rewrite_failed";
 }

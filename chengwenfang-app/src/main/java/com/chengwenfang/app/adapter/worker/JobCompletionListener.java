@@ -7,7 +7,7 @@ import com.chengwenfang.job.facade.dto.view.JobTerminalEvent;
 import com.chengwenfang.job.facade.enums.JobStatus;
 import com.chengwenfang.notification.facade.NotificationFacade;
 import com.chengwenfang.notification.facade.constant.NotificationMetadataKeys;
-import com.chengwenfang.skill.facade.WorkflowFacade;
+import com.chengwenfang.prompt.facade.WorkflowFacade;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -91,9 +91,11 @@ public class JobCompletionListener {
       }
       String displayName = notificationSupport.enrichMetadata(
           event.getType(), event.getEntityId(), metadata);
-      String title = notificationSupport.titleFor(event.getType(), succeeded, displayName);
+      // 传入出参：改写若仍挂配图重生，标题/正文不写成「全部完成」
+      String title = notificationSupport.titleFor(
+          event.getType(), succeeded, displayName, event.getOutput());
       String message = succeeded
-          ? notificationSupport.successMessage(event.getType())
+          ? notificationSupport.successMessage(event.getType(), event.getOutput())
           : JobFailureMessages.toUserMessage(event.getErrorMessage());
       notifications.createForTerminalJob(
           event.getType(),

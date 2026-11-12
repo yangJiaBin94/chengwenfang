@@ -12,10 +12,10 @@ import com.chengwenfang.content.facade.dto.request.HotNewsCollectStrategySuggest
 import com.chengwenfang.content.facade.dto.view.HotNewsCollectStrategySuggestView;
 import com.chengwenfang.content.facade.dto.view.ThemeCollectStrategyView;
 import com.chengwenfang.content.facade.enums.HotNewsCollectStrategyMode;
-import com.chengwenfang.skill.facade.SkillFacade;
-import com.chengwenfang.skill.facade.constant.HotNewsSkillNames;
-import com.chengwenfang.skill.facade.constant.HotNewsWorkflowKeys;
-import com.chengwenfang.skill.facade.dto.view.SkillView;
+import com.chengwenfang.prompt.facade.PromptPackFacade;
+import com.chengwenfang.prompt.facade.constant.HotNewsPromptPackNames;
+import com.chengwenfang.prompt.facade.constant.HotNewsWorkflowKeys;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackView;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +28,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class HotNewsThemeCollectStrategyAssistService {
-  /** Skill 缺失时的兜底系统提示。 */
+  /** 提示词包 缺失时的兜底系统提示。 */
   private static final String FALLBACK_SYSTEM = """
       你是热点采集策略顾问。根据主题主要意图，选择采集模式：
       - structured：固定搜索词 + RSS/搜索渠道即可稳定拿到素材
@@ -37,7 +37,7 @@ public class HotNewsThemeCollectStrategyAssistService {
       """;
 
   private final AiTextFacade ai;
-  private final SkillFacade skills;
+  private final PromptPackFacade promptPacks;
 
   /**
    * 推荐采集策略。
@@ -91,26 +91,26 @@ public class HotNewsThemeCollectStrategyAssistService {
 
   private String resolveSystemPrompt() {
     try {
-      List<SkillView> all = skills.listSkills();
+      List<PromptPackView> all = promptPacks.listPromptPacks();
       if (all != null) {
-        for (SkillView skill : all) {
-          if (skill == null || !HotNewsSkillNames.THEME_COLLECT_STRATEGY.equals(skill.getName())) {
+        for (PromptPackView promptPack : all) {
+          if (promptPack == null || !HotNewsPromptPackNames.THEME_COLLECT_STRATEGY.equals(promptPack.getName())) {
             continue;
           }
-          if (StrUtil.isNotBlank(skill.getScene())
-              && !HotNewsWorkflowKeys.SCENE.equals(skill.getScene())) {
+          if (StrUtil.isNotBlank(promptPack.getScene())
+              && !HotNewsWorkflowKeys.SCENE.equals(promptPack.getScene())) {
             continue;
           }
-          if (Boolean.FALSE.equals(skill.getEnabled())) {
+          if (Boolean.FALSE.equals(promptPack.getEnabled())) {
             continue;
           }
-          if (StrUtil.isNotBlank(skill.getSystemInstructions())) {
-            return skill.getSystemInstructions().strip();
+          if (StrUtil.isNotBlank(promptPack.getSystemInstructions())) {
+            return promptPack.getSystemInstructions().strip();
           }
         }
       }
     } catch (Exception exception) {
-      log.warn("读取主题策略 Skill 失败 err={}", exception.getMessage());
+      log.warn("读取主题策略 提示词包 失败 err={}", exception.getMessage());
     }
     return FALLBACK_SYSTEM;
   }

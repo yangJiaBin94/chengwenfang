@@ -58,4 +58,4 @@ data: {"id","eventType","step","progress","message","payload","createdAt"}
 
 ## Other route groups (parity targets)
 
-`/api/notifications`, `/api/settings/skills`, `/api/workflows`, hot-news, content, publishing, images, generation, audit, repair, human-reviews, content-context
+`/api/notifications`, `/api/settings/prompt-packs`, `/api/workflows`, hot-news, content, publishing, images, generation, audit, repair, human-reviews, content-context

@@ -126,8 +126,8 @@ export function App() {
     setWechatConfigured,
     settingsSectionHint,
     setSettingsSectionHint,
-    homeSkillCount,
-    setHomeSkillCount,
+    homePromptPackCount,
+    setHomePromptPackCount,
     homeSelectedTopics,
     setHomeSelectedTopics,
     homeHotArticleCount,
@@ -477,7 +477,7 @@ export function App() {
                   enabledThemeTotal={enabledThemeTotal}
                   contentThemes={contentThemes}
                   hotNewsEnabledCount={hotNewsEnabledCount}
-                  homeSkillCount={homeSkillCount}
+                  homePromptPackCount={homePromptPackCount}
                   recentSuccessArticles={recentSuccessArticles}
                   courses={courses}
                   homeJobTitleByEntityId={homeJobTitleByEntityId}

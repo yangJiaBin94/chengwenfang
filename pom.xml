@@ -40,7 +40,7 @@
     <module>chengwenfang-job</module>
     <module>chengwenfang-ai</module>
     <module>chengwenfang-crawler</module>
-    <module>chengwenfang-skill-workflow</module>
+    <module>chengwenfang-prompt-workflow</module>
     <module>chengwenfang-content</module>
     <module>chengwenfang-sourcing</module>
     <module>chengwenfang-mode-hotnews</module>
@@ -115,7 +115,7 @@
       </dependency>
       <dependency>
         <groupId>com.chengwenfang</groupId>
-        <artifactId>chengwenfang-skill-workflow</artifactId>
+        <artifactId>chengwenfang-prompt-workflow</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

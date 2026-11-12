@@ -80,8 +80,8 @@ import {
 } from "../../features/hotnews/api";
 import { defaultAiSettings } from "../../features/settings/model";
 import type { AiSettings } from "../../features/settings/model";
-import { listSkills } from "../../features/settings/api";
-import type { Skill } from "../../features/settings/api";
+import { listPromptPacks } from "../../features/settings/api";
+import type { PromptPack } from "../../features/settings/api";
 import { jobStatusLabel } from "../../features/executions/pages/ExecutionTrajectoryPage";
 import {
   type ArticleVersion,
@@ -251,9 +251,9 @@ export function useChengwenfangPart0() {
   const [aiSettingsUpdatedAt, setAiSettingsUpdatedAt] = useState("");
   const [wechatConfigured, setWechatConfigured] = useState(false);
   const [settingsSectionHint, setSettingsSectionHint] = useState<
-    "ai" | "skills" | "layoutThemes" | "wechatMp" | "system" | null
+    "ai" | "promptPacks" | "layoutThemes" | "wechatMp" | "system" | null
   >(null);
-  const [homeSkillCount, setHomeSkillCount] = useState(0);
+  const [homePromptPackCount, setHomePromptPackCount] = useState(0);
   const [homeSelectedTopics, setHomeSelectedTopics] = useState(0);
   const [homeHotArticleCount, setHomeHotArticleCount] = useState(0);
   const [homeWorkflows, setHomeWorkflows] = useState<
@@ -486,8 +486,8 @@ export function useChengwenfangPart0() {
     setWechatConfigured,
     settingsSectionHint,
     setSettingsSectionHint,
-    homeSkillCount,
-    setHomeSkillCount,
+    homePromptPackCount,
+    setHomePromptPackCount,
     homeSelectedTopics,
     setHomeSelectedTopics,
     homeHotArticleCount,

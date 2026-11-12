@@ -14,7 +14,7 @@ public final class CoursePrompts {
   /** 知识库写作规范全文。 */
   public static final String WRITING_RULES = """
       知识库写作规范：
-      1. 作者人物、语气和个人表达特色必须遵循当前工作流节点绑定的“作者风格” Skill，不在基础提示词中写死作者口吻。
+      1. 作者人物、语气和个人表达特色必须遵循当前工作流节点绑定的“作者风格” 提示词包，不在基础提示词中写死作者口吻。
       2. 从一个具体问题或生活场景建立直觉，再进入术语、必要公式和边界；术语首次出现时给出中文解释，公式前后说明它解决什么问题。
       3. 关键概念使用 Markdown 粗体；对话和引用使用中文双引号，不使用「」。
       4. 正文禁用 //、-> 和破折号“——”，分别使用“｜”“→”或普通标点。首次出现的非中文产品名必须补充中文用途解释。
@@ -40,15 +40,15 @@ public final class CoursePrompts {
   };
 
   /**
-   * 拼接系统提示：开场句 + 写作规范，可选追加节点 Skill。
+   * 拼接系统提示：开场句 + 写作规范，可选追加节点 提示词包。
    *
-   * @param skillPrompt 节点 Skill；空白则不追加
+   * @param promptPackText 节点 提示词包；空白则不追加
    * @return 系统提示词
    */
-  public static String systemPrompt(String skillPrompt) {
+  public static String systemPrompt(String promptPackText) {
     String system = AUTHOR_PREAMBLE + "\n\n" + WRITING_RULES.strip();
-    if (skillPrompt != null && !skillPrompt.isBlank()) {
-      system = system + "\n\n当前节点必须遵循的 Skill（按顺序）：\n" + skillPrompt.strip();
+    if (promptPackText != null && !promptPackText.isBlank()) {
+      system = system + "\n\n当前节点必须遵循的 PromptPack（按顺序）：\n" + promptPackText.strip();
     }
     return system;
   }

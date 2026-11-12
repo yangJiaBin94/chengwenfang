@@ -2,12 +2,12 @@ package com.chengwenfang.app.adapter.worker;
 
 import com.chengwenfang.ai.facade.AiTextFacade;
 import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
-import com.chengwenfang.skill.domain.runtime.GraphTextNodeHandler;
-import com.chengwenfang.skill.domain.runtime.WorkflowNodeHandlerRegistry;
-import com.chengwenfang.skill.facade.SkillFacade;
-import com.chengwenfang.skill.facade.constant.WorkflowStructuralNodeKeys;
-import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
-import com.chengwenfang.skill.facade.spi.WorkflowNodeHandler;
+import com.chengwenfang.prompt.domain.runtime.GraphTextNodeHandler;
+import com.chengwenfang.prompt.domain.runtime.WorkflowNodeHandlerRegistry;
+import com.chengwenfang.prompt.facade.PromptPackFacade;
+import com.chengwenfang.prompt.facade.constant.WorkflowStructuralNodeKeys;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
+import com.chengwenfang.prompt.facade.spi.WorkflowNodeHandler;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -17,28 +17,28 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * 正式路径图文本节点：优先经注册表路由到模式处理器；未命中则应用 Skill 绑定后调用通用文本 AI。
+ * 正式路径图文本节点：优先经注册表路由到模式处理器；未命中则应用 提示词包绑定后调用通用文本 AI。
  */
 @Slf4j
 @Component
 public class FormalGraphTextNodeHandler implements GraphTextNodeHandler {
-  /** Skill 提示词组合。 */
-  private final SkillFacade skills;
+  /** 提示词包 提示词组合。 */
+  private final PromptPackFacade promptPacks;
   /** 文本 AI。 */
   private final AiTextFacade ai;
   /** 节点处理器注册表。 */
   private final WorkflowNodeHandlerRegistry nodeHandlerRegistry;
 
   /**
-   * @param skills              Skill 门面
+   * @param promptPacks              提示词包门面
    * @param ai                  文本 AI
    * @param nodeHandlerRegistry 节点处理器注册表
    */
   public FormalGraphTextNodeHandler(
-      SkillFacade skills,
+      PromptPackFacade promptPacks,
       AiTextFacade ai,
       WorkflowNodeHandlerRegistry nodeHandlerRegistry) {
-    this.skills = skills;
+    this.promptPacks = promptPacks;
     this.ai = ai;
     this.nodeHandlerRegistry = nodeHandlerRegistry;
   }
@@ -49,7 +49,7 @@ public class FormalGraphTextNodeHandler implements GraphTextNodeHandler {
    * @param typeKey        节点类型键（如 draft_opening、wechat_conversion）
    * @param nodeKey        节点实例键
    * @param nodeName       展示名
-   * @param skillBindings  节点 Skill 绑定原始 Map 列表
+   * @param promptPackBindings  节点 提示词包绑定原始 Map 列表
    * @param state          图运行状态（含 courseId/draft 等）
    * @param config         节点配置；当前未强依赖
    * @return 写回图状态的增量 Map
@@ -60,26 +60,26 @@ public class FormalGraphTextNodeHandler implements GraphTextNodeHandler {
       String typeKey,
       String nodeKey,
       String nodeName,
-      List<Map<String, Object>> skillBindings,
+      List<Map<String, Object>> promptPackBindings,
       Map<String, Object> state,
       Map<String, Object> config) {
     log.info("图文本节点开始 typeKey={} nodeKey={} name={}", typeKey, nodeKey, nodeName);
     // 注册表按 order 命中模式处理器（自定义 / 课程 / 雷达 / 热点）
     Optional<WorkflowNodeHandler> registered = nodeHandlerRegistry.findHandler(typeKey);
     if (registered.isPresent()) {
-      return registered.get().execute(typeKey, nodeKey, nodeName, skillBindings, state, config);
+      return registered.get().execute(typeKey, nodeKey, nodeName, promptPackBindings, state, config);
     }
     // 未注册类型：通用 markdown 文本回退
-    return executeGenericText(typeKey, nodeKey, nodeName, skillBindings, state);
+    return executeGenericText(typeKey, nodeKey, nodeName, promptPackBindings, state);
   }
 
   /**
-   * 通用 LLM 文本节点：组合 Skill 提示词并调用模型。
+   * 通用 LLM 文本节点：组合 提示词包 提示词并调用模型。
    *
    * @param typeKey       节点类型键
    * @param nodeKey       节点实例键
    * @param nodeName      展示名
-   * @param skillBindings Skill 绑定
+   * @param promptPackBindings 提示词包绑定
    * @param state         图状态
    * @return 状态增量
    */
@@ -87,12 +87,12 @@ public class FormalGraphTextNodeHandler implements GraphTextNodeHandler {
       String typeKey,
       String nodeKey,
       String nodeName,
-      List<Map<String, Object>> skillBindings,
+      List<Map<String, Object>> promptPackBindings,
       Map<String, Object> state) {
-    String skillPrompt = skills.composePromptFromBindings(toPromptBindings(skillBindings));
+    String promptPackText = promptPacks.composePromptFromBindings(toPromptBindings(promptPackBindings));
     StringBuilder prompt = new StringBuilder();
-    if (skillPrompt != null && !skillPrompt.isBlank()) {
-      prompt.append(skillPrompt.trim()).append("\n\n");
+    if (promptPackText != null && !promptPackText.isBlank()) {
+      prompt.append(promptPackText.trim()).append("\n\n");
     }
     prompt.append("节点：").append(nodeKey).append(" (").append(typeKey).append(") ").append(nodeName).append('\n');
     if (state != null && state.get("courseId") != null) {
@@ -135,23 +135,23 @@ public class FormalGraphTextNodeHandler implements GraphTextNodeHandler {
   }
 
   /**
-   * 将原始绑定 Map 转为 {@link SkillPromptBindingView} 列表。
+   * 将原始绑定 Map 转为 {@link PromptPackPromptBindingView} 列表。
    *
-   * @param skillBindings 节点绑定；可为 null
+   * @param promptPackBindings 节点绑定；可为 null
    * @return 绑定列表
    */
-  private static List<SkillPromptBindingView> toPromptBindings(List<Map<String, Object>> skillBindings) {
-    if (skillBindings == null || skillBindings.isEmpty()) {
+  private static List<PromptPackPromptBindingView> toPromptBindings(List<Map<String, Object>> promptPackBindings) {
+    if (promptPackBindings == null || promptPackBindings.isEmpty()) {
       return List.of();
     }
-    List<SkillPromptBindingView> out = new ArrayList<>();
-    for (Map<String, Object> binding : skillBindings) {
+    List<PromptPackPromptBindingView> out = new ArrayList<>();
+    for (Map<String, Object> binding : promptPackBindings) {
       if (binding == null) {
         continue;
       }
       Object priority = binding.get("priority");
-      out.add(SkillPromptBindingView.builder()
-          .skillId(binding.get("skillId") == null ? null : String.valueOf(binding.get("skillId")))
+      out.add(PromptPackPromptBindingView.builder()
+          .promptPackId(binding.get("promptPackId") == null ? null : String.valueOf(binding.get("promptPackId")))
           .priority(priority instanceof Number number ? number.intValue() : 100)
           .enabled(binding.get("enabled") == null || Boolean.TRUE.equals(binding.get("enabled")))
           .build());

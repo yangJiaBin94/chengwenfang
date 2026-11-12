@@ -8,7 +8,7 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
 /**
- * 内置 Skill/工作流目录指纹：与黄金基线 {@code catalog.sha256} 比对。
+ * 内置提示词包/工作流目录指纹：与黄金基线 {@code catalog.sha256} 比对。
  */
 class BuiltinCatalogFingerprintTest {
   @Test

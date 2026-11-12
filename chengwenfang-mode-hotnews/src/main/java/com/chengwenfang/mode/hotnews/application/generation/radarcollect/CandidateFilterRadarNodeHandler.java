@@ -6,8 +6,8 @@ import com.chengwenfang.crawler.facade.MarketingPageFilter;
 import com.chengwenfang.sourcing.facade.SourceVideoTitleFilter;
 import com.chengwenfang.infra.config.ChengwenfangProperties;
 import com.chengwenfang.job.facade.JobFacade;
-import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
-import com.chengwenfang.skill.facade.enums.HotNewsRadarCollectNodeType;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
+import com.chengwenfang.prompt.facade.enums.HotNewsRadarCollectNodeType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -61,7 +61,7 @@ public class CandidateFilterRadarNodeHandler implements RadarCollectNodeHandler 
   public void execute(
       RadarCollectSessionStore.Session session,
       Map<String, Object> lightState,
-      List<SkillPromptBindingView> skillBindings,
+      List<PromptPackPromptBindingView> promptPackBindings,
       String nodeKey,
       String nodeName) {
     String jobId = StrUtil.blankToDefault(
@@ -150,7 +150,7 @@ public class CandidateFilterRadarNodeHandler implements RadarCollectNodeHandler 
         futures.add(CompletableFuture.runAsync(() -> {
           try {
             boolean marketing = aiSupport.isMarketing(
-                skillBindings,
+                promptPackBindings,
                 candidate.getTitle(),
                 candidate.getFactBrief(),
                 candidate.getRawText());

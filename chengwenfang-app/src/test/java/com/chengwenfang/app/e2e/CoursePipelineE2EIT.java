@@ -192,7 +192,7 @@ class CoursePipelineE2EIT extends ChengwenfangIT {
     m.put("enabled", true);
     m.put("sequenceNo", seq);
     m.put("config", Map.of());
-    m.put("skillBindings", List.of());
+    m.put("promptPackBindings", List.of());
     return m;
   }
 

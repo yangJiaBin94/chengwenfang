@@ -1,7 +1,7 @@
 package com.chengwenfang.mode.hotnews.application.generation.hotnews;
 
-import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
-import com.chengwenfang.skill.facade.enums.HotNewsWorkflowNodeType;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
+import com.chengwenfang.prompt.facade.enums.HotNewsWorkflowNodeType;
 import java.util.List;
 
 /**
@@ -19,13 +19,13 @@ public interface HotNewsNodeHandler {
    * 执行节点并回写类型化状态。
    *
    * @param state          图状态（可读写）
-   * @param skillBindings  节点 Skill 绑定
+   * @param promptPackBindings  节点 提示词包绑定
    * @param nodeKey        节点实例 key
    * @param nodeName       节点展示名
    */
   void execute(
       HotNewsGraphState state,
-      List<SkillPromptBindingView> skillBindings,
+      List<PromptPackPromptBindingView> promptPackBindings,
       String nodeKey,
       String nodeName);
 }

@@ -24,8 +24,8 @@ import {
   Workflow,
   X,
 } from "lucide-react";
-import { listSkills } from "../../settings/api";
-import type { Skill } from "../../settings/api";
+import { listPromptPacks } from "../../settings/api";
+import type { PromptPack } from "../../settings/api";
 import {
   createWorkflow,
   listWorkflowRuns,
@@ -101,7 +101,7 @@ export function WorkflowRuns({
       <div className="workflow-run-toolbar">
         <div>
           <h3>运行记录</h3>
-          <p>每次运行绑定准确的工作流版本与 Skill 快照。</p>
+          <p>每次运行绑定准确的工作流版本与 PromptPack 快照。</p>
         </div>
         <div className="workflow-run-filters">
           <select

@@ -257,7 +257,7 @@ public abstract class ChengwenfangIT {
     jdbc.update("DELETE FROM audit_issue_refs");
     jdbc.update("DELETE FROM audit_issues");
     jdbc.update("DELETE FROM audit_runs");
-    jdbc.update("DELETE FROM skill_default_bindings");
+    jdbc.update("DELETE FROM prompt_pack_default_bindings");
     jdbc.update("DELETE FROM model_calls");
     jdbc.update("DELETE FROM video_transcripts");
     jdbc.update("DELETE FROM hotnews_research_item_dimensions");

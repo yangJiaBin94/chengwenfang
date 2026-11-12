@@ -4,7 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.chengwenfang.skill.facade.constant.CustomAiNodeActions;
+import com.chengwenfang.prompt.facade.constant.CustomAiNodeActions;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Component;
@@ -51,7 +51,7 @@ public class CustomAiActionPlanParser {
       parsed.add(CustomAiParsedAction.builder()
           .op(op)
           .content(StrUtil.nullToEmpty(actionObj.getStr(CustomAiNodeActions.FIELD_CONTENT)))
-          .skillId(StrUtil.nullToEmpty(actionObj.getStr(CustomAiNodeActions.FIELD_SKILL_ID)))
+          .promptPackId(StrUtil.nullToEmpty(actionObj.getStr(CustomAiNodeActions.FIELD_PROMPT_PACK_ID)))
           .build());
     }
     return parsed;

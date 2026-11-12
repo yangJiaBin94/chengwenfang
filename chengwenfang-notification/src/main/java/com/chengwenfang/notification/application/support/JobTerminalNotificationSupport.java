@@ -2,6 +2,9 @@ package com.chengwenfang.notification.application.support;
 
 import cn.hutool.core.util.StrUtil;
 import com.chengwenfang.job.facade.constant.JobTypes;
+import com.chengwenfang.mode.hotnews.facade.constant.HotNewsArticleJobKeys;
+import com.chengwenfang.mode.hotnews.facade.constant.HotNewsGenerationScopes;
+import com.chengwenfang.mode.hotnews.facade.constant.HotNewsRewriteJobKeys;
 import com.chengwenfang.notification.facade.constant.NotificationMetadataKeys;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +29,21 @@ public class JobTerminalNotificationSupport {
    * @return 中文标题
    */
   public String titleFor(String jobType, boolean succeeded, String displayName) {
-    String base = baseTitle(jobType, succeeded);
+    return titleFor(jobType, succeeded, displayName, null);
+  }
+
+  /**
+   * 组装通知标题；可据任务出参区分「全文完成」与「正文落库、后续仍在跑」。
+   *
+   * @param jobType     任务类型
+   * @param succeeded   是否成功
+   * @param displayName 展示名；空则只用类型文案
+   * @param output      任务出参；可空
+   * @return 中文标题
+   */
+  public String titleFor(
+      String jobType, boolean succeeded, String displayName, Map<String, Object> output) {
+    String base = baseTitle(jobType, succeeded, output);
     if (StrUtil.isBlank(displayName)) {
       return base;
     }
@@ -40,6 +57,17 @@ public class JobTerminalNotificationSupport {
    * @return 成功说明
    */
   public String successMessage(String jobType) {
+    return successMessage(jobType, null);
+  }
+
+  /**
+   * 成功终态的短正文；改写若仍有配图重生则不写成「全部完成」。
+   *
+   * @param jobType 任务类型
+   * @param output  任务出参；可空
+   * @return 成功说明
+   */
+  public String successMessage(String jobType, Map<String, Object> output) {
     if (JobTypes.HOT_NEWS_FETCH.equals(jobType)) {
       return "雷达采集已完成";
     }
@@ -50,8 +78,23 @@ public class JobTerminalNotificationSupport {
         || JobTypes.HOT_NEWS_SOURCE_VIDEO_PARSE.equals(jobType)) {
       return "视频解析已完成";
     }
-    if (JobTypes.HOT_NEWS_ARTICLE_GENERATION.equals(jobType)
-        || JobTypes.HOT_NEWS_ARTICLE_REWRITE.equals(jobType)) {
+    if (JobTypes.HOT_NEWS_ARTICLE_REWRITE.equals(jobType) && rewriteHasPendingImages(output)) {
+      return "正文已更新；配套图片正在重生，请稍候";
+    }
+    if (JobTypes.HOT_NEWS_ARTICLE_GENERATION.equals(jobType)) {
+      String scope = generationScope(output);
+      if (HotNewsGenerationScopes.isImages(scope)) {
+        return "配套图片已更新";
+      }
+      if (HotNewsGenerationScopes.isWechat(scope)) {
+        return "公众号优化版已更新";
+      }
+      if (HotNewsGenerationScopes.DRAFT.equals(scope)) {
+        return "热点原稿已更新";
+      }
+      return "任务已成功完成";
+    }
+    if (JobTypes.HOT_NEWS_ARTICLE_REWRITE.equals(jobType)) {
       return "任务已成功完成";
     }
     if (JobTypes.HOT_ARTICLE_REVIEW.equals(jobType)
@@ -93,21 +136,36 @@ public class JobTerminalNotificationSupport {
   }
 
   /**
-   * 类型级基础标题（不含实体名）。
+   * 类型级基础标题（不含实体名）；可据出参微调改写成功文案。
    *
    * @param jobType   任务类型
    * @param succeeded 是否成功
+   * @param output    任务出参；可空
    * @return 基础标题
    */
-  private static String baseTitle(String jobType, boolean succeeded) {
+  private static String baseTitle(String jobType, boolean succeeded, Map<String, Object> output) {
     if (JobTypes.COURSE_CONTENT_GENERATION.equals(jobType)) {
       return succeeded ? "课程内容生成完成" : "课程内容生成失败";
     }
     if (JobTypes.HOT_NEWS_ARTICLE_GENERATION.equals(jobType)) {
+      String scope = generationScope(output);
+      if (HotNewsGenerationScopes.isImages(scope)) {
+        return succeeded ? "热点配套图片生成完成" : "热点配套图片生成失败";
+      }
+      if (HotNewsGenerationScopes.isWechat(scope)) {
+        return succeeded ? "热点公众号版本生成完成" : "热点公众号版本生成失败";
+      }
+      if (HotNewsGenerationScopes.DRAFT.equals(scope)) {
+        return succeeded ? "热点原稿生成完成" : "热点原稿生成失败";
+      }
       return succeeded ? "热点文章生成完成" : "热点文章生成失败";
     }
     if (JobTypes.HOT_NEWS_ARTICLE_REWRITE.equals(jobType)) {
-      return succeeded ? "热点文章改写完成" : "热点文章改写失败";
+      if (!succeeded) {
+        return "热点文章改写失败";
+      }
+      // 改写 Job 结束 ≠ 整条优化流水线结束：仍有配图时避免「完成」误导
+      return rewriteHasPendingImages(output) ? "热点文章改写已落库" : "热点文章改写完成";
     }
     if (JobTypes.HOT_NEWS_FETCH.equals(jobType)) {
       return succeeded ? "雷达采集完成" : "雷达采集失败";
@@ -146,5 +204,43 @@ public class JobTerminalNotificationSupport {
       return succeeded ? "课表生成完成" : "课表生成失败";
     }
     return succeeded ? "任务已完成" : "任务失败";
+  }
+
+  /**
+   * 改写出参是否标明仍有配图重生（已入队或待入队）。
+   *
+   * @param output 任务出参；可空
+   * @return 仍有配图后续则为 true
+   */
+  private static boolean rewriteHasPendingImages(Map<String, Object> output) {
+    if (output == null || output.isEmpty()) {
+      return false;
+    }
+    Object pending = output.get(HotNewsRewriteJobKeys.IMAGES_REGEN_PENDING);
+    if (Boolean.TRUE.equals(pending)) {
+      return true;
+    }
+    if (pending instanceof String text && "true".equalsIgnoreCase(text.trim())) {
+      return true;
+    }
+    Object imagesJobId = output.get(HotNewsRewriteJobKeys.IMAGES_REGEN_JOB_ID);
+    return imagesJobId != null && StrUtil.isNotBlank(String.valueOf(imagesJobId).trim());
+  }
+
+  /**
+   * 从生成任务出参读取规范化 scope；缺省 full。
+   *
+   * @param output 任务出参；可空
+   * @return scope 字面量
+   */
+  private static String generationScope(Map<String, Object> output) {
+    if (output == null || output.isEmpty()) {
+      return HotNewsGenerationScopes.FULL;
+    }
+    Object scope = output.get(HotNewsArticleJobKeys.SCOPE);
+    if (scope == null) {
+      return HotNewsGenerationScopes.FULL;
+    }
+    return HotNewsGenerationScopes.normalize(String.valueOf(scope));
   }
 }

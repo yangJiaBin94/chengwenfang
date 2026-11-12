@@ -1,5 +1,6 @@
 package com.chengwenfang.content.domain.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -58,6 +59,12 @@ public class WorkGenerationSettingsEntity {
   /** 热点：改写时间字符串。 */
   @TableField("rewritten_at")
   private String rewrittenAt;
+  /**
+   * 热点：最近一次优化诊断 JSON。
+   * <p>允许显式写 null，以便改写后清空过期诊断。
+   */
+  @TableField(value = "last_optimize_critique", updateStrategy = FieldStrategy.ALWAYS)
+  private String lastOptimizeCritique;
   /** 最近更新时间。 */
   @TableField("updated_at")
   private LocalDateTime updatedAt;

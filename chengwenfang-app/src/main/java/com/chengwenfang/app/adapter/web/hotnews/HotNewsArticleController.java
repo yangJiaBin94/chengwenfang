@@ -8,7 +8,9 @@ import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsArticleView;
 import com.chengwenfang.mode.hotnews.facade.HotNewsFacade;
 import com.chengwenfang.mode.hotnews.facade.dto.request.HotNewsGenerationRunRequest;
 import com.chengwenfang.mode.hotnews.facade.dto.request.HotNewsGenerationSettingsRequest;
+import com.chengwenfang.mode.hotnews.facade.dto.request.HotNewsOptimizeCritiqueRequest;
 import com.chengwenfang.mode.hotnews.facade.dto.request.HotNewsRewriteRequest;
+import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsOptimizeCritiqueView;
 import com.chengwenfang.job.facade.dto.view.JobView;
 import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Operation;
@@ -52,6 +54,21 @@ public class HotNewsArticleController {
       @PathVariable String articleId,
       @Valid @RequestBody(required = false) HotNewsRewriteRequest body) {
     return ApiResult.ok(hotNews.startArticleRewrite(articleId, body));
+  }
+
+  /**
+   * 同步诊断热点原稿：打分与可编辑优化建议。
+   *
+   * @param articleId 文章 ID
+   * @param body      诊断请求；可为 null
+   * @return 诊断结果
+   */
+  @PostMapping("/hot-news/articles/{articleId}/optimize-critique")
+  @Operation(summary = "热点原稿优化诊断")
+  public ApiResult<HotNewsOptimizeCritiqueView> critiqueHotArticleDraft(
+      @PathVariable String articleId,
+      @Valid @RequestBody(required = false) HotNewsOptimizeCritiqueRequest body) {
+    return ApiResult.ok(hotNews.critiqueDraftOptimize(articleId, body));
   }
 
   /**

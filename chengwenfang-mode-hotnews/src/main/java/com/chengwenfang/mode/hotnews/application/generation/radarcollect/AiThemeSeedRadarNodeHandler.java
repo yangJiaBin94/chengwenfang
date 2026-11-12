@@ -11,8 +11,8 @@ import com.chengwenfang.mode.hotnews.facade.HotNewsFacade;
 import com.chengwenfang.mode.hotnews.facade.dto.request.AiThemeSeedPersistRequest;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsTopicView;
 import com.chengwenfang.job.facade.JobFacade;
-import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
-import com.chengwenfang.skill.facade.enums.HotNewsRadarCollectNodeType;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
+import com.chengwenfang.prompt.facade.enums.HotNewsRadarCollectNodeType;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -50,7 +50,7 @@ public class AiThemeSeedRadarNodeHandler implements RadarCollectNodeHandler {
   public void execute(
       RadarCollectSessionStore.Session session,
       Map<String, Object> lightState,
-      List<SkillPromptBindingView> skillBindings,
+      List<PromptPackPromptBindingView> promptPackBindings,
       String nodeKey,
       String nodeName) {
     String jobId = StrUtil.blankToDefault(
@@ -119,7 +119,7 @@ public class AiThemeSeedRadarNodeHandler implements RadarCollectNodeHandler {
       }
 
       List<AiThemeSeedAiResult> generated =
-          aiSupport.generateAiThemeSeeds(skillBindings, userPrompt, remaining);
+          aiSupport.generateAiThemeSeeds(promptPackBindings, userPrompt, remaining);
       List<AiThemeSeedAiResult> unique =
           AiThemeSeedDedupeSupport.takeUnique(generated, reservedKeys, remaining);
       if (unique.isEmpty()) {

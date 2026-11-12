@@ -19,6 +19,6 @@
     "com.chengwenfang.mode.hotnews.application.prompt.VideoSpeechPrompts.SUMMARIZE_SYSTEM": "b3f2d2bc70405c8a469f81b0fd66ea8033a3b4844ba72ca45654c0b302d987a8",
     "com.chengwenfang.mode.hotnews.application.prompt.VideoVisionPrompts.VISION_SUMMARIZE_SYSTEM": "65a2529af66dd53b13718852185ccc6c56196d8f2f518de977755523a6135baf",
     "com.chengwenfang.publishing.facade.constant.LayoutThemeKeys.TYPE_SYSTEM": "bbc5e661e106c6dcd8dc6dd186454c2fcba3c710fb4d8e71a60c93eaf077f073",
-    "com.chengwenfang.skill.facade.constant.CourseSkillNames.CHENGWENFANG_RULES": "b6a1b1eb90204d48c705dced7ff64433d13cc20cdf998c8aa9ef5ab148fd9c94",
-    "com.chengwenfang.skill.facade.constant.CourseSkillNames.LEGACY_RULES": "2011a7c9d140c7c72231ce6610e632a43199d62548841151619f2637d9ede622"
+    "com.chengwenfang.prompt.facade.constant.CoursePromptPackNames.CHENGWENFANG_RULES": "b6a1b1eb90204d48c705dced7ff64433d13cc20cdf998c8aa9ef5ab148fd9c94",
+    "com.chengwenfang.prompt.facade.constant.CoursePromptPackNames.LEGACY_RULES": "2011a7c9d140c7c72231ce6610e632a43199d62548841151619f2637d9ede622"
 }

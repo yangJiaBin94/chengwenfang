@@ -24,8 +24,8 @@ import {
   Workflow,
   X,
 } from "lucide-react";
-import { listSkills } from "../../settings/api";
-import type { Skill } from "../../settings/api";
+import { listPromptPacks } from "../../settings/api";
+import type { PromptPack } from "../../settings/api";
 import {
   createWorkflow,
   listWorkflowRuns,
@@ -65,7 +65,7 @@ import type {
   WorkflowVersionMetric,
 } from "../api";
 
-import { WorkflowMetric, formatDate, formatDuration } from "./workflowUi";
+import { WorkflowMetric, formatDate, formatDuration, formatSuccessRate } from "./workflowUi";
 
 export function WorkflowAnalytics({
   metrics,
@@ -89,7 +89,7 @@ export function WorkflowAnalytics({
       <div className="workflow-metric-grid">
         <WorkflowMetric
           label="成功率"
-          value={`${metrics.successRate}%`}
+          value={formatSuccessRate(metrics.successRate)}
           note={`${metrics.totalRuns} 次可靠样本`}
         />
         <WorkflowMetric
@@ -124,7 +124,7 @@ export function WorkflowAnalytics({
                   <strong>
                     {item.version === "legacy" ? "旧版" : `V${item.version}`}
                   </strong>
-                  <span>成功率 {item.successRate}%</span>
+                  <span>成功率 {formatSuccessRate(item.successRate)}</span>
                   <span>P95 {formatDuration(item.p95DurationSeconds)}</span>
                   <span>{item.totalTokens.toLocaleString()} Token</span>
                   <small>{item.runs} 个样本</small>

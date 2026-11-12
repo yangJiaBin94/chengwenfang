@@ -3,10 +3,10 @@ package com.chengwenfang.mode.course.application.generation;
 import com.chengwenfang.mode.course.application.course.CourseArticleGraphSupport;
 import com.chengwenfang.mode.course.application.generation.course.CourseGraphState;
 import com.chengwenfang.mode.course.application.generation.course.CourseGraphStateKeys;
-import com.chengwenfang.skill.facade.constant.WorkflowNodeHandlerOrders;
-import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
-import com.chengwenfang.skill.facade.enums.CourseWorkflowNodeType;
-import com.chengwenfang.skill.facade.spi.WorkflowNodeHandler;
+import com.chengwenfang.prompt.facade.constant.WorkflowNodeHandlerOrders;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
+import com.chengwenfang.prompt.facade.enums.CourseWorkflowNodeType;
+import com.chengwenfang.prompt.facade.spi.WorkflowNodeHandler;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +47,7 @@ public class CourseArticleGraphExecutor implements WorkflowNodeHandler {
    * @param typeKey       节点类型键
    * @param nodeKey       节点实例键
    * @param nodeName      展示名
-   * @param skillBindings 原始 Skill 绑定 Map 列表
+   * @param promptPackBindings 原始 提示词包绑定 Map 列表
    * @param state         图运行状态
    * @param config        节点配置
    * @return 状态增量
@@ -57,14 +57,14 @@ public class CourseArticleGraphExecutor implements WorkflowNodeHandler {
       String typeKey,
       String nodeKey,
       String nodeName,
-      List<Map<String, Object>> skillBindings,
+      List<Map<String, Object>> promptPackBindings,
       Map<String, Object> state,
       Map<String, Object> config) {
     CourseWorkflowNodeType nodeType = CourseWorkflowNodeType.from(typeKey)
         .orElseThrow(() -> new IllegalArgumentException("未知课程节点类型：" + typeKey));
     log.info("课程图节点分发 typeKey={} nodeKey={}", typeKey, nodeKey);
     CourseGraphState graphState = CourseGraphState.fromMap(state);
-    List<SkillPromptBindingView> bindings = toPromptBindings(skillBindings);
+    List<PromptPackPromptBindingView> bindings = toPromptBindings(promptPackBindings);
     try {
       dispatch(nodeType, graphState, bindings);
     } catch (Exception exception) {
@@ -96,12 +96,12 @@ public class CourseArticleGraphExecutor implements WorkflowNodeHandler {
    *
    * @param nodeType  节点枚举
    * @param state     图状态
-   * @param bindings  Skill 绑定
+   * @param bindings  提示词包绑定
    */
   private void dispatch(
       CourseWorkflowNodeType nodeType,
       CourseGraphState state,
-      List<SkillPromptBindingView> bindings) throws Exception {
+      List<PromptPackPromptBindingView> bindings) throws Exception {
     switch (nodeType) {
       case SNAPSHOT_CONTEXT -> graphSupport.snapshotContext(state, bindings);
       case DRAFT_OPENING, DRAFT_CORE, DRAFT_EXAMPLE, DRAFT_SUMMARY, DRAFT_PREVIEW ->
@@ -121,21 +121,21 @@ public class CourseArticleGraphExecutor implements WorkflowNodeHandler {
   /**
    * 将快照中的绑定 Map 转为类型化绑定视图。
    *
-   * @param skillBindings 原始绑定列表
+   * @param promptPackBindings 原始绑定列表
    * @return 绑定视图列表
    */
-  private static List<SkillPromptBindingView> toPromptBindings(List<Map<String, Object>> skillBindings) {
-    if (skillBindings == null || skillBindings.isEmpty()) {
+  private static List<PromptPackPromptBindingView> toPromptBindings(List<Map<String, Object>> promptPackBindings) {
+    if (promptPackBindings == null || promptPackBindings.isEmpty()) {
       return List.of();
     }
-    List<SkillPromptBindingView> result = new ArrayList<>();
-    for (Map<String, Object> binding : skillBindings) {
+    List<PromptPackPromptBindingView> result = new ArrayList<>();
+    for (Map<String, Object> binding : promptPackBindings) {
       if (binding == null) {
         continue;
       }
       Object priority = binding.get("priority");
-      result.add(SkillPromptBindingView.builder()
-          .skillId(binding.get("skillId") == null ? null : String.valueOf(binding.get("skillId")))
+      result.add(PromptPackPromptBindingView.builder()
+          .promptPackId(binding.get("promptPackId") == null ? null : String.valueOf(binding.get("promptPackId")))
           .priority(priority instanceof Number number ? number.intValue() : 100)
           .enabled(binding.get("enabled") == null || Boolean.TRUE.equals(binding.get("enabled")))
           .build());

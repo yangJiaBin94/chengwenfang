@@ -158,7 +158,7 @@ public final class G20CustomAiWorkflowScenario implements GoldenScenario {
     row.put("enabled", true);
     row.put("config", config);
     row.put("position", Map.of("x", sequenceNo * 40, "y", 0));
-    row.put("skillBindings", List.of());
+    row.put("promptPackBindings", List.of());
     return row;
   }
 

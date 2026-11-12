@@ -35,14 +35,14 @@ import {
 } from "../model";
 import type { AiProviderConfig, AiSettings, AiSettingsKind } from "../model";
 import {
-  createSkill,
-  deleteSkill,
-  listSkills,
-  pageSkills,
-  updateSkill,
-  updateSkill as saveSkillApi,
+  createPromptPack,
+  deletePromptPack,
+  listPromptPacks,
+  pagePromptPacks,
+  updatePromptPack,
+  updatePromptPack as savePromptPackApi,
 } from "../api";
-import type { Skill } from "../api";
+import type { PromptPack } from "../api";
 import {
   LIST_PAGE_SIZE_OPTIONS,
   listPageNumbers,
@@ -112,7 +112,7 @@ export function SystemReadyPanel() {
           <span className="section-kicker">System Readiness</span>
           <h2>系统就绪</h2>
           <p>
-            检查库内内置 Skill 与三条主工作流是否已种子化并可生成。缺项时请按提示执行
+            检查库内内置提示词包 与三条主工作流是否已种子化并可生成。缺项时请按提示执行
             bootstrap 脚本。
           </p>
         </div>
@@ -137,9 +137,9 @@ export function SystemReadyPanel() {
           </div>
           <dl className="system-ready-summary">
             <div>
-              <dt>Skill</dt>
+              <dt>PromptPack</dt>
               <dd>
-                {view.skillCount} / 期望 {view.expectedSkillCount}
+                {view.promptPackCount} / 期望 {view.expectedPromptPackCount}
               </dd>
             </div>
             <div>

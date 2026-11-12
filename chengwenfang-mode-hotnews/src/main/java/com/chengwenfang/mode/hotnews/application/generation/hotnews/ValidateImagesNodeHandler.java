@@ -6,8 +6,8 @@ import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.mode.hotnews.domain.HotNewsMarkdownUtil;
 import com.chengwenfang.mode.hotnews.facade.constant.HotNewsErrorCodes;
 import com.chengwenfang.mode.hotnews.facade.enums.HotNewsImageCountOption;
-import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
-import com.chengwenfang.skill.facade.enums.HotNewsWorkflowNodeType;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
+import com.chengwenfang.prompt.facade.enums.HotNewsWorkflowNodeType;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -26,7 +26,7 @@ public class ValidateImagesNodeHandler implements HotNewsNodeHandler {
   @Override
   public void execute(
       HotNewsGraphState state,
-      List<SkillPromptBindingView> skillBindings,
+      List<PromptPackPromptBindingView> promptPackBindings,
       String nodeKey,
       String nodeName) {
     if (Boolean.TRUE.equals(state.getImagesSkipped())) {

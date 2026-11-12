@@ -29,7 +29,8 @@ class VideoTranscriptWorkDirCleanupTest {
         Mockito.mock(VideoSpeechSummarizer.class),
         Mockito.mock(VideoVisionSummarizer.class),
         Mockito.mock(VideoTranscriptStore.class),
-        Mockito.mock(VideoDurationCache.class));
+        Mockito.mock(VideoDurationCache.class),
+        Mockito.mock(VideoParseRunService.class));
     VideoTranscriptService service = new VideoTranscriptService(
         Mockito.mock(TopicResearchItemScoreService.class),
         pipeline,

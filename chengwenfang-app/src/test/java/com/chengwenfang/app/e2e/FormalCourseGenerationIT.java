@@ -25,11 +25,11 @@ import org.springframework.test.context.TestPropertySource;
 })
 class FormalCourseGenerationIT extends ChengwenfangIT {
 
-  private static final String SKILL_MARKER = "FORMAL-SKILL-MARKER-IT-ONLY";
+  private static final String PROMPT_PACK_MARKER = "FORMAL-PROMPT-PACK-MARKER-IT-ONLY";
   private static WireMockServer wireMock;
 
   private String workflowId;
-  private String skillId;
+  private String promptPackId;
 
   @BeforeAll
   static void startWireMock() {
@@ -48,20 +48,20 @@ class FormalCourseGenerationIT extends ChengwenfangIT {
     FormalAiWireMock.stubDefaults(wireMock);
     pointFormalAiProviders(wireMock);
 
-    Map<String, Object> skill = postJson("/api/settings/skills", Map.of(
-        "name", "Formal IT Skill",
+    Map<String, Object> promptPack = postJson("/api/settings/prompt-packs", Map.of(
+        "name", "Formal IT 提示词包",
         "scene", "course_content_generation",
-        "systemInstructions", "You are a course writer. " + SKILL_MARKER,
+        "systemInstructions", "You are a course writer. " + PROMPT_PACK_MARKER,
         "taskInstructions", "Keep structure with 本课小结 and 下节课预告.",
         "priority", 10,
         "enabled", true));
-    skillId = String.valueOf(skill.get("id"));
+    promptPackId = String.valueOf(promptPack.get("id"));
 
     workflowId = findOrCreateCourseWorkflow();
     Map<String, Object> draft = getJson("/api/workflows/" + workflowId + "/draft");
     putJson("/api/workflows/" + workflowId + "/draft", Map.of(
         "revision", draft.get("revision"),
-        "definition", formalDefinition(skillId)));
+        "definition", formalDefinition(promptPackId)));
     postJson("/api/workflows/" + workflowId + "/publish", Map.of(
         "version", "it-formal-" + UUID.randomUUID().toString().substring(0, 8),
         "releaseNotes", "formal generation IT"));
@@ -117,17 +117,17 @@ class FormalCourseGenerationIT extends ChengwenfangIT {
   }
 
   @Test
-  void compose_prompt_from_bindings_includes_skill_text() throws Exception {
+  void compose_prompt_from_bindings_includes_prompt_pack_text() throws Exception {
     Integer bindingCount = jdbc.queryForObject(
-        "SELECT COUNT(*) FROM workflow_version_skill_bindings WHERE skill_id = ?",
+        "SELECT COUNT(*) FROM workflow_version_prompt_pack_bindings WHERE prompt_pack_id = ?",
         Integer.class,
-        skillId);
+        promptPackId);
     assertThat(bindingCount).isGreaterThanOrEqualTo(1);
     String instructions = jdbc.queryForObject(
-        "SELECT system_instructions FROM skills WHERE id = ?",
+        "SELECT system_instructions FROM prompt_packs WHERE id = ?",
         String.class,
-        skillId);
-    assertThat(instructions).contains(SKILL_MARKER);
+        promptPackId);
+    assertThat(instructions).contains(PROMPT_PACK_MARKER);
   }
 
   @Test
@@ -158,9 +158,9 @@ class FormalCourseGenerationIT extends ChengwenfangIT {
     return String.valueOf(created.get("id"));
   }
 
-  private static Map<String, Object> formalDefinition(String skillId) {
+  private static Map<String, Object> formalDefinition(String promptPackId) {
     List<Map<String, Object>> bindings = List.of(Map.of(
-        "skillId", skillId,
+        "promptPackId", promptPackId,
         "priority", 10,
         "enabled", true));
     List<Map<String, Object>> nodes = new ArrayList<>();
@@ -203,7 +203,7 @@ class FormalCourseGenerationIT extends ChengwenfangIT {
     m.put("enabled", true);
     m.put("sequenceNo", seq);
     m.put("config", Map.of("timeoutSeconds", 60, "maxAttempts", 1, "failurePolicy", "stop"));
-    m.put("skillBindings", bindings);
+    m.put("promptPackBindings", bindings);
     return m;
   }
 

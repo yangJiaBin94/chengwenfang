@@ -51,6 +51,29 @@ public class PageScreenshotClient {
    * @return 结果；未启用或失败时 ok=false
    */
   public PageScreenshotResult capture(String url) {
+    return runCapture(url, null, false);
+  }
+
+  /**
+   * 成文佐证：可选定位文本后截一屏；PDF 渲染首页。
+   *
+   * @param url      页面或 PDF 地址
+   * @param findText 对准文本；可空
+   * @return 结果；未启用或失败时 ok=false
+   */
+  public PageScreenshotResult captureEvidence(String url, String findText) {
+    return runCapture(url, findText, true);
+  }
+
+  /**
+   * 调用 CLI 截图。
+   *
+   * @param url          目标 URL
+   * @param findText     可选定位文本
+   * @param evidenceMode 佐证模式时强制最多 1 张
+   * @return CLI 结果
+   */
+  private PageScreenshotResult runCapture(String url, String findText, boolean evidenceMode) {
     ChengwenfangProperties.PageScreenshotSettings settings = properties.getPageScreenshot();
     if (settings == null || !settings.isEnabled() || StrUtil.isBlank(url)) {
       return PageScreenshotResult.builder().ok(false).error("page-screenshot 未启用").build();
@@ -58,7 +81,9 @@ public class PageScreenshotClient {
     Path cwd = resolveWorkingDirectory(settings.getWorkingDirectory());
     Path python = resolveExecutable(settings.getPythonExecutable());
     int timeout = settings.getTimeoutSeconds() <= 0 ? 45 : settings.getTimeoutSeconds();
-    int maxShots = settings.getMaxShots() <= 0 ? 3 : settings.getMaxShots();
+    int maxShots = evidenceMode || StrUtil.isNotBlank(findText)
+        ? 1
+        : (settings.getMaxShots() <= 0 ? 3 : settings.getMaxShots());
     String viewport = StrUtil.blankToDefault(settings.getViewport(), "1280x900");
 
     Path outDir;
@@ -85,6 +110,10 @@ public class PageScreenshotClient {
     command.add(viewport);
     command.add("--timeout-seconds");
     command.add(String.valueOf(timeout));
+    if (StrUtil.isNotBlank(findText)) {
+      command.add("--find-text");
+      command.add(findText.trim());
+    }
 
     ProcessBuilder builder = new ProcessBuilder(command);
     builder.directory(cwd.toFile());

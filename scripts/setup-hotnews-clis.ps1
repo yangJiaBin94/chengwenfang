@@ -1,4 +1,4 @@
-﻿# 安装热点模式本机 Python CLI：article-extract / video-transcript / page-screenshot(+Chromium)。
+﻿# 安装热点模式本机 Python CLI：article-extract / video-transcript / page-screenshot(+Chromium+PyMuPDF)。
 # 用法（仓库根目录）：
 #   powershell -ExecutionPolicy Bypass -File .\scripts\setup-hotnews-clis.ps1
 #   powershell -ExecutionPolicy Bypass -File .\scripts\setup-hotnews-clis.ps1 -SkipVideo
@@ -65,7 +65,7 @@ if (-not $SkipVideo) {
 }
 
 if (-not $SkipPageScreenshot) {
-  Setup-Venv "scripts\page-screenshot" "from playwright.sync_api import sync_playwright; print('page-screenshot ok')" {
+  Setup-Venv "scripts\page-screenshot" "from playwright.sync_api import sync_playwright; import fitz; print('page-screenshot ok')" {
     param($venvPython, $dir)
     Write-Host "安装 Playwright Chromium..."
     & $venvPython -m playwright install chromium

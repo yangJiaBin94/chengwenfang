@@ -17,15 +17,15 @@ import com.chengwenfang.content.facade.dto.view.HotNewsThemeCommitView;
 import com.chengwenfang.content.facade.enums.ContentThemeStatus;
 import com.chengwenfang.mode.hotnews.application.hotnews.HotNewsThemeCommitOrchestrator;
 import com.chengwenfang.publishing.facade.constant.BuiltinLayoutThemeKeys;
-import com.chengwenfang.skill.facade.SkillBindingIds;
-import com.chengwenfang.skill.facade.SkillFacade;
-import com.chengwenfang.skill.facade.WorkflowFacade;
-import com.chengwenfang.skill.facade.constant.CourseSkillNames;
-import com.chengwenfang.skill.facade.dto.request.SkillSaveRequest;
-import com.chengwenfang.skill.facade.dto.request.WorkflowDraftSaveRequest;
-import com.chengwenfang.skill.facade.dto.request.WorkflowPublishRequest;
-import com.chengwenfang.skill.facade.dto.view.SkillView;
-import com.chengwenfang.skill.facade.dto.view.WorkflowSummaryView;
+import com.chengwenfang.prompt.facade.PromptPackBindingIds;
+import com.chengwenfang.prompt.facade.PromptPackFacade;
+import com.chengwenfang.prompt.facade.WorkflowFacade;
+import com.chengwenfang.prompt.facade.constant.CoursePromptPackNames;
+import com.chengwenfang.prompt.facade.dto.request.PromptPackSaveRequest;
+import com.chengwenfang.prompt.facade.dto.request.WorkflowDraftSaveRequest;
+import com.chengwenfang.prompt.facade.dto.request.WorkflowPublishRequest;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackView;
+import com.chengwenfang.prompt.facade.dto.view.WorkflowSummaryView;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -47,7 +47,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * 仅在 {@code bootstrap-seed} 配置下，把仓库种子导入数据库后退出。
- * <p>已有同名同场景 Skill、已发布工作流默认跳过，避免覆盖库内修改。
+ * <p>已有同名同场景 提示词包、已发布工作流默认跳过，避免覆盖库内修改。
  */
 @Slf4j
 @Component
@@ -55,8 +55,8 @@ import org.springframework.stereotype.Component;
 @Profile("bootstrap-seed")
 @RequiredArgsConstructor
 public class BuiltinSeedImporter implements ApplicationRunner {
-  /** Skill 门面。 */
-  private final SkillFacade skills;
+  /** 提示词包门面。 */
+  private final PromptPackFacade promptPacks;
   /** 工作流门面。 */
   private final WorkflowFacade workflows;
   /** 内容门面（默认主题课壳）。 */
@@ -78,7 +78,7 @@ public class BuiltinSeedImporter implements ApplicationRunner {
   @Value("${chengwenfang.bootstrap.default-themes:scripts/bootstrap/default-themes.json}")
   private String defaultThemesPath;
 
-  /** 为 true 时用种子覆盖已有内置 Skill 与工作流发布版本。 */
+  /** 为 true 时用种子覆盖已有内置提示词包 与工作流发布版本。 */
   @Value("${chengwenfang.bootstrap.force:false}")
   private boolean force;
 
@@ -109,22 +109,22 @@ public class BuiltinSeedImporter implements ApplicationRunner {
    */
   void importCatalog(Path catalogFile) throws Exception {
     JsonNode root = objectMapper.readTree(catalogFile.toFile());
-    // 先迁旧 Skill 名，避免后续按新名 upsert 再插一行
-    if (skills.migrateLegacyRulesSkillName()) {
+    // 先迁旧 提示词包 名，避免后续按新名 upsert 再插一行
+    if (promptPacks.migrateLegacyRulesPromptPackName()) {
       log.info(
-          "Skill 名称已同步：{} → {}",
-          CourseSkillNames.LEGACY_RULES,
-          CourseSkillNames.CHENGWENFANG_RULES);
+          "提示词包名称已同步：{} → {}",
+          CoursePromptPackNames.LEGACY_RULES,
+          CoursePromptPackNames.CHENGWENFANG_RULES);
     }
-    int skillCreated = 0;
-    int skillSkipped = 0;
-    JsonNode skillNodes = root.path("skills");
-    if (skillNodes.isArray()) {
-      for (JsonNode skillNode : skillNodes) {
-        if (upsertSkill(skillNode)) {
-          skillCreated++;
+    int promptPackCreated = 0;
+    int promptPackSkipped = 0;
+    JsonNode promptPackNodes = root.path("promptPacks");
+    if (promptPackNodes.isArray()) {
+      for (JsonNode promptPackNode : promptPackNodes) {
+        if (upsertPromptPack(promptPackNode)) {
+          promptPackCreated++;
         } else {
-          skillSkipped++;
+          promptPackSkipped++;
         }
       }
     }
@@ -158,8 +158,8 @@ public class BuiltinSeedImporter implements ApplicationRunner {
     }
     importDefaultThemes(resolveCatalog(defaultThemesPath));
     log.info(
-        "基础配置导入完成 skillsWritten={} skillsSkipped={} workflowsPublished={} workflowsSkipped={} themesWritten={} themesSkipped={} force={}",
-        skillCreated, skillSkipped, workflowPublished, workflowSkipped, themeWritten, themeSkipped, force);
+        "基础配置导入完成 promptPacksWritten={} promptPacksSkipped={} workflowsPublished={} workflowsSkipped={} themesWritten={} themesSkipped={} force={}",
+        promptPackCreated, promptPackSkipped, workflowPublished, workflowSkipped, themeWritten, themeSkipped, force);
   }
 
   /**
@@ -340,40 +340,40 @@ public class BuiltinSeedImporter implements ApplicationRunner {
   }
 
   /**
-   * @return true 表示本次写入了 Skill
+   * @return true 表示本次写入了 提示词包
    */
-  private boolean upsertSkill(JsonNode skillNode) {
-    String name = text(skillNode, "name");
-    String scene = text(skillNode, "scene");
-    SkillView existing = findLiveSkill(name, scene);
+  private boolean upsertPromptPack(JsonNode promptPackNode) {
+    String name = text(promptPackNode, "name");
+    String scene = text(promptPackNode, "scene");
+    PromptPackView existing = findLivePromptPack(name, scene);
     if (existing != null && !force) {
       // 命中旧名别名时只改名，不覆盖用户已改的指令正文
       if (!name.equals(existing.getName())) {
-        skills.updateSkillById(
+        promptPacks.updatePromptPackById(
             existing.getId(),
-            SkillSaveRequest.builder().name(name).build());
-        log.info("已将 Skill 旧名「{}」改为「{}」 scene={}", existing.getName(), name, scene);
+            PromptPackSaveRequest.builder().name(name).build());
+        log.info("已将 提示词包 旧名「{}」改为「{}」 scene={}", existing.getName(), name, scene);
         return true;
       }
-      log.info("跳过已有 Skill name={} scene={}", name, scene);
+      log.info("跳过已有 提示词包 name={} scene={}", name, scene);
       return false;
     }
-    SkillSaveRequest body = SkillSaveRequest.builder()
+    PromptPackSaveRequest body = PromptPackSaveRequest.builder()
         .id(existing == null ? null : existing.getId())
         .name(name)
-        .description(text(skillNode, "description"))
-        .scope(text(skillNode, "scope"))
-        .skillType(text(skillNode, "skillType"))
-        .locked(skillNode.path("locked").asBoolean(false))
+        .description(text(promptPackNode, "description"))
+        .scope(text(promptPackNode, "scope"))
+        .promptPackType(text(promptPackNode, "promptPackType"))
+        .locked(promptPackNode.path("locked").asBoolean(false))
         .scene(scene)
-        .systemInstructions(text(skillNode, "systemInstructions"))
+        .systemInstructions(text(promptPackNode, "systemInstructions"))
         .taskInstructions("")
-        .priority(skillNode.path("priority").asInt(100))
+        .priority(promptPackNode.path("priority").asInt(100))
         .enabled(Boolean.TRUE)
         .nodeBindings(null)
         .build();
-    skills.upsertSkill(body);
-    log.info("{} Skill name={} scene={}", existing == null ? "创建" : "覆盖", name, scene);
+    promptPacks.upsertPromptPack(body);
+    log.info("{} 提示词包 name={} scene={}", existing == null ? "创建" : "覆盖", name, scene);
     return true;
   }
 
@@ -394,7 +394,7 @@ public class BuiltinSeedImporter implements ApplicationRunner {
       return false;
     }
     ObjectNode definitionJson = (ObjectNode) workflowNode.path("definition").deepCopy();
-    bindSkillIds(definitionJson, scene);
+    bindPromptPackIds(definitionJson, scene);
     workflows.saveDraft(definition.getId(), WorkflowDraftSaveRequest.builder()
         .definitionJson(objectMapper.writeValueAsString(definitionJson))
         .build());
@@ -406,27 +406,27 @@ public class BuiltinSeedImporter implements ApplicationRunner {
   }
 
   /**
-   * 将节点 skillBindings 的 name 解析为库内 skillId。
+   * 将节点 promptPackBindings 的 name 解析为库内 promptPackId。
    *
    * @param definition     工作流图
    * @param workflowScene  工作流 scene
    */
-  private void bindSkillIds(ObjectNode definition, String workflowScene) {
-    List<SkillView> all = skills.listSkills();
+  private void bindPromptPackIds(ObjectNode definition, String workflowScene) {
+    List<PromptPackView> all = promptPacks.listPromptPacks();
     for (JsonNode node : definition.path("nodes")) {
       if (!(node instanceof ObjectNode)) {
         continue;
       }
-      for (JsonNode binding : node.path("skillBindings")) {
+      for (JsonNode binding : node.path("promptPackBindings")) {
         if (!(binding instanceof ObjectNode bindingNode)) {
           continue;
         }
-        String skillName = bindingNode.path("name").asText("");
-        String skillId = SkillBindingIds.resolveForWorkflowScene(all, skillName, workflowScene);
-        if (StrUtil.isBlank(skillId)) {
-          throw new IllegalStateException("工作流 " + workflowScene + " 找不到 Skill name=" + skillName);
+        String promptPackName = bindingNode.path("name").asText("");
+        String promptPackId = PromptPackBindingIds.resolveForWorkflowScene(all, promptPackName, workflowScene);
+        if (StrUtil.isBlank(promptPackId)) {
+          throw new IllegalStateException("工作流 " + workflowScene + " 找不到 提示词包 name=" + promptPackName);
         }
-        bindingNode.put("skillId", skillId);
+        bindingNode.put("promptPackId", promptPackId);
       }
     }
   }
@@ -490,38 +490,38 @@ public class BuiltinSeedImporter implements ApplicationRunner {
   }
 
   /**
-   * 查找未删除且同名同场景的 Skill；规则 Skill 额外认旧名「工作台规则理解」。
+   * 查找未删除且同名同场景的 提示词包；规则 提示词包 额外认旧名「工作台规则理解」。
    *
    * @param name  名称
    * @param scene 场景
    * @return 视图；无则 null
    */
-  private SkillView findLiveSkill(String name, String scene) {
-    SkillView exact = findLiveSkillExact(name, scene);
+  private PromptPackView findLivePromptPack(String name, String scene) {
+    PromptPackView exact = findLivePromptPackExact(name, scene);
     if (exact != null) {
       return exact;
     }
     // 种子已是新名时，仍要落到旧名行以便改名而非重复创建
-    if (CourseSkillNames.CHENGWENFANG_RULES.equals(name)) {
-      return findLiveSkillExact(CourseSkillNames.LEGACY_RULES, scene);
+    if (CoursePromptPackNames.CHENGWENFANG_RULES.equals(name)) {
+      return findLivePromptPackExact(CoursePromptPackNames.LEGACY_RULES, scene);
     }
     return null;
   }
 
   /**
-   * 按精确名称与场景查找未删除 Skill。
+   * 按精确名称与场景查找未删除提示词包。
    *
    * @param name  名称
    * @param scene 场景
    * @return 视图；无则 null
    */
-  private SkillView findLiveSkillExact(String name, String scene) {
-    for (SkillView skill : skills.listSkills()) {
-      if (skill == null) {
+  private PromptPackView findLivePromptPackExact(String name, String scene) {
+    for (PromptPackView promptPack : promptPacks.listPromptPacks()) {
+      if (promptPack == null) {
         continue;
       }
-      if (name.equals(skill.getName()) && scene.equals(StrUtil.nullToEmpty(skill.getScene()))) {
-        return skill;
+      if (name.equals(promptPack.getName()) && scene.equals(StrUtil.nullToEmpty(promptPack.getScene()))) {
+        return promptPack;
       }
     }
     return null;

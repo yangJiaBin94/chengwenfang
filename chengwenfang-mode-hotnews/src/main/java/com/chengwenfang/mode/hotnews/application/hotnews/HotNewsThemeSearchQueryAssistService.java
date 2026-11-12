@@ -12,10 +12,10 @@ import com.chengwenfang.ai.facade.dto.view.TextCompleteResult;
 import com.chengwenfang.common.SearchQueryNormalizer;
 import com.chengwenfang.content.facade.dto.request.HotNewsSearchQuerySuggestRequest;
 import com.chengwenfang.content.facade.dto.view.HotNewsSearchQuerySuggestView;
-import com.chengwenfang.skill.facade.SkillFacade;
-import com.chengwenfang.skill.facade.constant.HotNewsSkillNames;
-import com.chengwenfang.skill.facade.constant.HotNewsWorkflowKeys;
-import com.chengwenfang.skill.facade.dto.view.SkillView;
+import com.chengwenfang.prompt.facade.PromptPackFacade;
+import com.chengwenfang.prompt.facade.constant.HotNewsPromptPackNames;
+import com.chengwenfang.prompt.facade.constant.HotNewsWorkflowKeys;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackView;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +25,7 @@ import org.springframework.stereotype.Service;
 /**
  * 热点主题创建：根据主题说明用 AI 总结可检索短搜索词。
  * <p>AI 不可用或解析失败时返回空列表（{@code fromAi=false}），不静默用分词规则凑词。
- * <p>系统提示词来自 Skill「{@link HotNewsSkillNames#THEME_SEARCH_QUERIES}」。
+ * <p>系统提示词来自 提示词包「{@link HotNewsPromptPackNames#THEME_SEARCH_QUERIES}」。
  */
 @Slf4j
 @Service
@@ -33,8 +33,8 @@ import org.springframework.stereotype.Service;
 public class HotNewsThemeSearchQueryAssistService {
   /** 文本 AI。 */
   private final AiTextFacade ai;
-  /** Skill 门面（读取主题搜索词生成指令）。 */
-  private final SkillFacade skills;
+  /** 提示词包门面（读取主题搜索词生成指令）。 */
+  private final PromptPackFacade promptPacks;
 
   /**
    * 生成规范化搜索词。
@@ -104,7 +104,7 @@ public class HotNewsThemeSearchQueryAssistService {
         mustWatch.isEmpty() ? "无" : String.join("、", mustWatch));
     String systemPrompt = resolveSystemPrompt();
     if (StrUtil.isBlank(systemPrompt)) {
-      log.warn("热点主题搜索词 Skill 缺失或指令为空，跳过 AI name={}", name);
+      log.warn("热点主题搜索词 提示词包 缺失或指令为空，跳过 AI name={}", name);
       return List.of();
     }
     try {
@@ -129,32 +129,32 @@ public class HotNewsThemeSearchQueryAssistService {
   }
 
   /**
-   * 读取库内 Skill「热点主题搜索词生成」的 systemInstructions；缺失则返回空（不以代码内嵌提示词兜底）。
+   * 读取库内 提示词包「热点主题搜索词生成」的 systemInstructions；缺失则返回空（不以代码内嵌提示词兜底）。
    *
    * @return 系统提示词；不可用时为空
    */
   private String resolveSystemPrompt() {
     try {
-      List<SkillView> all = skills.listSkills();
+      List<PromptPackView> all = promptPacks.listPromptPacks();
       if (all != null) {
-        for (SkillView skill : all) {
-          if (skill == null || !HotNewsSkillNames.THEME_SEARCH_QUERIES.equals(skill.getName())) {
+        for (PromptPackView promptPack : all) {
+          if (promptPack == null || !HotNewsPromptPackNames.THEME_SEARCH_QUERIES.equals(promptPack.getName())) {
             continue;
           }
-          if (StrUtil.isNotBlank(skill.getScene())
-              && !HotNewsWorkflowKeys.SCENE.equals(skill.getScene())) {
+          if (StrUtil.isNotBlank(promptPack.getScene())
+              && !HotNewsWorkflowKeys.SCENE.equals(promptPack.getScene())) {
             continue;
           }
-          if (Boolean.FALSE.equals(skill.getEnabled())) {
+          if (Boolean.FALSE.equals(promptPack.getEnabled())) {
             continue;
           }
-          if (StrUtil.isNotBlank(skill.getSystemInstructions())) {
-            return skill.getSystemInstructions().strip();
+          if (StrUtil.isNotBlank(promptPack.getSystemInstructions())) {
+            return promptPack.getSystemInstructions().strip();
           }
         }
       }
     } catch (Exception exception) {
-      log.warn("读取主题搜索词 Skill 失败 err={}", exception.getMessage());
+      log.warn("读取主题搜索词 提示词包 失败 err={}", exception.getMessage());
     }
     return "";
   }

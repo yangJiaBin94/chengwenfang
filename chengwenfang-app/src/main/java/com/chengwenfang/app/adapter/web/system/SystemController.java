@@ -22,7 +22,7 @@ public class SystemController {
   private final BuiltinReadyQuery builtinReadyQuery;
 
   /**
-   * 返回内置 Skill / 工作流是否就绪及问题列表。
+   * 返回内置提示词包 / 工作流是否就绪及问题列表。
    *
    * @return 就绪视图
    */

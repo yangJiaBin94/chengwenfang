@@ -88,7 +88,7 @@ export function HotNewsExecutionView(props: Record<string, any>) {
     setSelectedAttemptNumber,
     setSelectedId,
     skeleton,
-    skills,
+    promptPacks,
     state,
     visibleJobs,
   } = props;
@@ -98,7 +98,7 @@ export function HotNewsExecutionView(props: Record<string, any>) {
         <div>
           <span className="section-kicker">Execution Trace</span>
           <h2>热点文章内容执行轨迹</h2>
-          <p>查看每次生成的业务流程、节点结果、Skill 快照和文章产物。</p>
+          <p>查看每次生成的业务流程、节点结果、PromptPack 快照和文章产物。</p>
         </div>
         <button
           className="ghost-button"
@@ -374,15 +374,15 @@ export function HotNewsExecutionView(props: Record<string, any>) {
               </div>
               <div className="execution-actions">
                 <button
-                  aria-expanded={open.skills}
-                  onClick={() => setOpen((x) => ({ ...x, skills: !x.skills }))}
+                  aria-expanded={open.promptPacks}
+                  onClick={() => setOpen((x) => ({ ...x, promptPacks: !x.promptPacks }))}
                 >
-                  {open.skills ? (
+                  {open.promptPacks ? (
                     <ChevronDown size={14} />
                   ) : (
                     <ChevronRight size={14} />
                   )}
-                  本次使用的 Skill
+                  本次使用的 PromptPack
                 </button>
                 <button
                   aria-expanded={open.nodes}
@@ -417,21 +417,21 @@ export function HotNewsExecutionView(props: Record<string, any>) {
                   buttonType="button"
                 />
               )}
-              {open.skills && (
+              {open.promptPacks && (
                 <section className="execution-subsection">
-                  <h4>本次使用的 Skill</h4>
-                  <div className="execution-skill-list">
-                    {skills.length ? (
-                      skills.map((s, i) => (
+                  <h4>本次使用的 PromptPack</h4>
+                  <div className="execution-prompt-pack-list">
+                    {promptPacks.length ? (
+                      promptPacks.map((s, i) => (
                         <div key={String(s.id || i)}>
-                          <b>{String(s.name || s.id || "热点文章 Skill")}</b>
+                          <b>{String(s.name || s.id || "热点文章 PromptPack")}</b>
                           <span>
                             {String(s.scope || `顺序 ${s.priority ?? i + 1}`)}
                           </span>
                         </div>
                       ))
                     ) : (
-                      <p>当前记录没有保存 Skill 快照。</p>
+                      <p>当前记录没有保存 PromptPack 快照。</p>
                     )}
                   </div>
                 </section>

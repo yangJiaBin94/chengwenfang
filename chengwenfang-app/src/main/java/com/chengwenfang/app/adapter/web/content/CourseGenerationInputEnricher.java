@@ -5,8 +5,8 @@ import com.chengwenfang.common.FlexiblePayload;
 import com.chengwenfang.content.facade.ContentFacade;
 import com.chengwenfang.content.facade.dto.view.CourseGenerationSettingsView;
 import com.chengwenfang.content.facade.dto.view.CourseShellView;
-import com.chengwenfang.skill.facade.WorkflowFacade;
-import com.chengwenfang.skill.facade.enums.WorkflowFeatureBinding;
+import com.chengwenfang.prompt.facade.WorkflowFacade;
+import com.chengwenfang.prompt.facade.enums.WorkflowFeatureBinding;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +46,7 @@ public class CourseGenerationInputEnricher {
     if (existingWorkflowId != null && !String.valueOf(existingWorkflowId).isBlank()) {
       // 已带 workflowId 时仍反查启用态，避免停用后继续入队
       workflows.requireActivePublished(WorkflowFeatureBinding.COURSE_CONTENT_GENERATION);
-      ensureSkillSnapshot(input, String.valueOf(existingWorkflowId));
+      ensurePromptPackSnapshot(input, String.valueOf(existingWorkflowId));
       return FlexiblePayload.of(input);
     }
     var published = workflows.requireActivePublished(WorkflowFeatureBinding.COURSE_CONTENT_GENERATION);
@@ -54,7 +54,7 @@ public class CourseGenerationInputEnricher {
     if (published.getPublishedVersionId() != null) {
       input.put("workflowVersionId", published.getPublishedVersionId());
     }
-    ensureSkillSnapshot(input, published.getId());
+    ensurePromptPackSnapshot(input, published.getId());
     return FlexiblePayload.of(input);
   }
 
@@ -93,13 +93,13 @@ public class CourseGenerationInputEnricher {
     }
   }
 
-  private void ensureSkillSnapshot(Map<String, Object> input, String workflowId) {
-    if (input.containsKey("skillSnapshot") && input.get("skillSnapshot") instanceof List<?> list && !list.isEmpty()) {
+  private void ensurePromptPackSnapshot(Map<String, Object> input, String workflowId) {
+    if (input.containsKey("promptPackSnapshot") && input.get("promptPackSnapshot") instanceof List<?> list && !list.isEmpty()) {
       return;
     }
-    List<Map<String, Object>> skillSnapshot = workflows.skillSnapshotForWorkflow(workflowId);
-    if (!skillSnapshot.isEmpty()) {
-      input.put("skillSnapshot", skillSnapshot);
+    List<Map<String, Object>> promptPackSnapshot = workflows.promptPackSnapshotForWorkflow(workflowId);
+    if (!promptPackSnapshot.isEmpty()) {
+      input.put("promptPackSnapshot", promptPackSnapshot);
     }
   }
 }

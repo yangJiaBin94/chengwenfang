@@ -17,4 +17,6 @@ public class HotNewsArticleRewriteJobInput {
   private String articleId;
   /** 改写指令。 */
   private String instruction;
+  /** 可编辑优化建议全文。 */
+  private String advice;
 }

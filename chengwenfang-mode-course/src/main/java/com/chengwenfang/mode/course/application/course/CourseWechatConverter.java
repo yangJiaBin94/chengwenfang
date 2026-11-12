@@ -4,10 +4,10 @@ import cn.hutool.core.util.StrUtil;
 import com.chengwenfang.ai.facade.AiTextFacade;
 import com.chengwenfang.mode.course.application.generation.course.CourseGraphState;
 import com.chengwenfang.quality.facade.AuditFacade;
-import com.chengwenfang.skill.facade.SkillFacade;
-import com.chengwenfang.skill.facade.constant.CourseWorkflowKeys;
-import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
-import com.chengwenfang.skill.facade.enums.CourseWorkflowNodeType;
+import com.chengwenfang.prompt.facade.PromptPackFacade;
+import com.chengwenfang.prompt.facade.constant.CourseWorkflowKeys;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
+import com.chengwenfang.prompt.facade.enums.CourseWorkflowNodeType;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,16 +27,16 @@ public class CourseWechatConverter {
 
   /**
    * @param ai            文本 AI
-   * @param skills        Skill 门面
+   * @param promptPacks        提示词包门面
    * @param contextLoader 上下文加载
    * @param audit         审核门面
    */
   public CourseWechatConverter(
       AiTextFacade ai,
-      SkillFacade skills,
+      PromptPackFacade promptPacks,
       CourseGraphContextLoader contextLoader,
       AuditFacade audit) {
-    this.wechatConverter = new WechatChunkConverter(ai, skills);
+    this.wechatConverter = new WechatChunkConverter(ai, promptPacks);
     this.contextLoader = contextLoader;
     this.validators = new CourseGenerationValidators(audit);
   }
@@ -45,9 +45,9 @@ public class CourseWechatConverter {
    * 公众号等量转换（内含最多 3 次可修复重试）。
    *
    * @param state         图状态
-   * @param skillBindings 节点绑定
+   * @param promptPackBindings 节点绑定
    */
-  public void convertWechat(CourseGraphState state, List<SkillPromptBindingView> skillBindings) {
+  public void convertWechat(CourseGraphState state, List<PromptPackPromptBindingView> promptPackBindings) {
     if (Boolean.TRUE.equals(state.getResumeImagesOnly())) {
       return;
     }
@@ -56,9 +56,9 @@ public class CourseWechatConverter {
     String draft = state.getDraft();
     Map<String, Object> wechatNode = CourseGraphContextLoader.findNodeByTypeKey(
         state.getWorkflowSnapshot(), CourseWorkflowNodeType.WECHAT_CONVERSION.getValue());
-    if (skillBindings != null && !skillBindings.isEmpty()) {
+    if (promptPackBindings != null && !promptPackBindings.isEmpty()) {
       Map<String, Object> node = wechatNode == null ? new LinkedHashMap<>() : new LinkedHashMap<>(wechatNode);
-      node.put("skillBindings", CourseGraphContextLoader.bindingsToMaps(skillBindings));
+      node.put("promptPackBindings", CourseGraphContextLoader.bindingsToMaps(promptPackBindings));
       wechatNode = node;
     }
     String wechatRepair = null;

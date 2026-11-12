@@ -84,8 +84,8 @@ public class RadarCollectSessionStore {
     private final List<HotNewsChannelRunView> channelRuns = new ArrayList<>();
     /** 内存候选。 */
     private final List<RadarCollectCandidate> candidates = new ArrayList<>();
-    /** Skill 摘要。 */
-    private String skillSnapshotSummary;
+    /** 提示词包 摘要。 */
+    private String promptPackSnapshotSummary;
     /** 落库新增。 */
     private int insertedCount;
     /** 选题数。 */
@@ -184,12 +184,12 @@ public class RadarCollectSessionStore {
       return candidates;
     }
 
-    public String getSkillSnapshotSummary() {
-      return skillSnapshotSummary;
+    public String getPromptPackSnapshotSummary() {
+      return promptPackSnapshotSummary;
     }
 
-    public void setSkillSnapshotSummary(String skillSnapshotSummary) {
-      this.skillSnapshotSummary = skillSnapshotSummary;
+    public void setPromptPackSnapshotSummary(String promptPackSnapshotSummary) {
+      this.promptPackSnapshotSummary = promptPackSnapshotSummary;
     }
 
     public int getInsertedCount() {

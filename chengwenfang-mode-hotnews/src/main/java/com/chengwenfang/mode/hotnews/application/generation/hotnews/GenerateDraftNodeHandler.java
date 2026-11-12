@@ -7,8 +7,8 @@ import com.chengwenfang.mode.hotnews.domain.HotNewsMarkdownUtil;
 import com.chengwenfang.mode.hotnews.facade.constant.HotNewsArtifactTypes;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsArticleSkeletonView;
 import com.chengwenfang.mode.hotnews.facade.enums.HotNewsImageCountOption;
-import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
-import com.chengwenfang.skill.facade.enums.HotNewsWorkflowNodeType;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
+import com.chengwenfang.prompt.facade.enums.HotNewsWorkflowNodeType;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,7 +37,7 @@ public class GenerateDraftNodeHandler implements HotNewsNodeHandler {
   @Override
   public void execute(
       HotNewsGraphState state,
-      List<SkillPromptBindingView> skillBindings,
+      List<PromptPackPromptBindingView> promptPackBindings,
       String nodeKey,
       String nodeName) {
     String imageOption = HotNewsImageCountOption.normalize(state.getImageCountOption());
@@ -85,8 +85,8 @@ public class GenerateDraftNodeHandler implements HotNewsNodeHandler {
       return;
     }
 
-    String skillPrompt = textCompletion.composeSkillPrompt(skillBindings);
-    String systemPrompt = HotNewsWritingPrompts.systemPrompt(skillPrompt, state.getThemeContext());
+    String promptPackText = textCompletion.composePromptPackText(promptPackBindings);
+    String systemPrompt = HotNewsWritingPrompts.systemPrompt(promptPackText, state.getThemeContext());
     String userPrompt = """
         请根据「文章骨架」生成完整热点原稿（Markdown）。
         硬性要求：
@@ -95,6 +95,9 @@ public class GenerateDraftNodeHandler implements HotNewsNodeHandler {
            （可观察锚点 / 读法 / 风险维度），结尾落到 readerSignals；禁止买卖建议、目标价与荐股口吻。
         3. 覆盖 coreEvent、keyInsights、impacts、readerSignals、coreThesis。
         4. 事实包与参考资料只作线索，禁止逐条复述或编造素材外事实。
+           若 coreThesis / 开场依赖多源数字或说法冲突：须在相关段落后单独成行写出「来源：简称或媒体名」
+           （例：来源：财联社 / 来源：短视频口述）；禁止输出裸 http(s) URL，禁止 [报道](url) 嵌句链；
+           禁止编造出处，无可靠出处则至少单独一行写媒体名与原标题（仍不要写 URL）。
         5. 正文字数落在字数档 %s 内（允许少量浮动）；插图提示词不计入字数。
         6. 必须写入插图提示词并保留在原稿中：封面 1 个 + 正文插图 %d 个。
            唯一权威格式：先写「**插图位置：…**」行，再紧跟 ```text 围栏；禁止括号/裸提示词行/引用块/正文段落式生图描述。

@@ -2,8 +2,8 @@ package com.chengwenfang.mode.hotnews.application.generation.hotnews;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
-import com.chengwenfang.skill.facade.WorkflowFacade;
-import com.chengwenfang.skill.facade.dto.view.WorkflowNodeRunView;
+import com.chengwenfang.prompt.facade.WorkflowFacade;
+import com.chengwenfang.prompt.facade.dto.view.WorkflowNodeRunView;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;

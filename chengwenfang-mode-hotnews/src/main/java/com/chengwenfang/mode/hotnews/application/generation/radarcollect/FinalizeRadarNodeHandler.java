@@ -1,8 +1,8 @@
 package com.chengwenfang.mode.hotnews.application.generation.radarcollect;
 
 import com.chengwenfang.mode.hotnews.facade.HotNewsFacade;
-import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
-import com.chengwenfang.skill.facade.enums.HotNewsRadarCollectNodeType;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
+import com.chengwenfang.prompt.facade.enums.HotNewsRadarCollectNodeType;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +25,7 @@ public class FinalizeRadarNodeHandler implements RadarCollectNodeHandler {
   public void execute(
       RadarCollectSessionStore.Session session,
       Map<String, Object> lightState,
-      List<SkillPromptBindingView> skillBindings,
+      List<PromptPackPromptBindingView> promptPackBindings,
       String nodeKey,
       String nodeName) {
     int total = session.getCandidates().size();

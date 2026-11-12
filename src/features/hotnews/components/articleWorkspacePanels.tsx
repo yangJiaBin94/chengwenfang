@@ -3,6 +3,7 @@ import {
   Image,
   Save,
   ShieldCheck,
+  Sparkles,
   X,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -17,11 +18,155 @@ import type {
   HotNewsArticleVersion,
   HotNewsAudit,
   HotNewsBrief,
+  HotNewsOptimizeCritique,
   HotNewsPublishingSnapshot,
 } from "../api";
 import { withPublishingPreviewBase } from "../../publishing/model";
 
 export { SkeletonModal };
+
+const DIMENSION_LABELS: Record<string, string> = {
+  narrative: "叙述",
+  tone: "语气",
+  aiFlavor: "AI 味（越高越少）",
+  setupCompleteness: "铺垫完整",
+  coverage: "要点覆盖",
+  evidence: "证据可核对",
+};
+
+/**
+ * 优化建议弹窗：查看打分、编辑建议；主 CTA 触发页内重写流水线。
+ */
+export function OptimizeCritiqueModal({
+  critique,
+  advice,
+  busy,
+  error,
+  onAdviceChange,
+  onCritique,
+  onRewrite,
+  onClose,
+}: {
+  critique: HotNewsOptimizeCritique | null;
+  advice: string;
+  busy: boolean;
+  error?: string | null;
+  onAdviceChange: (value: string) => void;
+  onCritique: () => void;
+  onRewrite: () => void;
+  onClose: () => void;
+}) {
+  const scores = critique?.dimensionScores || {};
+  const overall =
+    typeof critique?.overallScore === "number" ? critique.overallScore : null;
+  const scoreTone =
+    overall == null
+      ? "neutral"
+      : overall >= 80
+        ? "good"
+        : overall >= 60
+          ? "mid"
+          : "low";
+
+  return (
+    <div className="modal-backdrop" onMouseDown={onClose}>
+      <section
+        className="modal-card hot-optimize-critique-modal"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <header className="modal-header">
+          <div>
+            <span className="section-kicker">优化建议</span>
+            <h3>原稿诊断与改写</h3>
+          </div>
+          <button className="icon-button" onClick={onClose} aria-label="关闭">
+            <X size={18} />
+          </button>
+        </header>
+        <div className="hot-optimize-critique-body">
+          {critique ? (
+            <div className="hot-optimize-score-panel">
+              <div className={`hot-optimize-overall hot-optimize-overall-${scoreTone}`}>
+                <span className="hot-optimize-overall-label">综合评分</span>
+                <strong className="hot-optimize-overall-value">
+                  {overall ?? "—"}
+                  <small>/ 100</small>
+                </strong>
+              </div>
+              <ul className="hot-optimize-score-grid">
+                {Object.entries(scores).map(([key, score]) => {
+                  const value = typeof score === "number" ? score : Number(score) || 0;
+                  return (
+                    <li key={key}>
+                      <div className="hot-optimize-dim-head">
+                        <span>{DIMENSION_LABELS[key] || key}</span>
+                        <b>{value}</b>
+                      </div>
+                      <div
+                        className="hot-optimize-dim-bar"
+                        aria-hidden="true"
+                      >
+                        <i style={{ width: `${Math.max(0, Math.min(100, value))}%` }} />
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ) : (
+            <div className="hot-optimize-empty">
+              <Sparkles size={16} />
+              <p>暂无诊断结果，可点「重新诊断」在页内生成建议。</p>
+            </div>
+          )}
+          <label className="hot-optimize-advice-field">
+            <span>可编辑优化建议</span>
+            <small>将直接用于改写；可增删条目后再生成</small>
+            <textarea
+              value={advice}
+              onChange={(event) => onAdviceChange(event.target.value)}
+              rows={11}
+              spellCheck={false}
+              placeholder="可在此增删建议，再点「根据优化建议重新生成文章」。"
+            />
+          </label>
+          {error ? <p className="hot-optimize-error">{error}</p> : null}
+        </div>
+        <div className="modal-actions">
+          <p className="hot-optimize-hint">
+            重新诊断 / 重新生成的进度在页面标题旁展示。
+          </p>
+          <div className="hot-optimize-actions-row">
+            <button className="ghost-button" onClick={onClose} disabled={busy}>
+              关闭
+            </button>
+            <button
+              className="secondary-button"
+              onClick={onCritique}
+              disabled={busy}
+            >
+              {busy ? "诊断中..." : "重新诊断"}
+            </button>
+            <button
+              className="primary-button"
+              onClick={onRewrite}
+              disabled={!advice.trim() || busy}
+            >
+              根据优化建议重新生成文章
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+/** 原稿标题旁优化按钮状态。 */
+export type OptimizeEntryStatus =
+  | "idle"
+  | "generating"
+  | "ready"
+  | "rewriting";
 
 export const HOT_NEWS_AUDIT_CATALOG = [
   { code: "ARTICLE_TITLE", title: "文章主标题", category: "文章结构", detail: "须有且仅有一个有效一级标题。" },
@@ -100,6 +245,10 @@ export function ContentPanel({
   onChange,
   onSave,
   onCancel,
+  optimizeStatus,
+  optimizeProgressText,
+  onGenerateOptimize,
+  onOpenOptimize,
 }: {
   kind: "draft" | "article";
   body: string;
@@ -113,7 +262,32 @@ export function ContentPanel({
   onChange: (value: string) => void;
   onSave: () => void;
   onCancel: () => void;
+  /** 仅热点原稿：优化入口状态。 */
+  optimizeStatus?: OptimizeEntryStatus;
+  /** 改写流水线页内小字进度。 */
+  optimizeProgressText?: string | null;
+  /** 无结果时生成诊断。 */
+  onGenerateOptimize?: () => void;
+  /** 有结果时打开建议弹窗。 */
+  onOpenOptimize?: () => void;
 }) {
+  const title = body
+    ? kind === "draft"
+      ? "已生成热点原稿"
+      : "已生成公众号版本"
+    : kind === "draft"
+      ? "历史文章无原稿记录"
+      : "公众号版本待生成";
+  const showOptimizeEntry = kind === "draft" && Boolean(body) && Boolean(onGenerateOptimize || onOpenOptimize);
+  const optimizeRunning =
+    optimizeStatus === "generating" || optimizeStatus === "rewriting";
+  const optimizeLabel =
+    optimizeStatus === "ready" ? "查看优化建议" : "生成 AI 优化建议";
+  // 进行中只展示一条状态：有分步文案用分步，否则用总态
+  const optimizeRunningLabel =
+    optimizeProgressText
+    || (optimizeStatus === "generating" ? "正在生成优化建议…" : "正在按建议重新生成…");
+
   return (
     <div
       className={`preview-card ${kind === "article" ? "article-preview" : ""}`}
@@ -122,15 +296,43 @@ export function ContentPanel({
         <span>{kind === "draft" ? "热点原稿" : "公众号版本"}</span>
         <span>{words} 字</span>
       </div>
-      <h3>
-        {body
-          ? kind === "draft"
-            ? "已生成热点原稿"
-            : "已生成公众号版本"
-          : kind === "draft"
-            ? "历史文章无原稿记录"
-            : "公众号版本待生成"}
-      </h3>
+      <div className="hot-research-brief-head hot-draft-title-head">
+        <h3>{title}</h3>
+        {showOptimizeEntry ? (
+          optimizeRunning ? (
+            <div
+              className="hot-optimize-running"
+              role="status"
+              aria-live="polite"
+              title="优化任务进行中"
+            >
+              <span className="hot-optimize-running-dot" aria-hidden="true" />
+              <Sparkles size={13} aria-hidden="true" />
+              <span>{optimizeRunningLabel}</span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="secondary-button hot-research-brief-open"
+              onClick={() => {
+                if (optimizeStatus === "ready") {
+                  onOpenOptimize?.();
+                } else {
+                  onGenerateOptimize?.();
+                }
+              }}
+              title={
+                optimizeStatus === "ready"
+                  ? "查看并编辑 AI 优化建议"
+                  : "生成 AI 优化建议"
+              }
+            >
+              <Sparkles size={14} />
+              {optimizeLabel}
+            </button>
+          )
+        ) : null}
+      </div>
       {!body && kind === "draft" ? (
         <div className="hot-aligned-empty">
           <p>

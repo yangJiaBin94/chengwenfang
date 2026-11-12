@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   BarChart3,
   CheckCircle2,
-  ChevronRight,
   Clock3,
   Bell,
   Plus,
@@ -24,8 +23,8 @@ import {
   Workflow,
   X,
 } from "lucide-react";
-import { listSkills } from "../../settings/api";
-import type { Skill } from "../../settings/api";
+import { listPromptPacks } from "../../settings/api";
+import type { PromptPack } from "../../settings/api";
 import {
   createWorkflow,
   listWorkflowRuns,
@@ -105,19 +104,23 @@ export function workflowSceneLabel(scene: string | null | undefined): string {
 }
 
 export function CompactFlow({ nodes }: { nodes: WorkflowDefinitionNode[] }) {
+  if (!nodes.length) {
+    return <div className="workflow-empty">暂无流程节点</div>;
+  }
   return (
-    <div className="workflow-compact-flow">
+    <ol className="workflow-compact-flow">
       {nodes.map((node, index) => (
-        <div key={node.key}>
-          <span>{index + 1}</span>
-          <div>
+        <li className="workflow-compact-flow-step" key={node.key}>
+          <span className="workflow-compact-flow-index" aria-hidden>
+            {index + 1}
+          </span>
+          <div className="workflow-compact-flow-body">
             <b>{node.name}</b>
-            <small>{node.stage}</small>
+            {node.stage ? <small>{node.stage}</small> : null}
           </div>
-          {index < nodes.length - 1 && <ChevronRight size={15} />}
-        </div>
+        </li>
       ))}
-    </div>
+    </ol>
   );
 }
 
@@ -171,9 +174,34 @@ export function formatDate(value: string) {
   }).format(new Date(value));
 }
 
+/** 内置英文发布说明 → 可读中文；优先用快照 description。 */
+export function formatReleaseNotes(
+  notes: string | null | undefined,
+  snapshotDescription?: string | null,
+): string {
+  const text = (notes ?? "").trim();
+  if (!text) return "未填写发布说明";
+  if (!/^builtin\b/i.test(text)) return text;
+  const description = (snapshotDescription ?? "").trim();
+  if (description) return description;
+  if (/radar\s*collect/i.test(text)) {
+    return "热点雷达同步采集：获取→意图自适应搜索→解析速览→素材筛选→成簇→AI主题素材→Top10";
+  }
+  if (/hot-?news|skeleton/i.test(text)) {
+    return "热点公众号文章：骨架优先生成主流程";
+  }
+  return "内置工作流初始发布";
+}
+
 export function formatDuration(seconds: number) {
   if (!seconds) return "0 秒";
   return seconds >= 60
     ? `${Math.floor(seconds / 60)}分${Math.round(seconds % 60)}秒`
     : `${Math.round(seconds)} 秒`;
+}
+
+/** 后端成功率口径为 0~1，展示为两位小数百分比。 */
+export function formatSuccessRate(rate: number) {
+  const value = Number.isFinite(rate) ? rate : 0;
+  return `${(value * 100).toFixed(2)}%`;
 }

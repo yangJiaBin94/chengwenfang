@@ -12,8 +12,9 @@ Thanks for helping improve Chengwenfang. Please keep changes focused and local-f
 ```
 
 - Optional hotspot features: run `scripts/setup-hotnews-clis.ps1` (or `.sh`) for
-  `article-extract` / `video-transcript` / `page-screenshot`(+Chromium), plus
-  `ffmpeg` on `PATH` (see README)
+  `article-extract` / `video-transcript` / `page-screenshot`(+Chromium + PyMuPDF),
+  plus `ffmpeg` on `PATH` (see README). Same CLI covers Vision fallback and
+  article evidence screenshots (PDF first page via PyMuPDF).
 
 ## Setup
 

@@ -228,9 +228,9 @@ export async function saveAiSettingsToDatabase(settings: AiSettings): Promise<Ai
   };
 }
 
-/* ---- Skills ---- */
+/* ---- PromptPacks ---- */
 
-export type SkillNodeBinding = {
+export type PromptPackNodeBinding = {
   id?: string;
   workflowType: string;
   nodeKey: string;
@@ -238,7 +238,7 @@ export type SkillNodeBinding = {
   enabled: boolean;
 };
 
-export type SkillWorkflowNode = {
+export type PromptPackWorkflowNode = {
   workflowType: string;
   nodeKey: string;
   name: string;
@@ -246,19 +246,19 @@ export type SkillWorkflowNode = {
   modelType: "text" | "image";
 };
 
-export type Skill = {
+export type PromptPack = {
   id: string;
   name: string;
   description: string;
   scope: "system" | "scene";
-  skillType: "capability" | "instruction";
+  promptPackType: "capability" | "instruction";
   locked: boolean;
   scene: string;
   systemInstructions: string;
   taskInstructions: string;
   priority: number;
   enabled: boolean;
-  nodeBindings: SkillNodeBinding[];
+  nodeBindings: PromptPackNodeBinding[];
   applications: Array<{
     modeId: string;
     modeName: string;
@@ -271,68 +271,68 @@ export type Skill = {
   updatedAt: string;
 };
 
-async function parseSkillResponse(response: Response, _fallback: string): Promise<Skill> {
-  return unwrapApiResult<Skill>(response);
+async function parsePromptPackResponse(response: Response, _fallback: string): Promise<PromptPack> {
+  return unwrapApiResult<PromptPack>(response);
 }
 
-export async function listSkills(): Promise<Skill[]> {
-  const response = await fetch("/api/settings/skills");
-  return unwrapApiResult<Skill[]>(response);
+export async function listPromptPacks(): Promise<PromptPack[]> {
+  const response = await fetch("/api/settings/prompt-packs");
+  return unwrapApiResult<PromptPack[]>(response);
 }
 
-/** Skill 列表分页结果。 */
-export type SkillPage = {
-  items: Skill[];
+/** 提示词包列表分页结果。 */
+export type PromptPackPage = {
+  items : PromptPack[];
   total: number;
   page: number;
   pageSize: number;
 };
 
-/** 分页查询 Skill（后端 LIMIT/OFFSET，含关键字筛选）。 */
-export async function pageSkills(
+/** 分页查询 PromptPack（后端 LIMIT/OFFSET，含关键字筛选）。 */
+export async function pagePromptPacks(
   params: {
     page?: number;
     pageSize?: number;
     keyword?: string;
   } = {},
-): Promise<SkillPage> {
+): Promise<PromptPackPage> {
   const search = new URLSearchParams();
   search.set("page", String(params.page ?? 1));
   search.set("pageSize", String(params.pageSize ?? 10));
   const keyword = params.keyword?.trim();
   if (keyword) search.set("keyword", keyword);
-  const response = await fetch(`/api/settings/skills/page?${search.toString()}`, {
+  const response = await fetch(`/api/settings/prompt-packs/page?${search.toString()}`, {
     cache: "no-store",
   });
-  return unwrapApiResult<SkillPage>(response);
+  return unwrapApiResult<PromptPackPage>(response);
 }
 
-export async function listSkillWorkflowNodes(): Promise<SkillWorkflowNode[]> {
-  const response = await fetch("/api/settings/skills/workflow-nodes");
-  return unwrapApiResult<SkillWorkflowNode[]>(response);
+export async function listPromptPackWorkflowNodes(): Promise<PromptPackWorkflowNode[]> {
+  const response = await fetch("/api/settings/prompt-packs/workflow-nodes");
+  return unwrapApiResult<PromptPackWorkflowNode[]>(response);
 }
 
-export async function createSkill(data: Partial<Skill>): Promise<Skill> {
-  const response = await fetch("/api/settings/skills", {
+export async function createPromptPack(data: Partial<PromptPack>): Promise<PromptPack> {
+  const response = await fetch("/api/settings/prompt-packs", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  return parseSkillResponse(response, "创建 Skill 失败");
+  return parsePromptPackResponse(response, "创建 PromptPack 失败");
 }
 
-export async function updateSkill(skill: Skill): Promise<Skill> {
-  const response = await fetch(`/api/settings/skills/${skill.id}`, {
+export async function updatePromptPack(promptPack : PromptPack): Promise<PromptPack> {
+  const response = await fetch(`/api/settings/prompt-packs/${promptPack.id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(skill),
+    body: JSON.stringify(promptPack),
   });
-  return parseSkillResponse(response, "更新 Skill 失败");
+  return parsePromptPackResponse(response, "更新 PromptPack 失败");
 }
 
-export async function deleteSkill(id: string): Promise<void> {
-  const response = await fetch(`/api/settings/skills/${id}`, { method: "DELETE" });
-  if (!response.ok) throw new Error("删除 Skill 失败");
+export async function deletePromptPack(id: string): Promise<void> {
+  const response = await fetch(`/api/settings/prompt-packs/${id}`, { method: "DELETE" });
+  if (!response.ok) throw new Error("删除 PromptPack 失败");
 }
 
 /* ---- WeChat MP ---- */
@@ -476,13 +476,13 @@ export async function pushWechatMpDraft(body: {
 
 /* ---- System ---- */
 
-/** 内置 Skill / 工作流系统就绪视图。 */
+/** 内置提示词包 / 工作流系统就绪视图。 */
 export type BuiltinReadyView = {
   ready: boolean;
   issues: string[];
   bootstrapHint: string;
-  skillCount: number;
-  expectedSkillCount: number;
+  promptPackCount: number;
+  expectedPromptPackCount: number;
   workflowReady: boolean;
 };
 

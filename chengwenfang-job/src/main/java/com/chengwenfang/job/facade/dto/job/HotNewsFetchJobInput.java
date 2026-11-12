@@ -6,7 +6,7 @@ import java.util.Map;
 
 /**
  * {@link com.chengwenfang.job.facade.constant.JobTypes#HOT_NEWS_FETCH} 入参。
- * <p>含 themeId/channelIds/hours/fetchRunId 及 enrich 的 workflowId/skillSnapshot 等开放键。
+ * <p>含 themeId/channelIds/hours/fetchRunId 及 enrich 的 workflowId/promptPackSnapshot 等开放键。
  */
 public class HotNewsFetchJobInput extends LinkedHashMap<String, Object> {
 

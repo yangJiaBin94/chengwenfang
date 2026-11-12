@@ -6,8 +6,8 @@ import com.chengwenfang.mode.hotnews.facade.dto.request.RadarSurvivorPersistRequ
 import com.chengwenfang.mode.hotnews.facade.dto.view.RadarPersistClusterResult;
 import com.chengwenfang.infra.config.ChengwenfangProperties;
 import com.chengwenfang.job.facade.JobFacade;
-import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
-import com.chengwenfang.skill.facade.enums.HotNewsRadarCollectNodeType;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
+import com.chengwenfang.prompt.facade.enums.HotNewsRadarCollectNodeType;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -16,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-/** 幸存者落库、成簇，并用 Skill 合并簇摘要。 */
+/** 幸存者落库、成簇，并用 提示词包 合并簇摘要。 */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -35,7 +35,7 @@ public class PersistClusterRadarNodeHandler implements RadarCollectNodeHandler {
   public void execute(
       RadarCollectSessionStore.Session session,
       Map<String, Object> lightState,
-      List<SkillPromptBindingView> skillBindings,
+      List<PromptPackPromptBindingView> promptPackBindings,
       String nodeKey,
       String nodeName) {
     String jobId = StrUtil.blankToDefault(
@@ -76,7 +76,7 @@ public class PersistClusterRadarNodeHandler implements RadarCollectNodeHandler {
     for (String topicId : result.getTopicIds()) {
       List<String> briefs = result.getMemberBriefsByTopicId().getOrDefault(topicId, List.of());
       String title = result.getTitleByTopicId().getOrDefault(topicId, "");
-      String merged = aiSupport.mergeClusterSummary(skillBindings, title, briefs);
+      String merged = aiSupport.mergeClusterSummary(promptPackBindings, title, briefs);
       if (StrUtil.isBlank(merged) && !briefs.isEmpty()) {
         merged = String.join("；", briefs);
         if (merged.length() > 1200) {

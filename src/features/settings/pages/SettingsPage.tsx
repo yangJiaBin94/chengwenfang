@@ -35,14 +35,14 @@ import {
 } from "../model";
 import type { AiProviderConfig, AiSettings, AiSettingsKind } from "../model";
 import {
-  createSkill,
-  deleteSkill,
-  listSkills,
-  pageSkills,
-  updateSkill,
-  updateSkill as saveSkillApi,
+  createPromptPack,
+  deletePromptPack,
+  listPromptPacks,
+  pagePromptPacks,
+  updatePromptPack,
+  updatePromptPack as savePromptPackApi,
 } from "../api";
-import type { Skill } from "../api";
+import type { PromptPack } from "../api";
 import {
   LIST_PAGE_SIZE_OPTIONS,
   listPageNumbers,
@@ -61,9 +61,9 @@ import {
   LayoutThemeSettings,
 } from "../components/LayoutThemeSettings";
 import {
-  SkillSettingsPanel,
+  PromptPackSettingsPanel,
   ProviderCard,
-} from "../components/SkillSettingsPanel";
+} from "../components/PromptPackSettingsPanel";
 
 
 export function AiSettingsPage({
@@ -75,10 +75,10 @@ export function AiSettingsPage({
   settings: AiSettings;
   updatedAt: string;
   onSave: (settings: AiSettings) => Promise<string>;
-  initialSection?: "ai" | "skills" | "layoutThemes" | "wechatMp" | "system" | null;
+  initialSection?: "ai" | "promptPacks" | "layoutThemes" | "wechatMp" | "system" | null;
 }) {
   const [settingsSection, setSettingsSection] = useState<
-    "ai" | "skills" | "layoutThemes" | "wechatMp" | "system"
+    "ai" | "promptPacks" | "layoutThemes" | "wechatMp" | "system"
   >(initialSection || "ai");
   useEffect(() => {
     if (initialSection) setSettingsSection(initialSection);
@@ -102,38 +102,38 @@ export function AiSettingsPage({
   const [saveMessage, setSaveMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState<AiSettingsKind | null>(null);
-  const [skills, setSkills] = useState<Skill[]>([]);
-  const [skillName, setSkillName] = useState("");
-  const [skillInstructions, setSkillInstructions] = useState("");
-  const [skillScene, setSkillScene] = useState("course_content_generation");
-  const [skillPriority, setSkillPriority] = useState(100);
-  const [skillEnabled, setSkillEnabled] = useState(true);
+  const [promptPacks, setPromptPacks] = useState<PromptPack[]>([]);
+  const [promptPackName, setPromptPackName] = useState("");
+  const [promptPackInstructions, setPromptPackInstructions] = useState("");
+  const [promptPackScene, setPromptPackScene] = useState("course_content_generation");
+  const [promptPackPriority, setPromptPackPriority] = useState(100);
+  const [promptPackEnabled, setPromptPackEnabled] = useState(true);
   useEffect(() => {
-    listSkills()
-      .then(setSkills)
+    listPromptPacks()
+      .then(setPromptPacks)
       .catch(() => undefined);
   }, []);
-  async function addSkill() {
-    if (!skillName.trim() || !skillInstructions.trim()) return;
-    const item = await createSkill({
-      name: skillName.trim(),
+  async function addPromptPack() {
+    if (!promptPackName.trim() || !promptPackInstructions.trim()) return;
+    const item = await createPromptPack({
+      name: promptPackName.trim(),
       description: "",
       scope: "scene",
-      skillType: "instruction",
+      promptPackType: "instruction",
       locked: false,
-      scene: skillScene,
-      systemInstructions: skillInstructions.trim(),
+      scene: promptPackScene,
+      systemInstructions: promptPackInstructions.trim(),
       taskInstructions: "",
-      priority: skillPriority,
-      enabled: skillEnabled,
+      priority: promptPackPriority,
+      enabled: promptPackEnabled,
     });
-    setSkills((items) =>
+    setPromptPacks((items) =>
       [...items, item].sort((a, b) => a.priority - b.priority),
     );
-    setSkillName("");
-    setSkillInstructions("");
-    setSkillPriority(100);
-    setSkillEnabled(true);
+    setPromptPackName("");
+    setPromptPackInstructions("");
+    setPromptPackPriority(100);
+    setPromptPackEnabled(true);
   }
 
   useEffect(() => setDraft(settings), [settings]);
@@ -213,10 +213,10 @@ export function AiSettingsPage({
           AI 配置
         </button>
         <button
-          className={settingsSection === "skills" ? "active" : ""}
-          onClick={() => setSettingsSection("skills")}
+          className={settingsSection === "promptPacks" ? "active" : ""}
+          onClick={() => setSettingsSection("promptPacks")}
         >
-          Skill 配置管理
+          PromptPack
         </button>
         <button
           className={settingsSection === "layoutThemes" ? "active" : ""}
@@ -240,8 +240,8 @@ export function AiSettingsPage({
       {settingsSection === "layoutThemes" && <LayoutThemeTransfer />}
       {settingsSection === "layoutThemes" ? (
         <LayoutThemeSettings />
-      ) : settingsSection === "skills" ? (
-        <SkillSettingsPanel />
+      ) : settingsSection === "promptPacks" ? (
+        <PromptPackSettingsPanel />
       ) : settingsSection === "wechatMp" ? (
         <WechatMpSettingsPanel />
       ) : settingsSection === "system" ? (
@@ -361,34 +361,34 @@ export function AiSettingsPage({
               onTest={() => test(activeKind)}
             />
           </div>
-          <div className="skills-settings">
-            <div className="skills-settings-head">
-              <strong>文章生成 Skill</strong>
+          <div className="prompt-packs-settings">
+            <div className="prompt-packs-settings-head">
+              <strong>文章生成 PromptPack</strong>
               <span>
-                仅已发布工作流节点上的 Skill 会参与生成；请在工作流设计器配置并发布。
+                仅已发布工作流节点上的 PromptPack 会参与生成；请在工作流设计器配置并发布。
               </span>
             </div>
-            <div className="skill-create">
+            <div className="prompt-pack-create">
               <input
-                value={skillName}
-                onChange={(event) => setSkillName(event.target.value)}
-                placeholder="Skill 名称"
+                value={promptPackName}
+                onChange={(event) => setPromptPackName(event.target.value)}
+                placeholder="提示词包名称"
               />
               <input
-                value={skillInstructions}
-                onChange={(event) => setSkillInstructions(event.target.value)}
+                value={promptPackInstructions}
+                onChange={(event) => setPromptPackInstructions(event.target.value)}
                 placeholder="协作规则"
               />
-              <button onClick={() => void addSkill()}>新增</button>
+              <button onClick={() => void addPromptPack()}>新增</button>
             </div>
-            {skills.map((skill) => (
-              <div className="skill-row" key={skill.id}>
+            {promptPacks.map((pack) => (
+              <div className="prompt-pack-row" key={pack.id}>
                 <input
-                  value={skill.name}
+                  value={pack.name}
                   onChange={(event) =>
-                    setSkills((items) =>
+                    setPromptPacks((items) =>
                       items.map((item) =>
-                        item.id === skill.id
+                        item.id === pack.id
                           ? { ...item, name: event.target.value }
                           : item,
                       ),
@@ -398,11 +398,11 @@ export function AiSettingsPage({
                 <input
                   type="number"
                   min="0"
-                  value={skill.priority}
+                  value={pack.priority}
                   onChange={(event) =>
-                    setSkills((items) =>
+                    setPromptPacks((items) =>
                       items.map((item) =>
-                        item.id === skill.id
+                        item.id === pack.id
                           ? { ...item, priority: Number(event.target.value) }
                           : item,
                       ),
@@ -412,11 +412,11 @@ export function AiSettingsPage({
                 <label>
                   <input
                     type="checkbox"
-                    checked={skill.enabled}
+                    checked={pack.enabled}
                     onChange={(event) =>
-                      setSkills((items) =>
+                      setPromptPacks((items) =>
                         items.map((item) =>
-                          item.id === skill.id
+                          item.id === pack.id
                             ? { ...item, enabled: event.target.checked }
                             : item,
                         ),
@@ -425,12 +425,12 @@ export function AiSettingsPage({
                   />
                   启用
                 </label>
-                <button onClick={() => void updateSkill(skill)}>保存</button>
+                <button onClick={() => void updatePromptPack(pack)}>保存</button>
                 <button
                   onClick={async () => {
-                    await deleteSkill(skill.id);
-                    setSkills((items) =>
-                      items.filter((item) => item.id !== skill.id),
+                    await deletePromptPack(pack.id);
+                    setPromptPacks((items) =>
+                      items.filter((item) => item.id !== pack.id),
                     );
                   }}
                 >
@@ -446,6 +446,6 @@ export function AiSettingsPage({
 }
 
 /** 设置页「公众号配置」：AppID / AppSecret 与连通性探测。 */
-/** 系统就绪：内置 Skill / 工作流体检。 */
+/** 系统就绪：内置提示词包 / 工作流体检。 */
 
 

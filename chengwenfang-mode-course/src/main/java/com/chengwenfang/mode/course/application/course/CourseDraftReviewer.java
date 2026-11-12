@@ -4,7 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import com.chengwenfang.ai.facade.constant.ModelCallScenes;
 import com.chengwenfang.mode.course.application.generation.course.CourseGraphState;
 import com.chengwenfang.quality.facade.AuditFacade;
-import com.chengwenfang.skill.facade.enums.CourseWorkflowNodeType;
+import com.chengwenfang.prompt.facade.enums.CourseWorkflowNodeType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

@@ -9,8 +9,8 @@ import com.chengwenfang.mode.hotnews.facade.constant.HotNewsArtifactTypes;
 import com.chengwenfang.mode.hotnews.facade.constant.HotNewsErrorCodes;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsArticleSkeletonView;
 import com.chengwenfang.mode.hotnews.facade.enums.HotNewsImageCountOption;
-import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
-import com.chengwenfang.skill.facade.enums.HotNewsWorkflowNodeType;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
+import com.chengwenfang.prompt.facade.enums.HotNewsWorkflowNodeType;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,7 +37,7 @@ public class ReviewDraftNodeHandler implements HotNewsNodeHandler {
   @Override
   public void execute(
       HotNewsGraphState state,
-      List<SkillPromptBindingView> skillBindings,
+      List<PromptPackPromptBindingView> promptPackBindings,
       String nodeKey,
       String nodeName) {
     String imageOption = HotNewsImageCountOption.normalize(state.getImageCountOption());
@@ -76,15 +76,20 @@ public class ReviewDraftNodeHandler implements HotNewsNodeHandler {
       return;
     }
 
-    String skillPrompt = textCompletion.composeSkillPrompt(skillBindings);
-    String systemPrompt = HotNewsWritingPrompts.systemPrompt(skillPrompt, state.getThemeContext());
+    String promptPackText = textCompletion.composePromptPackText(promptPackBindings);
+    String systemPrompt = HotNewsWritingPrompts.systemPrompt(promptPackText, state.getThemeContext());
     String userPrompt = """
         审校下列热点原稿。若有流水账、AI 套话、“一、二、三”式大标题、教学式强势语气、偏离骨架结构。
         词典括注/翻译腔，或字数明显偏离，直接输出修订后的完整正文；若通过则原样输出完整正文。不要只输出检查清单。
         语气与文风（改到像真人聊天，不像通稿或课件）：
-        1. 删改训诫口吻；可读起来有第一人称判断，句子长短自然，不要播音腔或万能收尾套话。
+        1. 删改训诫口吻；可读起来有第一人称判断，句子长短自然，不要播音腔或万能收尾套话；
+           删掉「比收藏截图耐用得多」「记住方法比记住数字更重要」一类说教对比收尾。
         2. 改掉「英文词（长串中文释义）」式括注；术语中文优先，必要时括号只留短英文缩写；意思嵌进句子里说。
         3. 改掉「它不是 A，是 B」「更直观的是」「值得注意的是」等机械套式与直译感句子。
+        4. 改掉元叙述出戏与自我声明金句：「这不是这篇文章该干的事」「后面怎么走，我不猜」「没有它，…我不反推」等；不预测就省略或嵌进陈述，少用逗号切开两三字短块。
+        5. 若正文以多源数字/说法冲突作核心：补可核对出处，单独成行「来源：简称或媒体名」；
+           禁止裸 http(s) URL 与 [报道](url) 嵌句链；不要只写「我刷到的截图/短视频」；禁止编造出处。
+           已有的佐证图（![](/api/files/…) 或 [[HOT_NEWS_EVIDENCE:…]]）须原样保留。
         必须完整保留原稿中的插图提示词块（“插图位置… ```text 围栏）；不得删除或改写成占位符。
         检查关键概念粗体、中文双引号；清除正文「」。/。>、——（提示词围栏内不受限）。
         正文字数档：%s（插图提示词不计入字数）。

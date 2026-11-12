@@ -13,11 +13,11 @@ import com.chengwenfang.common.ThemeTitleRelevance;
 import com.chengwenfang.common.LlmJsonSupport;
 import com.chengwenfang.crawler.facade.PublishDateSnippetSupport;
 import com.chengwenfang.crawler.facade.PublishTimeUtil;
-import com.chengwenfang.skill.facade.SkillFacade;
-import com.chengwenfang.skill.facade.constant.HotNewsRadarCollectSkillNames;
-import com.chengwenfang.skill.facade.constant.HotNewsRadarCollectWorkflowKeys;
-import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
-import com.chengwenfang.skill.facade.dto.view.SkillView;
+import com.chengwenfang.prompt.facade.PromptPackFacade;
+import com.chengwenfang.prompt.facade.constant.HotNewsRadarCollectPromptPackNames;
+import com.chengwenfang.prompt.facade.constant.HotNewsRadarCollectWorkflowKeys;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackView;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -28,7 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * 雷达采集 AI：按 Skill 名取提示词并调用文本模型。
+ * 雷达采集 AI：按 提示词包 名取提示词并调用文本模型。
  */
 @Slf4j
 @Component
@@ -56,23 +56,23 @@ public class RadarCollectAiSupport {
       只输出 JSON：{"offTopicIds":["id"]}。没有不符时输出 {"offTopicIds":[]}。
       """;
 
-  /** Skill 门面。 */
-  private final SkillFacade skills;
+  /** 提示词包门面。 */
+  private final PromptPackFacade promptPacks;
   /** 文本 AI。 */
   private final AiTextFacade ai;
 
   /**
    * 生成文章事实速览。
    *
-   * @param skillBindings 节点绑定
+   * @param promptPackBindings 节点绑定
    * @param title         标题
    * @param body          正文
    * @return 速览
    */
   public String articleFactBrief(
-      List<SkillPromptBindingView> skillBindings, String title, String body) {
+      List<PromptPackPromptBindingView> promptPackBindings, String title, String body) {
     String system = resolveSystemPrompt(
-        skillBindings, HotNewsRadarCollectSkillNames.ARTICLE_FACT_BRIEF);
+        promptPackBindings, HotNewsRadarCollectPromptPackNames.ARTICLE_FACT_BRIEF);
     return complete(
         system,
         "标题：" + StrUtil.nullToEmpty(title) + "\n\n正文：\n"
@@ -83,18 +83,18 @@ public class RadarCollectAiSupport {
   /**
    * 从日期输入文本（或正则片段）抽取发布日；抽不到返回 null。
    *
-   * @param skillBindings 节点绑定
+   * @param promptPackBindings 节点绑定
    * @param title         标题
    * @param dateInputText 日期输入全文
    * @return 发布时间；无法判断为 null
    */
   public LocalDateTime extractPublishDate(
-      List<SkillPromptBindingView> skillBindings, String title, String dateInputText) {
+      List<PromptPackPromptBindingView> promptPackBindings, String title, String dateInputText) {
     if (StrUtil.isBlank(dateInputText)) {
       return null;
     }
     String system = resolveSystemPrompt(
-        skillBindings, HotNewsRadarCollectSkillNames.ARTICLE_PUBLISH_DATE);
+        promptPackBindings, HotNewsRadarCollectPromptPackNames.ARTICLE_PUBLISH_DATE);
     // 正则候选±100 字（或无命中时的受控全文）交给模型判定发布日
     String context = PublishDateSnippetSupport.buildAiContext(dateInputText);
     if (StrUtil.isBlank(context)) {
@@ -119,15 +119,15 @@ public class RadarCollectAiSupport {
   /**
    * 生成视频事实速览。
    *
-   * @param skillBindings 节点绑定
+   * @param promptPackBindings 节点绑定
    * @param title         标题
    * @param transcript    字幕/口播
    * @return 速览
    */
   public String videoFactBrief(
-      List<SkillPromptBindingView> skillBindings, String title, String transcript) {
+      List<PromptPackPromptBindingView> promptPackBindings, String title, String transcript) {
     String system = resolveSystemPrompt(
-        skillBindings, HotNewsRadarCollectSkillNames.VIDEO_FACT_BRIEF);
+        promptPackBindings, HotNewsRadarCollectPromptPackNames.VIDEO_FACT_BRIEF);
     return complete(
         system,
         "标题：" + StrUtil.nullToEmpty(title) + "\n\n口播/字幕：\n"
@@ -138,19 +138,19 @@ public class RadarCollectAiSupport {
   /**
    * 判定是否营销。
    *
-   * @param skillBindings 节点绑定
+   * @param promptPackBindings 节点绑定
    * @param title         标题
    * @param factBrief     事实速览
    * @param rawSnippet    原文片段
    * @return true 表示营销应弃用
    */
   public boolean isMarketing(
-      List<SkillPromptBindingView> skillBindings,
+      List<PromptPackPromptBindingView> promptPackBindings,
       String title,
       String factBrief,
       String rawSnippet) {
     String system = resolveSystemPrompt(
-        skillBindings, HotNewsRadarCollectSkillNames.MARKETING_FILTER);
+        promptPackBindings, HotNewsRadarCollectPromptPackNames.MARKETING_FILTER);
     String text = complete(
         system,
         "标题：" + StrUtil.nullToEmpty(title)
@@ -274,31 +274,31 @@ public class RadarCollectAiSupport {
   /**
    * 按主题问卷生成一条 AI 主题种子；失败返回 null。
    *
-   * @param skillBindings 节点绑定
+   * @param promptPackBindings 节点绑定
    * @param userPrompt    用户提示
    * @return 单条结果；无效为 null
    */
   public AiThemeSeedAiResult generateAiThemeSeed(
-      List<SkillPromptBindingView> skillBindings, String userPrompt) {
-    List<AiThemeSeedAiResult> items = generateAiThemeSeeds(skillBindings, userPrompt, 1);
+      List<PromptPackPromptBindingView> promptPackBindings, String userPrompt) {
+    List<AiThemeSeedAiResult> items = generateAiThemeSeeds(promptPackBindings, userPrompt, 1);
     return items.isEmpty() ? null : items.get(0);
   }
 
   /**
    * 按主题问卷一次生成多条 AI 主题种子；过滤空标题/速览并截断到 count。
    *
-   * @param skillBindings 节点绑定
+   * @param promptPackBindings 节点绑定
    * @param userPrompt    已拼装的主题问卷用户提示（须含条数 N）
    * @param count         期望条数
    * @return 有效条目；失败为空列表
    */
   public List<AiThemeSeedAiResult> generateAiThemeSeeds(
-      List<SkillPromptBindingView> skillBindings, String userPrompt, int count) {
+      List<PromptPackPromptBindingView> promptPackBindings, String userPrompt, int count) {
     if (StrUtil.isBlank(userPrompt) || count <= 0) {
       return List.of();
     }
     String system = resolveSystemPrompt(
-        skillBindings, HotNewsRadarCollectSkillNames.AI_THEME_SEED);
+        promptPackBindings, HotNewsRadarCollectPromptPackNames.AI_THEME_SEED);
     String text = complete(system, userPrompt, ModelCallScenes.RADAR_AI_THEME_SEED);
     List<AiThemeSeedAiResult> parsed = parseAiThemeSeedItems(text);
     // 同批响应内标题自检去重，避免一次返回里撞题
@@ -326,17 +326,17 @@ public class RadarCollectAiSupport {
   /**
    * 合并簇摘要。
    *
-   * @param skillBindings 节点绑定
+   * @param promptPackBindings 节点绑定
    * @param clusterTitle  簇标题
    * @param memberBriefs  成员速览
    * @return 簇摘要
    */
   public String mergeClusterSummary(
-      List<SkillPromptBindingView> skillBindings,
+      List<PromptPackPromptBindingView> promptPackBindings,
       String clusterTitle,
       List<String> memberBriefs) {
     String system = resolveSystemPrompt(
-        skillBindings, HotNewsRadarCollectSkillNames.CLUSTER_SUMMARY_MERGE);
+        promptPackBindings, HotNewsRadarCollectPromptPackNames.CLUSTER_SUMMARY_MERGE);
     StringBuilder body = new StringBuilder();
     body.append("选题标题：").append(StrUtil.nullToEmpty(clusterTitle)).append("\n\n成员速览：\n");
     int index = 1;
@@ -350,53 +350,53 @@ public class RadarCollectAiSupport {
   }
 
   /**
-   * 解析节点绑定或库内 Skill 的系统提示词。
+   * 解析节点绑定或库内 提示词包 的系统提示词。
    *
    * @param bindings  节点绑定
-   * @param skillName Skill 名
+   * @param promptPackName 提示词包 名
    * @return 系统提示；无则返回通用兜底文案
    */
-  private String resolveSystemPrompt(List<SkillPromptBindingView> bindings, String skillName) {
-    SkillView matched = findBoundSkill(bindings, skillName);
+  private String resolveSystemPrompt(List<PromptPackPromptBindingView> bindings, String promptPackName) {
+    PromptPackView matched = findBoundPromptPack(bindings, promptPackName);
     if (matched != null && StrUtil.isNotBlank(matched.getSystemInstructions())) {
       return matched.getSystemInstructions();
     }
     // 回退：按 scene + 名从库中取
-    for (SkillView skill : skills.listSkills()) {
-      if (skill == null) {
+    for (PromptPackView promptPack : promptPacks.listPromptPacks()) {
+      if (promptPack == null) {
         continue;
       }
-      if (skillName.equals(skill.getName())
-          && HotNewsRadarCollectWorkflowKeys.SCENE.equals(StrUtil.nullToEmpty(skill.getScene()))
-          && StrUtil.isNotBlank(skill.getSystemInstructions())) {
-        return skill.getSystemInstructions();
+      if (promptPackName.equals(promptPack.getName())
+          && HotNewsRadarCollectWorkflowKeys.SCENE.equals(StrUtil.nullToEmpty(promptPack.getScene()))
+          && StrUtil.isNotBlank(promptPack.getSystemInstructions())) {
+        return promptPack.getSystemInstructions();
       }
     }
     return "请按编辑要求输出简洁中文结果。";
   }
 
   /**
-   * 在节点绑定中查找指定名称的 Skill。
+   * 在节点绑定中查找指定名称的 提示词包。
    *
    * @param bindings  绑定列表
-   * @param skillName Skill 名
+   * @param promptPackName 提示词包 名
    * @return 命中视图；未找到为 null
    */
-  private SkillView findBoundSkill(List<SkillPromptBindingView> bindings, String skillName) {
+  private PromptPackView findBoundPromptPack(List<PromptPackPromptBindingView> bindings, String promptPackName) {
     if (bindings == null || bindings.isEmpty()) {
       return null;
     }
-    List<SkillView> all = skills.listSkills();
-    for (SkillPromptBindingView binding : bindings) {
+    List<PromptPackView> all = promptPacks.listPromptPacks();
+    for (PromptPackPromptBindingView binding : bindings) {
       if (binding == null || Boolean.FALSE.equals(binding.getEnabled())
-          || StrUtil.isBlank(binding.getSkillId())) {
+          || StrUtil.isBlank(binding.getPromptPackId())) {
         continue;
       }
-      for (SkillView skill : all) {
-        if (skill != null
-            && binding.getSkillId().equals(skill.getId())
-            && skillName.equals(skill.getName())) {
-          return skill;
+      for (PromptPackView promptPack : all) {
+        if (promptPack != null
+            && binding.getPromptPackId().equals(promptPack.getId())
+            && promptPackName.equals(promptPack.getName())) {
+          return promptPack;
         }
       }
     }
@@ -427,12 +427,12 @@ public class RadarCollectAiSupport {
   }
 
   /**
-   * 组合全部绑定 Skill 正文长度，供 load_skills 校验。
+   * 组合全部绑定提示词包 正文长度，供 load_prompt_packs 校验。
    *
    * @param bindings 绑定
    * @return 组合提示词
    */
-  public String composeAll(List<SkillPromptBindingView> bindings) {
-    return skills.composePromptFromBindings(bindings == null ? List.of() : new ArrayList<>(bindings));
+  public String composeAll(List<PromptPackPromptBindingView> bindings) {
+    return promptPacks.composePromptFromBindings(bindings == null ? List.of() : new ArrayList<>(bindings));
   }
 }

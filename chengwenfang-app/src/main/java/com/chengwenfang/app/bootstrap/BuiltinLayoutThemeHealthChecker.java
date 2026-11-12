@@ -3,7 +3,7 @@ package com.chengwenfang.app.bootstrap;
 import com.chengwenfang.publishing.facade.PublishingFacade;
 import com.chengwenfang.publishing.facade.constant.BuiltinLayoutThemeKeys;
 import com.chengwenfang.publishing.facade.dto.view.LayoutThemeView;
-import com.chengwenfang.skill.facade.builtin.BuiltinConfigInspector;
+import com.chengwenfang.prompt.facade.builtin.BuiltinConfigInspector;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -87,7 +87,7 @@ class WorkflowGraphE2EIT extends ChengwenfangIT {
             "conditionOperator", "eq",
             "conditionValue", true),
         "position", Map.of("x", seq * 40, "y", 0),
-        "skillBindings", List.of());
+        "promptPackBindings", List.of());
   }
 
   private static Map<String, Object> edge(

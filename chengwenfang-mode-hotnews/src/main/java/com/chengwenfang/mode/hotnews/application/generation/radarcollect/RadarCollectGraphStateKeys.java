@@ -22,8 +22,8 @@ public final class RadarCollectGraphStateKeys {
   public static final String MAX_ARTICLE_PER_FETCH = "maxArticlePerFetch";
   /** 视频素材配额。 */
   public static final String MAX_VIDEO_PER_FETCH = "maxVideoPerFetch";
-  /** Skill 快照摘要。 */
-  public static final String SKILL_SNAPSHOT_SUMMARY = "skillSnapshotSummary";
+  /** 提示词包 快照摘要。 */
+  public static final String PROMPT_PACK_SNAPSHOT_SUMMARY = "promptPackSnapshotSummary";
   /** 候选总数。 */
   public static final String CANDIDATE_COUNT = "candidateCount";
   /** 幸存者数。 */

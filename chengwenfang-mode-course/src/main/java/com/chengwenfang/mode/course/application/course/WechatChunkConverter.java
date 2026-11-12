@@ -4,8 +4,8 @@ import com.chengwenfang.mode.course.application.prompt.CoursePrompts;
 
 import com.chengwenfang.ai.facade.AiTextFacade;
 import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
-import com.chengwenfang.skill.facade.SkillFacade;
-import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
+import com.chengwenfang.prompt.facade.PromptPackFacade;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -26,16 +26,16 @@ public class WechatChunkConverter {
 
   /** 文本补全门面。 */
   private final AiTextFacade ai;
-  /** Skill 提示词组合。 */
-  private final SkillFacade skills;
+  /** 提示词包 提示词组合。 */
+  private final PromptPackFacade promptPacks;
 
   /**
    * @param ai     文本 AI
-   * @param skills Skill 门面
+   * @param promptPacks 提示词包门面
    */
-  public WechatChunkConverter(AiTextFacade ai, SkillFacade skills) {
+  public WechatChunkConverter(AiTextFacade ai, PromptPackFacade promptPacks) {
     this.ai = ai;
-    this.skills = skills;
+    this.promptPacks = promptPacks;
   }
 
   /**
@@ -43,7 +43,7 @@ public class WechatChunkConverter {
    *
    * @param draft          课程原稿 Markdown
    * @param ctx            生成上下文（页眉字段来源）
-   * @param wechatNode     工作流中 wechat_conversion 节点（取 skillBindings）
+   * @param wechatNode     工作流中 wechat_conversion 节点（取 promptPackBindings）
    * @param progress       分块进度回调；可为 null
    * @param repairFeedback 上轮终检/等价性反馈；可为 null
    * @return 带页眉的公众号全文、图片 token 列表与分块数
@@ -57,7 +57,7 @@ public class WechatChunkConverter {
       String repairFeedback) {
     CourseMarkdownUtil.WechatSource source = CourseMarkdownUtil.prepareWechatSource(draft);
     List<String> chunks = CourseMarkdownUtil.splitMarkdown(source.prepared(), CourseMarkdownUtil.WECHAT_CHUNK_LIMIT);
-    String skillPrompt = skills.composePromptFromBindings(skillBindings(wechatNode));
+    String promptPackText = promptPacks.composePromptFromBindings(promptPackBindings(wechatNode));
     List<String> outputs = new ArrayList<>();
     int total = Math.max(1, chunks.size());
     String feedback = repairFeedback == null || repairFeedback.isBlank()
@@ -87,7 +87,7 @@ public class WechatChunkConverter {
           %s
           """.formatted(
           index, total, positionRule, chunk.length(), ctx.maxBodyChars(), feedback, chunk);
-      String converted = complete(skillPrompt, userPrompt, "wechat_chunk_" + index);
+      String converted = complete(promptPackText, userPrompt, "wechat_chunk_" + index);
       if (!CourseMarkdownUtil.wechatChunkComplete(chunk, converted)) {
         converted = CourseMarkdownUtil.deterministicWechatChunk(chunk);
       }
@@ -118,8 +118,8 @@ public class WechatChunkConverter {
     return convert(draft, ctx, wechatNode, progress, null);
   }
 
-  private String complete(String skillPrompt, String userPrompt, String scene) {
-    String systemPrompt = CoursePrompts.systemPrompt(skillPrompt);
+  private String complete(String promptPackText, String userPrompt, String scene) {
+    String systemPrompt = CoursePrompts.systemPrompt(promptPackText);
     var result = ai.completeText(TextCompleteRequest.builder()
         .prompt(userPrompt.strip())
         .systemPrompt(systemPrompt)
@@ -194,17 +194,17 @@ public class WechatChunkConverter {
   }
 
   @SuppressWarnings("unchecked")
-  private static List<SkillPromptBindingView> skillBindings(Map<String, Object> node) {
-    if (node == null || !(node.get("skillBindings") instanceof List<?> list)) {
+  private static List<PromptPackPromptBindingView> promptPackBindings(Map<String, Object> node) {
+    if (node == null || !(node.get("promptPackBindings") instanceof List<?> list)) {
       return List.of();
     }
-    List<SkillPromptBindingView> out = new ArrayList<>();
+    List<PromptPackPromptBindingView> out = new ArrayList<>();
     for (Object item : list) {
       if (item instanceof Map<?, ?> map) {
         Map<String, Object> m = (Map<String, Object>) map;
         Object priority = m.get("priority");
-        out.add(SkillPromptBindingView.builder()
-            .skillId(m.get("skillId") == null ? null : String.valueOf(m.get("skillId")))
+        out.add(PromptPackPromptBindingView.builder()
+            .promptPackId(m.get("promptPackId") == null ? null : String.valueOf(m.get("promptPackId")))
             .priority(priority instanceof Number number ? number.intValue() : 100)
             .enabled(m.get("enabled") == null || Boolean.TRUE.equals(m.get("enabled")))
             .build());

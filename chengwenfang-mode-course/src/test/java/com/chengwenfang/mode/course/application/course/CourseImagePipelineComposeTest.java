@@ -316,7 +316,7 @@ class CourseImagePipelineComposeTest {
     assertThat(a).contains("强制差异化").contains("严禁默认套用深海蓝 Keynote");
     assertThat(b).contains("强制差异化");
     assertThat(a).isNotEqualTo(b);
-    assertThat(CourseImagePipeline.trimSkillPrompt(
+    assertThat(CourseImagePipeline.trimPromptPackText(
             "视觉规范：\n1. 使用深海蓝三维科技空间、Apple Keynote 风格。\n2. 检查尺寸。\n", false))
         .doesNotContain("深海蓝")
         .doesNotContain("Keynote")

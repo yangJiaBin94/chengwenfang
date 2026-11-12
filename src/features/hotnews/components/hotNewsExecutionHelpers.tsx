@@ -48,9 +48,9 @@ export const stages = [
     "读取骨架结构、选题、资料线索与字数/配图档。",
   ],
   [
-    "hot_news_load_skills",
-    "加载热点文章 Skill",
-    "固定本流程 Skill、提示词与版本快照。",
+    "hot_news_load_prompt_packs",
+    "加载热点文章 PromptPack",
+    "固定本流程 PromptPack、提示词与版本快照。",
   ],
   [
     "hot_news_prepare_facts",
@@ -106,7 +106,7 @@ export const labels: Record<string, string> = Object.fromEntries(
 
 export const runningNotes: Record<string, string> = {
   hot_news_load_context: "正在读取文章骨架、资料线索与生成配置...",
-  hot_news_load_skills: "正在加载并固化热点文章 Skill...",
+  hot_news_load_prompt_packs: "正在加载并固化热点文章 PromptPack...",
   hot_news_prepare_facts: "正在整理资料线索为事实包...",
   hot_news_generate_draft: "正在按骨架生成原稿与插图提示词...",
   hot_news_review_draft: "正在审校原稿结构、事实、字数与插图提示词...",
@@ -171,8 +171,8 @@ export const readableOutput = (value: unknown, fallback: string) => {
           ? "已完成规划"
           : data.status,
     );
-  if (typeof data.skillCount === "number")
-    parts.push(`已加载 ${data.skillCount} 项写作能力`);
+  if (typeof data.promptPackCount === "number")
+    parts.push(`已加载 ${data.promptPackCount} 项写作能力`);
   if (typeof data.confirmedFactCount === "number")
     parts.push(`已确认 ${data.confirmedFactCount} 条核心事实`);
   if (typeof data.sourceCount === "number")

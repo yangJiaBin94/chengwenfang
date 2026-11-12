@@ -91,7 +91,7 @@
 |------|------|
 | 课程体系教学模式 | 主题与课表；原稿 / 公众号文；配图、版本、审核、任务轨迹 |
 | 热点资讯模式 | 热点雷达、来源管理、选题资料池补充与话题过滤、分步生成 |
-| 工作流 | Skill 与生成工作流图 |
+| 工作流 | 提示词包 与生成工作流图 |
 | 回收站 / 设置 | 恢复已删主题；配置 AI 与本机公众号等 |
 
 课程侧典型路径：
@@ -168,19 +168,19 @@ npm install && npm run dev:frontend
 |------|------|
 | `scripts/article-extract` venv | 网页正文抽取（Trafilatura / Lightpanda） |
 | `scripts/video-transcript` venv + 本机 `ffmpeg` | 视频口播 / 抽帧 |
-| `scripts/page-screenshot` venv + Chromium | 资料补充截图 Vision 兜底（开发默认开启） |
+| `scripts/page-screenshot` venv + Chromium + PyMuPDF | 资料补充截图 Vision 兜底；成文佐证截屏（网页定位 / PDF 首页） |
 | `docker compose --profile all` | SearXNG（搜索）+ Lightpanda（JS 页回退） |
 
 ```powershell
 docker compose --profile all up -d --wait
-# 一键安装三个 Python CLI（含 Playwright Chromium）
+# 一键安装三个 Python CLI（含 Playwright Chromium + PyMuPDF）
 powershell -ExecutionPolicy Bypass -File .\scripts\setup-hotnews-clis.ps1
 # macOS / Linux：chmod +x scripts/setup-hotnews-clis.sh && ./scripts/setup-hotnews-clis.sh
 # 或：.\scripts\start-java.ps1 -AllDeps
 # 或：./scripts/start.sh --all-deps
 ```
 
-分项说明：[`scripts/article-extract/README.md`](scripts/article-extract/README.md)、[`scripts/video-transcript/README.md`](scripts/video-transcript/README.md)、[`scripts/page-screenshot/README.md`](scripts/page-screenshot/README.md)。资料补充 Vision 还需在「设置」配置好多模态模型。
+分项说明：[`scripts/article-extract/README.md`](scripts/article-extract/README.md)、[`scripts/video-transcript/README.md`](scripts/video-transcript/README.md)、[`scripts/page-screenshot/README.md`](scripts/page-screenshot/README.md)。资料补充 Vision 还需在「设置」配置好多模态模型；成文佐证截屏与 Vision 共用同一 CLI（`page-screenshot.enabled`）。
 
 ---
 
@@ -219,7 +219,7 @@ chengwenfang/
 ├── chengwenfang-publishing/       # 排版、渲染、渠道发布
 ├── chengwenfang-sourcing/         # 信源与抓取相关表
 ├── chengwenfang-notification/     # 站内通知
-├── chengwenfang-skill-workflow/   # Skill、工作流图
+├── chengwenfang-prompt-workflow/   # 提示词包、工作流图
 ├── chengwenfang-file|job|ai|crawler|common|infra/
 ├── src/                           # React（Vite）
 ├── contracts/ docs/ scripts/ deploy/
@@ -282,6 +282,7 @@ macOS / Linux：Homebrew 等装齐后跳过 `use-utf8.ps1`；`application.yml` �
 | SearXNG / Lightpanda | Compose profile | 该渠道或回退不可用 |
 | 资料池视频 | video-transcript + ffmpeg + 多模态 AI | 解析失败提示 |
 | 资料补充截图摘要 | page-screenshot + Playwright Chromium + 多模态 Vision（开发默认开） | 保留原 snippet / 可关 `page-screenshot.enabled` |
+| 成文佐证截屏 | 同上 + PyMuPDF（PDF 首页）；工作流节点 `hot_news_attach_evidence` | 跳过截屏、只保留文字出处；可关 `page-screenshot.enabled` |
 
 Lightpanda 镜像 AGPL-3.0，本仓未改源码；不用于绕过验证码 / 登录墙。
 

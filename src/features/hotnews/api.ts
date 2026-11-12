@@ -227,6 +227,19 @@ export type HotNewsArticle = {
     illustrationStyle?: string;
     coverBrief?: string;
     workingTitle?: string;
+    lastRewriteInstruction?: string;
+    rewrittenAt?: string;
+    lastOptimizeCritique?: {
+      overallScore?: number | null;
+      dimensionScores?: Record<string, number> | null;
+      issues?: Array<{
+        dimension?: string | null;
+        evidence?: string | null;
+        suggestion?: string | null;
+      }> | null;
+      editableAdvice?: string | null;
+      critiquedAt?: string | null;
+    } | null;
   };
   createdAt: string;
   updatedAt: string;
@@ -664,7 +677,7 @@ export type HotNewsArticleSkeleton = {
   sectionPlan?: string[];
   illustrationStyle?: string | null;
   coverBrief?: string | null;
-  /** 骨架配图 Skill 写入的生图硬性要求，成文时拼进插图提示词 */
+  /** 骨架配图 PromptPack 写入的生图硬性要求，成文时拼进插图提示词 */
   imagePromptRequirements?: string | null;
   recommendedWordCountOption?: string | null;
   recommendedImageCountOption?: string | null;
@@ -908,6 +921,49 @@ export function updateHotNewsGenerationSettings(
   ).then((r) => read<HotNewsArticle>(r));
 }
 
+/** 热点原稿优化诊断结果。 */
+export type HotNewsOptimizeCritique = {
+  articleId: string;
+  overallScore?: number | null;
+  dimensionScores?: Record<string, number> | null;
+  issues?: Array<{
+    dimension?: string | null;
+    evidence?: string | null;
+    suggestion?: string | null;
+  }> | null;
+  editableAdvice?: string | null;
+};
+
+/** 同步诊断热点原稿。 */
+export function critiqueHotNewsDraftOptimize(
+  articleId: string,
+  body?: { notes?: string | null },
+) {
+  return fetch(
+    `/api/hot-news/articles/${encodeURIComponent(articleId)}/optimize-critique`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body || {}),
+    },
+  ).then((r) => read<HotNewsOptimizeCritique>(r));
+}
+
+/** 按优化建议入队改写任务。 */
+export function startHotNewsArticleRewrite(
+  articleId: string,
+  body: { advice?: string | null; instruction?: string | null },
+) {
+  return fetch(
+    `/api/hot-news/articles/${encodeURIComponent(articleId)}/rewrite`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body || {}),
+    },
+  ).then((r) => read<JobData>(r));
+}
+
 export function startHotNewsArticleGeneration(
   articleId: string,
   body: {
@@ -954,11 +1010,16 @@ export function listHotNewsArticleVersions(
 export function listHotNewsArticleImages(
   articleId: string,
   documentId?: string | null,
+  versionNo?: number | null,
 ) {
-  return fetch(
-    hotArticlesOrDocumentsPath(articleId, documentId, "/images"),
-    { cache: "no-store" },
-  ).then((r) => read<HotNewsGeneratedImage[]>(r));
+  const path = hotArticlesOrDocumentsPath(articleId, documentId, "/images");
+  const query =
+    versionNo != null && Number.isFinite(versionNo) && versionNo > 0
+      ? `?versionNo=${encodeURIComponent(String(versionNo))}`
+      : "";
+  return fetch(`${path}${query}`, { cache: "no-store" }).then((r) =>
+    read<HotNewsGeneratedImage[]>(r),
+  );
 }
 export async function runHotNewsAudit(
   articleId: string,

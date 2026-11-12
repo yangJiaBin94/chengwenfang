@@ -10,6 +10,7 @@ where releases are tagged.
 
 ### Changed
 
+- 产品「Skill」更名为 **PromptPack（提示词包）**：模块 `chengwenfang-prompt-workflow`、API `/api/settings/prompt-packs`、表 `prompt_packs` 等；与 Cursor Agent Skill（`.cursor/skills/`）区分。
 - README facade: real UI screenshots (1440×900), course-only quick start first, accurate module tree, optional hot-news deps called out.
 - README visuals: hero GIF + course-route under badges; populated radar as feature shot; theme/workflow/settings under details.
 - Re-capture README shots via CDP at 1440×900 (no cover-crop); keep full left sidebar; GIF same canvas as stills.
@@ -23,6 +24,7 @@ where releases are tagged.
 
 ### Added
 
+- 热点成文节点 `hot_news_attach_evidence`：审校后由 AI 决定是否截来源佐证图（网页 `--find-text` / PDF 首页 PyMuPDF），插入 `/api/files/…` 并剥正文裸外链；依赖 `scripts/page-screenshot`（Chromium + PyMuPDF）。
 - `scripts/start.sh` for macOS / Linux course-only (or `--all-deps`) start.
 - Backend `Dockerfile` + compose profile `app` (jar only; Vite still on host).
 - `.env.example` lists `MYSQL_*` + `CHENGWENFANG_SECRET_KEY` for Compose substitution.
@@ -48,7 +50,7 @@ where releases are tagged.
 
 - Trim public docs to deploy / contributor essentials; remove obsolete design and audit drafts.
 - Align AI setup guide Node requirement with `package.json` (`engines.node >= 22`).
-- Soften bootstrap Skill copy that pointed at private knowledge-base paths.
+- Soften bootstrap 提示词包 copy that pointed at private knowledge-base paths.
 - Expand `SECURITY.md` with crawling / sourced-content boundaries.
 
 ### Added
@@ -72,6 +74,6 @@ where releases are tagged.
 
 ### Changed
 
-- Product naming **Chengwenfang / 成文坊** (modules, packages, docs, bootstrap Skill names).
+- Product naming **Chengwenfang / 成文坊** (modules, packages, docs, bootstrap 提示词包 names).
 - Open-source defaults: backend `:8001`, Vite `:5173`, Redis `database=0`, MySQL database `chengwenfang`.
 - Dual-instance beside a private clone via `-BesidePrivate` / env overrides.

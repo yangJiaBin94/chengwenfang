@@ -80,8 +80,8 @@ import {
 } from "../../features/hotnews/api";
 import { defaultAiSettings } from "../../features/settings/model";
 import type { AiSettings } from "../../features/settings/model";
-import { listSkills } from "../../features/settings/api";
-import type { Skill } from "../../features/settings/api";
+import { listPromptPacks } from "../../features/settings/api";
+import type { PromptPack } from "../../features/settings/api";
 import { jobStatusLabel } from "../../features/executions/pages/ExecutionTrajectoryPage";
 import {
   type ArticleVersion,
@@ -220,8 +220,8 @@ export function useChengwenfangPart1(s: Record<string, any>) {
     setWechatConfigured,
     settingsSectionHint,
     setSettingsSectionHint,
-    homeSkillCount,
-    setHomeSkillCount,
+    homePromptPackCount,
+    setHomePromptPackCount,
     homeSelectedTopics,
     setHomeSelectedTopics,
     homeHotArticleCount,

@@ -11,6 +11,7 @@ import com.chengwenfang.mode.hotnews.domain.HotNewsMarkdownUtil;
 import com.chengwenfang.mode.hotnews.domain.entity.HotNewsArticleEntity;
 import com.chengwenfang.mode.hotnews.facade.constant.HotNewsArticleJobKeys;
 import com.chengwenfang.mode.hotnews.facade.constant.HotNewsArticleStatuses;
+import com.chengwenfang.mode.hotnews.facade.constant.HotNewsGenerationScopes;
 import com.chengwenfang.mode.hotnews.facade.dto.request.HotNewsGenerationRunRequest;
 import com.chengwenfang.mode.hotnews.facade.dto.request.HotNewsGenerationSettingsRequest;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsArticleSkeletonView;
@@ -166,7 +167,9 @@ public class HotNewsGenerationSettingsService {
         input.put("documentId", body.getDocumentId());
       }
       if (body.getScope() != null) {
-        input.put("scope", body.getScope());
+        input.put(
+            HotNewsArticleJobKeys.SCOPE,
+            HotNewsGenerationScopes.normalize(body.getScope()));
       }
       if (body.getWordCountOption() != null) {
         input.put("wordCountOption", body.getWordCountOption());
@@ -191,6 +194,10 @@ public class HotNewsGenerationSettingsService {
     HotNewsArticleGenerationJobInput payload =
         HotNewsArticleGenerationJobInput.from(JobPayloads.asMap(input));
     payload.put(HotNewsArticleJobKeys.ARTICLE_ID, articleId);
+    Object scopeRaw = payload.get(HotNewsArticleJobKeys.SCOPE);
+    payload.put(
+        HotNewsArticleJobKeys.SCOPE,
+        HotNewsGenerationScopes.normalize(scopeRaw == null ? null : String.valueOf(scopeRaw)));
     payload.putIfAbsent(HotNewsArticleJobKeys.BRIEF_ID, article.getBriefId());
     payload.putIfAbsent(HotNewsArticleJobKeys.TOPIC_ID, article.getTopicId());
     article.setStatus(HotNewsArticleStatuses.GENERATING);

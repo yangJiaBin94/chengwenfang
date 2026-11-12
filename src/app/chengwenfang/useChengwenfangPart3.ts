@@ -80,8 +80,8 @@ import {
 } from "../../features/hotnews/api";
 import { defaultAiSettings } from "../../features/settings/model";
 import type { AiSettings } from "../../features/settings/model";
-import { listSkills } from "../../features/settings/api";
-import type { Skill } from "../../features/settings/api";
+import { listPromptPacks } from "../../features/settings/api";
+import type { PromptPack } from "../../features/settings/api";
 import { jobStatusLabel } from "../../features/executions/pages/ExecutionTrajectoryPage";
 import {
   type ArticleVersion,
@@ -220,8 +220,8 @@ export function useChengwenfangPart3(s: Record<string, any>) {
     setWechatConfigured,
     settingsSectionHint,
     setSettingsSectionHint,
-    homeSkillCount,
-    setHomeSkillCount,
+    homePromptPackCount,
+    setHomePromptPackCount,
     homeSelectedTopics,
     setHomeSelectedTopics,
     homeHotArticleCount,
@@ -520,7 +520,7 @@ export function useChengwenfangPart3(s: Record<string, any>) {
     [hotNewsThemes],
   );
 
-  // 首页汇总：Skill、三个主工作流状态、最近 5 条执行、最近成功成文
+  // 首页汇总：PromptPack、三个主工作流状态、最近 5 条执行、最近成功成文
 
   return {
     ...s,

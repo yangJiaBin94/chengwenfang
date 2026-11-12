@@ -16,7 +16,7 @@ import com.chengwenfang.content.facade.dto.view.ChengwenfangDataView;
 import com.chengwenfang.job.facade.JobFacade;
 import com.chengwenfang.job.facade.constant.JobTypes;
 import com.chengwenfang.job.facade.dto.view.JobView;
-import com.chengwenfang.skill.facade.WorkflowFacade;
+import com.chengwenfang.prompt.facade.WorkflowFacade;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

@@ -13,8 +13,8 @@ import com.chengwenfang.content.facade.dto.view.ThemeCoreIntentView;
 import com.chengwenfang.mode.hotnews.facade.HotNewsFacade;
 import com.chengwenfang.sourcing.facade.constant.HotNewsFetchKeys;
 import com.chengwenfang.infra.config.ChengwenfangProperties;
-import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
-import com.chengwenfang.skill.facade.enums.HotNewsRadarCollectNodeType;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
+import com.chengwenfang.prompt.facade.enums.HotNewsRadarCollectNodeType;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -44,7 +44,7 @@ public class LoadContextRadarNodeHandler implements RadarCollectNodeHandler {
   public void execute(
       RadarCollectSessionStore.Session session,
       Map<String, Object> lightState,
-      List<SkillPromptBindingView> skillBindings,
+      List<PromptPackPromptBindingView> promptPackBindings,
       String nodeKey,
       String nodeName) {
     String themeId = stringVal(lightState.get(RadarCollectGraphStateKeys.THEME_ID));

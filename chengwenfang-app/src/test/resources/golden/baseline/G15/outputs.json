@@ -75,7 +75,7 @@
             "status": "succeeded"
         },
         {
-            "nodeKey": "hot_news_load_skills",
+            "nodeKey": "hot_news_load_prompt_packs",
             "sequenceNo": 2,
             "status": "succeeded"
         },

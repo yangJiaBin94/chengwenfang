@@ -29,7 +29,7 @@ type HotNewsWorkflowNode = WorkflowNodeData;
 
 const stages = [
   ["radar_load_context", "读取采集上下文", "读取主题、渠道与视频解析配额。"],
-  ["radar_load_skills", "加载采集 Skill", "固化本流程 Skill 与提示词快照。"],
+  ["radar_load_prompt_packs", "加载采集提示词包", "固化本流程 PromptPack 与提示词快照。"],
   [
     "radar_fetch_channels",
     "获取渠道资源",
@@ -62,7 +62,7 @@ const labels: Record<string, string> = {
 };
 const runningNotes: Record<string, string> = {
   radar_load_context: "正在读取主题与渠道配置...",
-  radar_load_skills: "正在加载采集 Skill...",
+  radar_load_prompt_packs: "正在加载采集提示词包...",
   radar_fetch_channels: "正在并行采集各渠道...",
   radar_enrich_summarize: "正在解析正文/视频并生成事实速览...",
   radar_candidate_filter: "正在按主题与营销规则筛选素材...",
@@ -248,7 +248,7 @@ function readableRadarOutput(value: unknown, fallback: string) {
     "enrichNote",
     "filterNote",
     "persistNote",
-    "skillSnapshotSummary",
+    "promptPackSnapshotSummary",
   ] as const) {
     const text = data[field];
     if (typeof text === "string" && text.trim()) {

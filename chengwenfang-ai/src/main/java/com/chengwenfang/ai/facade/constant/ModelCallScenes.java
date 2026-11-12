@@ -81,6 +81,12 @@ public final class ModelCallScenes {
   /** 视频转写：关键帧视觉摘要。 */
   public static final String HOT_NEWS_VIDEO_PARSE_VISION_SUMMARIZE =
       "hot_news_video_parse_vision_summarize";
+  /** 视频转写：逐帧画面描述（成文佐证选型）。 */
+  public static final String HOT_NEWS_VIDEO_FRAME_CAPTION =
+      "hot_news_video_frame_caption";
+  /** 成文佐证：按帧描述挑选视频截图。 */
+  public static final String HOT_NEWS_ATTACH_EVIDENCE_PICK_FRAME =
+      "hot_news_attach_evidence_pick_frame";
   /** 信源视频：事实速览。 */
   public static final String HOT_NEWS_SOURCE_VIDEO_FACT_BRIEF = "hot_news_source_video_fact_brief";
   /** 信源视频：营销意图判定。 */
@@ -89,6 +95,10 @@ public final class ModelCallScenes {
   public static final String HOT_NEWS_ARTICLE_SKELETON = "hot_news_article_skeleton";
   /** 热点文章改写。 */
   public static final String HOT_NEWS_REWRITE = "hot_news_rewrite";
+  /** 热点原稿优化诊断打分。 */
+  public static final String HOT_NEWS_DRAFT_OPTIMIZE_CRITIQUE = "hot_news_draft_optimize_critique";
+  /** 热点改写后插图适配裁定。 */
+  public static final String HOT_NEWS_ILLUSTRATION_FITNESS = "hot_news_illustration_fitness";
   /** 热点审稿修复。 */
   public static final String HOT_NEWS_REVIEW_REPAIR = "hot_news_review_repair";
 

@@ -50,6 +50,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -217,13 +218,16 @@ public class DocumentsController {
    * 列出配图。
    *
    * @param documentId 产出 id
+   * @param versionNo  指定版本时仅返回该版正文引用的图；空则返回全部生成图
    * @return 配图列表
    */
   @GetMapping("/documents/{documentId}/images")
   @Operation(summary = "列出统一文档配图")
-  public ApiResult<List<GeneratedImageView>> listImages(@PathVariable String documentId) {
+  public ApiResult<List<GeneratedImageView>> listImages(
+      @PathVariable String documentId,
+      @RequestParam(required = false) Integer versionNo) {
     WorkOutputRef ref = requireRef(documentId);
-    return ApiResult.ok(content.listImages(ref.resolveArticleId(), documentId));
+    return ApiResult.ok(content.listImages(ref.resolveArticleId(), documentId, versionNo));
   }
 
   /**

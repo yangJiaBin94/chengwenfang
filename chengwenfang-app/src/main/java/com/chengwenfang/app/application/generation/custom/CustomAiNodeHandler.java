@@ -9,12 +9,12 @@ import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
 import com.chengwenfang.mode.hotnews.application.generation.hotnews.HotNewsGraphStateKeys;
 import com.chengwenfang.mode.hotnews.facade.HotNewsFacade;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsBriefView;
-import com.chengwenfang.skill.facade.SkillFacade;
-import com.chengwenfang.skill.facade.constant.CustomAiNodeActions;
-import com.chengwenfang.skill.facade.constant.WorkflowNodeHandlerOrders;
-import com.chengwenfang.skill.facade.constant.WorkflowStructuralNodeKeys;
-import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
-import com.chengwenfang.skill.facade.spi.WorkflowNodeHandler;
+import com.chengwenfang.prompt.facade.PromptPackFacade;
+import com.chengwenfang.prompt.facade.constant.CustomAiNodeActions;
+import com.chengwenfang.prompt.facade.constant.WorkflowNodeHandlerOrders;
+import com.chengwenfang.prompt.facade.constant.WorkflowStructuralNodeKeys;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
+import com.chengwenfang.prompt.facade.spi.WorkflowNodeHandler;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -37,8 +37,8 @@ import org.springframework.stereotype.Component;
 public class CustomAiNodeHandler implements WorkflowNodeHandler {
   /** 文本 AI。 */
   private final AiTextFacade ai;
-  /** Skill 组合。 */
-  private final SkillFacade skills;
+  /** 提示词包 组合。 */
+  private final PromptPackFacade promptPacks;
   /** 动作 JSON 解析。 */
   private final CustomAiActionPlanParser actionPlanParser;
   /** 热点门面（按需加载简报正文）。 */
@@ -67,7 +67,7 @@ public class CustomAiNodeHandler implements WorkflowNodeHandler {
    * @param typeKey       节点类型键（本处理器固定为 custom_ai）
    * @param nodeKey       节点实例键
    * @param nodeName      展示名
-   * @param skillBindings 节点 Skill 绑定
+   * @param promptPackBindings 节点 提示词包绑定
    * @param state         图状态
    * @param config        节点配置（须含 prompt）
    * @return 写回图状态的增量
@@ -77,7 +77,7 @@ public class CustomAiNodeHandler implements WorkflowNodeHandler {
       String typeKey,
       String nodeKey,
       String nodeName,
-      List<Map<String, Object>> skillBindings,
+      List<Map<String, Object>> promptPackBindings,
       Map<String, Object> state,
       Map<String, Object> config) {
     if (!supports(typeKey)) {
@@ -87,32 +87,32 @@ public class CustomAiNodeHandler implements WorkflowNodeHandler {
     if (StrUtil.isBlank(prompt)) {
       throw new IllegalStateException("自定义节点提示词为空 nodeKey=" + nodeKey);
     }
-    List<SkillPromptBindingView> bindings = toPromptBindings(skillBindings);
-    Set<String> boundSkillIds = bindings.stream()
-        .map(SkillPromptBindingView::getSkillId)
+    List<PromptPackPromptBindingView> bindings = toPromptBindings(promptPackBindings);
+    Set<String> boundPromptPackIds = bindings.stream()
+        .map(PromptPackPromptBindingView::getPromptPackId)
         .filter(StrUtil::isNotBlank)
         .collect(Collectors.toSet());
-    String skillPrompt = skills.composePromptFromBindings(bindings);
+    String promptPackText = promptPacks.composePromptFromBindings(bindings);
     ContextBundle context = buildContext(state);
 
     String systemPrompt = """
         你是文章生产工作流中的自定义节点执行器。
         你只能输出一个 JSON 对象，格式严格为：
-        {"actions":[{"op":"...","content":"...","skillId":"..."}]}
-        op 仅允许：read_skill、read_skeleton、read_brief、read_references、read_draft、read_wechat、write_draft、write_wechat。
+        {"actions":[{"op":"...","content":"...","promptPackId":"..."}]}
+        op 仅允许：read_prompt_pack、read_skeleton、read_brief、read_references、read_draft、read_wechat、write_draft、write_wechat。
         禁止输出其它字段、禁止解释、禁止 Markdown（除非包在 JSON 字符串 content 内）。
-        只能操作文章流程：读取已配置 Skill、骨架、简报、资料库、原稿、公众号；修改原稿或公众号。
+        只能操作文章流程：读取已配置 提示词包、骨架、简报、资料库、原稿、公众号；修改原稿或公众号。
         若任务超出上述范围，返回 {"actions":[]} 且不要伪造写操作。
         """.stripIndent();
 
     StringBuilder userPrompt = new StringBuilder();
     userPrompt.append("节点：").append(nodeName).append(" (").append(nodeKey).append(")\n\n");
     userPrompt.append("节点提示词：\n").append(prompt).append("\n\n");
-    if (StrUtil.isNotBlank(skillPrompt)) {
-      userPrompt.append("已配置 Skill：\n").append(skillPrompt.trim()).append("\n\n");
+    if (StrUtil.isNotBlank(promptPackText)) {
+      userPrompt.append("已配置 提示词包：\n").append(promptPackText.trim()).append("\n\n");
     }
     userPrompt.append("当前上下文可用性：\n");
-    userPrompt.append("- skillIds=").append(boundSkillIds).append('\n');
+    userPrompt.append("- promptPackIds=").append(boundPromptPackIds).append('\n');
     userPrompt.append("- skeleton=").append(context.skeletonAvailable ? "可用" : "不可用").append('\n');
     userPrompt.append("- brief=").append(context.briefAvailable ? "可用" : "不可用").append('\n');
     userPrompt.append("- references=").append(context.referencesAvailable ? "可用" : "不可用").append('\n');
@@ -144,7 +144,7 @@ public class CustomAiNodeHandler implements WorkflowNodeHandler {
         .build());
     String raw = result == null ? "" : StrUtil.nullToEmpty(result.getText());
     List<CustomAiParsedAction> actions = actionPlanParser.parse(raw);
-    return applyActions(actions, boundSkillIds, context);
+    return applyActions(actions, boundPromptPackIds, context);
   }
 
   /**
@@ -169,20 +169,20 @@ public class CustomAiNodeHandler implements WorkflowNodeHandler {
    * 校验并应用白名单动作。
    *
    * @param actions       解析后的动作
-   * @param boundSkillIds 节点已绑定 Skill Id
+   * @param boundPromptPackIds 节点已绑定提示词包 Id
    * @param context       上下文可用性
    * @return 状态增量
    */
   Map<String, Object> applyActions(
       List<CustomAiParsedAction> actions,
-      Set<String> boundSkillIds,
+      Set<String> boundPromptPackIds,
       ContextBundle context) {
     Map<String, Object> delta = new LinkedHashMap<>();
     for (CustomAiParsedAction action : actions) {
       String op = action.getOp();
-      if (CustomAiNodeActions.READ_SKILL.equals(op)) {
-        if (StrUtil.isBlank(action.getSkillId()) || !boundSkillIds.contains(action.getSkillId())) {
-          throw new IllegalStateException("read_skill 只能读取本节点已配置的 Skill，skillId=" + action.getSkillId());
+      if (CustomAiNodeActions.READ_PROMPT_PACK.equals(op)) {
+        if (StrUtil.isBlank(action.getPromptPackId()) || !boundPromptPackIds.contains(action.getPromptPackId())) {
+          throw new IllegalStateException("read_prompt_pack 只能读取本节点已配置的 提示词包，promptPackId=" + action.getPromptPackId());
         }
         continue;
       }
@@ -323,20 +323,20 @@ public class CustomAiNodeHandler implements WorkflowNodeHandler {
   /**
    * 绑定 Map 转视图。
    *
-   * @param skillBindings 原始绑定
+   * @param promptPackBindings 原始绑定
    * @return 视图列表
    */
-  private List<SkillPromptBindingView> toPromptBindings(List<Map<String, Object>> skillBindings) {
-    List<SkillPromptBindingView> out = new ArrayList<>();
-    if (skillBindings == null) {
+  private List<PromptPackPromptBindingView> toPromptBindings(List<Map<String, Object>> promptPackBindings) {
+    List<PromptPackPromptBindingView> out = new ArrayList<>();
+    if (promptPackBindings == null) {
       return out;
     }
-    for (Map<String, Object> binding : skillBindings) {
+    for (Map<String, Object> binding : promptPackBindings) {
       if (binding == null) {
         continue;
       }
-      out.add(SkillPromptBindingView.builder()
-          .skillId(stringVal(binding.get("skillId")))
+      out.add(PromptPackPromptBindingView.builder()
+          .promptPackId(stringVal(binding.get("promptPackId")))
           .priority(binding.get("priority") instanceof Number number ? number.intValue() : 10)
           .enabled(!(binding.get("enabled") instanceof Boolean enabled) || enabled)
           .build());

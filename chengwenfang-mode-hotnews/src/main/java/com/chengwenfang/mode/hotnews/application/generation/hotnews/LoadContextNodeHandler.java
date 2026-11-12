@@ -8,14 +8,15 @@ import com.chengwenfang.mode.hotnews.application.hotnews.HotNewsThemeContextReso
 import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.mode.hotnews.facade.HotNewsFacade;
 import com.chengwenfang.mode.hotnews.facade.constant.HotNewsErrorCodes;
+import com.chengwenfang.mode.hotnews.facade.constant.HotNewsGenerationScopes;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsArticleSkeletonView;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsArticleView;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsResearchItemView;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsTopicView;
 import com.chengwenfang.mode.hotnews.facade.enums.HotNewsImageCountOption;
 import com.chengwenfang.mode.hotnews.facade.enums.HotNewsWordCountOption;
-import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
-import com.chengwenfang.skill.facade.enums.HotNewsWorkflowNodeType;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
+import com.chengwenfang.prompt.facade.enums.HotNewsWorkflowNodeType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +43,7 @@ public class LoadContextNodeHandler implements HotNewsNodeHandler {
   @Override
   public void execute(
       HotNewsGraphState state,
-      List<SkillPromptBindingView> skillBindings,
+      List<PromptPackPromptBindingView> promptPackBindings,
       String nodeKey,
       String nodeName) {
     String articleId = state.getArticleId();
@@ -119,13 +120,52 @@ public class LoadContextNodeHandler implements HotNewsNodeHandler {
     state.setReferencesJson(JSONUtil.toJsonStr(referenceLines));
     state.setWordCountOption(wordCountOption);
     state.setImageCountOption(imageCountOption);
+    state.setScope(HotNewsGenerationScopes.normalize(state.getScope()));
+    String existingDraft = StrUtil.nullToEmpty(article.getDraftContent());
+    String existingWechat = StrUtil.nullToEmpty(article.getContent());
+    // 仅配图：从已有正文灌入状态，后续跳过成文节点
+    if (HotNewsGenerationScopes.isImages(state.getScope())) {
+      if (StrUtil.isBlank(existingDraft)) {
+        throw new BusinessException(
+            HotNewsErrorCodes.DRAFT_EMPTY, "热点原稿为空，无法仅生成配套图片", 400);
+      }
+      if (StrUtil.isBlank(existingWechat)) {
+        throw new BusinessException(
+            HotNewsErrorCodes.COMMIT_INCOMPLETE, "公众号正文为空，无法仅生成配套图片", 422);
+      }
+      state.setDraft(existingDraft);
+      state.setWechat(existingWechat);
+      state.setReviewPassed(true);
+      state.setWechatReviewPassed(true);
+      if (StrUtil.isBlank(state.getFactsJson())) {
+        state.setFactsJson("{\"imagesOnly\":true}");
+      }
+    }
+    // 仅公众号：灌入已优化原稿，由 GENERATE_WECHAT 重写公众号轨
+    if (HotNewsGenerationScopes.isWechat(state.getScope())) {
+      if (StrUtil.isBlank(existingDraft)) {
+        throw new BusinessException(
+            HotNewsErrorCodes.DRAFT_EMPTY, "热点原稿为空，无法仅生成公众号版本", 400);
+      }
+      state.setDraft(existingDraft);
+      // 可无旧公众号；生成节点会写出新正文
+      if (StrUtil.isNotBlank(existingWechat)) {
+        state.setWechat(existingWechat);
+      }
+      state.setReviewPassed(true);
+      if (StrUtil.isBlank(state.getFactsJson())) {
+        state.setFactsJson("{\"wechatOnly\":true}");
+      }
+      // 本趟不跑配图：终检跳过配图门禁
+      state.setImagesSkipped(true);
+    }
   }
 
   /**
    * 骨架是否已含可执行结构。
    *
    * @param skeleton 文章骨架
-   * @return 有结构则个true
+   * @return 有结构则为 true
    */
   private static boolean hasStructure(HotNewsArticleSkeletonView skeleton) {
     if (CollUtil.isNotEmpty(skeleton.getSectionPlan())) {

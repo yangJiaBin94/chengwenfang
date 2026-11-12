@@ -14,8 +14,8 @@ import com.chengwenfang.mode.hotnews.facade.enums.HotNewsImageCountOption;
 import com.chengwenfang.infra.config.ChengwenfangProperties;
 import com.chengwenfang.infra.support.StorageService;
 import com.chengwenfang.job.facade.JobFacade;
-import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
-import com.chengwenfang.skill.facade.enums.HotNewsWorkflowNodeType;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
+import com.chengwenfang.prompt.facade.enums.HotNewsWorkflowNodeType;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -35,7 +35,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class GenerateImagesNodeHandler implements HotNewsNodeHandler {
-  /** 文本/Skill 组合「*/
+  /** 文本/提示词包 组合「*/
   private final HotNewsTextCompletionSupport textCompletion;
   /** 图像 AI「*/
   private final AiImageFacade images;
@@ -58,7 +58,7 @@ public class GenerateImagesNodeHandler implements HotNewsNodeHandler {
   @Override
   public void execute(
       HotNewsGraphState state,
-      List<SkillPromptBindingView> skillBindings,
+      List<PromptPackPromptBindingView> promptPackBindings,
       String nodeKey,
       String nodeName) {
     // 封面必出；正文插图按档位；槽位标识固定为第 1…N 张
@@ -74,7 +74,7 @@ public class GenerateImagesNodeHandler implements HotNewsNodeHandler {
     String coverBrief = skeleton == null || StrUtil.isBlank(skeleton.getCoverBrief())
         ? StrUtil.nullToEmpty(state.getTitle())
         : skeleton.getCoverBrief();
-    String skillPrompt = textCompletion.composeSkillPrompt(skillBindings);
+    String promptPackText = textCompletion.composePromptPackText(promptPackBindings);
     List<HotNewsGeneratedImageSummary> generated = new ArrayList<>();
     String wechat = StrUtil.nullToEmpty(state.getWechat());
     String draft = StrUtil.nullToEmpty(state.getDraft());
@@ -102,20 +102,24 @@ public class GenerateImagesNodeHandler implements HotNewsNodeHandler {
       // 封面额外注入标题/论点/封面约束，避免原稿提示词偏空装饰
       String prompt = cover
           ? enrichCoverPrompt(
-              buildImagePrompt(skillPrompt, basePrompt, size),
+              buildImagePrompt(promptPackText, basePrompt, size),
               state.getTitle(),
               skeleton == null ? null : skeleton.getCoreThesis(),
               coverBrief)
-          : buildImagePrompt(skillPrompt, basePrompt, size);
-      GeneratedImageView image = resolveOrGenerate(
-          existingImages,
-          state.getArticleId(),
-          state.getJobId(),
-          slot,
-          prompt,
-          size,
-          width,
-          height);
+          : buildImagePrompt(promptPackText, basePrompt, size);
+      // 改写复用：原稿已带 ![](/api/images/id) 时优先沿用该图，避免整批重生
+      GeneratedImageView attached = resolveAttachedDraftImage(draft, basePrompt);
+      GeneratedImageView image = attached != null
+          ? attached
+          : resolveOrGenerate(
+              existingImages,
+              state.getArticleId(),
+              state.getJobId(),
+              slot,
+              prompt,
+              size,
+              width,
+              height);
       generated.add(toSummary(image));
       String markdown = "![](/api/images/" + image.getId() + ")";
       if (slot.kind() == HotNewsImageKind.COVER) {
@@ -293,6 +297,41 @@ public class GenerateImagesNodeHandler implements HotNewsNodeHandler {
   }
 
   /**
+   * 若原稿该提示词后已挂图片引用且文件仍在，则直接复用。
+   *
+   * @param draft      原稿
+   * @param promptText 提示词正文
+   * @return 可复用配图；否则 null
+   */
+  private GeneratedImageView resolveAttachedDraftImage(String draft, String promptText) {
+    if (StrUtil.isBlank(promptText)) {
+      return null;
+    }
+    String target = HotNewsMarkdownUtil.normalizePromptText(promptText);
+    for (HotNewsMarkdownUtil.PromptHit hit : HotNewsMarkdownUtil.findPrompts(draft)) {
+      if (!HotNewsMarkdownUtil.normalizePromptText(hit.prompt()).equals(target)) {
+        continue;
+      }
+      String markdown = HotNewsMarkdownUtil.imageMarkdownAfter(draft, hit.end());
+      String imageId = HotNewsMarkdownUtil.imageIdFromMarkdown(markdown);
+      if (StrUtil.isBlank(imageId) || !imageFileExists(imageId)) {
+        return null;
+      }
+      try {
+        GeneratedImageView view = content.getImage(imageId);
+        if (view != null) {
+          log.info("热点配图沿用原稿已挂图片 imageId={}", imageId);
+          return view;
+        }
+      } catch (Exception ignored) {
+        return null;
+      }
+      return null;
+    }
+    return null;
+  }
+
+  /**
    * 配图文件是否仍可读取。
    *
    * @param imageId 配图 ID
@@ -346,20 +385,20 @@ public class GenerateImagesNodeHandler implements HotNewsNodeHandler {
   }
 
   /**
-   * 组合 Skill 与原稿提示词为最终生图提示（画面要素已写在提示词内，不再硬拼约束）。
+   * 组合 提示词包 与原稿提示词为最终生图提示（画面要素已写在提示词内，不再硬拼约束）。
    *
-   * @param skillPrompt Skill 片段
+   * @param promptPackText 提示词包片段
    * @param basePrompt  原稿或兜底提示词
    * @param size        尺寸
    * @return 完整提示词
    */
-  private static String buildImagePrompt(String skillPrompt, String basePrompt, String size) {
+  private static String buildImagePrompt(String promptPackText, String basePrompt, String size) {
     return """
         %s
         %s
         尺寸 %s。不要出现「第 N 课」字样。
         """.formatted(
-        StrUtil.nullToEmpty(skillPrompt),
+        StrUtil.nullToEmpty(promptPackText),
         StrUtil.nullToEmpty(basePrompt).strip(),
         size)
         .strip();

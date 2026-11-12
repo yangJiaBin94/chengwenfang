@@ -21,7 +21,7 @@ class CourseWorkspaceApiIT extends ChengwenfangIT {
   ContentFacade contentFacade;
 
   @Test
-  void human_review_layout_snapshot_and_skills_contract() throws Exception {
+  void human_review_layout_snapshot_and_prompt_packs_contract() throws Exception {
     String courseId = "ws-" + UUID.randomUUID().toString().substring(0, 8);
     CourseShellView shell = contentFacade.ensureCourseShell(courseId);
     String articleId = shell.getWechatArticleId();
@@ -55,7 +55,7 @@ class CourseWorkspaceApiIT extends ChengwenfangIT {
     List<Map<String, Object>> snapshots = getJsonList("/api/articles/" + articleId + "/publishing-snapshots");
     assertThat(snapshots).isNotEmpty();
 
-    List<Map<String, Object>> nodes = getJsonList("/api/settings/skills/workflow-nodes");
+    List<Map<String, Object>> nodes = getJsonList("/api/settings/prompt-packs/workflow-nodes");
     assertThat(nodes).isNotEmpty();
     assertThat(nodes.get(0)).containsKeys("workflowType", "nodeKey", "name", "group", "modelType");
   }

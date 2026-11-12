@@ -10,10 +10,10 @@ import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
 import com.chengwenfang.ai.facade.dto.view.TextCompleteResult;
 import com.chengwenfang.content.facade.dto.request.HotNewsGithubQuerySuggestRequest;
 import com.chengwenfang.content.facade.dto.view.HotNewsGithubQuerySuggestView;
-import com.chengwenfang.skill.facade.SkillFacade;
-import com.chengwenfang.skill.facade.constant.HotNewsSkillNames;
-import com.chengwenfang.skill.facade.constant.HotNewsWorkflowKeys;
-import com.chengwenfang.skill.facade.dto.view.SkillView;
+import com.chengwenfang.prompt.facade.PromptPackFacade;
+import com.chengwenfang.prompt.facade.constant.HotNewsPromptPackNames;
+import com.chengwenfang.prompt.facade.constant.HotNewsWorkflowKeys;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackView;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +22,7 @@ import org.springframework.stereotype.Service;
 /**
  * 热点主题创建：根据主题说明用 AI 生成 GitHub Search 查询串。
  * <p>AI 不可用或解析失败时返回空串（{@code fromAi=false}），不静默凑词。
- * <p>系统提示词来自 Skill「{@link HotNewsSkillNames#THEME_GITHUB_QUERY}」。
+ * <p>系统提示词来自 提示词包「{@link HotNewsPromptPackNames#THEME_GITHUB_QUERY}」。
  */
 @Slf4j
 @Service
@@ -33,8 +33,8 @@ public class HotNewsThemeGithubQueryAssistService {
 
   /** 文本 AI。 */
   private final AiTextFacade ai;
-  /** Skill 门面。 */
-  private final SkillFacade skills;
+  /** 提示词包门面。 */
+  private final PromptPackFacade promptPacks;
 
   /**
    * 生成 GitHub 查询串。
@@ -82,7 +82,7 @@ public class HotNewsThemeGithubQueryAssistService {
         CollUtil.isEmpty(searchQueries) ? "无" : String.join("、", searchQueries));
     String systemPrompt = resolveSystemPrompt();
     if (StrUtil.isBlank(systemPrompt)) {
-      log.warn("热点主题 GitHub 查询 Skill 缺失或指令为空，跳过 AI name={}", name);
+      log.warn("热点主题 GitHub 查询 提示词包 缺失或指令为空，跳过 AI name={}", name);
       return "";
     }
     try {
@@ -106,32 +106,32 @@ public class HotNewsThemeGithubQueryAssistService {
   }
 
   /**
-   * 读取库内 Skill 系统提示；缺失则返回空（不以代码内嵌提示词兜底）。
+   * 读取库内 提示词包 系统提示；缺失则返回空（不以代码内嵌提示词兜底）。
    *
    * @return 系统提示词；不可用时为空
    */
   private String resolveSystemPrompt() {
     try {
-      List<SkillView> all = skills.listSkills();
+      List<PromptPackView> all = promptPacks.listPromptPacks();
       if (all != null) {
-        for (SkillView skill : all) {
-          if (skill == null || !HotNewsSkillNames.THEME_GITHUB_QUERY.equals(skill.getName())) {
+        for (PromptPackView promptPack : all) {
+          if (promptPack == null || !HotNewsPromptPackNames.THEME_GITHUB_QUERY.equals(promptPack.getName())) {
             continue;
           }
-          if (StrUtil.isNotBlank(skill.getScene())
-              && !HotNewsWorkflowKeys.SCENE.equals(skill.getScene())) {
+          if (StrUtil.isNotBlank(promptPack.getScene())
+              && !HotNewsWorkflowKeys.SCENE.equals(promptPack.getScene())) {
             continue;
           }
-          if (Boolean.FALSE.equals(skill.getEnabled())) {
+          if (Boolean.FALSE.equals(promptPack.getEnabled())) {
             continue;
           }
-          if (StrUtil.isNotBlank(skill.getSystemInstructions())) {
-            return skill.getSystemInstructions().strip();
+          if (StrUtil.isNotBlank(promptPack.getSystemInstructions())) {
+            return promptPack.getSystemInstructions().strip();
           }
         }
       }
     } catch (Exception exception) {
-      log.warn("读取主题 GitHub 查询 Skill 失败 err={}", exception.getMessage());
+      log.warn("读取主题 GitHub 查询 提示词包 失败 err={}", exception.getMessage());
     }
     return "";
   }

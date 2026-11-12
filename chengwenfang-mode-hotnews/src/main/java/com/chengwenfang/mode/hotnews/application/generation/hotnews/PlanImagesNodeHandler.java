@@ -4,8 +4,8 @@ import cn.hutool.core.util.StrUtil;
 import com.chengwenfang.mode.hotnews.domain.HotNewsMarkdownUtil;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsArticleSkeletonView;
 import com.chengwenfang.mode.hotnews.facade.enums.HotNewsImageCountOption;
-import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
-import com.chengwenfang.skill.facade.enums.HotNewsWorkflowNodeType;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
+import com.chengwenfang.prompt.facade.enums.HotNewsWorkflowNodeType;
 import java.util.List;
 import org.springframework.stereotype.Component;
 
@@ -24,7 +24,7 @@ public class PlanImagesNodeHandler implements HotNewsNodeHandler {
   @Override
   public void execute(
       HotNewsGraphState state,
-      List<SkillPromptBindingView> skillBindings,
+      List<PromptPackPromptBindingView> promptPackBindings,
       String nodeKey,
       String nodeName) {
     String imageOption = HotNewsImageCountOption.normalize(state.getImageCountOption());

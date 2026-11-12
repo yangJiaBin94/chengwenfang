@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 营销判定 Skill 的固定 JSON 结构。
+ * 营销判定 提示词包 的固定 JSON 结构。
  */
 @Data
 @Builder

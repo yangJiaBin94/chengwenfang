@@ -2,28 +2,42 @@ package com.chengwenfang.mode.hotnews.application;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.chengwenfang.common.IdsUtil;
 import com.chengwenfang.file.facade.FileFacade;
+import com.chengwenfang.file.facade.dto.view.FileView;
 import com.chengwenfang.file.facade.dto.view.StoredFileView;
+import com.chengwenfang.mode.hotnews.application.generation.hotnews.model.HotNewsVideoFrameEvidence;
 import com.chengwenfang.mode.hotnews.domain.entity.TopicResearchItemEntity;
+import com.chengwenfang.mode.hotnews.facade.constant.HotNewsEvidenceKeys;
 import com.chengwenfang.sourcing.domain.entity.SourceItemEntity;
 import com.chengwenfang.sourcing.domain.entity.VideoTranscriptEntity;
 import com.chengwenfang.sourcing.facade.constant.VideoParseOwnerTypes;
 import com.chengwenfang.sourcing.facade.enums.VideoParseStatus;
 import com.chengwenfang.sourcing.infrastructure.mapper.VideoTranscriptMapper;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 视频解析结果读写：状态与原文文件均 sole-write {@code video_transcripts}。
  */
+@Slf4j
 @Service
 public class VideoParseRunService {
   /** 结果表 Mapper。 */
@@ -323,7 +337,7 @@ public class VideoParseRunService {
   }
 
   /**
-   * 删除资料池解析共享行及原文文件（整池替换后未再绑定的孤儿）。
+   * 删除资料池解析共享行及原文/抽帧文件（整池替换后未再绑定的孤儿）。
    *
    * @param transcriptIds 行主键集合
    */
@@ -336,17 +350,261 @@ public class VideoParseRunService {
         new LambdaQueryWrapper<VideoTranscriptEntity>()
             .in(VideoTranscriptEntity::getId, transcriptIds));
     for (VideoTranscriptEntity row : rows) {
-      if (row == null || StrUtil.isBlank(row.getTextFileId())) {
+      if (row == null) {
         continue;
       }
-      try {
-        files.delete(row.getTextFileId());
-      } catch (Exception ignored) {
-        // 文件缺失不阻断行删除
+      deleteStoredQuietly(row.getTextFileId());
+      for (String frameId : parseFrameFileIds(row.getFrameFileIds())) {
+        deleteStoredQuietly(frameId);
       }
     }
     transcriptMapper.delete(new LambdaQueryWrapper<VideoTranscriptEntity>()
         .in(VideoTranscriptEntity::getId, transcriptIds));
+  }
+
+  /**
+   * 将工作目录 frames 落盘到 stored_files，并写回 {@code frame_file_ids}/{@code frame_captions}。
+   * 已有抽帧时跳过；无帧文件时不改行。
+   *
+   * @param itemId   资料池或信源条目 id
+   * @param workDir  解析工作目录
+   * @param captions 与帧文件对齐的描述；可空或短于帧数
+   * @return 写入后的文件 id 列表；未写入则为空
+   */
+  @Transactional
+  public List<String> persistFramesFromWorkDir(String itemId, Path workDir, List<String> captions) {
+    if (StrUtil.isBlank(itemId) || workDir == null) {
+      return List.of();
+    }
+    VideoTranscriptEntity row = findRowByItemId(itemId);
+    if (row == null) {
+      log.warn("视频抽帧落盘跳过：无解析行 itemId={}", itemId);
+      return List.of();
+    }
+    List<String> existing = parseFrameFileIds(row.getFrameFileIds());
+    if (CollUtil.isNotEmpty(existing)) {
+      // 已有抽帧但尚无可用描述时补写（空串数组不算可用）
+      if (!hasUsableCaptions(row.getFrameCaptions()) && hasUsableCaptionsList(captions)) {
+        row.setFrameCaptions(JSONUtil.toJsonStr(alignCaptions(existing.size(), captions)));
+        row.setUpdatedAt(LocalDateTime.now());
+        transcriptMapper.updateById(row);
+      }
+      return existing;
+    }
+    Path framesDir = workDir.resolve("frames");
+    if (!Files.isDirectory(framesDir)) {
+      return List.of();
+    }
+    List<Path> frameFiles = listFrameImageFiles(framesDir);
+    if (frameFiles.isEmpty()) {
+      return List.of();
+    }
+    int limit = Math.min(frameFiles.size(), HotNewsEvidenceKeys.MAX_PERSISTED_VIDEO_FRAMES);
+    List<String> captionByFrame = alignCaptions(limit, captions);
+    List<String> savedIds = new ArrayList<>();
+    List<String> savedCaptions = new ArrayList<>();
+    for (int index = 0; index < limit; index++) {
+      Path framePath = frameFiles.get(index);
+      try {
+        byte[] bytes = Files.readAllBytes(framePath);
+        String fileName = framePath.getFileName().toString();
+        String objectKey = HotNewsEvidenceKeys.VIDEO_FRAME_OBJECT_KEY_PREFIX
+            + row.getId() + "/" + fileName;
+        String contentType = fileName.toLowerCase(Locale.ROOT).endsWith(".png")
+            ? "image/png"
+            : "image/jpeg";
+        FileView saved = files.saveLocalBytes(objectKey, fileName, contentType, bytes);
+        if (saved != null && StrUtil.isNotBlank(saved.getId())) {
+          // 按实际落盘成功的帧配对描述，避免中间失败导致错位
+          savedIds.add(saved.getId());
+          savedCaptions.add(captionByFrame.get(index));
+        }
+      } catch (Exception exception) {
+        log.warn(
+            "视频抽帧落盘失败 itemId={} file={} err={}",
+            itemId,
+            framePath.getFileName(),
+            exception.getMessage());
+      }
+    }
+    if (savedIds.isEmpty()) {
+      return List.of();
+    }
+    row.setFrameFileIds(JSONUtil.toJsonStr(savedIds));
+    // 全空描述不写列，便于下次补写
+    row.setFrameCaptions(hasUsableCaptionsList(savedCaptions)
+        ? JSONUtil.toJsonStr(savedCaptions)
+        : null);
+    row.setUpdatedAt(LocalDateTime.now());
+    transcriptMapper.updateById(row);
+    log.info(
+        "视频抽帧已保留 itemId={} transcriptId={} frames={} captionsUsable={}",
+        itemId,
+        row.getId(),
+        savedIds.size(),
+        hasUsableCaptionsList(savedCaptions));
+    return savedIds;
+  }
+
+  /**
+   * 是否已有保留抽帧。
+   *
+   * @param itemId 条目 id
+   * @return 有抽帧为 true
+   */
+  public boolean hasPersistedFrames(String itemId) {
+    VideoTranscriptEntity row = findRowByItemId(itemId);
+    return row != null && CollUtil.isNotEmpty(parseFrameFileIds(row.getFrameFileIds()));
+  }
+
+  /**
+   * 是否已有可用的逐帧描述（至少一个非空）。
+   *
+   * @param itemId 条目 id
+   * @return 有可用描述为 true
+   */
+  public boolean hasUsableFrameCaptions(String itemId) {
+    VideoTranscriptEntity row = findRowByItemId(itemId);
+    return row != null && hasUsableCaptions(row.getFrameCaptions());
+  }
+
+  /**
+   * 按视频 URL 查找已保留抽帧（含描述，成文佐证用）。
+   *
+   * @param url 视频 URL
+   * @return 抽帧列表；无则空
+   */
+  public List<HotNewsVideoFrameEvidence> findFrameEvidenceByUrl(String url) {
+    Set<String> aliases = urlAliases(url);
+    if (aliases.isEmpty()) {
+      return List.of();
+    }
+    List<VideoTranscriptEntity> rows = transcriptMapper.selectList(
+        new LambdaQueryWrapper<VideoTranscriptEntity>()
+            .isNotNull(VideoTranscriptEntity::getFrameFileIds)
+            .ne(VideoTranscriptEntity::getFrameFileIds, "")
+            .ne(VideoTranscriptEntity::getFrameFileIds, "[]")
+            .and(wrapper -> {
+              boolean first = true;
+              for (String alias : aliases) {
+                if (first) {
+                  wrapper.apply("LOWER(TRIM(TRAILING '/' FROM url)) = {0}", alias);
+                  first = false;
+                } else {
+                  wrapper.or().apply("LOWER(TRIM(TRAILING '/' FROM url)) = {0}", alias);
+                }
+              }
+            })
+            .orderByDesc(VideoTranscriptEntity::getUpdatedAt)
+            .last("LIMIT 5"));
+    for (VideoTranscriptEntity row : rows) {
+      if (row == null) {
+        continue;
+      }
+      List<String> ids = parseFrameFileIds(row.getFrameFileIds());
+      if (CollUtil.isEmpty(ids)) {
+        continue;
+      }
+      List<String> captions = alignCaptions(ids.size(), parseFrameCaptions(row.getFrameCaptions()));
+      List<HotNewsVideoFrameEvidence> frames = new ArrayList<>();
+      for (int index = 0; index < ids.size(); index++) {
+        frames.add(HotNewsVideoFrameEvidence.builder()
+            .fileId(ids.get(index))
+            .caption(captions.get(index))
+            .build());
+      }
+      return frames;
+    }
+    return List.of();
+  }
+
+  /**
+   * 按视频 URL 查找已保留抽帧文件 id。
+   *
+   * @param url 视频 URL
+   * @return 文件 id 列表；无则空
+   */
+  public List<String> findFrameFileIdsByUrl(String url) {
+    return findFrameEvidenceByUrl(url).stream()
+        .map(HotNewsVideoFrameEvidence::getFileId)
+        .filter(StrUtil::isNotBlank)
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * 从 JSON 列解析抽帧文件 id。
+   *
+   * @param raw JSON 数组或空
+   * @return id 列表
+   */
+  public static List<String> parseFrameFileIds(String raw) {
+    if (StrUtil.isBlank(raw) || !JSONUtil.isTypeJSONArray(raw)) {
+      return List.of();
+    }
+    List<String> ids = JSONUtil.toList(raw, String.class);
+    if (CollUtil.isEmpty(ids)) {
+      return List.of();
+    }
+    return ids.stream().filter(StrUtil::isNotBlank).distinct().collect(Collectors.toList());
+  }
+
+  /**
+   * 解析逐帧描述 JSON 数组。
+   *
+   * @param raw JSON 数组或空
+   * @return 描述列表
+   */
+  public static List<String> parseFrameCaptions(String raw) {
+    if (StrUtil.isBlank(raw) || !JSONUtil.isTypeJSONArray(raw)) {
+      return List.of();
+    }
+    List<String> captions = JSONUtil.toList(raw, String.class);
+    if (CollUtil.isEmpty(captions)) {
+      return List.of();
+    }
+    return captions.stream().map(StrUtil::nullToEmpty).collect(Collectors.toList());
+  }
+
+  /**
+   * 将描述列表对齐到指定长度。
+   *
+   * @param size     目标长度
+   * @param captions 原始描述
+   * @return 对齐后的描述
+   */
+  public static List<String> alignCaptions(int size, List<String> captions) {
+    List<String> aligned = new ArrayList<>(Math.max(0, size));
+    for (int index = 0; index < size; index++) {
+      if (CollUtil.isNotEmpty(captions) && index < captions.size()) {
+        aligned.add(StrUtil.nullToEmpty(captions.get(index)));
+      } else {
+        aligned.add("");
+      }
+    }
+    return aligned;
+  }
+
+  /**
+   * JSON 列是否含至少一条非空描述。
+   *
+   * @param raw JSON 数组或空
+   * @return 有可用描述为 true
+   */
+  public static boolean hasUsableCaptions(String raw) {
+    return hasUsableCaptionsList(parseFrameCaptions(raw));
+  }
+
+  /**
+   * 列表是否含至少一条非空描述。
+   *
+   * @param captions 描述列表
+   * @return 有可用描述为 true
+   */
+  public static boolean hasUsableCaptionsList(List<String> captions) {
+    if (CollUtil.isEmpty(captions)) {
+      return false;
+    }
+    return captions.stream().anyMatch(StrUtil::isNotBlank);
   }
 
   /**
@@ -500,5 +758,99 @@ public class VideoParseRunService {
     if (StrUtil.isBlank(item.getVideoContentKind()) && StrUtil.isNotBlank(run.getContentKind())) {
       item.setVideoContentKind(run.getContentKind());
     }
+  }
+
+  /**
+   * 按资料池或信源条目 id 查共享行。
+   *
+   * @param itemId 条目 id
+   * @return 行；无则 null
+   */
+  private VideoTranscriptEntity findRowByItemId(String itemId) {
+    VideoTranscriptEntity research = find(VideoParseOwnerTypes.TOPIC_RESEARCH_ITEM, itemId);
+    if (research != null) {
+      return research;
+    }
+    return find(VideoParseOwnerTypes.SOURCE_ITEM, itemId);
+  }
+
+  /**
+   * 列出 frames 目录下的图片，按文件名排序。
+   *
+   * @param framesDir frames 目录
+   * @return 图片路径
+   */
+  private static List<Path> listFrameImageFiles(Path framesDir) {
+    List<Path> files = new ArrayList<>();
+    try (DirectoryStream<Path> stream = Files.newDirectoryStream(framesDir)) {
+      for (Path path : stream) {
+        if (!Files.isRegularFile(path)) {
+          continue;
+        }
+        String name = path.getFileName().toString().toLowerCase(Locale.ROOT);
+        if (name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".png")) {
+          files.add(path);
+        }
+      }
+    } catch (Exception exception) {
+      return List.of();
+    }
+    files.sort((left, right) -> left.getFileName().toString().compareTo(right.getFileName().toString()));
+    return files;
+  }
+
+  /**
+   * 静默删除 stored_files。
+   *
+   * @param fileId 文件 id
+   */
+  private void deleteStoredQuietly(String fileId) {
+    if (StrUtil.isBlank(fileId)) {
+      return;
+    }
+    try {
+      files.delete(fileId);
+    } catch (Exception ignored) {
+      // 文件缺失不阻断
+    }
+  }
+
+  /**
+   * URL 归一化（小写、去尾斜杠）。
+   *
+   * @param url 原始 URL
+   * @return 归一化串
+   */
+  static String normalizeUrl(String url) {
+    String trimmed = StrUtil.trim(url);
+    if (StrUtil.isBlank(trimmed)) {
+      return "";
+    }
+    String lower = trimmed.toLowerCase(Locale.ROOT);
+    while (lower.endsWith("/")) {
+      lower = lower.substring(0, lower.length() - 1);
+    }
+    return lower;
+  }
+
+  /**
+   * 生成可匹配的 URL 别名（含 http/https 互换）。
+   *
+   * @param url 原始 URL
+   * @return 别名集合
+   */
+  static Set<String> urlAliases(String url) {
+    Set<String> aliases = new LinkedHashSet<>();
+    String normalized = normalizeUrl(url);
+    if (StrUtil.isBlank(normalized)) {
+      return aliases;
+    }
+    aliases.add(normalized);
+    if (normalized.startsWith("https://")) {
+      aliases.add("http://" + normalized.substring("https://".length()));
+    } else if (normalized.startsWith("http://")) {
+      aliases.add("https://" + normalized.substring("http://".length()));
+    }
+    return aliases;
   }
 }

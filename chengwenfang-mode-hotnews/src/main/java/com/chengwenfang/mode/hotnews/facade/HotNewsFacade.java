@@ -8,6 +8,7 @@ import com.chengwenfang.sourcing.facade.dto.request.HotNewsChannelPatchRequest;
 import com.chengwenfang.sourcing.facade.dto.request.HotNewsChannelUpsertRequest;
 import com.chengwenfang.mode.hotnews.facade.dto.request.HotNewsGenerationRunRequest;
 import com.chengwenfang.mode.hotnews.facade.dto.request.HotNewsGenerationSettingsRequest;
+import com.chengwenfang.mode.hotnews.facade.dto.request.HotNewsOptimizeCritiqueRequest;
 import com.chengwenfang.mode.hotnews.facade.dto.request.HotNewsRewriteRequest;
 import com.chengwenfang.mode.hotnews.facade.dto.request.ManualResearchItemRequest;
 import com.chengwenfang.sourcing.facade.dto.request.QuerySiteBlockUpsertRequest;
@@ -33,7 +34,7 @@ import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsResearchConflictView
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsResearchItemPageView;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsResearchItemView;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsResearchRunView;
-import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsRewriteResultView;
+import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsOptimizeCritiqueView;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsTopicPageView;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsTopicSourceView;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsTopicView;
@@ -82,7 +83,7 @@ public interface HotNewsFacade {
   JobView startFetch(String themeId, List<String> channelIds, int hours);
 
   /**
-   * 启动主题抓取任务（可附带 workflowId / skillSnapshot 等 Job input）。
+   * 启动主题抓取任务（可附带 workflowId / promptPackSnapshot 等 Job input）。
    *
    * @param themeId    主题 ID
    * @param channelIds 渠道 ID
@@ -298,6 +299,16 @@ public interface HotNewsFacade {
   HotNewsArticleView commitHotNewsArticle(String articleId, String draft, String wechat);
 
   /**
+   * 同步诊断热点原稿：打分 + 可编辑优化建议。
+   *
+   * @param articleId 文章 ID
+   * @param body      诊断请求；可为 null
+   * @return 诊断视图
+   */
+  HotNewsOptimizeCritiqueView critiqueDraftOptimize(
+      String articleId, HotNewsOptimizeCritiqueRequest body);
+
+  /**
    * 入队热点文章 AI 改写任务。
    *
    * @param articleId 文章 ID
@@ -315,9 +326,6 @@ public interface HotNewsFacade {
    * @return 文章视图
    */
   HotNewsArticleView applyAiRewrite(String articleId, String rewrittenDraft, String instruction);
-
-  /** 基于指令生成改写候选草稿（本地拼接，非模型调用）。 */
-  HotNewsRewriteResultView createRewriteCandidate(String articleId, String instruction);
 
   /** 加载主题下已启用频道（可按 ID 过滤），供抓取 Worker 使用。 */
   List<ChannelView> loadChannels(String themeId, List<String> channelIds);

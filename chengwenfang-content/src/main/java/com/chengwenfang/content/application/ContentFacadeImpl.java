@@ -377,6 +377,12 @@ public class ContentFacadeImpl implements ContentFacade {
 
   /** {@inheritDoc} */
   @Override
+  public List<GeneratedImageView> listImages(String articleId, String documentId, Integer versionNo) {
+    return images.listImages(articleId, documentId, versionNo);
+  }
+
+  /** {@inheritDoc} */
+  @Override
   public GeneratedImageView getImage(String imageId) {
     return images.getImage(imageId);
   }

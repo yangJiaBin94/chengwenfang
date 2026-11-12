@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 安装热点模式本机 Python CLI：article-extract / video-transcript / page-screenshot(+Chromium)。
+# 安装热点模式本机 Python CLI：article-extract / video-transcript / page-screenshot(+Chromium+PyMuPDF)。
 # 用法（仓库根目录）：
 #   chmod +x scripts/setup-hotnews-clis.sh && ./scripts/setup-hotnews-clis.sh
 #   ./scripts/setup-hotnews-clis.sh --skip-video
@@ -73,7 +73,7 @@ fi
 
 if [[ "$SKIP_PAGE_SCREENSHOT" -eq 0 ]]; then
   setup_venv "scripts/page-screenshot" \
-    "from playwright.sync_api import sync_playwright; print('page-screenshot ok')" \
+    "from playwright.sync_api import sync_playwright; import fitz; print('page-screenshot ok')" \
     '"$venv_python" -m playwright install chromium'
 else
   echo "跳过 page-screenshot（--skip-page-screenshot）"

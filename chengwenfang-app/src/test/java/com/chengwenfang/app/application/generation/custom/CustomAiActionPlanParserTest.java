@@ -3,7 +3,7 @@ package com.chengwenfang.app.application.generation.custom;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.chengwenfang.skill.facade.constant.CustomAiNodeActions;
+import com.chengwenfang.prompt.facade.constant.CustomAiNodeActions;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

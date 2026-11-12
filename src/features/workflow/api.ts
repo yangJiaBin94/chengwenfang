@@ -12,8 +12,8 @@ export type WorkflowNodeConfig = {
   [key: string]: unknown;
 };
 
-export type WorkflowSkillBinding = {
-  skillId: string;
+export type WorkflowPromptPackBinding = {
+  promptPackId: string;
   name: string;
   priority: number;
   enabled: boolean;
@@ -29,7 +29,7 @@ export type WorkflowDefinitionNode = {
   enabled: boolean;
   config: WorkflowNodeConfig;
   position: { x: number; y: number };
-  skillBindings: WorkflowSkillBinding[];
+  promptPackBindings: WorkflowPromptPackBinding[];
 };
 
 export type WorkflowDefinitionEdge = {

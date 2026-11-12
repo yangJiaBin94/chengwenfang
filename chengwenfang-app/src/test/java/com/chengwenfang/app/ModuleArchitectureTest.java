@@ -86,9 +86,9 @@ class ModuleArchitectureTest {
               "com.chengwenfang.app..");
 
   @ArchTest
-  static final ArchRule skillDoesNotDependOnUpperLayers =
+  static final ArchRule promptWorkflowDoesNotDependOnUpperLayers =
       noClasses()
-          .that().resideInAPackage("com.chengwenfang.skill..")
+          .that().resideInAPackage("com.chengwenfang.prompt..")
           .should().dependOnClassesThat().resideInAnyPackage(
               "com.chengwenfang.mode..",
               "com.chengwenfang.content..",
@@ -107,7 +107,7 @@ class ModuleArchitectureTest {
               "com.chengwenfang.quality..",
               "com.chengwenfang.publishing..",
               "com.chengwenfang.sourcing..",
-              "com.chengwenfang.skill..",
+              "com.chengwenfang.prompt..",
               "com.chengwenfang.notification..",
               "com.chengwenfang.app..");
 
@@ -341,7 +341,7 @@ class ModuleArchitectureTest {
               "com.chengwenfang.notification.application",
               "com.chengwenfang.quality.application",
               "com.chengwenfang.sourcing.application..",
-              "com.chengwenfang.skill.application..",
+              "com.chengwenfang.prompt.application..",
               "com.chengwenfang.file.application..",
               "com.chengwenfang.ai.application..",
               "com.chengwenfang.job.application..",
@@ -359,7 +359,7 @@ class ModuleArchitectureTest {
               "com.chengwenfang.notification.infrastructure.mapper..",
               "com.chengwenfang.quality.infrastructure.mapper..",
               "com.chengwenfang.sourcing.infrastructure.mapper..",
-              "com.chengwenfang.skill.infrastructure.mapper..",
+              "com.chengwenfang.prompt.infrastructure.mapper..",
               "com.chengwenfang.file.infrastructure.mapper..",
               "com.chengwenfang.ai.infrastructure.mapper..");
 
@@ -375,7 +375,7 @@ class ModuleArchitectureTest {
               "com.chengwenfang.notification.domain.entity..",
               "com.chengwenfang.quality.domain.entity..",
               "com.chengwenfang.sourcing.domain.entity..",
-              "com.chengwenfang.skill.domain.entity..",
+              "com.chengwenfang.prompt.domain.entity..",
               "com.chengwenfang.file.domain.entity..",
               "com.chengwenfang.ai.domain.entity..");
 

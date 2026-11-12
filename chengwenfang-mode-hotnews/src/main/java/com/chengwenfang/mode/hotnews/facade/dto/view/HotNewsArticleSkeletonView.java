@@ -40,12 +40,12 @@ public class HotNewsArticleSkeletonView {
   private String narrativeShape;
   /** 段落节奏与开法提示；避免编号式大标题 */
   private List<String> sectionPlan;
-  /** 插图风格（按选题自定，由骨架配图 Skill 约束） */
+  /** 插图风格（按选题自定，由骨架配图 提示词包 约束） */
   private String illustrationStyle;
   /** 封面文案与构图要点 */
   private String coverBrief;
   /**
-   * 生图硬性要求：可直接拼进每条插图提示词（由骨架配图 Skill 在拟定骨架时写入）。
+   * 生图硬性要求：可直接拼进每条插图提示词（由骨架配图 提示词包 在拟定骨架时写入）。
    */
   private String imagePromptRequirements;
   /** 工作区默认字数档（1500-2500 / 2500-4000 / 4000-6000） */

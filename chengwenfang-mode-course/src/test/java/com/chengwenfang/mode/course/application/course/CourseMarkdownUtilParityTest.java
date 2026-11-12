@@ -9,7 +9,7 @@ import static org.mockito.Mockito.when;
 import com.chengwenfang.ai.facade.AiTextFacade;
 import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
 import com.chengwenfang.ai.facade.dto.view.TextCompleteResult;
-import com.chengwenfang.skill.facade.SkillFacade;
+import com.chengwenfang.prompt.facade.PromptPackFacade;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -179,8 +179,8 @@ class CourseMarkdownUtilParityTest {
   @Test
   void wechat_converter_sends_system_prompt() {
     AiTextFacade ai = mock(AiTextFacade.class);
-    SkillFacade skills = mock(SkillFacade.class);
-    when(skills.composePromptFromBindings(any())).thenReturn("作者风格：口语");
+    PromptPackFacade promptPacks = mock(PromptPackFacade.class);
+    when(promptPacks.composePromptFromBindings(any())).thenReturn("作者风格：口语");
     when(ai.completeText(any())).thenReturn(TextCompleteResult.builder()
         .text("""
             # 标题
@@ -211,7 +211,7 @@ class CourseMarkdownUtilParityTest {
         "wechat");
     String source = ("短正文也要凑够长度。").repeat(80)
         + "\n\n## 本课小结\n\nx\n\n## 下节课预告\n\ny\n";
-    new WechatChunkConverter(ai, skills).convert(source, ctx, Map.of(), null);
+    new WechatChunkConverter(ai, promptPacks).convert(source, ctx, Map.of(), null);
 
     ArgumentCaptor<TextCompleteRequest> captor = ArgumentCaptor.forClass(TextCompleteRequest.class);
     verify(ai).completeText(captor.capture());
@@ -234,14 +234,14 @@ class CourseMarkdownUtilParityTest {
     assertThat(CourseMarkdownUtil.wechatChunkComplete(source, bloated)).isFalse();
 
     AiTextFacade ai = mock(AiTextFacade.class);
-    SkillFacade skills = mock(SkillFacade.class);
-    when(skills.composePromptFromBindings(any())).thenReturn("");
+    PromptPackFacade promptPacks = mock(PromptPackFacade.class);
+    when(promptPacks.composePromptFromBindings(any())).thenReturn("");
     when(ai.completeText(any())).thenReturn(TextCompleteResult.builder().text(bloated).build());
 
     CourseGenerationContext ctx = new CourseGenerationContext(
         "c1", "课", "摘要", "s1", "系列", 1, "零基础", "2000-4000", "up-to-3",
         4000, 0, 3, "", "", "", "", List.of(), "draft", "wechat");
-    WechatChunkConverter.Result result = new WechatChunkConverter(ai, skills).convert(
+    WechatChunkConverter.Result result = new WechatChunkConverter(ai, promptPacks).convert(
         source, ctx, Map.of(), null);
 
     assertThat(result.wechat()).contains("[[COURSE_IMAGE_1]]");
@@ -251,8 +251,8 @@ class CourseMarkdownUtilParityTest {
   @Test
   void wechat_converter_receives_repair_feedback() {
     AiTextFacade ai = mock(AiTextFacade.class);
-    SkillFacade skills = mock(SkillFacade.class);
-    when(skills.composePromptFromBindings(any())).thenReturn("");
+    PromptPackFacade promptPacks = mock(PromptPackFacade.class);
+    when(promptPacks.composePromptFromBindings(any())).thenReturn("");
     when(ai.completeText(any())).thenReturn(TextCompleteResult.builder()
         .text("# 标题\n\n" + "转换后的段落，足够长以通过保留率检查。".repeat(6))
         .build());
@@ -262,7 +262,7 @@ class CourseMarkdownUtilParityTest {
         4000, 0, 3, "", "", "", "", List.of(), "draft", "wechat");
     String source = ("短正文也要凑够长度。").repeat(80)
         + "\n\n## 本课小结\n\nx\n\n## 下节课预告\n\ny\n";
-    new WechatChunkConverter(ai, skills).convert(
+    new WechatChunkConverter(ai, promptPacks).convert(
         source, ctx, Map.of(), null, "第 1 轮检查未通过。COURSE_BODY_TOO_LONG：超长。");
 
     ArgumentCaptor<TextCompleteRequest> captor = ArgumentCaptor.forClass(TextCompleteRequest.class);

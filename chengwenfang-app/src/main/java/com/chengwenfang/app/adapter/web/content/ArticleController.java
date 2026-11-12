@@ -301,14 +301,16 @@ public class ArticleController {
    *
    * @param articleId  文章 id
    * @param documentId 统一文档 id；空则服务端解析
+   * @param versionNo  指定版本时仅返回该版正文引用的图；空则返回全部生成图
    * @return 配图视图列表
    */
   @GetMapping({"/articles/{articleId}/images", "/hot-news/articles/{articleId}/images"})
   @Operation(summary = "列出文章配图")
   public ApiResult<List<GeneratedImageView>> listArticleImages(
       @PathVariable String articleId,
-      @RequestParam(required = false) String documentId) {
-    return ApiResult.ok(content.listImages(articleId, documentId));
+      @RequestParam(required = false) String documentId,
+      @RequestParam(required = false) Integer versionNo) {
+    return ApiResult.ok(content.listImages(articleId, documentId, versionNo));
   }
 
   /**

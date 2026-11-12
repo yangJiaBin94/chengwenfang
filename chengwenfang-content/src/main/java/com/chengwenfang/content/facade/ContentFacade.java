@@ -235,6 +235,15 @@ public interface ContentFacade {
    */
   List<GeneratedImageView> listImages(String articleId, String documentId);
 
+  /**
+   * 列出文章已生成配图；可按版本正文引用过滤。
+   *
+   * @param articleId  文章 id
+   * @param documentId 统一文档 id；空则服务端解析
+   * @param versionNo  指定版本时仅返回该版正文引用的图；空则返回产出下全部生成图
+   */
+  List<GeneratedImageView> listImages(String articleId, String documentId, Integer versionNo);
+
   /** 获取配图元数据。 */
   GeneratedImageView getImage(String imageId);
 

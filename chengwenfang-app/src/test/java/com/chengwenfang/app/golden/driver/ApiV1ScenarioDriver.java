@@ -401,7 +401,7 @@ public final class ApiV1ScenarioDriver implements ScenarioDriver {
   }
 
   private void cleanBusinessTables() {
-    // 与 ChengwenfangIT 对齐的业务表清理（保留 skills/workflows 种子）
+    // 与 ChengwenfangIT 对齐的业务表清理（保留 prompt_packs/workflows 种子）
     String[] tables = {
       "job_events",
       "workflow_artifacts",
@@ -422,7 +422,7 @@ public final class ApiV1ScenarioDriver implements ScenarioDriver {
       "audit_issue_refs",
       "audit_issues",
       "audit_runs",
-      "skill_node_bindings",
+      "prompt_pack_default_bindings",
       "video_transcripts",
       "hotnews_research_item_dimensions",
       "hotnews_research_conflicts",

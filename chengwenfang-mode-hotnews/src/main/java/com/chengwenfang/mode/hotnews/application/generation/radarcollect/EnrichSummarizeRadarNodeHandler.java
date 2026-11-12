@@ -5,8 +5,8 @@ import com.chengwenfang.mode.hotnews.facade.VideoTranscriptFacade;
 import com.chengwenfang.sourcing.facade.enums.SourceMediaType;
 import com.chengwenfang.infra.config.ChengwenfangProperties;
 import com.chengwenfang.job.facade.JobFacade;
-import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
-import com.chengwenfang.skill.facade.enums.HotNewsRadarCollectNodeType;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
+import com.chengwenfang.prompt.facade.enums.HotNewsRadarCollectNodeType;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -78,7 +78,7 @@ public class EnrichSummarizeRadarNodeHandler implements RadarCollectNodeHandler 
   public void execute(
       RadarCollectSessionStore.Session session,
       Map<String, Object> lightState,
-      List<SkillPromptBindingView> skillBindings,
+      List<PromptPackPromptBindingView> promptPackBindings,
       String nodeKey,
       String nodeName) {
     // 兜底再裁一次（获取节点已前置；幂等）
@@ -121,14 +121,14 @@ public class EnrichSummarizeRadarNodeHandler implements RadarCollectNodeHandler 
     // 文章先提交到文章池，不被视频 ASR 抢槽
     for (RadarCollectCandidate candidate : articles) {
       futures.add(CompletableFuture.runAsync(
-          () -> enrichSafely(candidate, skillBindings, false, done, articleDone, videoDone),
+          () -> enrichSafely(candidate, promptPackBindings, false, done, articleDone, videoDone),
           radarArticleEnrichExecutor));
     }
     // 视频按时长降序入队，线程池 FIFO 先消化长片
     prioritizeLongerVideos(videos);
     for (RadarCollectCandidate candidate : videos) {
       futures.add(CompletableFuture.runAsync(
-          () -> enrichSafely(candidate, skillBindings, true, done, articleDone, videoDone),
+          () -> enrichSafely(candidate, promptPackBindings, true, done, articleDone, videoDone),
           radarVideoEnrichExecutor));
     }
 
@@ -333,7 +333,7 @@ public class EnrichSummarizeRadarNodeHandler implements RadarCollectNodeHandler 
    * 单条安全解析：调用 enrichOne，异常则弃用；并记录分类型耗时。
    *
    * @param candidate     候选
-   * @param skillBindings Skill 绑定
+   * @param promptPackBindings 提示词包绑定
    * @param video         是否视频
    * @param done          合计已完成
    * @param articleDone   文章已完成
@@ -341,7 +341,7 @@ public class EnrichSummarizeRadarNodeHandler implements RadarCollectNodeHandler 
    */
   private void enrichSafely(
       RadarCollectCandidate candidate,
-      List<SkillPromptBindingView> skillBindings,
+      List<PromptPackPromptBindingView> promptPackBindings,
       boolean video,
       AtomicInteger done,
       AtomicInteger articleDone,
@@ -354,7 +354,7 @@ public class EnrichSummarizeRadarNodeHandler implements RadarCollectNodeHandler 
         candidate.getTitle(),
         candidate.getUrl());
     try {
-      enrichSupport.enrichOne(candidate, skillBindings, video);
+      enrichSupport.enrichOne(candidate, promptPackBindings, video);
       long costMs = System.currentTimeMillis() - startedAt;
       if (candidate.isDiscarded()) {
         log.info(

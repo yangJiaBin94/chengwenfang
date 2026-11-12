@@ -3,7 +3,7 @@ package com.chengwenfang.mode.course.application.course;
 import cn.hutool.core.util.StrUtil;
 import com.chengwenfang.content.facade.ContentFacade;
 import com.chengwenfang.mode.course.application.generation.course.CourseGraphState;
-import com.chengwenfang.skill.facade.enums.CourseWorkflowNodeType;
+import com.chengwenfang.prompt.facade.enums.CourseWorkflowNodeType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

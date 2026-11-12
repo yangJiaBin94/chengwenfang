@@ -2,6 +2,7 @@ package com.chengwenfang.mode.hotnews.application;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.chengwenfang.common.IdsUtil;
 import com.chengwenfang.content.application.WorkContentStoreImpl;
@@ -16,6 +17,7 @@ import com.chengwenfang.content.facade.dto.WorkExtensionPayload;
 import com.chengwenfang.content.facade.dto.view.WorkOutputVersionSnapshot;
 import com.chengwenfang.content.infrastructure.mapper.WorkGenerationSettingsMapper;
 import com.chengwenfang.mode.hotnews.facade.constant.HotNewsArticleContentKinds;
+import com.chengwenfang.mode.hotnews.facade.constant.HotNewsGenerationSettingsKeys;
 import com.chengwenfang.content.infrastructure.mapper.WorkMapper;
 import com.chengwenfang.content.infrastructure.mapper.WorkOutputMapper;
 import com.chengwenfang.content.infrastructure.mapper.WorkOutputVersionMapper;
@@ -430,29 +432,37 @@ public class HotNewsWorkStore {
     WorkGenerationSettingsEntity row = existing == null
         ? WorkGenerationSettingsEntity.builder().workId(workId).build()
         : existing;
-    if (map.containsKey("wordCountOption")) {
-      row.setWordCountOption(asString(map.get("wordCountOption")));
+    if (map.containsKey(HotNewsGenerationSettingsKeys.WORD_COUNT_OPTION)) {
+      row.setWordCountOption(asString(map.get(HotNewsGenerationSettingsKeys.WORD_COUNT_OPTION)));
     }
-    if (map.containsKey("imageCountOption")) {
-      row.setImageCountOption(asString(map.get("imageCountOption")));
+    if (map.containsKey(HotNewsGenerationSettingsKeys.IMAGE_COUNT_OPTION)) {
+      row.setImageCountOption(asString(map.get(HotNewsGenerationSettingsKeys.IMAGE_COUNT_OPTION)));
     }
-    if (map.containsKey("workingTitle")) {
-      row.setWorkingTitle(asString(map.get("workingTitle")));
+    if (map.containsKey(HotNewsGenerationSettingsKeys.WORKING_TITLE)) {
+      row.setWorkingTitle(asString(map.get(HotNewsGenerationSettingsKeys.WORKING_TITLE)));
     }
-    if (map.containsKey("illustrationStyle")) {
-      row.setIllustrationStyle(asString(map.get("illustrationStyle")));
+    if (map.containsKey(HotNewsGenerationSettingsKeys.ILLUSTRATION_STYLE)) {
+      row.setIllustrationStyle(asString(map.get(HotNewsGenerationSettingsKeys.ILLUSTRATION_STYLE)));
     }
-    if (map.containsKey("coverBrief")) {
-      row.setCoverBrief(asString(map.get("coverBrief")));
+    if (map.containsKey(HotNewsGenerationSettingsKeys.COVER_BRIEF)) {
+      row.setCoverBrief(asString(map.get(HotNewsGenerationSettingsKeys.COVER_BRIEF)));
     }
-    if (map.containsKey("imagePromptRequirements")) {
-      row.setImagePromptRequirements(asString(map.get("imagePromptRequirements")));
+    if (map.containsKey(HotNewsGenerationSettingsKeys.IMAGE_PROMPT_REQUIREMENTS)) {
+      row.setImagePromptRequirements(
+          asString(map.get(HotNewsGenerationSettingsKeys.IMAGE_PROMPT_REQUIREMENTS)));
     }
-    if (map.containsKey("lastRewriteInstruction")) {
-      row.setLastRewriteInstruction(asString(map.get("lastRewriteInstruction")));
+    if (map.containsKey(HotNewsGenerationSettingsKeys.LAST_REWRITE_INSTRUCTION)) {
+      row.setLastRewriteInstruction(
+          asString(map.get(HotNewsGenerationSettingsKeys.LAST_REWRITE_INSTRUCTION)));
     }
-    if (map.containsKey("rewrittenAt")) {
-      row.setRewrittenAt(asString(map.get("rewrittenAt")));
+    if (map.containsKey(HotNewsGenerationSettingsKeys.REWRITTEN_AT)) {
+      row.setRewrittenAt(asString(map.get(HotNewsGenerationSettingsKeys.REWRITTEN_AT)));
+    }
+    if (map.containsKey(HotNewsGenerationSettingsKeys.LAST_OPTIMIZE_CRITIQUE)) {
+      Object critique = map.get(HotNewsGenerationSettingsKeys.LAST_OPTIMIZE_CRITIQUE);
+      row.setLastOptimizeCritique(critique == null
+          ? null
+          : critique instanceof String text ? text : codec.writeJson(critique));
     }
     row.setUpdatedAt(now);
     if (existing == null) {
@@ -497,14 +507,30 @@ public class HotNewsWorkStore {
     if (settings == null) {
       return map;
     }
-    putIfPresent(map, "wordCountOption", settings.getWordCountOption());
-    putIfPresent(map, "imageCountOption", settings.getImageCountOption());
-    putIfPresent(map, "workingTitle", settings.getWorkingTitle());
-    putIfPresent(map, "illustrationStyle", settings.getIllustrationStyle());
-    putIfPresent(map, "coverBrief", settings.getCoverBrief());
-    putIfPresent(map, "imagePromptRequirements", settings.getImagePromptRequirements());
-    putIfPresent(map, "lastRewriteInstruction", settings.getLastRewriteInstruction());
-    putIfPresent(map, "rewrittenAt", settings.getRewrittenAt());
+    putIfPresent(map, HotNewsGenerationSettingsKeys.WORD_COUNT_OPTION, settings.getWordCountOption());
+    putIfPresent(map, HotNewsGenerationSettingsKeys.IMAGE_COUNT_OPTION, settings.getImageCountOption());
+    putIfPresent(map, HotNewsGenerationSettingsKeys.WORKING_TITLE, settings.getWorkingTitle());
+    putIfPresent(
+        map, HotNewsGenerationSettingsKeys.ILLUSTRATION_STYLE, settings.getIllustrationStyle());
+    putIfPresent(map, HotNewsGenerationSettingsKeys.COVER_BRIEF, settings.getCoverBrief());
+    putIfPresent(
+        map,
+        HotNewsGenerationSettingsKeys.IMAGE_PROMPT_REQUIREMENTS,
+        settings.getImagePromptRequirements());
+    putIfPresent(map, HotNewsGenerationSettingsKeys.LAST_REWRITE_INSTRUCTION,
+        settings.getLastRewriteInstruction());
+    putIfPresent(map, HotNewsGenerationSettingsKeys.REWRITTEN_AT, settings.getRewrittenAt());
+    if (StrUtil.isNotBlank(settings.getLastOptimizeCritique())) {
+      try {
+        map.put(
+            HotNewsGenerationSettingsKeys.LAST_OPTIMIZE_CRITIQUE,
+            JSONUtil.parse(settings.getLastOptimizeCritique()));
+      } catch (Exception ignored) {
+        map.put(
+            HotNewsGenerationSettingsKeys.LAST_OPTIMIZE_CRITIQUE,
+            settings.getLastOptimizeCritique());
+      }
+    }
     return map;
   }
 

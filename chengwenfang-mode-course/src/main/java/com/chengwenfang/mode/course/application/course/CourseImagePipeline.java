@@ -3,7 +3,7 @@ package com.chengwenfang.mode.course.application.course;
 import com.chengwenfang.ai.facade.AiImageFacade;
 import com.chengwenfang.content.facade.ContentFacade;
 import com.chengwenfang.infra.support.StorageService;
-import com.chengwenfang.skill.facade.SkillFacade;
+import com.chengwenfang.prompt.facade.PromptPackFacade;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -22,14 +22,14 @@ public class CourseImagePipeline {
    * @param images  图像 AI
    * @param content 内容门面
    * @param storage 本地存储
-   * @param skills  Skill 门面
+   * @param promptPacks  提示词包门面
    */
   public CourseImagePipeline(
       AiImageFacade images,
       ContentFacade content,
       StorageService storage,
-      SkillFacade skills) {
-    this.generator = new CourseImageGenerator(images, content, storage, skills);
+      PromptPackFacade promptPacks) {
+    this.generator = new CourseImageGenerator(images, content, storage, promptPacks);
   }
 
   /**
@@ -138,14 +138,14 @@ public class CourseImagePipeline {
   }
 
   /**
-   * 内文图去掉技能里「全课统一 Keynote」类句子，避免覆盖差异化指令。
+   * 内文图去掉提示词包里「全课统一 Keynote」类句子，避免覆盖差异化指令。
    *
-   * @param skillPrompt 技能提示
+   * @param promptPackText 提示词包提示
    * @param isCover     是否封面
    * @return 裁剪后提示
    */
-  static String trimSkillPrompt(String skillPrompt, boolean isCover) {
-    return CourseImageGenerator.trimSkillPrompt(skillPrompt, isCover);
+  static String trimPromptPackText(String promptPackText, boolean isCover) {
+    return CourseImageGenerator.trimPromptPackText(promptPackText, isCover);
   }
 
   /**

@@ -2,6 +2,7 @@ package com.chengwenfang.mode.hotnews.domain;
 
 import cn.hutool.core.util.StrUtil;
 import com.chengwenfang.common.IllustrationPromptFormat;
+import com.chengwenfang.mode.hotnews.facade.constant.HotNewsEvidenceKeys;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -34,6 +35,22 @@ public final class HotNewsMarkdownUtil {
   private static final Pattern DIGEST_LINE_PATTERN =
       Pattern.compile("(?m)^\\s*>?\\s*摘要\\s*[:：]\\s*(.+?)\\s*$");
 
+  /** 佐证占位：[[HOT_NEWS_EVIDENCE:{uuid}]]。 */
+  private static final Pattern EVIDENCE_TOKEN_PATTERN = Pattern.compile(
+      "\\[\\[HOT_NEWS_EVIDENCE:([0-9a-fA-F\\-]{36})]]");
+
+  /** Markdown 外链 [文字](http...)；保留本地 /api/ 路径。 */
+  private static final Pattern MARKDOWN_HTTP_LINK = Pattern.compile(
+      "\\[([^\\]]*)\\]\\((https?://[^)\\s]+)\\)", Pattern.CASE_INSENSITIVE);
+
+  /** 「来源…：https://…」整行，剥掉 URL 保留来源文字。 */
+  private static final Pattern SOURCE_LINE_WITH_URL = Pattern.compile(
+      "(?m)^(来源[^:\\n：]*)[:：]\\s*(https?://\\S+)\\s*$");
+
+  /** 正文裸 http(s) URL（不匹配已在 Markdown 图/链括号内的由其它步骤处理）。 */
+  private static final Pattern BARE_HTTP_URL = Pattern.compile(
+      "(?<![(\"'\\[])(https?://[^\\s)\\]\"'<>]+)", Pattern.CASE_INSENSITIVE);
+
   /** 默认插图风格（AI/科技类选题通用）。 */
   public static final String DEFAULT_ILLUSTRATION_STYLE =
       "科技立体信息图、微立体渲染、光影层次清晰、富有创意";
@@ -65,7 +82,7 @@ public final class HotNewsMarkdownUtil {
           + "禁止只画抽象科技氛围、锁头、光点、几何块、通用机器人等与本篇论点无关的空装饰。";
 
   /**
-   * 骨架缺省时的插图提示词硬性要求（Skill「热点文章骨架配图规范」不可用时回退）。
+   * 骨架缺省时的插图提示词硬性要求（提示词包「热点文章骨架配图规范」不可用时回退）。
    * <p>不含「封面」字样，避免正文插图被误判为封面。
    *
    * @return 可拼进提示词的中文要求
@@ -88,25 +105,121 @@ public final class HotNewsMarkdownUtil {
 
   /**
    * 判断提示词块是否为封面图。
-   * <p>优先看标记行；标记已写明「插图」且不含「封面」时一律视为正文图，
-   * 避免生图要求正文里出现「封面」二字导致误判。
+   * <p>只看标题行（{@code marker} 首行）：写明「封面」→ 封面；写明「插图」→ 正文图。
+   * {@code PROMPT_BLOCK} 的 marker 组会吞进围栏正文，不可对整段做「封面」子串判断，
+   * 否则骨架 {@code imagePromptRequirements} 里的「封面要…」会把正文插图误判成封面。
    *
-   * @param marker 标题/加粗标记行
+   * @param marker 标题/加粗标记（可含后续空行与围栏，仅首行参与标题判断）
    * @param prompt 围栏内提示词
    * @return true 表示封面
    */
   public static boolean isCoverPrompt(String marker, String prompt) {
-    String markerText = StrUtil.nullToEmpty(marker);
-    if (markerText.contains("封面")) {
+    String heading = promptHeadingLine(marker);
+    if (heading.contains("封面")) {
       return true;
     }
-    if (markerText.contains("插图")) {
+    if (heading.contains("插图")) {
       return false;
     }
     String promptText = StrUtil.nullToEmpty(prompt);
     return promptText.contains("热点公众号封面")
         || promptText.contains("热点封面")
         || (promptText.contains("封面") && !promptText.contains("插图"));
+  }
+
+  /**
+   * 从提示词块 marker 取出标题行（去掉前导换行后的第一行）。
+   *
+   * @param marker {@link #PROMPT_BLOCK} 捕获的 marker；可空
+   * @return 标题行；无则空串
+   */
+  static String promptHeadingLine(String marker) {
+    String text = StrUtil.nullToEmpty(marker).strip();
+    if (text.isEmpty()) {
+      return "";
+    }
+    int newline = text.indexOf('\n');
+    return newline < 0 ? text : text.substring(0, newline).strip();
+  }
+
+  /** 紧跟提示词块后的图片 Markdown。 */
+  private static final Pattern IMAGE_AFTER_PROMPT = Pattern.compile(
+      "^\\s*!\\[[^\\]]*\\]\\(([^)]+)\\)\\s*");
+
+  /**
+   * 归一化提示词文本便于比较是否同一画面。
+   *
+   * @param prompt 提示词
+   * @return 归一化串
+   */
+  public static String normalizePromptText(String prompt) {
+    return StrUtil.nullToEmpty(prompt).replaceAll("\\s+", " ").trim();
+  }
+
+  /**
+   * 取出提示词块结束后紧随的图片 Markdown 行（若有）。
+   *
+   * @param content    全文
+   * @param promptEnd  提示词块结束下标（不含）
+   * @return 图片 Markdown；无则空串
+   */
+  public static String imageMarkdownAfter(String content, int promptEnd) {
+    String text = StrUtil.nullToEmpty(content);
+    if (promptEnd < 0 || promptEnd >= text.length()) {
+      return "";
+    }
+    String tail = text.substring(promptEnd);
+    Matcher matcher = IMAGE_AFTER_PROMPT.matcher(tail);
+    if (matcher.find()) {
+      return matcher.group(0).strip();
+    }
+    return "";
+  }
+
+  /**
+   * 从图片 Markdown 解析 `/api/images/{id}` 中的 id。
+   *
+   * @param imageMarkdown 图片行
+   * @return 图片 id；解析失败空串
+   */
+  public static String imageIdFromMarkdown(String imageMarkdown) {
+    Matcher matcher = Pattern.compile("/api/images/([^)\\s]+)").matcher(StrUtil.nullToEmpty(imageMarkdown));
+    if (matcher.find()) {
+      return StrUtil.trim(matcher.group(1));
+    }
+    return "";
+  }
+
+  /**
+   * 去掉指定提示词块后紧随的全部图片引用（保留提示词块本身）。
+   * <p>连续多张一并去掉，避免历史重复挂图只清掉一张。
+   *
+   * @param content   全文
+   * @param promptHit 提示词命中
+   * @return 去图后的正文
+   */
+  public static String stripImageAfterPrompt(String content, PromptHit promptHit) {
+    if (promptHit == null) {
+      return StrUtil.nullToEmpty(content);
+    }
+    String text = StrUtil.nullToEmpty(content);
+    int start = promptHit.end();
+    if (start < 0 || start > text.length()) {
+      return text;
+    }
+    String tail = text.substring(start);
+    int removed = 0;
+    while (true) {
+      Matcher one = IMAGE_AFTER_PROMPT.matcher(tail.substring(removed));
+      if (!one.find() || one.start() != 0) {
+        break;
+      }
+      removed += one.end();
+    }
+    if (removed <= 0) {
+      return text;
+    }
+    return text.substring(0, start) + tail.substring(removed);
   }
 
   /**
@@ -174,7 +287,7 @@ public final class HotNewsMarkdownUtil {
     cleaned = FENCED_BLOCK.matcher(cleaned).replaceAll("\n");
     cleaned = cleaned.replaceAll("!\\[[^\\]]*\\]\\([^)]*\\)", " ");
     cleaned = cleaned.replaceAll("\\[[^\\]]*\\]\\([^)]*\\)", " ");
-    cleaned = cleaned.replaceAll("\\[\\[HOT_NEWS_(?:COVER|IMAGE_\\d+)]]", " ");
+    cleaned = cleaned.replaceAll("\\[\\[HOT_NEWS_(?:COVER|IMAGE_\\d+|EVIDENCE:[0-9a-fA-F\\-]{36})]]", " ");
     cleaned = cleaned.replaceAll("[#>*_`~\\-]+", " ");
     cleaned = cleaned.replaceAll("\\s+", "");
     return cleaned.length();
@@ -361,6 +474,218 @@ public final class HotNewsMarkdownUtil {
   }
 
   /**
+   * 将佐证占位展开为 {@code /api/files/{id}} 图片 Markdown。
+   *
+   * @param markdown 含 {@code [[HOT_NEWS_EVIDENCE:uuid]]} 的正文
+   * @return 展开后的正文
+   */
+  public static String expandEvidenceTokens(String markdown) {
+    Matcher matcher = EVIDENCE_TOKEN_PATTERN.matcher(StrUtil.nullToEmpty(markdown));
+    StringBuffer buffer = new StringBuffer();
+    while (matcher.find()) {
+      String fileId = matcher.group(1);
+      String replacement = HotNewsEvidenceKeys.evidenceImageMarkdown(fileId, "来源截图");
+      matcher.appendReplacement(buffer, Matcher.quoteReplacement(replacement));
+    }
+    matcher.appendTail(buffer);
+    return buffer.toString();
+  }
+
+  /** 句末标点（中文）。 */
+  private static final String SENTENCE_END_CHARS = "。！？";
+
+  /** caption 开头重复的「来源：」前缀。 */
+  private static final Pattern EVIDENCE_CAPTION_SOURCE_PREFIX = Pattern.compile(
+      "^(?:来源\\s*[:：]\\s*)+");
+
+  /** 插入点后紧跟的独立「来源：…」行。 */
+  private static final Pattern LEADING_SOURCE_LINE = Pattern.compile(
+      "^\\s*来源\\s*[:：][^\\n]*\\n?");
+
+  /**
+   * 去掉 caption 自带的「来源：」前缀；空则回落「参考资料」。
+   *
+   * @param caption 模型或调用方给的出处简称
+   * @return 可拼进「来源：」行的正文
+   */
+  public static String normalizeEvidenceCaption(String caption) {
+    String value = StrUtil.trim(caption);
+    if (StrUtil.isNotBlank(value)) {
+      value = EVIDENCE_CAPTION_SOURCE_PREFIX.matcher(value).replaceFirst("");
+      value = StrUtil.trim(value);
+    }
+    return StrUtil.blankToDefault(value, "参考资料");
+  }
+
+  /**
+   * 在锚点后插入佐证占位；锚点找不到则追加到文末。
+   *
+   * <p>短锚会吸附到句末，避免劈开「150.58元。还有…」；已有「来源：」行时不叠写第二行。
+   * shortcut: 多处同串取首次, 需按 focusHint 消歧时再升级
+   *
+   * @param markdown    原稿
+   * @param insertAfter 锚点子串；可空
+   * @param caption     来源文字（不含 URL；可误带「来源：」前缀）
+   * @param fileId      截屏文件 id
+   * @return 插入后的正文
+   */
+  public static String insertEvidenceShot(
+      String markdown, String insertAfter, String caption, String fileId) {
+    if (StrUtil.isBlank(fileId)) {
+      return StrUtil.nullToEmpty(markdown);
+    }
+    String body = StrUtil.nullToEmpty(markdown);
+    String normalizedCaption = normalizeEvidenceCaption(caption);
+    String token = HotNewsEvidenceKeys.evidenceToken(fileId);
+    String anchor = StrUtil.trim(insertAfter);
+    if (StrUtil.isNotBlank(anchor)) {
+      int index = body.indexOf(anchor);
+      if (index >= 0) {
+        int insertAt = snapInsertAfterSentenceEnd(body, index + anchor.length());
+        return spliceEvidenceAt(body, insertAt, normalizedCaption, token);
+      }
+    }
+    String trimmed = body.stripTrailing();
+    return spliceEvidenceAt(trimmed, trimmed.length(), normalizedCaption, token);
+  }
+
+  /**
+   * 若锚点落在句中，把插入点推到本句句末标点之后；遇段落空行则停在空行前。
+   *
+   * @param body     全文
+   * @param insertAt 锚点结束后的下标
+   * @return 校正后的插入下标
+   */
+  private static int snapInsertAfterSentenceEnd(String body, int insertAt) {
+    if (insertAt <= 0 || insertAt >= body.length()) {
+      return Math.min(Math.max(insertAt, 0), body.length());
+    }
+    // 锚点已含句末时不再跨入下一句
+    if (isSentenceEndChar(body.charAt(insertAt - 1))) {
+      return insertAt;
+    }
+    char next = body.charAt(insertAt);
+    if (isSentenceEndChar(next)) {
+      return insertAt + 1;
+    }
+    if (next == '\n') {
+      return insertAt;
+    }
+    for (int index = insertAt; index < body.length(); index++) {
+      if (index + 1 < body.length()
+          && body.charAt(index) == '\n'
+          && body.charAt(index + 1) == '\n') {
+        return index;
+      }
+      char current = body.charAt(index);
+      if (isSentenceEndChar(current)) {
+        return index + 1;
+      }
+      if (current == '\n') {
+        return index;
+      }
+    }
+    return body.length();
+  }
+
+  /**
+   * 在指定下标插入来源行（可复用）与佐证 token。
+   *
+   * @param body               原文
+   * @param insertAt           插入下标
+   * @param normalizedCaption  已归一 caption
+   * @param token              佐证占位
+   * @return 拼接后正文
+   */
+  private static String spliceEvidenceAt(
+      String body, int insertAt, String normalizedCaption, String token) {
+    int at = Math.min(Math.max(insertAt, 0), body.length());
+    String after = body.substring(at);
+    Matcher leadingSource = LEADING_SOURCE_LINE.matcher(after);
+    boolean reuseSource = false;
+    if (leadingSource.find()) {
+      at += leadingSource.end();
+      reuseSource = true;
+    } else if (endsOnSourceLine(body, at)) {
+      reuseSource = true;
+    }
+    String block = reuseSource
+        ? "\n" + token + "\n"
+        : "\n\n来源：" + normalizedCaption + "\n" + token + "\n";
+    return body.substring(0, at) + block + body.substring(at);
+  }
+
+  /**
+   * 判断插入点前一行是否已是「来源：…」。
+   *
+   * @param body     全文
+   * @param insertAt 插入下标
+   * @return 是否落在已有来源行末尾
+   */
+  private static boolean endsOnSourceLine(String body, int insertAt) {
+    if (insertAt <= 0 || insertAt > body.length()) {
+      return false;
+    }
+    String before = body.substring(0, insertAt);
+    int lineStart = before.lastIndexOf('\n') + 1;
+    String lastLine = StrUtil.trim(before.substring(lineStart));
+    return lastLine.startsWith("来源：") || lastLine.startsWith("来源:");
+  }
+
+  /**
+   * 是否中文句末标点。
+   *
+   * @param character 字符
+   * @return 是句末则 true
+   */
+  private static boolean isSentenceEndChar(char character) {
+    return SENTENCE_END_CHARS.indexOf(character) >= 0;
+  }
+
+  /**
+   * 去掉裸外链与 Markdown http 链，保留「来源：文字」与本地 {@code /api/files|images} 图。
+   *
+   * @param markdown 正文
+   * @return 去链后的正文
+   */
+  public static String stripExternalUrls(String markdown) {
+    String text = StrUtil.nullToEmpty(markdown);
+    // 来源行：保留简称，去掉 URL
+    text = SOURCE_LINE_WITH_URL.matcher(text).replaceAll("$1");
+    // [文字](https://…) → 文字（本地 /api 链不在此模式）
+    Matcher linkMatcher = MARKDOWN_HTTP_LINK.matcher(text);
+    StringBuffer linkBuffer = new StringBuffer();
+    while (linkMatcher.find()) {
+      String label = StrUtil.blankToDefault(linkMatcher.group(1), "");
+      linkMatcher.appendReplacement(linkBuffer, Matcher.quoteReplacement(label));
+    }
+    linkMatcher.appendTail(linkBuffer);
+    text = linkBuffer.toString();
+    // 剥剩余裸 URL，但跳过已是 Markdown 图片里的 /api/ 路径（无 http）
+    Matcher bareMatcher = BARE_HTTP_URL.matcher(text);
+    StringBuffer bareBuffer = new StringBuffer();
+    while (bareMatcher.find()) {
+      bareMatcher.appendReplacement(bareBuffer, "");
+    }
+    bareMatcher.appendTail(bareBuffer);
+    text = bareBuffer.toString();
+    // 清理去链后多余空白
+    text = text.replaceAll("[ \\t]+\\n", "\n");
+    text = text.replaceAll("\\n{3,}", "\n\n");
+    return text;
+  }
+
+  /**
+   * 展开佐证占位并剥除外链（成文/公众号共用后处理）。
+   *
+   * @param markdown 正文
+   * @return 处理后的正文
+   */
+  public static String finalizeEvidenceMarkdown(String markdown) {
+    return stripExternalUrls(expandEvidenceTokens(markdown));
+  }
+
+  /**
    * 确保公众号正文保留封面与内文占位；缺则追加。
    *
    * @param wechat        公众号正文
@@ -484,7 +809,8 @@ public final class HotNewsMarkdownUtil {
   }
 
   /**
-   * 将图片 Markdown 紧跟插入匹配提示词块之后；已存在则不重复。
+   * 将图片 Markdown 紧跟插入匹配提示词块之后。
+   * <p>先清掉该提示词块后已有图片再挂入，避免「块外已有图」时因只检查块内而并列重复。
    *
    * @param draft         原稿
    * @param promptText    围栏内提示词正文
@@ -498,32 +824,35 @@ public final class HotNewsMarkdownUtil {
     if (StrUtil.isBlank(text) || StrUtil.isBlank(image)) {
       return text;
     }
-    Matcher matcher = PROMPT_BLOCK.matcher(text);
-    StringBuffer buffer = new StringBuffer();
-    boolean replaced = false;
-    while (matcher.find()) {
-      String block = matcher.group();
-      String blockPrompt = matcher.group("prompt").strip();
-      if (!replaced && (prompt.isBlank() || prompt.equals(blockPrompt))) {
-        String after = block;
-        if (!after.contains(image)) {
-          after = after.stripTrailing() + "\n\n" + image;
-        }
-        matcher.appendReplacement(buffer, Matcher.quoteReplacement(after));
-        replaced = true;
-      } else {
-        matcher.appendReplacement(buffer, Matcher.quoteReplacement(block));
-      }
-    }
-    matcher.appendTail(buffer);
-    if (!replaced) {
+    PromptHit hit = findPromptHit(text, prompt);
+    if (hit == null) {
       return text.strip() + "\n\n" + image + "\n";
     }
-    return buffer.toString();
+    // 提示词块 end 之后的改动不影响 hit 起止，可先清再挂
+    String cleared = stripImageAfterPrompt(text, hit);
+    return cleared.substring(0, hit.end()) + "\n\n" + image + cleared.substring(hit.end());
   }
 
   /**
-   * 校验原稿中每张图片引用是否紧跟在对应插图提示词块之后。
+   * 按围栏提示词正文查找提示词块；目标空白时取首个块。
+   *
+   * @param draft      原稿
+   * @param promptText 提示词正文
+   * @return 命中；无则 null
+   */
+  public static PromptHit findPromptHit(String draft, String promptText) {
+    String target = normalizePromptText(promptText);
+    for (PromptHit hit : findPrompts(draft)) {
+      if (target.isBlank() || target.equals(normalizePromptText(hit.prompt()))) {
+        return hit;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * 校验原稿中每张配图引用是否紧跟在对应插图提示词块之后。
+   * 佐证截屏（{@code /api/files/…}）不参与本校验，可插在正文任意位置。
    *
    * @param draft 配图回填后的原稿
    * @return 合规则为 true
@@ -532,6 +861,11 @@ public final class HotNewsMarkdownUtil {
     String text = StrUtil.nullToEmpty(draft);
     Matcher imageMatcher = Pattern.compile("(?m)^!\\[[^\\]]*\\]\\([^)]+\\)\\s*$").matcher(text);
     while (imageMatcher.find()) {
+      String imageLine = imageMatcher.group();
+      // 佐证截屏不是插图提示词配图，跳过紧跟校验
+      if (isEvidenceImageMarkdown(imageLine)) {
+        continue;
+      }
       String before = text.substring(0, imageMatcher.start()).stripTrailing();
       if (!before.endsWith("```")) {
         return false;
@@ -549,6 +883,16 @@ public final class HotNewsMarkdownUtil {
       }
     }
     return true;
+  }
+
+  /**
+   * 判断是否为佐证截屏 Markdown（本地 files API，非插图生成结果）。
+   *
+   * @param imageMarkdown 单行图片 Markdown
+   * @return 佐证图为 true
+   */
+  public static boolean isEvidenceImageMarkdown(String imageMarkdown) {
+    return StrUtil.contains(imageMarkdown, HotNewsEvidenceKeys.FILES_API_PREFIX);
   }
 
   /**

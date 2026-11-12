@@ -24,8 +24,8 @@ import {
   Workflow,
   X,
 } from "lucide-react";
-import { listSkills } from "../../settings/api";
-import type { Skill } from "../../settings/api";
+import { listPromptPacks } from "../../settings/api";
+import type { PromptPack } from "../../settings/api";
 import {
   createWorkflow,
   listWorkflowRuns,
@@ -65,7 +65,7 @@ import type {
   WorkflowVersionMetric,
 } from "../api";
 
-import { nextVersion, CompactFlow, formatDate } from "./workflowUi";
+import { nextVersion, CompactFlow, formatDate, formatReleaseNotes } from "./workflowUi";
 
 export function WorkflowVersions({
   versions,
@@ -213,15 +213,15 @@ export function WorkflowVersions({
             className={`workflow-version-card ${item.id === currentId ? "current" : ""}`}
             key={item.id}
           >
-            <div className="workflow-version-mark">
-              <GitBranch size={16} />
-            </div>
             <div>
               <div className="workflow-version-title">
+                <div className="workflow-version-mark">
+                  <GitBranch size={14} />
+                </div>
                 <strong>V{item.version}</strong>
                 {item.id === currentId && <span>当前版本</span>}
               </div>
-              <p>{item.releaseNotes || "未填写发布说明"}</p>
+              <p>{formatReleaseNotes(item.releaseNotes, item.snapshot.description)}</p>
               <small>
                 {formatDate(item.createdAt)} · {item.publishedBy} ·{" "}
                 {item.snapshot.nodes.length} 个节点

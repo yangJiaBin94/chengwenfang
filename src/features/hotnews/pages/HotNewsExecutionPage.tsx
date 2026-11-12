@@ -81,7 +81,7 @@ export function HotNewsExecutionPage({
   const [historyPage, setHistoryPage] = useState(1);
   const HISTORY_PAGE_SIZE = 10;
   const [open, setOpen] = useState({
-    skills: false,
+    promptPacks: false,
     nodes: false,
     events: false,
   });
@@ -191,15 +191,15 @@ export function HotNewsExecutionPage({
       ),
     );
   };
-  const skills = useMemo(
+  const promptPacks = useMemo(
     () =>
       [
         ...attemptEvents
         .flatMap((e) =>
-          Array.isArray(e.payload?.skills) ? e.payload.skills : [],
+          Array.isArray(e.payload?.promptPacks) ? e.payload.promptPacks : [],
         ),
         ...attemptNodes.flatMap((n) =>
-          Array.isArray(n.outputSummary?.skills) ? n.outputSummary.skills : [],
+          Array.isArray(n.outputSummary?.promptPacks) ? n.outputSummary.promptPacks : [],
         ),
       ]
         .filter((x) => !!x && typeof x === "object") as Array<
@@ -423,7 +423,7 @@ export function HotNewsExecutionPage({
       setSelectedAttemptNumber={setSelectedAttemptNumber}
       setSelectedId={setSelectedId}
       skeleton={skeleton}
-      skills={skills}
+      promptPacks={promptPacks}
       state={state}
       visibleJobs={visibleJobs}
     />

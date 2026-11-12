@@ -12,6 +12,8 @@ public final class HotNewsArtifactTypes {
   public static final String DRAFT = "hot_news_draft";
   /** 审校通过后的原稿。 */
   public static final String REVIEWED_DRAFT = "hot_news_reviewed_draft";
+  /** 附加佐证截屏后的原稿。 */
+  public static final String EVIDENCE_DRAFT = "hot_news_evidence_draft";
   /** 生成后的公众号正文（审校前）。 */
   public static final String WECHAT = "hot_news_wechat";
   /** 审校通过后的公众号正文。 */

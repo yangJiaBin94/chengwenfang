@@ -5,11 +5,12 @@ import com.chengwenfang.mode.hotnews.facade.dto.request.HotNewsArticleContentUpd
 import com.chengwenfang.mode.hotnews.facade.dto.request.HotNewsArticleUpdateRequest;
 import com.chengwenfang.mode.hotnews.facade.dto.request.HotNewsGenerationRunRequest;
 import com.chengwenfang.mode.hotnews.facade.dto.request.HotNewsGenerationSettingsRequest;
+import com.chengwenfang.mode.hotnews.facade.dto.request.HotNewsOptimizeCritiqueRequest;
 import com.chengwenfang.mode.hotnews.facade.dto.request.HotNewsRewriteRequest;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsArticleSkeletonView;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsArticleVersionView;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsArticleView;
-import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsRewriteResultView;
+import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsOptimizeCritiqueView;
 import com.chengwenfang.job.facade.dto.view.JobView;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,8 @@ public class HotNewsArticleService {
   private final HotNewsGenerationSettingsService generationSettings;
   /** AI 改写。 */
   private final HotNewsRewriteCandidateService rewrites;
+  /** 原稿优化诊断。 */
+  private final HotNewsDraftOptimizeCritiqueService optimizeCritique;
   /** 视图组装。 */
   private final HotNewsArticleViewAssembler views;
 
@@ -245,6 +248,19 @@ public class HotNewsArticleService {
    * @param body      改写请求；可为 null
    * @return 已入队 Job
    */
+  /**
+   * 同步诊断热点原稿并返回可编辑优化建议。
+   *
+   * @param articleId 文章主键
+   * @param body      诊断请求；可空
+   * @return 诊断视图
+   */
+  @Transactional
+  public HotNewsOptimizeCritiqueView critiqueDraftOptimize(
+      String articleId, HotNewsOptimizeCritiqueRequest body) {
+    return optimizeCritique.critique(articleId, body);
+  }
+
   @Transactional
   public JobView startArticleRewrite(String articleId, HotNewsRewriteRequest body) {
     return rewrites.startArticleRewrite(articleId, body);
@@ -262,18 +278,6 @@ public class HotNewsArticleService {
   public HotNewsArticleView applyAiRewrite(
       String articleId, String rewrittenDraft, String instruction) {
     return rewrites.applyAiRewrite(articleId, rewrittenDraft, instruction);
-  }
-
-  /**
-   * 生成改写候选草稿。
-   *
-   * @param articleId   文章主键
-   * @param instruction 改写说明
-   * @return 改写结果视图
-   */
-  @Transactional
-  public HotNewsRewriteResultView createRewriteCandidate(String articleId, String instruction) {
-    return rewrites.createRewriteCandidate(articleId, instruction);
   }
 
   /**

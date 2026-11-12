@@ -1,7 +1,7 @@
 # Profile：满血热点 — 打开雷达正文瀑布与资料池视频解析
 # 启动：--spring.profiles.active=hotnews-full
 # 前置：powershell -File .\scripts\setup-hotnews-clis.ps1
-#       （article-extract / video-transcript / page-screenshot+Chromium）；
+#       （article-extract / video-transcript / page-screenshot+Chromium+PyMuPDF）；
 #       docker compose --profile all；ffmpeg 在 PATH；设置里配置多模态 Vision。
 
 chengwenfang:

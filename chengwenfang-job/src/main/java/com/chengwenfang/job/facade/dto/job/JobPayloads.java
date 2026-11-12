@@ -53,7 +53,7 @@ public final class JobPayloads {
   }
 
   /**
-   * 供 themeId/skillSnapshot 提取与终态事件；{@link LinkedHashMap} 保序。
+   * 供 themeId/promptPackSnapshot 提取与终态事件；{@link LinkedHashMap} 保序。
    *
    * @param value 任意载荷
    * @return 可变保序 Map；null 返回空 Map

@@ -75,11 +75,11 @@ export function ExecutionTrajectoryView(props: Record<string, any>) {
     setSelectedAttemptNumber,
     setShowEvents,
     setShowNodeDetails,
-    setShowSkills,
+    setShowPromptPacks,
     showEvents,
     showNodeDetails,
-    showSkills,
-    skills,
+    showPromptPacks,
+    promptPacks,
     themePickerOpen,
     themes,
     versions,
@@ -92,7 +92,7 @@ export function ExecutionTrajectoryView(props: Record<string, any>) {
           <span className="section-kicker">Execution Trace</span>
           <h2>课程内容执行轨迹</h2>
           <p>
-            按主题查看 AI 生成线路、节点结果、Skill 快照和文章版本
+            按主题查看 AI 生成线路、节点结果、PromptPack 快照和文章版本
             {selectedTheme ? ` · 当前 ${selectedTheme.name}` : ""}。
           </p>
         </div>
@@ -372,15 +372,15 @@ export function ExecutionTrajectoryView(props: Record<string, any>) {
 
               <div className="execution-actions">
                 <button
-                  aria-expanded={showSkills}
-                  onClick={() => setShowSkills((value) => !value)}
+                  aria-expanded={showPromptPacks}
+                  onClick={() => setShowPromptPacks((value) => !value)}
                 >
-                  {showSkills ? (
+                  {showPromptPacks ? (
                     <ChevronDown size={14} />
                   ) : (
                     <ChevronRight size={14} />
                   )}
-                  本次使用的 Skill
+                  本次使用的 PromptPack
                 </button>
                 <button
                   aria-expanded={showNodeDetails}
@@ -464,23 +464,23 @@ export function ExecutionTrajectoryView(props: Record<string, any>) {
                 </section>
               )}
 
-              {showSkills && (
+              {showPromptPacks && (
                 <section className="execution-subsection">
-                  <h4>本次使用的 Skill</h4>
-                  <div className="execution-skill-list">
-                    {skills.length ? (
-                      skills.map((skill, index) => (
-                        <div key={skill.id || `${skill.name}-${index}`}>
-                          <b>{skill.name || "未命名 Skill"}</b>
+                  <h4>本次使用的 PromptPack</h4>
+                  <div className="execution-prompt-pack-list">
+                    {promptPacks.length ? (
+                      promptPacks.map((promptPack, index) => (
+                        <div key={promptPack.id || `${promptPack.name}-${index}`}>
+                          <b>{promptPack.name || "未命名 PromptPack"}</b>
                           <span>
-                            {skill.scope === "system"
+                            {promptPack.scope === "system"
                               ? "系统级"
-                              : `顺序 ${skill.priority ?? "-"}`}
+                              : `顺序 ${promptPack.priority ?? "-"}`}
                           </span>
                         </div>
                       ))
                     ) : (
-                      <p>旧任务没有保存 Skill 快照。</p>
+                      <p>旧任务没有保存 PromptPack 快照。</p>
                     )}
                   </div>
                 </section>

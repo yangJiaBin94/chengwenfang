@@ -6,8 +6,8 @@ import cn.hutool.core.util.StrUtil;
 import com.chengwenfang.mode.hotnews.domain.HotNewsMarkdownUtil;
 import com.chengwenfang.mode.hotnews.facade.constant.HotNewsArtifactTypes;
 import com.chengwenfang.mode.hotnews.facade.enums.HotNewsImageCountOption;
-import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
-import com.chengwenfang.skill.facade.enums.HotNewsWorkflowNodeType;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
+import com.chengwenfang.prompt.facade.enums.HotNewsWorkflowNodeType;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +35,7 @@ public class GenerateWechatNodeHandler implements HotNewsNodeHandler {
   @Override
   public void execute(
       HotNewsGraphState state,
-      List<SkillPromptBindingView> skillBindings,
+      List<PromptPackPromptBindingView> promptPackBindings,
       String nodeKey,
       String nodeName) {
     int inlineCount = HotNewsImageCountOption.resolveInlineCount(
@@ -71,8 +71,8 @@ public class GenerateWechatNodeHandler implements HotNewsNodeHandler {
     // 原稿提示词换成公众号占位，提示词仍留在 draft 供配图节点读取
     HotNewsMarkdownUtil.WechatSource source =
         HotNewsMarkdownUtil.prepareWechatSource(state.getDraft());
-    String skillPrompt = textCompletion.composeSkillPrompt(skillBindings);
-    String systemPrompt = HotNewsWritingPrompts.systemPrompt(skillPrompt, state.getThemeContext());
+    String promptPackText = textCompletion.composePromptPackText(promptPackBindings);
+    String systemPrompt = HotNewsWritingPrompts.systemPrompt(promptPackText, state.getThemeContext());
     String userPrompt = """
         将下列已审校原稿改写为公众号成品（Markdown）。不新增事实。字数档：%s（插图占位不计字数）
         硬性要求：
@@ -84,6 +84,8 @@ public class GenerateWechatNodeHandler implements HotNewsNodeHandler {
         6. 标题与开头突出冲突/变化/影响；段落适合移动端阅读。
         7. 一级标题后单独一行输出「> 摘要：…」（一句完整中文，≤120 字）：概括冲突/变化/影响与读者带走点；
            仅供微信草稿摘要字段，正文不要再复述同一段；禁止荐股、目标价与列表式摘要。
+        8. 原稿中的「来源：…」文字出处与佐证图（![](/api/files/…) 或 [[HOT_NEWS_EVIDENCE:…]]）须保留；
+           禁止输出裸 http(s) URL 与 [文字](url) 外链；不要删成「某短视频/某截图」而无出处。
         原稿（插图提示词已替换为占位）：
         %s
         """.formatted(
@@ -95,6 +97,8 @@ public class GenerateWechatNodeHandler implements HotNewsNodeHandler {
         wechat, Math.max(inlineCount, source.imageTokens().size()));
     wechat = HotNewsMarkdownUtil.stripWechatProductionResidue(
         HotNewsMarkdownUtil.sanitizeProseSymbols(wechat));
+    // 展开佐证占位并剥剩余外链，避免模型回写裸 URL
+    wechat = HotNewsMarkdownUtil.finalizeEvidenceMarkdown(wechat);
     // 规范化/补齐摘要行，供推送写入微信 digest
     wechat = HotNewsMarkdownUtil.ensureWechatDigestLine(wechat, resolveDigestFallback(state));
     state.setWechat(wechat);

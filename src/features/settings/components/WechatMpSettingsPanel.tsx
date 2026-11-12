@@ -35,14 +35,14 @@ import {
 } from "../model";
 import type { AiProviderConfig, AiSettings, AiSettingsKind } from "../model";
 import {
-  createSkill,
-  deleteSkill,
-  listSkills,
-  pageSkills,
-  updateSkill,
-  updateSkill as saveSkillApi,
+  createPromptPack,
+  deletePromptPack,
+  listPromptPacks,
+  pagePromptPacks,
+  updatePromptPack,
+  updatePromptPack as savePromptPackApi,
 } from "../api";
-import type { Skill } from "../api";
+import type { PromptPack } from "../api";
 import {
   LIST_PAGE_SIZE_OPTIONS,
   listPageNumbers,

@@ -15,10 +15,10 @@ import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsArticleSkeletonView;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsResearchItemView;
 import com.chengwenfang.mode.hotnews.facade.enums.HotNewsImageCountOption;
 import com.chengwenfang.mode.hotnews.facade.enums.HotNewsWordCountOption;
-import com.chengwenfang.skill.facade.SkillFacade;
-import com.chengwenfang.skill.facade.constant.HotNewsSkillNames;
-import com.chengwenfang.skill.facade.constant.HotNewsWorkflowKeys;
-import com.chengwenfang.skill.facade.dto.view.SkillView;
+import com.chengwenfang.prompt.facade.PromptPackFacade;
+import com.chengwenfang.prompt.facade.constant.HotNewsPromptPackNames;
+import com.chengwenfang.prompt.facade.constant.HotNewsWorkflowKeys;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackView;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -36,12 +36,12 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ArticleSkeletonBuilder {
   private final AiTextFacade ai;
-  /** Skill 门面：读取骨架配图规范。 */
-  private final SkillFacade skills;
+  /** 提示词包门面：读取骨架配图规范。 */
+  private final PromptPackFacade promptPacks;
 
   /**
    * 根据选题与参考资料拟定文章骨架；AI 失败时回退启发式骨架。
-   * <p>配图风格与生图要求来自 Skill「热点文章骨架配图规范」。
+   * <p>配图风格与生图要求来自 提示词包「热点文章骨架配图规范」。
    *
    * @param topicId       选题 ID
    * @param topicTitle    选题标题
@@ -70,8 +70,8 @@ public class ArticleSkeletonBuilder {
       row.put("score", item.getScore() == null ? 0 : item.getScore());
       payloadRefs.add(row);
     }
-    String illustrationSkill = resolveSkeletonIllustrationSkill();
-    String systemPrompt = ArticleSkeletonPrompts.SKELETON_SYSTEM.formatted(illustrationSkill);
+    String illustrationPromptPack = resolveSkeletonIllustrationPromptPack();
+    String systemPrompt = ArticleSkeletonPrompts.SKELETON_SYSTEM.formatted(illustrationPromptPack);
     if (StrUtil.isNotBlank(themeContext)) {
       systemPrompt = systemPrompt + "\n\n主题上下文（须遵守读者与边界）：\n" + themeContext.trim();
     }
@@ -105,32 +105,32 @@ public class ArticleSkeletonBuilder {
   }
 
   /**
-   * 读取骨架配图 Skill 的 systemInstructions；缺失时回退默认硬性要求。
+   * 读取骨架配图 提示词包 的 systemInstructions；缺失时回退默认硬性要求。
    *
-   * @return Skill 指令文本
+   * @return 提示词包 指令文本
    */
-  private String resolveSkeletonIllustrationSkill() {
+  private String resolveSkeletonIllustrationPromptPack() {
     try {
-      List<SkillView> all = skills.listSkills();
+      List<PromptPackView> all = promptPacks.listPromptPacks();
       if (all != null) {
-        for (SkillView skill : all) {
-          if (skill == null || !HotNewsSkillNames.SKELETON_ILLUSTRATION.equals(skill.getName())) {
+        for (PromptPackView promptPack : all) {
+          if (promptPack == null || !HotNewsPromptPackNames.SKELETON_ILLUSTRATION.equals(promptPack.getName())) {
             continue;
           }
-          if (StrUtil.isNotBlank(skill.getScene())
-              && !HotNewsWorkflowKeys.SCENE.equals(skill.getScene())) {
+          if (StrUtil.isNotBlank(promptPack.getScene())
+              && !HotNewsWorkflowKeys.SCENE.equals(promptPack.getScene())) {
             continue;
           }
-          if (Boolean.FALSE.equals(skill.getEnabled())) {
+          if (Boolean.FALSE.equals(promptPack.getEnabled())) {
             continue;
           }
-          if (StrUtil.isNotBlank(skill.getSystemInstructions())) {
-            return skill.getSystemInstructions().strip();
+          if (StrUtil.isNotBlank(promptPack.getSystemInstructions())) {
+            return promptPack.getSystemInstructions().strip();
           }
         }
       }
     } catch (Exception ex) {
-      log.warn("读取骨架配图 Skill 失败，使用默认要求 err={}", ex.getMessage());
+      log.warn("读取骨架配图 提示词包 失败，使用默认要求 err={}", ex.getMessage());
     }
     return HotNewsMarkdownUtil.defaultImagePromptRequirements();
   }

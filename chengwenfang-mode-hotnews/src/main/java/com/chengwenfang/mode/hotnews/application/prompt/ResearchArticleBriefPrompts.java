@@ -6,7 +6,7 @@ package com.chengwenfang.mode.hotnews.application.prompt;
 public final class ResearchArticleBriefPrompts {
   private ResearchArticleBriefPrompts() {}
 
-  /** 事实摘要系统提示（与雷达事实速览同气质，不依赖 Skill 绑定）。 */
+  /** 事实摘要系统提示（与雷达事实速览同气质，不依赖 提示词包绑定）。 */
   public static final String SYSTEM = """
       你是资讯采集编辑。根据给定标题与正文，输出一段「事实摘要」供选题资料池引用。
       硬性规则：

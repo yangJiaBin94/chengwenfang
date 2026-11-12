@@ -11,10 +11,10 @@ import com.chengwenfang.ai.facade.dto.view.TextCompleteResult;
 import com.chengwenfang.content.facade.dto.request.HotNewsCoreIntentSuggestRequest;
 import com.chengwenfang.content.facade.dto.view.HotNewsCoreIntentSuggestView;
 import com.chengwenfang.content.facade.dto.view.ThemeCoreIntentView;
-import com.chengwenfang.skill.facade.SkillFacade;
-import com.chengwenfang.skill.facade.constant.HotNewsSkillNames;
-import com.chengwenfang.skill.facade.constant.HotNewsWorkflowKeys;
-import com.chengwenfang.skill.facade.dto.view.SkillView;
+import com.chengwenfang.prompt.facade.PromptPackFacade;
+import com.chengwenfang.prompt.facade.constant.HotNewsPromptPackNames;
+import com.chengwenfang.prompt.facade.constant.HotNewsWorkflowKeys;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackView;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +28,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class HotNewsThemeCoreIntentAssistService {
-  /** Skill 缺失时的兜底系统提示。 */
+  /** 提示词包 缺失时的兜底系统提示。 */
   private static final String FALLBACK_SYSTEM = """
       你是热点选题编辑。根据主题名称与说明，提炼用户创建该主题后希望雷达带来的「主要意图」。
       只返回合法 JSON：
@@ -37,7 +37,7 @@ public class HotNewsThemeCoreIntentAssistService {
       """;
 
   private final AiTextFacade ai;
-  private final SkillFacade skills;
+  private final PromptPackFacade promptPacks;
 
   /**
    * 推导主要意图（confirmed=false，须用户确认）。
@@ -89,26 +89,26 @@ public class HotNewsThemeCoreIntentAssistService {
 
   private String resolveSystemPrompt() {
     try {
-      List<SkillView> all = skills.listSkills();
+      List<PromptPackView> all = promptPacks.listPromptPacks();
       if (all != null) {
-        for (SkillView skill : all) {
-          if (skill == null || !HotNewsSkillNames.THEME_CORE_INTENT.equals(skill.getName())) {
+        for (PromptPackView promptPack : all) {
+          if (promptPack == null || !HotNewsPromptPackNames.THEME_CORE_INTENT.equals(promptPack.getName())) {
             continue;
           }
-          if (StrUtil.isNotBlank(skill.getScene())
-              && !HotNewsWorkflowKeys.SCENE.equals(skill.getScene())) {
+          if (StrUtil.isNotBlank(promptPack.getScene())
+              && !HotNewsWorkflowKeys.SCENE.equals(promptPack.getScene())) {
             continue;
           }
-          if (Boolean.FALSE.equals(skill.getEnabled())) {
+          if (Boolean.FALSE.equals(promptPack.getEnabled())) {
             continue;
           }
-          if (StrUtil.isNotBlank(skill.getSystemInstructions())) {
-            return skill.getSystemInstructions().strip();
+          if (StrUtil.isNotBlank(promptPack.getSystemInstructions())) {
+            return promptPack.getSystemInstructions().strip();
           }
         }
       }
     } catch (Exception exception) {
-      log.warn("读取主题意图 Skill 失败 err={}", exception.getMessage());
+      log.warn("读取主题意图 提示词包 失败 err={}", exception.getMessage());
     }
     return FALLBACK_SYSTEM;
   }

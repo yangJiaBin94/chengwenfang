@@ -8,7 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * AI 主题种子素材 Skill 的固定 JSON 结构。
+ * AI 主题种子素材 提示词包 的固定 JSON 结构。
  */
 @Data
 @Builder

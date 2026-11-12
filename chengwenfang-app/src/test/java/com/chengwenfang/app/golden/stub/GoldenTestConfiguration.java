@@ -10,8 +10,8 @@ import com.chengwenfang.crawler.facade.dto.request.FetchRequest;
 import com.chengwenfang.crawler.facade.dto.view.FetchResult;
 import com.chengwenfang.sourcing.application.VideoTranscriptCliRunner;
 import com.chengwenfang.infra.config.ChengwenfangProperties;
-import com.chengwenfang.skill.facade.SkillFacade;
-import com.chengwenfang.skill.facade.WorkflowFacade;
+import com.chengwenfang.prompt.facade.PromptPackFacade;
+import com.chengwenfang.prompt.facade.WorkflowFacade;
 import java.util.List;
 import org.redisson.api.RedissonClient;
 import org.springframework.boot.ApplicationRunner;
@@ -21,12 +21,12 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
- * 黄金 IT 替身 Bean：覆盖 CLI / 抽取实现，并导入种子 Skill。
+ * 黄金 IT 替身 Bean：覆盖 CLI / 抽取实现，并导入种子 提示词包。
  */
 @TestConfiguration
 public class GoldenTestConfiguration {
   /**
-   * @param skills       Skill 门面
+   * @param promptPacks       提示词包门面
    * @param workflows    工作流门面
    * @param jdbc         JDBC（排版主题）
    * @param objectMapper JSON
@@ -34,8 +34,8 @@ public class GoldenTestConfiguration {
    */
   @Bean
   public ApplicationRunner goldenCatalogWarmup(
-      SkillFacade skills, WorkflowFacade workflows, JdbcTemplate jdbc, ObjectMapper objectMapper) {
-    return new GoldenCatalogWarmup(skills, workflows, jdbc, objectMapper);
+      PromptPackFacade promptPacks, WorkflowFacade workflows, JdbcTemplate jdbc, ObjectMapper objectMapper) {
+    return new GoldenCatalogWarmup(promptPacks, workflows, jdbc, objectMapper);
   }
   /**
    * @return Trafilatura 替身

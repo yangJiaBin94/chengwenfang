@@ -86,8 +86,8 @@ public final class CourseGoldenSupport {
   }
 
   /**
-   * 确保 {@code course-content-generation} 已发布为「目录全图 + 空 Skill 绑定」。
-   * <p>必须每次强制发布：host 库可能被其它 IT（如 FormalCourseGenerationIT）覆盖为带 Skill / 缺
+   * 确保 {@code course-content-generation} 已发布为「目录全图 + 空 提示词包绑定」。
+   * <p>必须每次强制发布：host 库可能被其它 IT（如 FormalCourseGenerationIT）覆盖为带 提示词包 / 缺
    * {@code snapshot_context} 的图，导致 G02 与基线偏离。
    *
    * @param api 驱动
@@ -113,8 +113,8 @@ public final class CourseGoldenSupport {
       workflowId = String.valueOf(created.get("id"));
     }
     Map<String, Object> draft = api.getJson("/api/workflows/" + workflowId + "/draft");
-    // 用内置目录全图（含 snapshot_context），但清空 skillBindings，对齐黄金基线无 Skill 注入
-    Map<String, Object> definition = catalogCourseDefinitionWithoutSkills();
+    // 用内置目录全图（含 snapshot_context），但清空 promptPackBindings，对齐黄金基线无 提示词包 注入
+    Map<String, Object> definition = catalogCourseDefinitionWithoutPromptPacks();
     api.putJson(
         "/api/workflows/" + workflowId + "/draft",
         Map.of("revision", draft.get("revision"), "definition", definition));
@@ -124,12 +124,12 @@ public final class CourseGoldenSupport {
   }
 
   /**
-   * 从 {@code builtin-catalog.json} 读取课表生成图并清空全部节点 Skill 绑定。
+   * 从 {@code builtin-catalog.json} 读取课表生成图并清空全部节点 提示词包绑定。
    *
    * @return 定义 Map；找不到目录时回退精简图
    */
   @SuppressWarnings("unchecked")
-  private static Map<String, Object> catalogCourseDefinitionWithoutSkills() {
+  private static Map<String, Object> catalogCourseDefinitionWithoutPromptPacks() {
     Path catalog = resolveBuiltinCatalog();
     if (catalog == null) {
       return minimalCourseDefinition();
@@ -156,7 +156,7 @@ public final class CourseGoldenSupport {
           for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
             JSONObject node = nodes.getJSONObject(nodeIndex);
             if (node != null) {
-              node.set("skillBindings", new JSONArray());
+              node.set("promptPackBindings", new JSONArray());
             }
           }
         }
@@ -350,7 +350,7 @@ public final class CourseGoldenSupport {
     node.put("enabled", true);
     node.put("sequenceNo", sequenceNo);
     node.put("config", Map.of());
-    node.put("skillBindings", List.of());
+    node.put("promptPackBindings", List.of());
     return node;
   }
 

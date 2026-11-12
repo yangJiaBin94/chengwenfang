@@ -9,7 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 内置 Skill / 工作流系统就绪体检结果。
+ * 内置提示词包 / 工作流系统就绪体检结果。
  */
 @Data
 @Builder
@@ -30,13 +30,13 @@ public class BuiltinReadyView {
   @Schema(description = "Bootstrap 脚本提示")
   private String bootstrapHint;
 
-  /** 库内 Skill 条数。 */
-  @Schema(description = "库内 Skill 数量")
-  private int skillCount;
+  /** 库内 提示词包 条数。 */
+  @Schema(description = "库内 提示词包 数量")
+  private int promptPackCount;
 
-  /** 期望的内置 Skill 数量。 */
-  @Schema(description = "期望内置 Skill 数量")
-  private int expectedSkillCount;
+  /** 期望的内置提示词包 数量。 */
+  @Schema(description = "期望内置提示词包 数量")
+  private int expectedPromptPackCount;
 
   /** 三条主工作流是否均无工作流域问题（按 BuiltinIssueKind，非文案匹配）。 */
   @Schema(description = "内置工作流是否就绪")

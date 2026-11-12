@@ -26,7 +26,7 @@ export type AppPage =
   | "notifications";
 
 /** 设置分区（含旧 key publishing → layoutThemes 归一化后的结果）。 */
-export type SettingsSection = "ai" | "skills" | "layoutThemes" | "wechatMp";
+export type SettingsSection = "ai" | "promptPacks" | "layoutThemes" | "wechatMp";
 
 /** 热点主题工作区子视图。 */
 export type HotNewsWorkspaceView = "radar" | "selected" | "sources";
@@ -277,7 +277,7 @@ export function normalizeSettingsSection(
   }
   if (
     sectionRaw === "ai" ||
-    sectionRaw === "skills" ||
+    sectionRaw === "promptPacks" ||
     sectionRaw === "layoutThemes" ||
     sectionRaw === "wechatMp"
   ) {

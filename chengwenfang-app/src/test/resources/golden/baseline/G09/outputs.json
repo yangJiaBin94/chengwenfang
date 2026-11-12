@@ -32,7 +32,7 @@
             "status": "succeeded"
         },
         {
-            "nodeKey": "radar_load_skills",
+            "nodeKey": "radar_load_prompt_packs",
             "sequenceNo": 2,
             "status": "succeeded"
         },

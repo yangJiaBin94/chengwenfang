@@ -32,8 +32,8 @@
 - [ ] `docker compose --profile all ps` 中 mysql、redis、searxng、lightpanda 为 running（或 healthy）  
 - [ ] 存在 `scripts/article-extract/.venv/Scripts/python.exe`（Windows）且能 `import trafilatura`  
 - [ ] 存在 `scripts/video-transcript/.venv`，且本机 `ffmpeg -version` 可用；venv 内可 `import whisper`  
-- [ ] 存在 `scripts/page-screenshot/.venv`，且已 `playwright install chromium`；试跑 `-m page_screenshot` 能出 PNG  
-- [ ] 向用户说明：须在前端「设置」配置文本 AI + 多模态 Vision 后，生成/解析/截图摘要才真正可用  
+- [ ] 存在 `scripts/page-screenshot/.venv`，且已 `playwright install chromium` + `import fitz`（PyMuPDF）；试跑 `-m page_screenshot` 能出 PNG  
+- [ ] 向用户说明：须在前端「设置」配置文本 AI + 多模态 Vision 后，生成/解析/截图摘要才真正可用；成文佐证截屏共用 page-screenshot CLI  
 
 ---
 
@@ -146,9 +146,14 @@ cd $ROOT
 
 说明：`openai-whisper` 体积大；首次真正跑 ASR 还会下载 `base` 模型。可设 `HTTP_PROXY` / `HTTPS_PROXY`（若用户网络需要）。
 
-### C3 网页截图 Vision 兜底
+### C3 网页截图（Vision 兜底 + 成文佐证）
 
-资料补充在正文抽取失败、摘要像导航、或模型返回「信息不足」时，Playwright 分段截图 + 多模态 AI 写事实摘要。开发默认 `chengwenfang.page-screenshot.enabled=true`。
+同一 CLI 服务两处：
+
+1. **资料补充 Vision 兜底**：正文抽取失败、摘要像导航、或模型返回「信息不足」时，Playwright 分段截图 + 多模态 AI 写事实摘要。  
+2. **成文佐证截屏**：热点成文节点 `hot_news_attach_evidence` 按稿件语义决定是否截来源页（可 `--find-text` 定位）；PDF 用 **PyMuPDF** 渲染首页，不走 Chromium。
+
+开发默认 `chengwenfang.page-screenshot.enabled=true`。`requirements.txt` 含 `playwright` 与 `pymupdf`；一键脚本会校验两者均可 import。
 
 ```powershell
 cd $ROOT\scripts\page-screenshot
@@ -156,7 +161,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -U pip
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe -m playwright install chromium
-.\.venv\Scripts\python.exe -c "from playwright.sync_api import sync_playwright; print('page-screenshot ok')"
+.\.venv\Scripts\python.exe -c "from playwright.sync_api import sync_playwright; import fitz; print('page-screenshot ok')"
 .\.venv\Scripts\python.exe -m page_screenshot --url "https://example.com" --out-dir .tmp-shots --max-shots 1
 cd $ROOT
 ```
@@ -230,7 +235,7 @@ curl.exe -s -o NUL -w "%{http_code}" http://127.0.0.1:5173
 
 库表：后端首次启动时 Flyway 自动迁移，无需手工导 SQL。
 
-内置 Skill 与三条工作流不在启动时从代码写入。阶段 E 验收通过后执行一次：
+内置提示词包 与三条工作流不在启动时从代码写入。阶段 E 验收通过后执行一次：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap\Initialize-ChengwenfangSeed.ps1
@@ -265,9 +270,9 @@ AI **不能**代替用户填写真实密钥。完成后请用户：
 
 1. 已安装 / 已存在的本机工具版本号  
 2. Compose 四服务状态  
-3. 三个 Python CLI（article-extract / video-transcript / page-screenshot）是否就绪、ffmpeg 是否在 PATH  
+3. 三个 Python CLI（article-extract / video-transcript / page-screenshot含 Chromium+PyMuPDF）是否就绪、ffmpeg 是否在 PATH  
 4. 后端 health、前端 URL  
-5. 是否已执行 `scripts/bootstrap/Initialize-ChengwenfangSeed.ps1`（未执行则生成用的 Skill/工作流不在库里）  
+5. 是否已执行 `scripts/bootstrap/Initialize-ChengwenfangSeed.ps1`（未执行则生成用的 提示词包/工作流不在库里）  
 6. 仍待用户完成的设置项（API Key、SearXNG 来源）  
 7. 常用停止命令：`.\scripts\stop-java.ps1`；`docker compose --profile all stop`  
 
@@ -278,11 +283,11 @@ AI **不能**代替用户填写真实密钥。完成后请用户：
 | 现象 | 排查 |
 |------|------|
 | Flyway / 连不上库 | `docker compose ps`；是否跳过了 `--wait`；端口 3306 是否被占用 |
-| 日志「基础配置缺失」 | 执行 `.\scripts\bootstrap\Initialize-ChengwenfangSeed.ps1`；不要指望启动自动灌 Skill |
+| 日志「基础配置缺失」 | 执行 `.\scripts\bootstrap\Initialize-ChengwenfangSeed.ps1`；不要指望启动自动灌 提示词包 |
 | `npm run dev` 找不到 powershell | 用阶段 E1，或安装 PowerShell 7 |
 | 正文抽取失败 | 查 `scripts/article-extract/.venv`；Lightpanda：`docker ps` 是否有 `chengwenfang-lightpanda` |
 | 视频解析失败 | `ffmpeg -version`；video-transcript venv；设置里是否配置 Vision |
-| 资料补充截图摘要失败 | `scripts/page-screenshot/.venv` + `playwright install chromium`；`page-screenshot.enabled`；设置多模态 Vision |
+| 资料补充截图摘要 / 成文佐证截屏失败 | `scripts/page-screenshot/.venv` + `playwright install chromium` + `import fitz`（PyMuPDF）；`page-screenshot.enabled`；Vision 摘要还需设置多模态模型 |
 | SearXNG 超时 / 空结果 | 见 `deploy/searxng/settings.yml`；勿只依赖 SearXNG，可加 RSS 等 |
 | 意图驱动 / 非结构化采集搜不到 | 主题须确认「主要意图」并选非结构化；联网搜索走 SearXNG/Tavily（产品不另做百度/谷歌爬虫）。本地实例已默认开 baidu/bing；google 网页引擎因国内超时默认关闭，见 `deploy/searxng/settings.yml`。改引擎后 `docker compose --profile searxng up -d --force-recreate searxng` |
 | 中文日志乱码 | 重新 `. .\scripts\use-utf8.ps1` 后再起 Java |

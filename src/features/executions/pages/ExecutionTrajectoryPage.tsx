@@ -73,7 +73,7 @@ export function ExecutionTrajectoryPage({
   onRetry: (jobId: string) => void;
   onBackToCourse: (courseId: string) => void;
 }) {
-  const [showSkills, setShowSkills] = useState(true);
+  const [showPromptPacks, setShowPromptPacks] = useState(true);
   const [showNodeDetails, setShowNodeDetails] = useState(false);
   const [showEvents, setShowEvents] = useState(false);
   const [selectedAttemptNumber, setSelectedAttemptNumber] = useState<
@@ -178,10 +178,10 @@ export function ExecutionTrajectoryPage({
   const failedStepTitle =
     uniqueGenerationPipeline.find((_, index) => index === activeIndex)?.[1] ??
     "未知步骤";
-  const queuedSkills = attemptEvents.find((event) =>
-    Array.isArray(event.payload?.skills),
-  )?.payload?.skills;
-  const outputSkills = selected?.output?.skills;
+  const queuedPromptPacks = attemptEvents.find((event) =>
+    Array.isArray(event.payload?.promptPacks),
+  )?.payload?.promptPacks;
+  const outputPromptPacks = selected?.output?.promptPacks;
   const generationReport = selected?.output?.generationReport as {
     steps?: string[];
     files?: Record<
@@ -213,11 +213,11 @@ export function ExecutionTrajectoryPage({
     draft?: { generationPlan?: string; contentManifest?: string | null };
     wechat?: { generationPlan?: string; contentManifest?: string | null };
   } | null;
-  const skills = (
-    Array.isArray(queuedSkills)
-      ? queuedSkills
-      : Array.isArray(outputSkills)
-        ? outputSkills
+  const promptPacks = (
+    Array.isArray(queuedPromptPacks)
+      ? queuedPromptPacks
+      : Array.isArray(outputPromptPacks)
+        ? outputPromptPacks
         : []
   ) as Array<{
     id?: string;
@@ -273,11 +273,11 @@ export function ExecutionTrajectoryPage({
       setSelectedAttemptNumber={setSelectedAttemptNumber}
       setShowEvents={setShowEvents}
       setShowNodeDetails={setShowNodeDetails}
-      setShowSkills={setShowSkills}
+      setShowPromptPacks={setShowPromptPacks}
       showEvents={showEvents}
       showNodeDetails={showNodeDetails}
-      showSkills={showSkills}
-      skills={skills}
+      showPromptPacks={showPromptPacks}
+      promptPacks={promptPacks}
       themePickerOpen={themePickerOpen}
       themes={themes}
       versions={versions}

@@ -7,8 +7,8 @@ import static org.mockito.Mockito.mock;
 import com.chengwenfang.ai.facade.AiTextFacade;
 import com.chengwenfang.mode.hotnews.application.generation.hotnews.HotNewsGraphStateKeys;
 import com.chengwenfang.mode.hotnews.facade.HotNewsFacade;
-import com.chengwenfang.skill.facade.SkillFacade;
-import com.chengwenfang.skill.facade.constant.CustomAiNodeActions;
+import com.chengwenfang.prompt.facade.PromptPackFacade;
+import com.chengwenfang.prompt.facade.constant.CustomAiNodeActions;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 class CustomAiNodeHandlerApplyTest {
   private final CustomAiNodeHandler handler = new CustomAiNodeHandler(
       mock(AiTextFacade.class),
-      mock(SkillFacade.class),
+      mock(PromptPackFacade.class),
       new CustomAiActionPlanParser(),
       mock(HotNewsFacade.class));
 
@@ -52,17 +52,17 @@ class CustomAiNodeHandlerApplyTest {
   }
 
   @Test
-  void read_skill_must_be_bound() {
+  void read_prompt_pack_must_be_bound() {
     CustomAiNodeHandler.ContextBundle context = new CustomAiNodeHandler.ContextBundle(
         false, "", false, "", false, "", true, "d", false, "");
     assertThatThrownBy(() -> handler.applyActions(
             List.of(CustomAiParsedAction.builder()
-                .op(CustomAiNodeActions.READ_SKILL)
-                .skillId("missing")
+                .op(CustomAiNodeActions.READ_PROMPT_PACK)
+                .promptPackId("missing")
                 .build()),
             Set.of("bound-1"),
             context))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("read_skill");
+        .hasMessageContaining("read_prompt_pack");
   }
 }

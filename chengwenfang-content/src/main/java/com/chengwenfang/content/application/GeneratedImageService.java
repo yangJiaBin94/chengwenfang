@@ -4,6 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.common.IdsUtil;
+import com.chengwenfang.content.domain.MarkdownImageRefs;
 import com.chengwenfang.content.domain.entity.MediaAssetEntity;
 import com.chengwenfang.content.domain.entity.MediaGenerationEntity;
 import com.chengwenfang.content.domain.entity.WorkOutputEntity;
@@ -35,6 +36,7 @@ public class GeneratedImageService {
   private final MediaAssetMapper mediaAssetMapper;
   private final MediaGenerationMapper mediaGenerationMapper;
   private final WorkOutputMapper workOutputMapper;
+  private final WorkContentStoreImpl workContents;
   private final FileFacade files;
   private final ContentViewMapper views;
   private final ThemeVisibilityGuard visibility;
@@ -43,12 +45,14 @@ public class GeneratedImageService {
       MediaAssetMapper mediaAssetMapper,
       MediaGenerationMapper mediaGenerationMapper,
       WorkOutputMapper workOutputMapper,
+      WorkContentStoreImpl workContents,
       FileFacade files,
       ContentViewMapper views,
       ThemeVisibilityGuard visibility) {
     this.mediaAssetMapper = mediaAssetMapper;
     this.mediaGenerationMapper = mediaGenerationMapper;
     this.workOutputMapper = workOutputMapper;
+    this.workContents = workContents;
     this.files = files;
     this.views = views;
     this.visibility = visibility;
@@ -59,9 +63,10 @@ public class GeneratedImageService {
    *
    * @param articleId  文章 id
    * @param documentId 统一文档/产出 id；空则服务端按 articleId 解析
-   * @return 按序号升序、创建时间降序的配图列表
+   * @param versionNo  指定版本号时按该版正文引用过滤；空则返回产出下全部生成图
+   * @return 配图列表；有 versionNo 时顺序与正文引用一致
    */
-  public List<GeneratedImageView> listImages(String articleId, String documentId) {
+  public List<GeneratedImageView> listImages(String articleId, String documentId, Integer versionNo) {
     visibility.assertThemeActiveForArticleId(articleId);
     String outputId = StrUtil.blankToDefault(documentId, null);
     WorkOutputEntity output = StrUtil.isBlank(outputId) ? null : workOutputMapper.selectById(outputId);
@@ -70,14 +75,30 @@ public class GeneratedImageService {
       output = workOutputMapper.selectById(articleId);
       if (output != null) {
         outputId = articleId;
-      } else {
+      } else if (versionNo == null) {
         return listGeneratedImagesByWork(articleId);
+      } else {
+        return List.of();
       }
     }
-    if (output == null) {
+    if (output == null || StrUtil.isBlank(outputId)) {
       return List.of();
     }
+    if (versionNo != null && versionNo > 0) {
+      return listGeneratedImagesForVersion(outputId, versionNo);
+    }
     return listGeneratedImages(outputId);
+  }
+
+  /**
+   * 列出文章已生成配图（不按版本过滤）。
+   *
+   * @param articleId  文章 id
+   * @param documentId 统一文档/产出 id；空则服务端按 articleId 解析
+   * @return 按序号升序、创建时间降序的配图列表
+   */
+  public List<GeneratedImageView> listImages(String articleId, String documentId) {
+    return listImages(articleId, documentId, null);
   }
 
   /**
@@ -87,7 +108,34 @@ public class GeneratedImageService {
    * @return 配图列表
    */
   public List<GeneratedImageView> listImages(String articleId) {
-    return listImages(articleId, null);
+    return listImages(articleId, null, null);
+  }
+
+  /**
+   * 按产出指定版本正文中的 {@code /api/images/{id}} 引用列出配图。
+   *
+   * @param outputId  产出 id
+   * @param versionNo 版本号
+   * @return 按正文出现顺序的配图；缺失资产跳过
+   */
+  private List<GeneratedImageView> listGeneratedImagesForVersion(String outputId, int versionNo) {
+    List<String> imageIds = MarkdownImageRefs.imageIdsInOrder(workContents.readVersion(outputId, versionNo));
+    if (imageIds.isEmpty()) {
+      return List.of();
+    }
+    // 按 id 加载，不按 output_id 收窄：原稿也可能引用公众号轨上的图
+    Map<String, MediaAssetEntity> assetsById = mediaAssetMapper.selectByIds(imageIds).stream()
+        .filter(Objects::nonNull)
+        .filter(asset -> MediaOrigins.GENERATED.equals(asset.getOrigin()))
+        .collect(Collectors.toMap(MediaAssetEntity::getId, Function.identity(), (a, b) -> a, HashMap::new));
+    List<MediaAssetEntity> ordered = new ArrayList<>();
+    for (String imageId : imageIds) {
+      MediaAssetEntity asset = assetsById.get(imageId);
+      if (asset != null) {
+        ordered.add(asset);
+      }
+    }
+    return toGeneratedViews(ordered);
   }
 
   /**

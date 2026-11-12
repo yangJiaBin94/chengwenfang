@@ -7,8 +7,8 @@ import com.chengwenfang.content.facade.ContentFacade;
 import com.chengwenfang.content.facade.dto.request.PersistGeneratedImageRequest;
 import com.chengwenfang.content.facade.dto.view.GeneratedImageView;
 import com.chengwenfang.infra.support.StorageService;
-import com.chengwenfang.skill.facade.SkillFacade;
-import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
+import com.chengwenfang.prompt.facade.PromptPackFacade;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -65,8 +65,8 @@ public class CourseImageGenerator {
   /** 截图占位图 URL。 */
   private static final String SCREENSHOT_PLACEHOLDER_URL = "/screenshot-placeholder.svg";
 
-  /** 技能文案里强制统一 Keynote 风格的句子，内文图生成时剔除。 */
-  private static final Pattern SKILL_UNIFORM_STYLE = Pattern.compile(
+  /** 提示词包文案里强制统一 Keynote 风格的句子，内文图生成时剔除。 */
+  private static final Pattern PROMPT_PACK_UNIFORM_STYLE = Pattern.compile(
       "(?m)^.*(?:深海蓝|Apple Keynote|SaaS 仪表盘|科技网格|环形轨道|霓虹边缘光).*$\\n?");
 
   /** 图像 AI。 */
@@ -75,24 +75,24 @@ public class CourseImageGenerator {
   private final ContentFacade content;
   /** 本地存储。 */
   private final StorageService storage;
-  /** Skill 门面。 */
-  private final SkillFacade skills;
+  /** 提示词包门面。 */
+  private final PromptPackFacade promptPacks;
 
   /**
    * @param images  图像 AI
    * @param content 内容门面
    * @param storage 本地存储
-   * @param skills  Skill 门面
+   * @param promptPacks  提示词包门面
    */
   public CourseImageGenerator(
       AiImageFacade images,
       ContentFacade content,
       StorageService storage,
-      SkillFacade skills) {
+      PromptPackFacade promptPacks) {
     this.images = images;
     this.content = content;
     this.storage = storage;
-    this.skills = skills;
+    this.promptPacks = promptPacks;
   }
 
   /**
@@ -116,9 +116,9 @@ public class CourseImageGenerator {
     }
     Map<String, Object> node = findNode(
         snapshot, "cover".equals(item.kind()) ? "image_cover" : "image_inline");
-    String skillPrompt = skills.composePromptFromBindings(skillBindings(node));
+    String promptPackText = promptPacks.composePromptFromBindings(promptPackBindings(node));
     String adjacent = CourseImagePromptExtractor.imageArticleContext(workingDraft, item.prompt());
-    String grounded = imageGenerationPrompt(ctx, item, skillPrompt, adjacent);
+    String grounded = imageGenerationPrompt(ctx, item, promptPackText, adjacent);
     var aiResult = images.generate(new ImageGenerateRequest(grounded, item.size(), false));
     String b64 = aiResult.getB64Json();
     if (b64 == null || b64.isBlank()) {
@@ -192,14 +192,14 @@ public class CourseImageGenerator {
    *
    * @param ctx         上下文
    * @param item        计划项
-   * @param skillPrompt 技能提示
+   * @param promptPackText 提示词包提示
    * @param adjacent    相邻正文
    * @return 提示词
    */
   private String imageGenerationPrompt(
       CourseGenerationContext ctx,
       CourseImagePipeline.ImagePlanItem item,
-      String skillPrompt,
+      String promptPackText,
       String adjacent) {
     boolean isCover = "cover".equals(item.kind());
     String marker = (item.marker() == null ? "" : item.marker()).replaceAll("[*#]", "").strip();
@@ -217,9 +217,9 @@ public class CourseImageGenerator {
     StringBuilder sb = new StringBuilder();
     // 差异化指令放最前：图像模型对开头约束更敏感
     sb.append(diversityBrief(item, isCover)).append("\n\n");
-    String trimmedSkill = trimSkillPrompt(skillPrompt, isCover);
-    if (!trimmedSkill.isBlank()) {
-      sb.append(trimmedSkill).append("\n\n");
+    String trimmedPromptPack = trimPromptPackText(promptPackText, isCover);
+    if (!trimmedPromptPack.isBlank()) {
+      sb.append(trimmedPromptPack).append("\n\n");
     }
     if (isCover) {
       sb.append("课程主题（封面可作标题）：").append(ctx.title()).append('\n');
@@ -267,23 +267,23 @@ public class CourseImageGenerator {
   }
 
   /**
-   * 内文图去掉技能里「全课统一 Keynote」类句子，避免覆盖差异化指令。
+   * 内文图去掉提示词包里「全课统一 Keynote」类句子，避免覆盖差异化指令。
    *
-   * @param skillPrompt 技能提示
+   * @param promptPackText 提示词包提示
    * @param isCover     是否封面
    * @return 裁剪后提示
    */
-  static String trimSkillPrompt(String skillPrompt, boolean isCover) {
-    if (skillPrompt == null || skillPrompt.isBlank()) {
+  static String trimPromptPackText(String promptPackText, boolean isCover) {
+    if (promptPackText == null || promptPackText.isBlank()) {
       return "";
     }
     if (isCover) {
-      return skillPrompt.strip();
+      return promptPackText.strip();
     }
-    String cleaned = SKILL_UNIFORM_STYLE.matcher(skillPrompt).replaceAll("");
+    String cleaned = PROMPT_PACK_UNIFORM_STYLE.matcher(promptPackText).replaceAll("");
     cleaned = cleaned.replaceAll("(?m)^\\s*\\d+\\.\\s*$\\n?", "");
     cleaned = cleaned.replaceAll("\n{3,}", "\n\n").strip();
-    // 技能过长会淹没差异化指令，内文只保留前 900 字规划要点
+    // 提示词包过长会淹没差异化指令，内文只保留前 900 字规划要点
     if (cleaned.length() > 900) {
       cleaned = cleaned.substring(0, 900).strip() + "…";
     }
@@ -342,23 +342,23 @@ public class CourseImageGenerator {
   }
 
   /**
-   * 解析节点 skillBindings。
+   * 解析节点 promptPackBindings。
    *
    * @param node 节点
    * @return 绑定列表
    */
   @SuppressWarnings("unchecked")
-  private static List<SkillPromptBindingView> skillBindings(Map<String, Object> node) {
-    if (node == null || !(node.get("skillBindings") instanceof List<?> list)) {
+  private static List<PromptPackPromptBindingView> promptPackBindings(Map<String, Object> node) {
+    if (node == null || !(node.get("promptPackBindings") instanceof List<?> list)) {
       return List.of();
     }
-    List<SkillPromptBindingView> out = new ArrayList<>();
+    List<PromptPackPromptBindingView> out = new ArrayList<>();
     for (Object item : list) {
       if (item instanceof Map<?, ?> map) {
         Map<String, Object> m = (Map<String, Object>) map;
         Object priority = m.get("priority");
-        out.add(SkillPromptBindingView.builder()
-            .skillId(m.get("skillId") == null ? null : String.valueOf(m.get("skillId")))
+        out.add(PromptPackPromptBindingView.builder()
+            .promptPackId(m.get("promptPackId") == null ? null : String.valueOf(m.get("promptPackId")))
             .priority(priority instanceof Number number ? number.intValue() : 100)
             .enabled(m.get("enabled") == null || Boolean.TRUE.equals(m.get("enabled")))
             .build());

@@ -7,14 +7,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.chengwenfang.common.IdsUtil;
 import com.chengwenfang.publishing.facade.constant.BuiltinLayoutThemeKeys;
-import com.chengwenfang.skill.facade.SkillBindingIds;
-import com.chengwenfang.skill.facade.SkillFacade;
-import com.chengwenfang.skill.facade.WorkflowFacade;
-import com.chengwenfang.skill.facade.dto.request.SkillSaveRequest;
-import com.chengwenfang.skill.facade.dto.request.WorkflowDraftSaveRequest;
-import com.chengwenfang.skill.facade.dto.request.WorkflowPublishRequest;
-import com.chengwenfang.skill.facade.dto.view.SkillView;
-import com.chengwenfang.skill.facade.dto.view.WorkflowSummaryView;
+import com.chengwenfang.prompt.facade.PromptPackBindingIds;
+import com.chengwenfang.prompt.facade.PromptPackFacade;
+import com.chengwenfang.prompt.facade.WorkflowFacade;
+import com.chengwenfang.prompt.facade.dto.request.PromptPackSaveRequest;
+import com.chengwenfang.prompt.facade.dto.request.WorkflowDraftSaveRequest;
+import com.chengwenfang.prompt.facade.dto.request.WorkflowPublishRequest;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackView;
+import com.chengwenfang.prompt.facade.dto.view.WorkflowSummaryView;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,7 +31,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
- * 黄金 IT 启动时导入 {@code scripts/bootstrap/builtin-catalog.json} 中的 Skill、工作流与排版主题
+ * 黄金 IT 启动时导入 {@code scripts/bootstrap/builtin-catalog.json} 中的 提示词包、工作流与排版主题
  *（已存在则跳过），保证雷达等依赖已发布图的场景可跑。
  */
 @Slf4j
@@ -40,14 +40,14 @@ import org.springframework.jdbc.core.JdbcTemplate;
 public class GoldenCatalogWarmup implements ApplicationRunner {
   private static final AtomicBoolean DONE = new AtomicBoolean(false);
 
-  private final SkillFacade skills;
+  private final PromptPackFacade promptPacks;
   private final WorkflowFacade workflows;
   /** 排版主题直写 JDBC。 */
   private final JdbcTemplate jdbc;
   private final ObjectMapper objectMapper;
 
   /**
-   * 导入种子 Skill / 工作流（仅一次）。
+   * 导入种子 提示词包 / 工作流（仅一次）。
    *
    * @param args 启动参数（未使用）
    */
@@ -62,20 +62,20 @@ public class GoldenCatalogWarmup implements ApplicationRunner {
       return;
     }
     JsonNode root = objectMapper.readTree(catalog.toFile());
-    int skillWritten = 0;
-    int skillSkipped = 0;
-    JsonNode skillNodes = root.path("skills");
-    if (skillNodes.isArray()) {
-      for (JsonNode skillNode : skillNodes) {
-        if (upsertSkill(skillNode)) {
-          skillWritten++;
+    int promptPackWritten = 0;
+    int promptPackSkipped = 0;
+    JsonNode promptPackNodes = root.path("promptPacks");
+    if (promptPackNodes.isArray()) {
+      for (JsonNode promptPackNode : promptPackNodes) {
+        if (upsertPromptPack(promptPackNode)) {
+          promptPackWritten++;
         } else {
-          skillSkipped++;
+          promptPackSkipped++;
         }
       }
     }
-    // 黄金基线录制时 host 库技能文案与当前 catalog 有漂移；强制对齐基线期望文案
-    alignHotNewsSkillsToGoldenBaseline();
+    // 黄金基线录制时 host 库提示词包文案与当前 catalog 有漂移；强制对齐基线期望文案
+    alignHotNewsPromptPacksToGoldenBaseline();
     int workflowPublished = 0;
     int workflowSkipped = 0;
     JsonNode workflowNodes = root.path("workflows");
@@ -104,9 +104,9 @@ public class GoldenCatalogWarmup implements ApplicationRunner {
       }
     }
     log.info(
-        "黄金种子导入完成 skillsWritten={} skillsSkipped={} workflowsPublished={} workflowsSkipped={} themesWritten={} themesSkipped={} catalog={}",
-        skillWritten,
-        skillSkipped,
+        "黄金种子导入完成 promptPacksWritten={} promptPacksSkipped={} workflowsPublished={} workflowsSkipped={} themesWritten={} themesSkipped={} catalog={}",
+        promptPackWritten,
+        promptPackSkipped,
         workflowPublished,
         workflowSkipped,
         themeWritten,
@@ -162,42 +162,42 @@ public class GoldenCatalogWarmup implements ApplicationRunner {
     }
   }
 
-  private boolean upsertSkill(JsonNode skillNode) {
-    String name = text(skillNode, "name");
-    String scene = text(skillNode, "scene");
+  private boolean upsertPromptPack(JsonNode promptPackNode) {
+    String name = text(promptPackNode, "name");
+    String scene = text(promptPackNode, "scene");
     if (StrUtil.isBlank(name)) {
       return false;
     }
-    SkillView existing = findLiveSkill(name, scene);
-    SkillSaveRequest request =
-        SkillSaveRequest.builder()
+    PromptPackView existing = findLivePromptPack(name, scene);
+    PromptPackSaveRequest request =
+        PromptPackSaveRequest.builder()
             .id(existing == null ? null : existing.getId())
             .name(name)
-            .description(text(skillNode, "description"))
-            .scope(text(skillNode, "scope"))
-            .skillType(text(skillNode, "skillType"))
-            .locked(skillNode.path("locked").asBoolean(false))
+            .description(text(promptPackNode, "description"))
+            .scope(text(promptPackNode, "scope"))
+            .promptPackType(text(promptPackNode, "promptPackType"))
+            .locked(promptPackNode.path("locked").asBoolean(false))
             .scene(scene)
-            .systemInstructions(text(skillNode, "systemInstructions"))
+            .systemInstructions(text(promptPackNode, "systemInstructions"))
             .taskInstructions("")
-            .priority(skillNode.path("priority").asInt(100))
+            .priority(promptPackNode.path("priority").asInt(100))
             .enabled(Boolean.TRUE)
             .nodeBindings(null)
             .build();
     if (existing != null) {
       // 已存在则强制同步指令，避免 host 库残留污染黄金比对
-      skills.updateSkillById(existing.getId(), request);
+      promptPacks.updatePromptPackById(existing.getId(), request);
       return false;
     }
-    skills.upsertSkill(request);
+    promptPacks.upsertPromptPack(request);
     return true;
   }
 
   /**
-   * 将热点成文相关 Skill 的 systemInstructions 对齐黄金基线录制时的文案（仅测试种子，不改产品 catalog 文件）。
+   * 将热点成文相关 提示词包 的 systemInstructions 对齐黄金基线录制时的文案（仅测试种子，不改产品 catalog 文件）。
    */
-  private void alignHotNewsSkillsToGoldenBaseline() {
-    forceSkillInstructions(
+  private void alignHotNewsPromptPacksToGoldenBaseline() {
+    forcePromptPackInstructions(
         "热点文章审校",
         "hot_news_article_generation",
         """
@@ -211,7 +211,7 @@ public class GoldenCatalogWarmup implements ApplicationRunner {
             7. 若有问题，直接输出修订后的完整正文；若通过，原样输出完整正文。
             不要只输出检查清单。
             """);
-    forceSkillInstructions(
+    forcePromptPackInstructions(
         "热点公众号转换",
         "hot_news_article_generation",
         """
@@ -223,7 +223,7 @@ public class GoldenCatalogWarmup implements ApplicationRunner {
             5. 不得输出“提示词”“插图位置”、提示代码块或“插图 2”等提示标题，只保留占位/后续图片引用。
             6. 关键概念保持粗体；对话和引用用中文双引号；正文禁用「」、//、->、——。
             """);
-    forceSkillInstructions(
+    forcePromptPackInstructions(
         "热点资讯原稿生成",
         "hot_news_article_generation",
         """
@@ -243,20 +243,20 @@ public class GoldenCatalogWarmup implements ApplicationRunner {
   }
 
   /**
-   * 按名称+场景覆盖 Skill 系统指令。
+   * 按名称+场景覆盖 提示词包 系统指令。
    *
    * @param name               名称
    * @param scene              场景
    * @param systemInstructions 指令全文
    */
-  private void forceSkillInstructions(String name, String scene, String systemInstructions) {
-    SkillView existing = findLiveSkill(name, scene);
+  private void forcePromptPackInstructions(String name, String scene, String systemInstructions) {
+    PromptPackView existing = findLivePromptPack(name, scene);
     if (existing == null) {
       return;
     }
-    skills.updateSkillById(
+    promptPacks.updatePromptPackById(
         existing.getId(),
-        SkillSaveRequest.builder()
+        PromptPackSaveRequest.builder()
             .name(existing.getName())
             .systemInstructions(systemInstructions)
             .build());
@@ -278,7 +278,7 @@ public class GoldenCatalogWarmup implements ApplicationRunner {
       return false;
     }
     ObjectNode definitionJson = (ObjectNode) workflowNode.path("definition").deepCopy();
-    bindSkillIds(definitionJson, scene);
+    bindPromptPackIds(definitionJson, scene);
     workflows.saveDraft(
         definition.getId(),
         WorkflowDraftSaveRequest.builder()
@@ -290,35 +290,35 @@ public class GoldenCatalogWarmup implements ApplicationRunner {
     return true;
   }
 
-  private void bindSkillIds(ObjectNode definition, String workflowScene) {
-    List<SkillView> all = skills.listSkills();
+  private void bindPromptPackIds(ObjectNode definition, String workflowScene) {
+    List<PromptPackView> all = promptPacks.listPromptPacks();
     for (JsonNode node : definition.path("nodes")) {
       if (!(node instanceof ObjectNode)) {
         continue;
       }
-      for (JsonNode binding : node.path("skillBindings")) {
+      for (JsonNode binding : node.path("promptPackBindings")) {
         if (!(binding instanceof ObjectNode bindingNode)) {
           continue;
         }
-        String skillName = bindingNode.path("name").asText("");
-        String skillId = SkillBindingIds.resolveForWorkflowScene(all, skillName, workflowScene);
-        if (StrUtil.isBlank(skillId)) {
+        String promptPackName = bindingNode.path("name").asText("");
+        String promptPackId = PromptPackBindingIds.resolveForWorkflowScene(all, promptPackName, workflowScene);
+        if (StrUtil.isBlank(promptPackId)) {
           throw new IllegalStateException(
-              "工作流 " + workflowScene + " 找不到 Skill name=" + skillName);
+              "工作流 " + workflowScene + " 找不到 提示词包 name=" + promptPackName);
         }
-        bindingNode.put("skillId", skillId);
+        bindingNode.put("promptPackId", promptPackId);
       }
     }
   }
 
-  private SkillView findLiveSkill(String name, String scene) {
-    for (SkillView skill : skills.listSkills()) {
-      if (skill == null) {
+  private PromptPackView findLivePromptPack(String name, String scene) {
+    for (PromptPackView promptPack : promptPacks.listPromptPacks()) {
+      if (promptPack == null) {
         continue;
       }
-      if (name.equals(skill.getName())
-          && scene.equals(StrUtil.nullToEmpty(skill.getScene()))) {
-        return skill;
+      if (name.equals(promptPack.getName())
+          && scene.equals(StrUtil.nullToEmpty(promptPack.getScene()))) {
+        return promptPack;
       }
     }
     return null;

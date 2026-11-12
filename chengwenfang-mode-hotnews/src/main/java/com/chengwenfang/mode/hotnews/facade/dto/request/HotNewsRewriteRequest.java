@@ -15,4 +15,6 @@ import lombok.NoArgsConstructor;
 public class HotNewsRewriteRequest {
   /** 改写指令；空白时由服务端使用默认文案。 */
   private String instruction;
+  /** 可编辑的优化建议全文；优先于短指令驱动改写。 */
+  private String advice;
 }

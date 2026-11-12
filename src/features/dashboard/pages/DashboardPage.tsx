@@ -38,7 +38,7 @@ export type DashboardPageProps = {
   enabledThemeTotal: number;
   contentThemes: ContentThemeData[];
   hotNewsEnabledCount: number;
-  homeSkillCount: number;
+  homePromptPackCount: number;
   recentSuccessArticles: JobData[];
   courses: Course[];
   homeJobTitleByEntityId: Record<string, string>;
@@ -70,7 +70,7 @@ export function DashboardPage(props: DashboardPageProps) {
     enabledThemeTotal,
     contentThemes,
     hotNewsEnabledCount,
-    homeSkillCount,
+    homePromptPackCount,
     recentSuccessArticles,
     courses,
     homeJobTitleByEntityId,
@@ -148,11 +148,11 @@ export function DashboardPage(props: DashboardPageProps) {
                     <button
                       type="button"
                       className="home-overview-card is-clickable"
-                      onClick={() => void navigate("/settings?section=skills")}
+                      onClick={() => void navigate("/settings?section=promptPacks")}
                     >
-                      <span>Skill</span>
-                      <strong>{homeSkillCount}</strong>
-                      <small>点击打开 Skill 管理</small>
+                      <span>PromptPack</span>
+                      <strong>{homePromptPackCount}</strong>
+                      <small>点击打开 提示词包管理</small>
                     </button>
                     <button
                       type="button"

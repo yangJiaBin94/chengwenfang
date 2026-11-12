@@ -5,9 +5,9 @@ import com.chengwenfang.mode.course.application.generation.course.CourseGraphSta
 import com.chengwenfang.content.facade.ContentFacade;
 import com.chengwenfang.infra.support.StorageService;
 import com.chengwenfang.quality.facade.AuditFacade;
-import com.chengwenfang.skill.facade.SkillFacade;
-import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
-import com.chengwenfang.skill.facade.enums.CourseWorkflowNodeType;
+import com.chengwenfang.prompt.facade.PromptPackFacade;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
+import com.chengwenfang.prompt.facade.enums.CourseWorkflowNodeType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +42,7 @@ public class CourseArticleGraphSupport {
    * @param content          内容门面
    * @param images           图像 AI
    * @param storage          本地存储
-   * @param skills           Skill 门面
+   * @param promptPacks           提示词包门面
    * @param audit            审核门面
    */
   public CourseArticleGraphSupport(
@@ -54,7 +54,7 @@ public class CourseArticleGraphSupport {
       ContentFacade content,
       AiImageFacade images,
       StorageService storage,
-      SkillFacade skills,
+      PromptPackFacade promptPacks,
       AuditFacade audit) {
     this.contextLoader = contextLoader;
     this.sectionDrafter = sectionDrafter;
@@ -62,17 +62,17 @@ public class CourseArticleGraphSupport {
     this.wechatConverter = wechatConverter;
     this.versionCommitter = versionCommitter;
     this.validators = new CourseGenerationValidators(audit);
-    this.imagePipeline = new CourseImagePipeline(images, content, storage, skills);
+    this.imagePipeline = new CourseImagePipeline(images, content, storage, promptPacks);
   }
 
   /**
    * 加载已发布工作流快照与课程上下文；续跑配图时回填原稿/公众号。
    *
    * @param state         图状态
-   * @param skillBindings 未使用（节点签名对齐）
+   * @param promptPackBindings 未使用（节点签名对齐）
    */
-  public void snapshotContext(CourseGraphState state, List<SkillPromptBindingView> skillBindings) {
-    contextLoader.snapshotContext(state, skillBindings);
+  public void snapshotContext(CourseGraphState state, List<PromptPackPromptBindingView> promptPackBindings) {
+    contextLoader.snapshotContext(state, promptPackBindings);
   }
 
   /**
@@ -80,13 +80,13 @@ public class CourseArticleGraphSupport {
    *
    * @param state         图状态
    * @param typeKey       分段 typeKey
-   * @param skillBindings 节点绑定；为空时从快照节点读取
+   * @param promptPackBindings 节点绑定；为空时从快照节点读取
    */
   public void generateDraftSection(
       CourseGraphState state,
       String typeKey,
-      List<SkillPromptBindingView> skillBindings) {
-    sectionDrafter.generateDraftSection(state, typeKey, skillBindings);
+      List<PromptPackPromptBindingView> promptPackBindings) {
+    sectionDrafter.generateDraftSection(state, typeKey, promptPackBindings);
   }
 
   /**
@@ -102,10 +102,10 @@ public class CourseArticleGraphSupport {
    * 公众号等量转换（内含最多 3 次可修复重试）。
    *
    * @param state         图状态
-   * @param skillBindings 节点绑定
+   * @param promptPackBindings 节点绑定
    */
-  public void convertWechat(CourseGraphState state, List<SkillPromptBindingView> skillBindings) {
-    wechatConverter.convertWechat(state, skillBindings);
+  public void convertWechat(CourseGraphState state, List<PromptPackPromptBindingView> promptPackBindings) {
+    wechatConverter.convertWechat(state, promptPackBindings);
   }
 
   /**

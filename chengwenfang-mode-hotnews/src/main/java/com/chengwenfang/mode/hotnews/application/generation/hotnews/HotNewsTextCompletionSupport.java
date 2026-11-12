@@ -3,31 +3,31 @@ package com.chengwenfang.mode.hotnews.application.generation.hotnews;
 import cn.hutool.core.util.StrUtil;
 import com.chengwenfang.ai.facade.AiTextFacade;
 import com.chengwenfang.ai.facade.dto.request.TextCompleteRequest;
-import com.chengwenfang.skill.facade.SkillFacade;
-import com.chengwenfang.skill.facade.dto.view.SkillPromptBindingView;
+import com.chengwenfang.prompt.facade.PromptPackFacade;
+import com.chengwenfang.prompt.facade.dto.view.PromptPackPromptBindingView;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
- * 热点文本节点共用：组合 Skill + WritingRules 并调用文本模型。
+ * 热点文本节点共用：组合 提示词包 + WritingRules 并调用文本模型。
  */
 @Component
 @RequiredArgsConstructor
 public class HotNewsTextCompletionSupport {
-  /** Skill 组合。 */
-  private final SkillFacade skills;
+  /** 提示词包 组合。 */
+  private final PromptPackFacade promptPacks;
   /** 文本 AI。 */
   private final AiTextFacade ai;
 
   /**
-   * 组合绑定 Skill 正文。
+   * 组合绑定提示词包 正文。
    *
-   * @param skillBindings 节点绑定
-   * @return Skill 提示词
+   * @param promptPackBindings 节点绑定
+   * @return 提示词包 提示词
    */
-  public String composeSkillPrompt(List<SkillPromptBindingView> skillBindings) {
-    return skills.composePromptFromBindings(skillBindings == null ? List.of() : skillBindings);
+  public String composePromptPackText(List<PromptPackPromptBindingView> promptPackBindings) {
+    return promptPacks.composePromptFromBindings(promptPackBindings == null ? List.of() : promptPackBindings);
   }
 
   /**

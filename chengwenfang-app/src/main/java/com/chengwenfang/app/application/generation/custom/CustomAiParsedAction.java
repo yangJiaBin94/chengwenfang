@@ -9,10 +9,10 @@ import lombok.Data;
 @Data
 @Builder
 public class CustomAiParsedAction {
-  /** 动作码，见 {@link com.chengwenfang.skill.facade.constant.CustomAiNodeActions}。 */
+  /** 动作码，见 {@link com.chengwenfang.prompt.facade.constant.CustomAiNodeActions}。 */
   private String op;
   /** write_* 正文。 */
   private String content;
-  /** read_skill 的 Skill Id。 */
-  private String skillId;
+  /** read_prompt_pack 的 提示词包 Id。 */
+  private String promptPackId;
 }

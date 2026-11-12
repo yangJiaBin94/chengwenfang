@@ -16,13 +16,22 @@ public final class HotNewsWritingPrompts {
   /** 基础写作规范全文。 */
   public static final String WRITING_RULES = """
       热点写作规范：
-      1. 作者口吻与个人特色遵循当前节点绑定的 Skill；基础规范不写死具体人设。
+      1. 作者口吻与个人特色遵循当前节点绑定的 提示词包；基础规范不写死具体人设。
       2. 必须交代核心事件、影响面、读者可带走的信号或判断；禁止资讯流水账复述。
       3. 结构跟随骨架的 narrativeShape / sectionPlan；禁止“一、二、三”或“1. 2. 3.”式大标题。
       4. 说话方式：像真人聊天，不像播音稿、课件或公关通稿。
          - 可以有第一人称判断（「我看下来」「说实话」「这事儿有意思的是」），句子长短参差，允许口语停顿。
          - 温和分享，不训诫：禁止「留给你的几个判断」「你必须」「记住这一点」「别被……骗了」等教学式强势句与小标题。
          - 不要为了「亲切」硬套「不妨看看」「可以留意」等万能收尾；自然说到哪就停在哪。
+         - 禁止说教式价值对比收尾：如「这几件事做下来，比收藏一张涨幅截图耐用得多」「比起刷截图，更值得…」「记住方法比记住数字更重要」；
+           方法讲完就停，不要站上讲台总结「什么更耐用/更有用」。
+         - 禁止跳出叙事自我交代写作任务：如「这不是这篇文章该干的事」「本文不讨论」「篇幅有限不展开」「下面进入正题」等元叙述；
+           不预测就省略不写，或把不确定嵌进正常陈述（「后面怎么走还看不清」），禁止套式金句「后面怎么走，我不猜」「我就不猜了」。
+         - 禁止「短截 + 逗号 + 我不X」自我声明腔。反例：「没有它，两次临停对应的价位我不反推。」「这个跨度，先记着。」
+           同类禁用：「我不反推」「我不猜」「我不展开」「我就不算了」；该说的直接说，不说的直接跳过，不要先立牌说「我不干这事」。
+         - 少用逗号把两三个字的短块单独切开。能连成一句就连着写，不要「没有它，…」「先这样，…」「说白了，…」这种机械停顿堆逗号。
+         - 禁止「抛事实 + 先记着」式旁白：说完数字/跨度/前提后，不要跟「先记着」「先放这儿」「一会儿用得上」「后面再说」「记住这个数」；
+           需要回扣时直接接着往下写，或到用时再提，不要先预告「请记住」。
       5. 关键概念使用 Markdown 粗体；对话和引用使用中文双引号，不使用「」。
       6. 正文禁用 //、-> 和破折号“——”，分别使用“｜”“→”或普通标点。
       7. 口语优先，拒绝说明书腔与英文直译感。
@@ -32,7 +41,12 @@ public final class HotNewsWritingPrompts {
          - 禁止机械对仗与套式转折：「它不是 A，是 B」「更直观的是」「值得注意的是」「换句话说」连用、英文语序硬翻。
          - 去掉套话、排比灌水、空洞升华和通稿腔；读起来应像人口述，而不是模型在写摘要。
       8. 不编造事实、数据、来源；猜测须用“可能”“我倾向于”等限定。
-      9. 参考资料只作线索，不是必须逐条写进正文的清单。
+      9. 参考资料只作线索，不是必须逐条写进正文的清单；但若核心论点依赖「多源说法冲突 / 关键数字口径差」：
+         必须让读者能核对出处。正文出处写成单独成行「来源：简称或媒体名」（例：来源：财联社 / 来源：短视频口述）；
+         禁止输出裸 http(s) URL，禁止 [报道](url) 等 Markdown 外链；
+         禁止编造出处；提示中的参考 url 仅供系统核对与后续佐证截屏，不要抄进正文；
+         无可靠出处时至少单独一行写清媒体名与标题（仍不要写 URL）。
+         已有佐证图（![](/api/files/…) 或 [[HOT_NEWS_EVIDENCE:…]]）须原样保留。
       10. 字数范围以本次任务 wordCountOption 为准；插图提示词不计入正文字数；只输出完整 Markdown 正文。
       11. 原稿须在合适位置写入插图提示词，唯一权威格式为加粗「**插图位置：主题**」空一行后紧跟 ```text 围栏：封面 1 个 + 与插图档匹配数量的正文插图；提示词须保留在原稿中。禁止括号写法、裸「提示词：」行、引用块提示词或把生图描述写成正文段落。
       12. 插图提示词要主题可读：3～5 个信息元素讲清核心冲突/对比，适当留白；禁止空装饰，也禁止元素过密。
@@ -45,19 +59,19 @@ public final class HotNewsWritingPrompts {
       """;
 
   /**
-   * 拼接系统提示：开场 + 写作规范，可选主题上下文与节点 Skill。
+   * 拼接系统提示：开场 + 写作规范，可选主题上下文与节点 提示词包。
    *
-   * @param skillPrompt  节点 Skill；空白则不追加
+   * @param promptPackText  节点 提示词包；空白则不追加
    * @param themeContext 主题读者/边界等上下文；空白则不追加
    * @return 系统提示词
    */
-  public static String systemPrompt(String skillPrompt, String themeContext) {
+  public static String systemPrompt(String promptPackText, String themeContext) {
     String system = AUTHOR_PREAMBLE + "\n\n" + StrUtil.trim(WRITING_RULES);
     if (StrUtil.isNotBlank(themeContext)) {
       system = system + "\n\n本主题写作上下文（须遵守）：\n" + StrUtil.trim(themeContext);
     }
-    if (StrUtil.isNotBlank(skillPrompt)) {
-      system = system + "\n\n当前节点必须遵循的 Skill（按顺序）：\n" + StrUtil.trim(skillPrompt);
+    if (StrUtil.isNotBlank(promptPackText)) {
+      system = system + "\n\n当前节点必须遵循的 PromptPack（按顺序）：\n" + StrUtil.trim(promptPackText);
     }
     return system;
   }
@@ -65,10 +79,10 @@ public final class HotNewsWritingPrompts {
   /**
    * 拼接系统提示（无主题上下文）。
    *
-   * @param skillPrompt 节点 Skill；空白则不追加
+   * @param promptPackText 节点 提示词包；空白则不追加
    * @return 系统提示词
    */
-  public static String systemPrompt(String skillPrompt) {
-    return systemPrompt(skillPrompt, null);
+  public static String systemPrompt(String promptPackText) {
+    return systemPrompt(promptPackText, null);
   }
 }

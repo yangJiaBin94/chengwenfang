@@ -24,8 +24,8 @@ import {
   Workflow,
   X,
 } from "lucide-react";
-import { listSkills } from "../../settings/api";
-import type { Skill } from "../../settings/api";
+import { listPromptPacks } from "../../settings/api";
+import type { PromptPack } from "../../settings/api";
 import {
   createWorkflow,
   listWorkflowRuns,
@@ -88,24 +88,24 @@ export function WorkflowDesigner({
   const [nodeTypes, setNodeTypes] = useState<WorkflowNodeType[]>([]);
   const [past, setPast] = useState<WorkflowDraft["definition"][]>([]);
   const [future, setFuture] = useState<WorkflowDraft["definition"][]>([]);
-  const [skillCatalog, setSkillCatalog] = useState<Skill[]>([]);
-  const [skillPickerOpen, setSkillPickerOpen] = useState(false);
-  const [skillQuery, setSkillQuery] = useState("");
-  const [pickedSkillIds, setPickedSkillIds] = useState<string[]>([]);
-  const [skillCatalogError, setSkillCatalogError] = useState("");
+  const [promptPackCatalog, setPromptPackCatalog] = useState<PromptPack[]>([]);
+  const [promptPackPickerOpen, setPromptPackPickerOpen] = useState(false);
+  const [promptPackQuery, setPromptPackQuery] = useState("");
+  const [pickedPromptPackIds, setPickedPromptPackIds] = useState<string[]>([]);
+  const [promptPackCatalogError, setPromptPackCatalogError] = useState("");
   useEffect(() => {
     void listWorkflowNodeTypes().then(setNodeTypes);
-    // 预加载 Skill 目录，便于节点绑定列表按 id 显示真实名称
-    void listSkills().then(setSkillCatalog).catch(() => undefined);
+    // 预加载提示词包 目录，便于节点绑定列表按 id 显示真实名称
+    void listPromptPacks().then(setPromptPackCatalog).catch(() => undefined);
   }, []);
   const selected = draft.definition.nodes.find(
     (node) => node.key === selectedKey,
   );
   const selectedIsCustom = selected ? isCustomAiNode(selected) : false;
   const selectedType = nodeTypes.find((item) => item.key === selected?.typeKey);
-  const systemSkillIds = useMemo(
-    () => new Set(skillCatalog.filter((skill) => skill.scope === "system").map((skill) => skill.id)),
-    [skillCatalog],
+  const systemPromptPackIds = useMemo(
+    () => new Set(promptPackCatalog.filter((promptPack) => promptPack.scope === "system").map((promptPack) => promptPack.id)),
+    [promptPackCatalog],
   );
   const commit = (definition: WorkflowDraft["definition"]) => {
     setPast((items) => [...items.slice(-29), draft.definition]);
@@ -194,7 +194,7 @@ export function WorkflowDesigner({
         prompt: "",
       },
       position: { x: 120, y: 140 },
-      skillBindings: [],
+      promptPackBindings: [],
     };
     const insertAt = where === "before" ? anchorIndex : anchorIndex + 1;
     nodes.splice(insertAt, 0, node);
@@ -209,46 +209,46 @@ export function WorkflowDesigner({
     commit({ ...draft.definition, nodes: next.nodes, edges: next.edges });
     setSelectedKey(next.nodes[0]?.key ?? "");
   };
-  const changeSkill = (skillId: string, action: "toggle" | "up" | "down" | "remove") => {
+  const changePromptPack = (promptPackId: string, action: "toggle" | "up" | "down" | "remove") => {
     if (!selected) return;
-    const skills = [...(selected.skillBindings ?? [])];
-    const index = skills.findIndex((skill) => skill.skillId === skillId);
-    if (index < 0 || systemSkillIds.has(skillId) || skills[index].priority <= 0) return;
+    const promptPacks = [...(selected.promptPackBindings ?? [])];
+    const index = promptPacks.findIndex((promptPack) => promptPack.promptPackId === promptPackId);
+    if (index < 0 || systemPromptPackIds.has(promptPackId) || promptPacks[index].priority <= 0) return;
     if (action === "remove") {
-      updateNode({ ...selected, skillBindings: skills.filter((skill) => skill.skillId !== skillId) });
+      updateNode({ ...selected, promptPackBindings: promptPacks.filter((promptPack) => promptPack.promptPackId !== promptPackId) });
       return;
     }
-    if (action === "toggle") skills[index] = { ...skills[index], enabled: !skills[index].enabled };
+    if (action === "toggle") promptPacks[index] = { ...promptPacks[index], enabled: !promptPacks[index].enabled };
     const target = action === "up" ? index - 1 : action === "down" ? index + 1 : index;
-    if (target !== index && target >= 0 && target < skills.length && skills[target].priority > 0) [skills[index], skills[target]] = [skills[target], skills[index]];
-    const normalized = skills.map((skill, order) => skill.priority <= 0 ? skill : { ...skill, priority: (order + 1) * 10 });
-    updateNode({ ...selected, skillBindings: normalized });
+    if (target !== index && target >= 0 && target < promptPacks.length && promptPacks[target].priority > 0) [promptPacks[index], promptPacks[target]] = [promptPacks[target], promptPacks[index]];
+    const normalized = promptPacks.map((promptPack, order) => promptPack.priority <= 0 ? promptPack : { ...promptPack, priority: (order + 1) * 10 });
+    updateNode({ ...selected, promptPackBindings: normalized });
   };
-  const openSkillPicker = async () => {
-    setSkillCatalogError("");
-    setSkillQuery("");
-    setPickedSkillIds([]);
-    setSkillPickerOpen(true);
+  const openPromptPackPicker = async () => {
+    setPromptPackCatalogError("");
+    setPromptPackQuery("");
+    setPickedPromptPackIds([]);
+    setPromptPackPickerOpen(true);
     try {
-      setSkillCatalog(await listSkills());
+      setPromptPackCatalog(await listPromptPacks());
     } catch (reason) {
-      setSkillCatalogError(reason instanceof Error ? reason.message : "读取 Skill 失败");
+      setPromptPackCatalogError(reason instanceof Error ? reason.message : "读取 PromptPack 失败");
     }
   };
-  const addPickedSkills = () => {
-    if (!selected || !pickedSkillIds.length) return;
-    const current = selected.skillBindings ?? [];
-    const existing = new Set(current.map((binding) => binding.skillId));
-    const sceneCount = current.filter((binding) => !systemSkillIds.has(binding.skillId) && binding.priority > 0).length;
-    const additions = skillCatalog
-      .filter((skill) => pickedSkillIds.includes(skill.id) && !existing.has(skill.id))
-      .map((skill, index) => ({ skillId: skill.id, name: skill.name, priority: (sceneCount + index + 1) * 10, enabled: true }));
-    updateNode({ ...selected, skillBindings: [...current, ...additions] });
-    setSkillPickerOpen(false);
+  const addPickedPromptPacks = () => {
+    if (!selected || !pickedPromptPackIds.length) return;
+    const current = selected.promptPackBindings ?? [];
+    const existing = new Set(current.map((binding) => binding.promptPackId));
+    const sceneCount = current.filter((binding) => !systemPromptPackIds.has(binding.promptPackId) && binding.priority > 0).length;
+    const additions = promptPackCatalog
+      .filter((promptPack) => pickedPromptPackIds.includes(promptPack.id) && !existing.has(promptPack.id))
+      .map((promptPack, index) => ({ promptPackId: promptPack.id, name: promptPack.name, priority: (sceneCount + index + 1) * 10, enabled: true }));
+    updateNode({ ...selected, promptPackBindings: [...current, ...additions] });
+    setPromptPackPickerOpen(false);
   };
-  const availableSkills = skillCatalog.filter(
-    (skill) => skill.scope === "scene" && skill.scene === draft.definition.scene &&
-      `${skill.name} ${skill.description}`.toLowerCase().includes(skillQuery.trim().toLowerCase()),
+  const availablePromptPacks = promptPackCatalog.filter(
+    (promptPack) => promptPack.scope === "scene" && promptPack.scene === draft.definition.scene &&
+      `${promptPack.name} ${promptPack.description}`.toLowerCase().includes(promptPackQuery.trim().toLowerCase()),
   );
   return (
     <div className="workflow-section">
@@ -314,7 +314,7 @@ export function WorkflowDesigner({
                       <b>{node.name}</b>
                       <small>
                         {custom ? "自定义节点" : node.stage} ·{" "}
-                        {node.skillBindings?.length ?? 0} 个 Skill
+                        {node.promptPackBindings?.length ?? 0} 个 PromptPack
                       </small>
                     </span>
                     <em>{custom ? "自定义" : "原生"}</em>
@@ -400,7 +400,7 @@ export function WorkflowDesigner({
                     placeholder="描述本节点要对文章流程做的事……"
                   />
                   <small className="workflow-custom-boundary-hint">
-                    仅允许：读取已配置 Skill、骨架、简报、资料库、当前原稿/公众号（若已生成）；修改原稿或公众号（若当前阶段已生成）。超出范围或不支持的动作将导致本节点执行失败。
+                    仅允许：读取已配置 PromptPack、骨架、简报、资料库、当前原稿/公众号（若已生成）；修改原稿或公众号（若当前阶段已生成）。超出范围或不支持的动作将导致本节点执行失败。
                   </small>
                 </label>
               ) : (
@@ -524,23 +524,23 @@ export function WorkflowDesigner({
                   <small>达到上限后流程明确失败，避免无限调用模型。</small>
                 </div>
               )}
-              <div className="workflow-skill-box">
+              <div className="workflow-prompt-pack-box">
                 <header>
-                  <span><b>节点 Skill</b><small>保存到草稿，发布版本后生效</small></span>
-                  <button type="button" onClick={() => void openSkillPicker()}><Plus size={13} />添加 Skill</button>
+                  <span><b>节点 PromptPack</b><small>保存到草稿，发布版本后生效</small></span>
+                  <button type="button" onClick={() => void openPromptPackPicker()}><Plus size={13} />添加 PromptPack</button>
                 </header>
-                {selected.skillBindings?.length ? (
-                  selected.skillBindings.map((skill) => {
-                    const systemSkill = systemSkillIds.has(skill.skillId) || skill.priority <= 0;
-                    const catalogName = skillCatalog.find((item) => item.id === skill.skillId)?.name;
-                    const displayName = skill.name || catalogName || `未命名 Skill（${skill.skillId.slice(0, 8)}）`;
-                    return <div className={skill.enabled ? "" : "disabled"} key={skill.skillId}>
-                      <span><strong>{displayName}</strong><small>{systemSkill ? "系统级 · 只读" : `执行顺序 ${skill.priority}`}</small></span>
-                      {!systemSkill && <span className="workflow-skill-actions"><button title="上移" onClick={() => changeSkill(skill.skillId, "up")}>↑</button><button title="下移" onClick={() => changeSkill(skill.skillId, "down")}>↓</button><button onClick={() => changeSkill(skill.skillId, "toggle")}>{skill.enabled ? "停用" : "启用"}</button><button className="danger" title="移除" onClick={() => changeSkill(skill.skillId, "remove")}><Trash2 size={12} /></button></span>}
+                {selected.promptPackBindings?.length ? (
+                  selected.promptPackBindings.map((promptPack) => {
+                    const systemPromptPack = systemPromptPackIds.has(promptPack.promptPackId) || promptPack.priority <= 0;
+                    const catalogName = promptPackCatalog.find((item) => item.id === promptPack.promptPackId)?.name;
+                    const displayName = promptPack.name || catalogName || `未命名 PromptPack（${promptPack.promptPackId.slice(0, 8)}）`;
+                    return <div className={promptPack.enabled ? "" : "disabled"} key={promptPack.promptPackId}>
+                      <span><strong>{displayName}</strong><small>{systemPromptPack ? "系统级 · 只读" : `执行顺序 ${promptPack.priority}`}</small></span>
+                      {!systemPromptPack && <span className="workflow-prompt-pack-actions"><button title="上移" onClick={() => changePromptPack(promptPack.promptPackId, "up")}>↑</button><button title="下移" onClick={() => changePromptPack(promptPack.promptPackId, "down")}>↓</button><button onClick={() => changePromptPack(promptPack.promptPackId, "toggle")}>{promptPack.enabled ? "停用" : "启用"}</button><button className="danger" title="移除" onClick={() => changePromptPack(promptPack.promptPackId, "remove")}><Trash2 size={12} /></button></span>}
                     </div>;
                   })
                 ) : (
-                  <small>该节点没有绑定场景 Skill</small>
+                  <small>该节点没有绑定场景 PromptPack</small>
                 )}
               </div>
               {selectedIsCustom && (
@@ -564,22 +564,22 @@ export function WorkflowDesigner({
           )}
         </aside>
       </div>
-      {skillPickerOpen && (
-        <div className="modal-backdrop" onClick={() => setSkillPickerOpen(false)}>
-          <section className="workflow-skill-picker" role="dialog" aria-modal="true" aria-labelledby="workflow-skill-picker-title" onClick={(event) => event.stopPropagation()}>
-            <header><div><small>工作流节点配置</small><h3 id="workflow-skill-picker-title">为“{selected?.name}”添加 Skill</h3></div><button className="icon-button" aria-label="关闭" onClick={() => setSkillPickerOpen(false)}><X size={17} /></button></header>
-            <div className="workflow-skill-search"><Search size={16} /><input autoFocus value={skillQuery} onChange={(event) => setSkillQuery(event.target.value)} placeholder="搜索名称或功能简介" /></div>
-            <p>仅显示当前工作流场景的 Skill。全局关闭的 Skill 可以绑定，但执行时不会注入。</p>
-            <div className="workflow-skill-options">
-              {skillCatalogError && <span className="workflow-picker-error">{skillCatalogError}</span>}
-              {!skillCatalogError && availableSkills.map((skill) => {
-                const bound = selected?.skillBindings?.some((binding) => binding.skillId === skill.id) ?? false;
-                const picked = pickedSkillIds.includes(skill.id);
-                return <button type="button" className={picked ? "selected" : ""} disabled={bound} aria-pressed={picked} key={skill.id} onClick={() => setPickedSkillIds((ids) => ids.includes(skill.id) ? ids.filter((id) => id !== skill.id) : [...ids, skill.id])}><span><b>{skill.name}</b><small>{skill.description || "暂无功能简介"}</small></span><em>{bound ? "已绑定" : skill.enabled ? picked ? "已选择" : "可添加" : "全局关闭"}</em></button>;
+      {promptPackPickerOpen && (
+        <div className="modal-backdrop" onClick={() => setPromptPackPickerOpen(false)}>
+          <section className="workflow-prompt-pack-picker" role="dialog" aria-modal="true" aria-labelledby="workflow-prompt-pack-picker-title" onClick={(event) => event.stopPropagation()}>
+            <header><div><small>工作流节点配置</small><h3 id="workflow-prompt-pack-picker-title">为“{selected?.name}”添加 PromptPack</h3></div><button className="icon-button" aria-label="关闭" onClick={() => setPromptPackPickerOpen(false)}><X size={17} /></button></header>
+            <div className="workflow-prompt-pack-search"><Search size={16} /><input autoFocus value={promptPackQuery} onChange={(event) => setPromptPackQuery(event.target.value)} placeholder="搜索名称或功能简介" /></div>
+            <p>仅显示当前工作流场景的 PromptPack。全局关闭的 PromptPack 可以绑定，但执行时不会注入。</p>
+            <div className="workflow-prompt-pack-options">
+              {promptPackCatalogError && <span className="workflow-picker-error">{promptPackCatalogError}</span>}
+              {!promptPackCatalogError && availablePromptPacks.map((promptPack) => {
+                const bound = selected?.promptPackBindings?.some((binding) => binding.promptPackId === promptPack.id) ?? false;
+                const picked = pickedPromptPackIds.includes(promptPack.id);
+                return <button type="button" className={picked ? "selected" : ""} disabled={bound} aria-pressed={picked} key={promptPack.id} onClick={() => setPickedPromptPackIds((ids) => ids.includes(promptPack.id) ? ids.filter((id) => id !== promptPack.id) : [...ids, promptPack.id])}><span><b>{promptPack.name}</b><small>{promptPack.description || "暂无功能简介"}</small></span><em>{bound ? "已绑定" : promptPack.enabled ? picked ? "已选择" : "可添加" : "全局关闭"}</em></button>;
               })}
-              {!skillCatalogError && !availableSkills.length && <span className="workflow-picker-empty">没有符合条件的 Skill</span>}
+              {!promptPackCatalogError && !availablePromptPacks.length && <span className="workflow-picker-empty">没有符合条件的 PromptPack</span>}
             </div>
-            <footer><span>已选择 {pickedSkillIds.length} 项</span><div><button className="ghost-button" onClick={() => setSkillPickerOpen(false)}>取消</button><button className="primary-button" disabled={!pickedSkillIds.length} onClick={addPickedSkills}>确认添加</button></div></footer>
+            <footer><span>已选择 {pickedPromptPackIds.length} 项</span><div><button className="ghost-button" onClick={() => setPromptPackPickerOpen(false)}>取消</button><button className="primary-button" disabled={!pickedPromptPackIds.length} onClick={addPickedPromptPacks}>确认添加</button></div></footer>
           </section>
         </div>
       )}
