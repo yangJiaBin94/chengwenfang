@@ -107,6 +107,13 @@
 
 先跑通课程即可。**不必**装 Python / ffmpeg，也**不必**起 SearXNG / Lightpanda。
 
+| 部署档 | Docker 命令 | 容器 | 适合 |
+|--------|-------------|------|------|
+| **仅课程（默认）** | `docker compose up -d --wait` | **只有** MySQL + Redis | 课程写作主流程 |
+| **热点满血** | `docker compose --profile all up -d --wait` | 再加 SearXNG + Lightpanda | 雷达搜索 / JS 页正文回退；另需 [热点模式](#热点模式可选加装) 的 Python CLI |
+
+Docker Desktop 里若只看到 `mysql` / `redis`，说明走的是「仅课程」档，**不是漏装**。要 SearXNG / Lightpanda：在同一仓库根目录执行上面的 `--profile all`（或 `./scripts/start.sh --all-deps`）。
+
 需要：Docker Desktop、JDK 21、Maven、Node.js **22+**。
 
 ### Windows
@@ -210,7 +217,10 @@ docker compose up -d --wait
 
 **[`docs/AI从零搭建满血成文坊.md`](docs/AI从零搭建满血成文坊.md)**
 
-> 请阅读并严格执行 `docs/AI从零搭建满血成文坊.md`。若只要课程主流程：Docker 仅 MySQL/Redis，跳过 Python CLI 与 SearXNG/Lightpanda；直到 `8001/api/health` 与 `5173` 可访问。API Key 留给我在设置页填写。macOS Apple Silicon 按文档附录与 README「macOS Apple Silicon 从零」处理 Rosetta、镜像加速与种子 `.sh`。
+> 请阅读并严格执行 `docs/AI从零搭建满血成文坊.md`。  
+> - **满血**：`docker compose --profile all`，验收须含 searxng + lightpanda，再装 Python CLI。  
+> - **仅课程**：`docker compose up`（无 profile），Docker 里**只有** MySQL/Redis 算成功；跳过 SearXNG/Lightpanda/Python CLI，并在汇报里写明「未装热点容器」。  
+> 直到 `8001/api/health` 与 `5173` 可访问。API Key 留给我在设置页填写。macOS Apple Silicon 按文档附录与 README「macOS Apple Silicon 从零」处理 Rosetta、镜像加速与种子 `.sh`。
 
 ---
 

@@ -6,9 +6,12 @@
 | 项 | 值 |
 |----|-----|
 | 仓库根目录 | 含 `pom.xml`、`compose.yml`、`package.json` 的目录（下文称 `$ROOT`） |
-| 目标形态 | **满血**：容器全开 + 本机 Python CLI + ffmpeg + 前后端进程起来 |
+| 目标形态 | **满血**（默认按本文）：`docker compose --profile all` → mysql+redis+**searxng+lightpanda** + 本机 Python CLI + ffmpeg + 前后端 |
+| 仅课程（非本文默认） | `docker compose up`（无 profile）→ **只有** mysql+redis；无 SearXNG/Lightpanda 不算失败，但须在汇报标明「课程档」 |
 | 人类仍须完成 | 在网页「设置」里填写真实 AI API Key（及可选微信公众号）；密钥勿写入仓库 |
 | 默认 OS | Windows + PowerShell（作者环境）；macOS（含 Apple Silicon）/ Linux 见文末附录与根 README「macOS Apple Silicon 从零」 |
+
+> **常见误解**：README 快速开始是「仅课程」，完成后 Docker 只有 MySQL/Redis。若用户要热点雷达/本地搜索，必须用本文阶段 B 的 `--profile all`，不能只跑 README 里的 `docker compose up`。
 
 相关人工说明：[`README.md`](../README.md)。正文抽取 / 视频 / 截图 CLI：[`scripts/article-extract/README.md`](../scripts/article-extract/README.md)、[`scripts/video-transcript/README.md`](../scripts/video-transcript/README.md)、[`scripts/page-screenshot/README.md`](../scripts/page-screenshot/README.md)。一键安装：[`scripts/setup-hotnews-clis.ps1`](../scripts/setup-hotnews-clis.ps1) / [`scripts/setup-hotnews-clis.sh`](../scripts/setup-hotnews-clis.sh)。
 
@@ -93,7 +96,9 @@ curl.exe -s "http://127.0.0.1:8080/search?q=test&format=json" | Select-Object -F
 docker ps --filter "name=chengwenfang-lightpanda"
 ```
 
-**验收 B**：`--wait` 成功退出；`ps` 中四服务均在跑。若仅需课程、不要热点容器，可用 `docker compose up -d --wait`（非满血，须告知用户）。
+**验收 B（满血）**：`--wait` 成功退出；`docker compose --profile all ps` 中 **mysql、redis、searxng、lightpanda** 均在跑。缺 searxng/lightpanda → 未加 `--profile all` 或 profile 镜像拉取失败，须补齐后再继续。
+
+若用户只要课程、不要热点容器：`docker compose up -d --wait`（只会有 mysql+redis；**非满血**，阶段 G 必须写明，且跳过阶段 C）。
 
 改 `deploy/searxng/settings.yml` 后：
 
