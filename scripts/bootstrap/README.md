@@ -7,7 +7,14 @@
 MySQL 已启动之后、日常使用之前，执行一次（库名见 `application.yml`，默认 `chengwenfang`；与私有实例共用宿主机 MySQL 时勿再起本仓 mysql 容器，确保库已创建即可）：
 
 ```powershell
+# Windows
 powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap\Initialize-ChengwenfangSeed.ps1
+```
+
+```bash
+# macOS / Linux（无 PowerShell 时用这个）
+chmod +x scripts/bootstrap/Initialize-ChengwenfangSeed.sh
+./scripts/bootstrap/Initialize-ChengwenfangSeed.sh
 ```
 
 脚本会以 `bootstrap-seed` 配置启动一次后端：先跑 Flyway 建表，再导入 `builtin-catalog.json`，然后进程退出。
@@ -17,8 +24,16 @@ powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap\Initialize-Chengwen
 需要用仓库种子覆盖这些内置行时（会新增一版已发布工作流，并重写对应 提示词包 正文）：
 
 ```powershell
+# Windows
 powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap\Initialize-ChengwenfangSeed.ps1 -Force
 ```
+
+```bash
+# macOS / Linux
+./scripts/bootstrap/Initialize-ChengwenfangSeed.sh --force
+```
+
+**热点演示主题**：导入依赖「主要意图」已确认。若尚未在设置页配置可用的 AI API Key，日志可能出现「请先由 AI 分析并确认主题主要意图」——提示词包、工作流、课程主题通常仍已写入；填好 Key 后在热点主题页走一遍意图分析并确认即可，不必整库重来。
 
 ## 种子里有什么
 
@@ -33,6 +48,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap\Initialize-Chengwen
 
 - 默认课程主题「AI 自学零基础」、热点主题「AI 前沿热点」：问卷与课表草案，确认后落库系列 + **课壳**（无正文生产）
 - 已确认主题会跳过，避免覆盖手动改过的结构
+- 热点种子主题须已确认主要意图；无 AI Key 时该步可能失败，不影响课程种子与 catalog
 - 开源对外导出用同目录 `default-themes.oss.json`（最小 Demo Course / Demo Hot News）；见 `scripts/oss/export-to-public.ps1`
 
 ## 更新种子

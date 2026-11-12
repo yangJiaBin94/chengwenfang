@@ -27,6 +27,10 @@ mvn -pl chengwenfang-app -am spring-boot:run
 npm run dev:frontend
 ```
 
+macOS / Linux: use `./scripts/bootstrap/Initialize-ChengwenfangSeed.sh` instead of the
+`.ps1`; prefer two foreground terminals over `scripts/start.sh` nohup. See README
+「macOS Apple Silicon 从零」for Rosetta, Hub mirrors, and portable JDK/Maven.
+
 ## Tests
 
 ```powershell

@@ -4,7 +4,7 @@
 
 | 文档 | 说明 |
 |------|------|
-| [AI从零搭建满血成文坊.md](./AI从零搭建满血成文坊.md) | 给 AI / 人类的从零满血部署手册 |
+| [AI从零搭建满血成文坊.md](./AI从零搭建满血成文坊.md) | 给 AI / 人类的从零满血部署手册（含 macOS Apple Silicon 附录） |
 | [代码结构与注释规范.md](./代码结构与注释规范.md) | COLA 分层、模块边界、注释与编码约定 |
 | [类命名词典.md](./类命名词典.md) | Java 类后缀与 Facade 命名 |
 | [../contracts/api-sse-contract.md](../contracts/api-sse-contract.md) | API / SSE 契约 |

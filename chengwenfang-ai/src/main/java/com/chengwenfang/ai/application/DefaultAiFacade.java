@@ -183,7 +183,11 @@ public class DefaultAiFacade implements AiTextFacade, AiImageFacade, AiVisionFac
           0,
           0,
           ErrorCodes.CONNECTION_FAILED);
-      throw new BusinessException(ErrorCodes.AI_TEST_FAILED, "AI 连通性测试失败：" + e.getMessage(), 502);
+      // 上游 HTML/SDK 原文对用户不可读，统一转成短中文
+      throw new BusinessException(
+          ErrorCodes.AI_TEST_FAILED,
+          "AI 连通性测试失败：" + AiUpstreamErrorMessages.humanize(e.getMessage()),
+          502);
     }
   }
 

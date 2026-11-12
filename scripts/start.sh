@@ -54,6 +54,7 @@ if [[ ! -f "$JAR" ]]; then
   exit 1
 fi
 
+# shortcut: nohup 在部分 IDE/SSH 会话结束时会被带走；课程主流程优先双前台终端（见 README）
 echo "Starting backend on :8001..."
 nohup java \
   -Dfile.encoding=UTF-8 \

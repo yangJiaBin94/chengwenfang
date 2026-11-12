@@ -5,6 +5,11 @@
 #
 # 密钥与 DB 密码：Compose 从项目根 .env 做变量替换（见 .env.example）。
 # 未设置时用下方 :- 后的本机开发默认值；生产请自建编排并注入强随机密钥（见 SECURITY.md）。
+#
+# 固定项目名：父目录若含中文等非 [a-z0-9_-] 字符，Compose 默认名会空并报
+# “project name must not be empty”。也可用环境变量 COMPOSE_PROJECT_NAME 覆盖。
+name: chengwenfang
+
 services:
   # 业务主库；账号须与 application.yml / app 服务 datasource 一致
   mysql:

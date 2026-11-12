@@ -103,7 +103,10 @@ public class AiImageClient {
             prompt.length(),
             0,
             "upstream_" + response.getStatus());
-        throw new BusinessException(ErrorCodes.IMAGE_FAILED, "图像生成上游失败：" + response.body(), 502);
+        throw new BusinessException(
+            ErrorCodes.IMAGE_FAILED,
+            "图像生成上游失败：" + AiUpstreamErrorMessages.humanize(response.body()),
+            502);
       }
       // 解析响应，优先取首张图的 base64 或 url
       OpenAiImageGenerationResponse parsed =

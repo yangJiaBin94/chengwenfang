@@ -8,7 +8,7 @@
 | 仓库根目录 | 含 `pom.xml`、`compose.yml`、`package.json` 的目录（下文称 `$ROOT`） |
 | 目标形态 | **满血**：容器全开 + 本机 Python CLI + ffmpeg + 前后端进程起来 |
 | 人类仍须完成 | 在网页「设置」里填写真实 AI API Key（及可选微信公众号）；密钥勿写入仓库 |
-| 默认 OS | Windows + PowerShell（作者环境）；非 Windows 见文末附录 |
+| 默认 OS | Windows + PowerShell（作者环境）；macOS（含 Apple Silicon）/ Linux 见文末附录与根 README「macOS Apple Silicon 从零」 |
 
 相关人工说明：[`README.md`](../README.md)。正文抽取 / 视频 / 截图 CLI：[`scripts/article-extract/README.md`](../scripts/article-extract/README.md)、[`scripts/video-transcript/README.md`](../scripts/video-transcript/README.md)、[`scripts/page-screenshot/README.md`](../scripts/page-screenshot/README.md)。一键安装：[`scripts/setup-hotnews-clis.ps1`](../scripts/setup-hotnews-clis.ps1) / [`scripts/setup-hotnews-clis.sh`](../scripts/setup-hotnews-clis.sh)。
 
@@ -67,6 +67,8 @@ ffmpeg -version
 ---
 
 ## 阶段 B — Docker 拉起全部容器依赖
+
+`compose.yml` 已设 `name: chengwenfang`（避免父目录中文导致 project name 为空）。拉 Hub 超时则先按 README 用加速源 pull + tag，再执行下面命令。Apple Silicon 须先保证 Docker 引擎已正常启动（见附录 Rosetta）。
 
 ```powershell
 cd $ROOT
@@ -238,10 +240,19 @@ curl.exe -s -o NUL -w "%{http_code}" http://127.0.0.1:5173
 内置提示词包 与三条工作流不在启动时从代码写入。阶段 E 验收通过后执行一次：
 
 ```powershell
+# Windows
 powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap\Initialize-ChengwenfangSeed.ps1
 ```
 
+```bash
+# macOS / Linux
+chmod +x scripts/bootstrap/Initialize-ChengwenfangSeed.sh
+./scripts/bootstrap/Initialize-ChengwenfangSeed.sh
+```
+
 未执行时，再次启动后端日志会出现「基础配置缺失」及上述命令；进程不因此退出。详见 [`scripts/bootstrap/README.md`](../scripts/bootstrap/README.md)。
+
+热点演示主题若报「请先由 AI 分析并确认主题主要意图」：catalog / 课程主题通常已成功；阶段 F 填 Key 后在 UI 确认意图即可，勿因此判定整次种子失败。
 
 ---
 
@@ -272,9 +283,9 @@ AI **不能**代替用户填写真实密钥。完成后请用户：
 2. Compose 四服务状态  
 3. 三个 Python CLI（article-extract / video-transcript / page-screenshot含 Chromium+PyMuPDF）是否就绪、ffmpeg 是否在 PATH  
 4. 后端 health、前端 URL  
-5. 是否已执行 `scripts/bootstrap/Initialize-ChengwenfangSeed.ps1`（未执行则生成用的 提示词包/工作流不在库里）  
-6. 仍待用户完成的设置项（API Key、SearXNG 来源）  
-7. 常用停止命令：`.\scripts\stop-java.ps1`；`docker compose --profile all stop`  
+5. 是否已执行种子脚本（`.ps1` 或 `Initialize-ChengwenfangSeed.sh`）；热点演示主题若因意图确认失败是否已说明不影响课程  
+6. 仍待用户完成的设置项（API Key、可选 SearXNG 来源）  
+7. 常用停止命令：`.\scripts\stop-java.ps1` 或结束前台 mvn/vite；`docker compose --profile all stop`  
 
 ---
 
@@ -283,7 +294,12 @@ AI **不能**代替用户填写真实密钥。完成后请用户：
 | 现象 | 排查 |
 |------|------|
 | Flyway / 连不上库 | `docker compose ps`；是否跳过了 `--wait`；端口 3306 是否被占用 |
-| 日志「基础配置缺失」 | 执行 `.\scripts\bootstrap\Initialize-ChengwenfangSeed.ps1`；不要指望启动自动灌 提示词包 |
+| 日志「基础配置缺失」 | 执行种子脚本（Windows `.ps1` / macOS `Initialize-ChengwenfangSeed.sh`）；不要指望启动自动灌 提示词包 |
+| `project name must not be empty` | 父目录含中文等非法字符时 Compose 默认名为空；本仓 `compose.yml` 已设 `name: chengwenfang`，或 `export COMPOSE_PROJECT_NAME=chengwenfang` |
+| 拉 Docker Hub 镜像超时 | 用国内加速源 pull `mysql:8.4` / `redis:7` 再 `docker tag` 成本地名，然后 `docker compose up`（示例见 README「macOS Apple Silicon 从零」） |
+| Docker Desktop（Apple Silicon）引擎起不来 | 安装 Rosetta；Settings 关闭「Use Rosetta for x86_64/amd64 emulation」后重启引擎 |
+| `nohup` 起的前后端莫名退出 | 改用阶段 E1 两个**前台**终端；勿依赖 `start.sh` 的 nohup 跨会话保活 |
+| 种子报「请先由 AI 分析并确认主题主要意图」 | 热点演示主题预期失败（无 Key）；课程主题与 catalog 仍可用；阶段 F 填 Key 后在 UI 确认 |
 | `npm run dev` 找不到 powershell | 用阶段 E1，或安装 PowerShell 7 |
 | 正文抽取失败 | 查 `scripts/article-extract/.venv`；Lightpanda：`docker ps` 是否有 `chengwenfang-lightpanda` |
 | 视频解析失败 | `ffmpeg -version`；video-transcript venv；设置里是否配置 Vision |
@@ -299,9 +315,13 @@ AI **不能**代替用户填写真实密钥。完成后请用户：
 ## 附录 — macOS / Linux 差异
 
 - 跳过 `use-utf8.ps1`。  
-- 包管理：Homebrew 等安装 `openjdk@21`、`maven`、`node`、`python`、`ffmpeg`、Docker。  
-- Compose 命令相同：`docker compose --profile all up -d --wait`。  
+- 包管理：Homebrew 装 `temurin`/`openjdk@21`、`maven`、`node`、`python`、`ffmpeg`、Docker；**无 Homebrew / 无 sudo** 时可用用户目录便携包（如 `~/tools` 下 Temurin 21 + Maven 3.9.x），Docker Desktop 可装到 `~/Applications`。详见根 [`README.md`](../README.md)「macOS Apple Silicon 从零」。  
+- Apple Silicon：Docker 首次若因 Rosetta 失败，先装 Rosetta，再关掉 Docker 的 Rosetta 仿真选项。  
+- Compose：命令相同；项目名已由 `compose.yml` 的 `name: chengwenfang` 固定。镜像超时则先加速源 pull + tag。  
+- 种子：`./scripts/bootstrap/Initialize-ChengwenfangSeed.sh`（不要调用 `.ps1`）。  
+- 进程：优先阶段 E1 双前台终端；`scripts/start.sh` 的 `nohup` 在部分 IDE 会话里会被带走。  
 - Python venv 解释器为 `.venv/bin/python`，**必须**改 `application.yml`（或环境覆盖）中三处 `python-executable`（article-extract / video-transcript / page-screenshot），否则 Java 仍找 Windows 路径。  
+- 仅课程主流程时：跳过阶段 C 与 SearXNG/Lightpanda；阶段 G 须标明「未装热点满血依赖」。  
 - `start-java.ps1` 不可用时改用阶段 E1。  
 
 ---

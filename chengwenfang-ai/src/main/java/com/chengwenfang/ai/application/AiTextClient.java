@@ -147,7 +147,8 @@ public class AiTextClient {
           ErrorCodes.TEXT_FAILED);
       throw new BusinessException(
           ErrorCodes.TEXT_FAILED,
-          (visionCall ? "多模态补全失败：" : "文本补全失败：") + e.getMessage(),
+          (visionCall ? "多模态补全失败：" : "文本补全失败：")
+              + AiUpstreamErrorMessages.humanize(e.getMessage()),
           502);
     }
   }

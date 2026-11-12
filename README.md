@@ -109,8 +109,10 @@
 
 需要：Docker Desktop、JDK 21、Maven、Node.js **22+**。
 
+### Windows
+
 ```powershell
-# Windows PowerShell · 仓库根目录
+# PowerShell · 仓库根目录
 . .\scripts\use-utf8.ps1
 docker compose up -d --wait          # 仅 MySQL + Redis
 npm install
@@ -122,7 +124,33 @@ mvn -pl chengwenfang-app -am spring-boot:run
 npm run dev:frontend
 ```
 
-打开 **http://127.0.0.1:5173** → **设置** 填写 AI API Key 并测试连接。
+### macOS / Linux（含 Apple Silicon）
+
+```bash
+# 仓库根目录；compose.yml 已固定 name=chengwenfang
+docker compose up -d --wait          # 仅 MySQL + Redis
+npm install
+chmod +x scripts/bootstrap/Initialize-ChengwenfangSeed.sh
+./scripts/bootstrap/Initialize-ChengwenfangSeed.sh
+
+# 用两个独立前台终端（勿依赖 nohup 后台；部分 IDE/会话会把后台进程带走）
+# 终端 1 — 后端
+mvn -pl chengwenfang-app -am spring-boot:run
+# 终端 2 — 前端
+npm run dev:frontend
+```
+
+Apple Silicon / 空环境常见坑（细节见下方「macOS Apple Silicon 从零」）：
+
+| 现象 | 处理 |
+|------|------|
+| 无 Homebrew / 无 sudo | 用户目录便携 JDK 21 + Maven；Docker Desktop 可装到 `~/Applications` |
+| Docker 引擎起不来 / Rosetta 失败 | 先装 Rosetta；Docker Desktop → Settings 关掉强制用 Rosetta 跑 x86/amd64 |
+| `project name must not be empty` | 父目录含中文时旧版会空名；本仓已设 `name: chengwenfang`，也可 `export COMPOSE_PROJECT_NAME=chengwenfang` |
+| 拉 `mysql:8.4` / `redis:7` 超时 | 先从镜像加速源 pull 再 `docker tag` 成本地名（见下方） |
+| 种子脚本是 `.ps1` | 用 `Initialize-ChengwenfangSeed.sh`；热点演示主题可能因未配 API Key 跳过意图确认，**课程主题与提示词包不受影响** |
+
+打开 **http://127.0.0.1:5173** → **设置** 填写 AI API Key 并测试连接（Key 须你自己填，种子不会写入）。
 
 | 地址 | 用途 |
 |------|------|
@@ -136,7 +164,7 @@ npm run dev:frontend
 # Windows
 powershell -ExecutionPolicy Bypass -File .\scripts\start-java.ps1
 
-# macOS / Linux（bash）
+# macOS / Linux：课程主流程更推荐上面「双前台终端」；start.sh 用 nohup，在部分会话里进程会退出
 chmod +x scripts/start.sh && ./scripts/start.sh
 ```
 
@@ -150,13 +178,39 @@ npm install && npm run dev:frontend
 
 停止后端：`.\scripts\stop-java.ps1`（Windows）、`kill $(cat .chengwenfang-backend.pid .chengwenfang-frontend.pid)`（`start.sh`），或 `docker compose --profile app stop app`。
 
+### macOS Apple Silicon 从零（无 Homebrew 也可）
+
+目标：只跑**课程主流程**（MySQL + Redis + 本机 JDK/Maven/Node）。热点满血（SearXNG / Python CLI）另见 [热点模式](#热点模式可选加装)。
+
+1. **工具**（已有 Homebrew 则用 brew 装 `temurin@21` / `maven` / Docker Desktop；否则用户目录便携即可）  
+   - JDK 21（如 Temurin）→ 例如 `~/tools/jdk-21`，`export JAVA_HOME=...` 并加入 `PATH`  
+   - Maven 3.9.x → 例如 `~/tools/apache-maven-3.9.9/bin` 加入 `PATH`  
+   - Node.js **22+**（已有可跳过）  
+   - Docker Desktop：可装到 `~/Applications`，首次打开并完成引擎启动  
+2. **Rosetta**：若引擎报 Rosetta 安装失败，终端执行 `softwareupdate --install-rosetta`（按系统提示）；然后在 Docker Desktop 设置里**关闭**「Use Rosetta for x86_64/amd64 emulation」后再重启引擎。  
+3. **Compose 项目名**：本仓 `compose.yml` 已写 `name: chengwenfang`。若仍报空项目名：`export COMPOSE_PROJECT_NAME=chengwenfang`。  
+4. **镜像拉取超时**（国内常见）：先 pull 再打官方 tag，再 `docker compose up`：
+
+```bash
+# 加速源示例（以当时可用的镜像站为准；站名会变）
+docker pull docker.m.daocloud.io/library/mysql:8.4
+docker tag  docker.m.daocloud.io/library/mysql:8.4 mysql:8.4
+docker pull docker.m.daocloud.io/library/redis:7
+docker tag  docker.m.daocloud.io/library/redis:7 redis:7
+docker compose up -d --wait
+```
+
+5. **种子**：`./scripts/bootstrap/Initialize-ChengwenfangSeed.sh`（不要找 `.ps1`）。日志里热点演示主题若因「请先由 AI 分析并确认主题主要意图」失败，可忽略——填好 API Key 后在 UI 确认意图即可；提示词包、工作流、课程主题已导入则课程主流程可用。  
+6. **进程**：在 Cursor / 终端各开一个前台会话跑后端与 Vite；不要依赖 `nohup ... &` 跨会话保活。  
+7. **你仍须手动完成**：浏览器打开设置页填写 AI API Key。本次若只跟课程，不必装 SearXNG / Python CLI。
+
 ### 用 AI 从零搭建
 
 交给 Cursor / Codex 等执行：
 
 **[`docs/AI从零搭建满血成文坊.md`](docs/AI从零搭建满血成文坊.md)**
 
-> 请阅读并严格执行 `docs/AI从零搭建满血成文坊.md`。若只要课程主流程：Docker 仅 MySQL/Redis，跳过 Python CLI 与 SearXNG/Lightpanda；直到 `8001/api/health` 与 `5173` 可访问。API Key 留给我在设置页填写。
+> 请阅读并严格执行 `docs/AI从零搭建满血成文坊.md`。若只要课程主流程：Docker 仅 MySQL/Redis，跳过 Python CLI 与 SearXNG/Lightpanda；直到 `8001/api/health` 与 `5173` 可访问。API Key 留给我在设置页填写。macOS Apple Silicon 按文档附录与 README「macOS Apple Silicon 从零」处理 Rosetta、镜像加速与种子 `.sh`。
 
 ---
 
@@ -239,7 +293,7 @@ winget install Docker.DockerDesktop Microsoft.OpenJDK.21 OpenJS.NodeJS.LTS
 java -version; mvn -version; node -v; docker compose version
 ```
 
-macOS / Linux：Homebrew 等装齐后跳过 `use-utf8.ps1`；`application.yml` 里 Python 路径需改为 `.venv/bin/python`。
+macOS / Linux：Homebrew 或用户目录便携 JDK/Maven；跳过 `use-utf8.ps1`。满血热点时 `application.yml` 里三处 `python-executable` 改为 `.venv/bin/python`。Apple Silicon 细节见上文「macOS Apple Silicon 从零」。
 
 </details>
 
