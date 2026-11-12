@@ -47,7 +47,7 @@ Maven 模块按业务域切分；**模块内**统一 `facade / application / dom
 依赖只能**自上而下**：
 
 ```text
-app → mode-* → content|quality|publishing|sourcing → notification|skill|file|job|ai|crawler|common|infra
+app → mode-* → content|quality|publishing|sourcing → notification|prompt|file|job|ai|crawler|common|infra
 ```
 
 同层仅允许：`quality → content`、`publishing → content`；`mode-course` 与 `mode-hotnews` 互不依赖。

@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-java.ps1",
     "dev:frontend": "vite --host 127.0.0.1",
-    "dev:api": "mvn -pl chengwenfang-app -am -DskipTests package && java -jar chengwenfang-app/target/chengwenfang-app-0.1.0-SNAPSHOT.jar",
+    "dev:api": "mvn -pl chengwenfang-app -am -DskipTests package && java -jar chengwenfang-app/target/chengwenfang-app.jar",
     "build": "tsc -b && vite build",
     "test": "vitest run",
     "test:backend": "mvn -pl chengwenfang-app -am test",

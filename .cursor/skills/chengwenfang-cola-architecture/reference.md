@@ -61,7 +61,7 @@ adapter.web.content.CourseController → content.facade.ContentFacade → infras
 ```text
 Controller 创建 Job
   → adapter.worker.Handler → mode.course.application.generation.*Pipeline
-    → skill/ai/content Facades → job_events / NotificationFacade
+    → prompt/ai/content Facades → job_events / NotificationFacade
 ```
 
 ### 热点抓取
@@ -73,7 +73,7 @@ HotNewsFacade.startFetch → jobs
 
 ## 4. 数据与迁移
 
-- Flyway 仅在 `chengwenfang-app/.../db/migration`：合并后为 `V1__schema.sql` + `V2__dictionaries.sql`。
+- Flyway 仅在 `chengwenfang-app/.../db/migration`：`V1` 起递增（含 `prompt_packs` 更名、视频帧字段等后续迁移）。
 - `@MapperScan` 指向 `com.chengwenfang.*.infrastructure.mapper`。
 - 表与字典以 Flyway 脚本及运行中的库为准。
 
