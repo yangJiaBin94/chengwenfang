@@ -28,6 +28,7 @@ type BackendProvider = {
   imageQuality?: string | null;
   enabled?: boolean;
   apiKeyConfigured?: boolean;
+  webSearchSupported?: boolean;
 };
 
 type BackendAiSettings = {
@@ -87,6 +88,7 @@ function mapProvider(raw: BackendProvider | undefined, kind: AiSettingsKind): Ai
     maxOutputTokens: raw?.maxOutputTokens ?? null,
     imageQuality: (raw?.imageQuality as AiProviderConfig["imageQuality"]) ?? null,
     enabled: raw?.enabled ?? true,
+    webSearchSupported: !!raw?.webSearchSupported,
   };
 }
 

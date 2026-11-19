@@ -260,7 +260,7 @@ chmod +x scripts/bootstrap/Initialize-ChengwenfangSeed.sh
 ./scripts/bootstrap/Initialize-ChengwenfangSeed.sh
 ```
 
-未执行时，再次启动后端日志会出现「基础配置缺失」及上述命令；进程不因此退出。详见 [`scripts/bootstrap/README.md`](../scripts/bootstrap/README.md)。
+未执行时，再次启动后端日志会出现「基础配置缺失」及上述命令；进程不因此退出。详见 [`scripts/bootstrap/README.md`](../scripts/bootstrap/README.md)。同次导入还会写入信源沉淀池（`source-channel-catalog.json`），说明见 [`docs/信源沉淀池.md`](./信源沉淀池.md)。
 
 热点演示主题若报「请先由 AI 分析并确认主题主要意图」：catalog / 课程主题通常已成功；阶段 F 填 Key 后在 UI 确认意图即可，勿因此判定整次种子失败。
 

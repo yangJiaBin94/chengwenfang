@@ -3988,6 +3988,23 @@ p {
   line-height: 1.45;
 }
 
+.provider-capability {
+  margin-top: 8px !important;
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #ecefe8;
+  color: #6a7364;
+  font-size: 12px;
+  font-weight: 700;
+  max-width: none;
+}
+
+.provider-capability.is-ready {
+  background: #e5f0e3;
+  color: #35603a;
+}
+
 .provider-test-btn {
   flex-shrink: 0;
   min-height: 38px;

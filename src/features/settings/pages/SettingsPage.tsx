@@ -30,6 +30,7 @@ import type { LayoutThemeData } from "../api";
 import {
   embeddingProtocolOptions,
   imageProtocolOptions,
+  supportsVisionWebSearch,
   visionProtocolOptions,
 } from "../model";
 import type { AiProviderConfig, AiSettings, AiSettingsKind } from "../model";
@@ -298,6 +299,14 @@ export function AiSettingsPage({
               ).map((tab) => {
                 const configured = !!draft[tab.kind].apiKeyConfigured;
                 const active = activeKind === tab.kind;
+                const statusLabel =
+                  tab.kind === "vision" && configured
+                    ? supportsVisionWebSearch(draft.vision)
+                      ? "已配置 · 可联网"
+                      : "已配置 · 无联网"
+                    : configured
+                      ? "已配置"
+                      : "未配置";
                 return (
                   <button
                     key={tab.kind}
@@ -315,7 +324,7 @@ export function AiSettingsPage({
                     <span
                       className={`provider-tab-status${configured ? " is-ready" : ""}`}
                     >
-                      {configured ? "已配置" : "未配置"}
+                      {statusLabel}
                     </span>
                   </button>
                 );

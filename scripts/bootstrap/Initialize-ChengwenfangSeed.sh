@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Import scripts/bootstrap/builtin-catalog.json (+ default-themes.json) into local MySQL.
+# Import scripts/bootstrap/builtin-catalog.json (+ default-themes.json + source-channel-catalog.json) into local MySQL.
 # macOS / Linux 等价于 Initialize-ChengwenfangSeed.ps1。须先起好 MySQL。
 set -euo pipefail
 
@@ -13,9 +13,10 @@ fi
 
 CATALOG="$ROOT/scripts/bootstrap/builtin-catalog.json"
 DEFAULT_THEMES="$ROOT/scripts/bootstrap/default-themes.json"
-APP_ARGS="--chengwenfang.bootstrap.catalog=${CATALOG} --chengwenfang.bootstrap.default-themes=${DEFAULT_THEMES} --chengwenfang.bootstrap.force=${FORCE}"
+SOURCE_CHANNELS="$ROOT/scripts/bootstrap/source-channel-catalog.json"
+APP_ARGS="--chengwenfang.bootstrap.catalog=${CATALOG} --chengwenfang.bootstrap.default-themes=${DEFAULT_THEMES} --chengwenfang.bootstrap.source-channel-catalog=${SOURCE_CHANNELS} --chengwenfang.bootstrap.force=${FORCE}"
 
-echo "Importing bootstrap catalog=${CATALOG} defaultThemes=${DEFAULT_THEMES} force=${FORCE}"
+echo "Importing bootstrap catalog=${CATALOG} defaultThemes=${DEFAULT_THEMES} sourceChannels=${SOURCE_CHANNELS} force=${FORCE}"
 # Only run on chengwenfang-app; -am hits parent POM and fails without mainClass
 mvn -pl chengwenfang-app -DskipTests spring-boot:run \
   -Dspring-boot.run.profiles=bootstrap-seed \

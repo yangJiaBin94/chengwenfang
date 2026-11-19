@@ -78,6 +78,10 @@ public class BuiltinSeedImporter implements ApplicationRunner {
   @Value("${chengwenfang.bootstrap.default-themes:scripts/bootstrap/default-themes.json}")
   private String defaultThemesPath;
 
+  /** 信源沉淀池种子（跨主题 RSS 等，按 code 幂等导入）。 */
+  @Value("${chengwenfang.bootstrap.source-channel-catalog:scripts/bootstrap/source-channel-catalog.json}")
+  private String sourceChannelCatalogPath;
+
   /** 为 true 时用种子覆盖已有内置提示词包 与工作流发布版本。 */
   @Value("${chengwenfang.bootstrap.force:false}")
   private boolean force;
@@ -157,9 +161,101 @@ public class BuiltinSeedImporter implements ApplicationRunner {
       }
     }
     importDefaultThemes(resolveCatalog(defaultThemesPath));
+    int[] channelCatalogStats = importSourceChannelCatalog(resolveCatalog(sourceChannelCatalogPath));
     log.info(
-        "基础配置导入完成 promptPacksWritten={} promptPacksSkipped={} workflowsPublished={} workflowsSkipped={} themesWritten={} themesSkipped={} force={}",
-        promptPackCreated, promptPackSkipped, workflowPublished, workflowSkipped, themeWritten, themeSkipped, force);
+        "基础配置导入完成 promptPacksWritten={} promptPacksSkipped={} workflowsPublished={} workflowsSkipped={} themesWritten={} themesSkipped={} sourceChannelsWritten={} sourceChannelsSkipped={} force={}",
+        promptPackCreated,
+        promptPackSkipped,
+        workflowPublished,
+        workflowSkipped,
+        themeWritten,
+        themeSkipped,
+        channelCatalogStats[0],
+        channelCatalogStats[1],
+        force);
+  }
+
+  /**
+   * 导入信源沉淀池：按 {@code code} 缺则插；{@code force} 时覆盖元数据。
+   *
+   * @param catalogFile source-channel-catalog.json
+   * @return {@code [written, skipped]}
+   * @throws Exception 解析或落库失败
+   */
+  private int[] importSourceChannelCatalog(Path catalogFile) throws Exception {
+    JsonNode root = objectMapper.readTree(catalogFile.toFile());
+    JsonNode channels = root.path("channels");
+    int written = 0;
+    int skipped = 0;
+    if (!channels.isArray()) {
+      log.warn("信源沉淀池种子无 channels 数组，跳过 file={}", catalogFile);
+      return new int[] {0, 0};
+    }
+    for (JsonNode channelNode : channels) {
+      if (upsertSourceChannelCatalogEntry(channelNode)) {
+        written++;
+      } else {
+        skipped++;
+      }
+    }
+    return new int[] {written, skipped};
+  }
+
+  /**
+   * 按业务 code 写入一条沉淀池渠道。
+   *
+   * @param channelNode 渠道节点
+   * @return true 表示本次写入或覆盖
+   * @throws Exception JSON 序列化失败
+   */
+  private boolean upsertSourceChannelCatalogEntry(JsonNode channelNode) throws Exception {
+    String code = text(channelNode, "code").trim();
+    if (StrUtil.isBlank(code)) {
+      log.warn("跳过无 code 的沉淀池条目");
+      return false;
+    }
+    String name = text(channelNode, "name").trim();
+    String channelType = StrUtil.blankToDefault(text(channelNode, "channelType"), "rss").trim();
+    String baseUrl = text(channelNode, "baseUrl").trim();
+    if (StrUtil.isBlank(name) || StrUtil.isBlank(baseUrl)) {
+      log.warn("跳过沉淀池条目 code={}：name/baseUrl 为空", code);
+      return false;
+    }
+    JsonNode configNode = channelNode.get("config");
+    String configJson = null;
+    if (configNode != null && !configNode.isNull()) {
+      configJson = objectMapper.writeValueAsString(configNode);
+    }
+    JsonNode tagsNode = channelNode.path("tags");
+    List<String> tags = tagsNode.isArray()
+        ? objectMapper.convertValue(tagsNode, new TypeReference<List<String>>() {})
+        : List.of();
+    String tagsJson = objectMapper.writeValueAsString(tags);
+    boolean enabled = !channelNode.path("enabled").isBoolean() || channelNode.path("enabled").asBoolean(true);
+    int sortOrder = channelNode.path("sortOrder").asInt(100);
+    List<Map<String, Object>> existing = jdbc.queryForList(
+        "SELECT id FROM source_channel_catalog WHERE code=? LIMIT 1", code);
+    if (!existing.isEmpty() && !force) {
+      log.info("跳过已有沉淀池渠道 code={}", code);
+      return false;
+    }
+    if (existing.isEmpty()) {
+      String id = StrUtil.blankToDefault(text(channelNode, "id").trim(), IdsUtil.newId());
+      jdbc.update(
+          "INSERT INTO source_channel_catalog "
+              + "(id, code, name, channel_type, base_url, config_json, tags_json, enabled, sort_order, created_at, updated_at) "
+              + "VALUES (?,?,?,?,?,?,?,?,?,UTC_TIMESTAMP(3),UTC_TIMESTAMP(3))",
+          id, code, name, channelType, baseUrl, configJson, tagsJson, enabled, sortOrder);
+      log.info("创建沉淀池渠道 code={} name={} tags={}", code, name, tagsJson);
+      return true;
+    }
+    String id = String.valueOf(existing.get(0).get("id"));
+    jdbc.update(
+        "UPDATE source_channel_catalog SET name=?, channel_type=?, base_url=?, config_json=?, tags_json=?, "
+            + "enabled=?, sort_order=?, updated_at=UTC_TIMESTAMP(3) WHERE id=?",
+        name, channelType, baseUrl, configJson, tagsJson, enabled, sortOrder, id);
+    log.info("覆盖沉淀池渠道 code={} name={} tags={}", code, name, tagsJson);
+    return true;
   }
 
   /**

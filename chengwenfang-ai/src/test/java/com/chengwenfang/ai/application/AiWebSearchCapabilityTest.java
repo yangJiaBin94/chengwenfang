@@ -17,6 +17,7 @@ class AiWebSearchCapabilityTest {
     assertThat(AiWebSearchCapability.supports(cfg)).isTrue();
     assertThat(AiWebSearchCapability.resolveWebSearchModel(cfg))
         .isEqualTo(AiWebSearchConstants.DEEPSEEK_FLASH_MODEL);
+    assertThat(AiWebSearchCapability.isDeepSeekEndpoint("https://api.deepseek.com/v1")).isTrue();
   }
 
   @Test

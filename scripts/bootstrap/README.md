@@ -17,9 +17,9 @@ chmod +x scripts/bootstrap/Initialize-ChengwenfangSeed.sh
 ./scripts/bootstrap/Initialize-ChengwenfangSeed.sh
 ```
 
-脚本会以 `bootstrap-seed` 配置启动一次后端：先跑 Flyway 建表，再导入 `builtin-catalog.json`，然后进程退出。
+脚本会以 `bootstrap-seed` 配置启动一次后端：先跑 Flyway 建表，再导入 `builtin-catalog.json`、`default-themes.json`、`source-channel-catalog.json`（信源沉淀池），然后进程退出。
 
-已存在的同名同场景 提示词包、已发布的内置工作流会跳过，避免盖掉你在页面上改过的内容。
+已存在的同名同场景 提示词包、已发布的内置工作流、同 `code` 的沉淀池渠道会跳过，避免盖掉你在页面上改过的内容。
 
 需要用仓库种子覆盖这些内置行时（会新增一版已发布工作流，并重写对应 提示词包 正文）：
 
@@ -51,10 +51,17 @@ powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap\Initialize-Chengwen
 - 热点种子主题须已确认主要意图；无 AI Key 时该步可能失败，不影响课程种子与 catalog
 - 开源对外导出用同目录 `default-themes.oss.json`（最小 Demo Course / Demo Hot News）；见 `scripts/oss/export-to-public.ps1`
 
+`source-channel-catalog.json`（同次导入）：
+
+- 跨主题信源沉淀池（RSS/Atom 等），带 `ai` / `web3` 场景标签
+- 按 `code` 缺则插；`-Force` 时覆盖名称、URL、标签与排序
+- 说明见 [`docs/信源沉淀池.md`](../../docs/信源沉淀池.md)
+
 ## 更新种子
 
 - **提示词正文**：只维护在 `builtin-catalog.json`（或前端改库）。**不要**在 Java 里嵌 `systemInstructions`。
-- 导入后以 MySQL `prompt_packs` 表为准；应用启动不会把代码提示词写回库。
+- **沉淀池渠道**：只维护在 `source-channel-catalog.json`，并保持 `SourceChannelCatalogCodes` / `Tags` 与 JSON 一致。
+- 导入后以 MySQL `prompt_packs` / `source_channel_catalog` 表为准；应用启动不会把代码提示词写回库。
 - 若只刷新三条内置工作流图、保留现有 提示词包 正文，可运行：
 
 ```text

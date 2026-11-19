@@ -35,4 +35,8 @@ public class ProviderPublicView {
   private Boolean enabled;
   /** 是否已配置 apiKey（不暴露明文）。 */
   private boolean apiKeyConfigured;
+  /**
+   * 是否支持服务端联网搜索（当前仅 vision + DeepSeek 端点且已配置 Key 时为 true）。
+   */
+  private boolean webSearchSupported;
 }

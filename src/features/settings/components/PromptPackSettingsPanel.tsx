@@ -30,6 +30,7 @@ import {
 import type { LayoutThemeData } from "../api";
 import {
   imageProtocolOptions,
+  supportsVisionWebSearch,
   textProtocolOptions,
   visionProtocolOptions,
 } from "../model";
@@ -607,6 +608,8 @@ export function ProviderCard({
   ) => void;
   onTest: () => void;
 }) {
+  const webSearchSupported =
+    kind === "vision" ? supportsVisionWebSearch(config) : false;
   return (
     <article className={`provider-panel provider-${kind}`}>
       <div className="provider-panel-head">
@@ -614,6 +617,21 @@ export function ProviderCard({
           <span className="provider-panel-badge">{badge}</span>
           <h3>{title}</h3>
           <p>{description}</p>
+          {kind === "vision" ? (
+            <p
+              className={`provider-capability${webSearchSupported ? " is-ready" : ""}`}
+              title={
+                webSearchSupported
+                  ? "当前端点支持服务端联网搜索（雷达 AI 联网搜选题等）"
+                  : "需配置 DeepSeek 请求 URL，并已保存或填写 API Key"
+              }
+            >
+              联网搜索：{webSearchSupported ? "已支持" : "不支持"}
+              {!webSearchSupported
+                ? "（DeepSeek 端点 + API Key）"
+                : "（DeepSeek Web Search）"}
+            </p>
+          ) : null}
         </div>
         <button type="button" className="provider-test-btn" onClick={onTest} disabled={testing}>
           {testing ? "测试中..." : "测试连接"}

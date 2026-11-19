@@ -1,0 +1,94 @@
+{
+  "channels": [
+    {
+      "id": "a1000000-0000-4000-8000-000000000001",
+      "code": "sopilot_ai",
+      "name": "SoPilot AI 起爆帖",
+      "channelType": "rss",
+      "baseUrl": "https://sopilot.net/rss/hottweets",
+      "tags": ["ai"],
+      "enabled": true,
+      "sortOrder": 10
+    },
+    {
+      "id": "a1000000-0000-4000-8000-000000000003",
+      "code": "hnrss_ai",
+      "name": "Hacker News AI 过滤",
+      "channelType": "rss",
+      "baseUrl": "https://hnrss.org/newest?q=AI+OR+LLM",
+      "tags": ["ai"],
+      "enabled": true,
+      "sortOrder": 15
+    },
+    {
+      "id": "a1000000-0000-4000-8000-000000000002",
+      "code": "sopilot_web3",
+      "name": "SoPilot Web3 起爆帖",
+      "channelType": "rss",
+      "baseUrl": "https://sopilot.net/rss/hottweets?type=Web3",
+      "tags": ["web3"],
+      "enabled": true,
+      "sortOrder": 20
+    },
+    {
+      "id": "a1000000-0000-4000-8000-000000000007",
+      "code": "decrypt",
+      "name": "Decrypt",
+      "channelType": "rss",
+      "baseUrl": "https://decrypt.co/feed",
+      "tags": ["web3"],
+      "enabled": true,
+      "sortOrder": 22
+    },
+    {
+      "id": "a1000000-0000-4000-8000-000000000008",
+      "code": "cointelegraph",
+      "name": "Cointelegraph",
+      "channelType": "rss",
+      "baseUrl": "https://cointelegraph.com/rss",
+      "tags": ["web3"],
+      "enabled": true,
+      "sortOrder": 24
+    },
+    {
+      "id": "a1000000-0000-4000-8000-000000000004",
+      "code": "mit_tr_ai",
+      "name": "MIT Technology Review AI",
+      "channelType": "rss",
+      "baseUrl": "https://www.technologyreview.com/topic/artificial-intelligence/feed",
+      "tags": ["ai"],
+      "enabled": true,
+      "sortOrder": 25
+    },
+    {
+      "id": "a1000000-0000-4000-8000-000000000009",
+      "code": "bitcoin_magazine",
+      "name": "Bitcoin Magazine",
+      "channelType": "rss",
+      "baseUrl": "https://bitcoinmagazine.com/.rss/full/",
+      "tags": ["web3"],
+      "enabled": true,
+      "sortOrder": 26
+    },
+    {
+      "id": "a1000000-0000-4000-8000-000000000005",
+      "code": "simonwillison",
+      "name": "Simon Willison Weblog",
+      "channelType": "rss",
+      "baseUrl": "https://simonwillison.net/atom/everything/",
+      "tags": ["ai"],
+      "enabled": true,
+      "sortOrder": 30
+    },
+    {
+      "id": "a1000000-0000-4000-8000-000000000006",
+      "code": "lilianweng",
+      "name": "Lilian Weng Blog",
+      "channelType": "rss",
+      "baseUrl": "https://lilianweng.github.io/index.xml",
+      "tags": ["ai"],
+      "enabled": true,
+      "sortOrder": 35
+    }
+  ]
+}

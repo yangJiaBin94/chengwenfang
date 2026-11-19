@@ -12,6 +12,8 @@ export type AiProviderConfig = {
   baseUrl: string;
   apiKey: string;
   apiKeyConfigured?: boolean;
+  /** 后端判定：当前 vision 配置是否支持联网搜索。 */
+  webSearchSupported?: boolean;
   protocol: TextProtocol | ImageProtocol | EmbeddingProtocol;
   timeoutSeconds?: number;
   maxRetries?: number;
@@ -20,6 +22,19 @@ export type AiProviderConfig = {
   imageQuality?: "low" | "medium" | "high" | null;
   enabled?: boolean;
 };
+
+/**
+ * 与后端 {@code AiWebSearchCapability} 一致：DeepSeek 端点且已有 Key（含未保存的新 Key）。
+ */
+export function supportsVisionWebSearch(
+  config: Pick<AiProviderConfig, "baseUrl" | "apiKey" | "apiKeyConfigured">,
+): boolean {
+  const baseUrl = (config.baseUrl || "").trim().toLowerCase();
+  const hasKey =
+    !!config.apiKeyConfigured || !!(config.apiKey && config.apiKey.trim());
+  if (!hasKey || !baseUrl) return false;
+  return baseUrl.includes("deepseek.com") || baseUrl.includes("api.deepseek");
+}
 
 /** Independent image, vision, and embedding provider configuration. */
 export type AiSettings = {

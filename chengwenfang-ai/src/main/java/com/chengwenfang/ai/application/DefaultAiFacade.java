@@ -306,6 +306,9 @@ public class DefaultAiFacade implements AiSettingsFacade, AiImageFacade, AiVisio
 
   private ProviderPublicView toPublic(AiProviderConfigEntity cfg) {
     AiProviderKind kind = AiProviderKind.from(cfg.getKind());
+    // 联网搜索能力仅对多模态配置有意义，与雷达 AI 自搜门控一致
+    boolean webSearchSupported =
+        kind == AiProviderKind.VISION && AiWebSearchCapability.supports(cfg);
     return ProviderPublicView.builder()
         .kind(cfg.getKind())
         .name(cfg.getName())
@@ -319,6 +322,7 @@ public class DefaultAiFacade implements AiSettingsFacade, AiImageFacade, AiVisio
         .imageQuality(cfg.getImageQuality())
         .enabled(cfg.getEnabled())
         .apiKeyConfigured(StrUtil.isNotBlank(cfg.getApiKeyCiphertext()))
+        .webSearchSupported(webSearchSupported)
         .build();
   }
 

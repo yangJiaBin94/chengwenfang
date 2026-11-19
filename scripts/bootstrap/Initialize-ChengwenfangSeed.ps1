@@ -1,7 +1,7 @@
-# Import scripts/bootstrap/builtin-catalog.json (+ default-themes.json) into local MySQL.
+# Import scripts/bootstrap/builtin-catalog.json (+ default-themes.json + source-channel-catalog.json) into local MySQL.
 # 使用 application.yml 的库配置（默认库名 chengwenfang、Redis database=0；与另一实例并存时可改端口 / Redis DB）。
 # Requires Docker MySQL 已就绪。Starts backend once with bootstrap-seed (Flyway + import) then exits.
-# Existing same-name PromptPacks / published workflows are skipped unless -Force.
+# Existing same-name PromptPacks / published workflows / 沉淀池 code 会跳过，unless -Force.
 param(
     [switch]$Force
 )
@@ -17,10 +17,11 @@ if (Test-Path $utf8) {
 
 $catalog = (Resolve-Path (Join-Path $PSScriptRoot "builtin-catalog.json")).Path.Replace("\", "/")
 $defaultThemes = (Resolve-Path (Join-Path $PSScriptRoot "default-themes.json")).Path.Replace("\", "/")
+$sourceChannels = (Resolve-Path (Join-Path $PSScriptRoot "source-channel-catalog.json")).Path.Replace("\", "/")
 $forceValue = if ($Force) { "true" } else { "false" }
-$appArgs = "--chengwenfang.bootstrap.catalog=$catalog --chengwenfang.bootstrap.default-themes=$defaultThemes --chengwenfang.bootstrap.force=$forceValue"
+$appArgs = "--chengwenfang.bootstrap.catalog=$catalog --chengwenfang.bootstrap.default-themes=$defaultThemes --chengwenfang.bootstrap.source-channel-catalog=$sourceChannels --chengwenfang.bootstrap.force=$forceValue"
 
-Write-Host "Importing bootstrap catalog=$catalog defaultThemes=$defaultThemes force=$forceValue"
+Write-Host "Importing bootstrap catalog=$catalog defaultThemes=$defaultThemes sourceChannels=$sourceChannels force=$forceValue"
 # Only run on chengwenfang-app; -am hits parent POM and fails without mainClass
 mvn -pl chengwenfang-app -DskipTests spring-boot:run "-Dspring-boot.run.profiles=bootstrap-seed" "-Dspring-boot.run.arguments=$appArgs"
 if ($LASTEXITCODE -ne 0) {
