@@ -45,6 +45,11 @@ const stages = [
     "素材筛选",
     "按主题相关性与营销等规则过滤候选，弃用只记日志。",
   ],
+  [
+    "radar_ai_web_search_topics",
+    "AI 联网搜选题",
+    "配置具备联网搜索能力时，按主题意图自搜可写选题并追加候选；否则跳过。",
+  ],
   ["radar_persist_cluster", "落库与成簇", "幸存者入库、成簇，并合并簇摘要。"],
   [
     "radar_ai_theme_seed",
@@ -67,6 +72,7 @@ const runningNotes: Record<string, string> = {
   radar_enrich_summarize: "正在解析正文/视频并生成事实速览...",
   radar_candidate_filter: "正在按主题与营销规则筛选素材...",
   radar_marketing_filter: "正在按主题与营销规则筛选素材...",
+  radar_ai_web_search_topics: "正在联网搜索可写选题...",
   radar_persist_cluster: "正在落库、成簇并合并摘要...",
   radar_ai_theme_seed: "正在生成/补全 AI 主题素材...",
   radar_score_top10: "正在评分并标记 Top10...",
@@ -443,6 +449,9 @@ export function HotNewsRadarCollectExecutionPage({
     }
     if (key === "radar_candidate_filter") {
       return resolveRadarStageDoneNote(related, "filterNote") || "";
+    }
+    if (key === "radar_ai_web_search_topics") {
+      return resolveRadarStageDoneNote(related, "aiWebSearchNote") || "";
     }
     if (key === "radar_persist_cluster") {
       return resolveRadarStageDoneNote(related, "persistNote") || "";

@@ -56,4 +56,8 @@ public class RadarCollectCandidate {
   private boolean marketing;
   /** 落库后的 source_item id。 */
   private String persistedSourceId;
+  /**
+   * 来源形态（如 {@code ai_web_search}）；可空表示渠道抓取。
+   */
+  private String originKind;
 }

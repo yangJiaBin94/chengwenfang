@@ -32,4 +32,6 @@ public class RadarSurvivorPersistRequest {
   private String siteLabel;
   /** 候选临时 ID（用于回写）。 */
   private String tempId;
+  /** 来源形态（如 ai_web_search）；可空。 */
+  private String originKind;
 }

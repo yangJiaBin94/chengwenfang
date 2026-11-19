@@ -27,6 +27,10 @@ public enum HotNewsRadarCollectNodeType {
    * <p>历史 typeKey {@code radar_marketing_filter} 仍可经 {@link #from(String)} 解析到本枚举。
    */
   CANDIDATE_FILTER("radar_candidate_filter", "素材筛选", "text", true),
+  /**
+   * 配置具备 WebSearch 能力时：按主题意图联网自搜并追加可写选题候选；否则空跑。
+   */
+  AI_WEB_SEARCH_TOPICS("radar_ai_web_search_topics", "AI 联网搜选题", "text", true),
   /** 幸存者落库、成簇、合并簇摘要。 */
   PERSIST_CLUSTER("radar_persist_cluster", "落库与成簇", "text", true),
   /** 按主题问卷生成 AI 主题种子素材；本批不足限额时补齐（不走渠道抓取）。 */

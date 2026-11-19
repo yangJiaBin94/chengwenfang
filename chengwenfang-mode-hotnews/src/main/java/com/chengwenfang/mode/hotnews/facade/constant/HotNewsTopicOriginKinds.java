@@ -10,6 +10,19 @@ public final class HotNewsTopicOriginKinds {
   /** 展示标签：AI 主题素材。 */
   public static final String AI_THEME_SEED_LABEL = "AI 主题素材";
 
+  /** AI 联网自搜产出的有出处选题素材。 */
+  public static final String AI_WEB_SEARCH = "ai_web_search";
+
+  /** 展示标签：AI 联网选题。 */
+  public static final String AI_WEB_SEARCH_LABEL = "AI 联网选题";
+
+  /**
+   * 主题下「AI 联网选题」占位渠道 baseUrl（disabled，不参与 FETCH_CHANNELS）。
+   * 用于 source_items.channel_id 外键。
+   */
+  public static final String AI_WEB_SEARCH_CHANNEL_BASE_URL =
+      "https://local.chengwenfang/ai-web-search";
+
   private HotNewsTopicOriginKinds() {}
 
   /**
@@ -20,5 +33,15 @@ public final class HotNewsTopicOriginKinds {
    */
   public static boolean isAiThemeSeed(String originKind) {
     return AI_THEME_SEED.equals(originKind);
+  }
+
+  /**
+   * 是否为 AI 联网自搜素材。
+   *
+   * @param originKind 来源形态
+   * @return 匹配则为 true
+   */
+  public static boolean isAiWebSearch(String originKind) {
+    return AI_WEB_SEARCH.equals(originKind);
   }
 }

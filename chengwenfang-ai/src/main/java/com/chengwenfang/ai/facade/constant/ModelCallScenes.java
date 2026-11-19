@@ -34,6 +34,10 @@ public final class ModelCallScenes {
   public static final String RADAR_CLUSTER_SUMMARY_MERGE = "radar_cluster_summary_merge";
   /** 雷达采集：按主题问卷生成 AI 主题种子素材。 */
   public static final String RADAR_AI_THEME_SEED = "radar_ai_theme_seed";
+  /** 雷达采集：AI 联网自搜选题（服务端 web search）。 */
+  public static final String RADAR_AI_WEB_SEARCH = "radar_ai_web_search";
+  /** 雷达采集：联网结果二次结构化抽取。 */
+  public static final String RADAR_AI_WEB_SEARCH_STRUCTURE = "radar_ai_web_search_structure";
 
   /** 热点主题：生成可检索短搜索词。 */
   public static final String HOT_NEWS_THEME_SEARCH_QUERIES = "hot_news_theme_search_queries";
