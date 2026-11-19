@@ -49,5 +49,11 @@ public final class JobTypes {
       KNOWLEDGE_RECONCILE
   );
 
+  /**
+   * 终态不推站内通知的任务类型。
+   * <p>单文档索引常批量触发，成功/失败均不打扰；全量重建仍通知。
+   */
+  public static final Set<String> SILENT_TERMINAL = Set.of(KNOWLEDGE_INDEX_DOCUMENT);
+
   private JobTypes() {}
 }

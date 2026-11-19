@@ -26,6 +26,7 @@
 |------|------|
 | 课程体系 | 学习素材 → 原稿 / 公众号文 → 配图 → 排版 → 审核与修复 |
 | 热点资讯 | 雷达采集 → 选题与资料池 → 分步生成成文 |
+| 知识库 RAG | 素材入库切块 → Qdrant 向量检索 → 带引用问答（可拒答） |
 
 技术形态：Java 21（Spring Boot 3.3）模块化单体 + React / Vite；**无登录、无多人协作**。
 
@@ -91,8 +92,9 @@
 |------|------|
 | 课程体系教学模式 | 主题与课表；原稿 / 公众号文；配图、版本、审核、任务轨迹 |
 | 热点资讯模式 | 热点雷达、来源管理、选题资料池补充与话题过滤、分步生成 |
+| 知识库 | 上传 / 网页 / 作品入库；切块索引；Hybrid 检索问答与引用；统计与重建 |
 | 工作流 | 提示词包 与生成工作流图 |
-| 回收站 / 设置 | 恢复已删主题；配置 AI 与本机公众号等 |
+| 回收站 / 设置 | 恢复已删主题；配置 AI（含嵌入）与本机公众号等 |
 
 课程侧典型路径：
 
@@ -109,10 +111,11 @@
 
 | 部署档 | Docker 命令 | 容器 | 适合 |
 |--------|-------------|------|------|
-| **仅课程（默认）** | `docker compose up -d --wait` | MySQL + Redis + Qdrant（6333/6334） | 课程写作主流程 |
-| **热点满血** | `docker compose --profile all up -d --wait` | 再加 SearXNG + Lightpanda | 雷达搜索 / JS 页正文回退；另需 [热点模式](#热点模式可选加装) 的 Python CLI |
+| **仅课程（默认）** | `docker compose up -d --wait` | MySQL + Redis + **Qdrant**（6333/6334） | 课程写作 + 知识库向量检索 |
+| **热点满血** | `docker compose --profile all up -d --wait` | 再加 SearXNG + Lightpanda（及 Neo4j） | 雷达搜索 / JS 页正文回退；另需 [热点模式](#热点模式可选加装) 的 Python CLI |
+| **知识库 Graph（可选）** | `docker compose --profile neo4j up -d` | Neo4j（7474/7687） | 需再设 `chengwenfang.knowledge.graph.enabled=true`；默认关闭 |
 
-Docker Desktop 里若只看到 `mysql` / `redis`，说明走的是「仅课程」档，**不是漏装**。要 SearXNG / Lightpanda：在同一仓库根目录执行上面的 `--profile all`（或 `./scripts/start.sh --all-deps`）。
+Docker Desktop 里应能看到 `mysql` / `redis` / `qdrant`。若没有 SearXNG / Lightpanda，说明走的是「仅课程」档，**不是漏装**。要热点容器：同一仓库根目录执行 `--profile all`（或 `./scripts/start.sh --all-deps`）。
 
 需要：Docker Desktop、JDK 21、Maven、Node.js **22+**。
 
@@ -189,7 +192,7 @@ npm install && npm run dev:frontend
 
 ### macOS Apple Silicon 从零（无 Homebrew 也可）
 
-目标：只跑**课程主流程**（MySQL + Redis + 本机 JDK/Maven/Node）。热点满血（SearXNG / Python CLI）另见 [热点模式](#热点模式可选加装)。
+目标：只跑**课程主流程**（MySQL + Redis + Qdrant + 本机 JDK/Maven/Node）。热点满血（SearXNG / Python CLI）另见 [热点模式](#热点模式可选加装)；知识库见 [知识库 RAG](#知识库-rag默认随课程档)。
 
 1. **工具**（已有 Homebrew 则用 brew 装 `temurin@21` / `maven` / Docker Desktop；否则用户目录便携即可）  
    - JDK 21（如 Temurin）→ 例如 `~/tools/jdk-21`，`export JAVA_HOME=...` 并加入 `PATH`  
@@ -220,9 +223,35 @@ docker compose up -d --wait
 **[`docs/AI从零搭建满血成文坊.md`](docs/AI从零搭建满血成文坊.md)**
 
 > 请阅读并严格执行 `docs/AI从零搭建满血成文坊.md`。  
-> - **满血**：`docker compose --profile all`，验收须含 searxng + lightpanda，再装 Python CLI。  
-> - **仅课程**：`docker compose up`（无 profile），Docker 里**只有** MySQL/Redis 算成功；跳过 SearXNG/Lightpanda/Python CLI，并在汇报里写明「未装热点容器」。  
-> 直到 `8001/api/health` 与 `5173` 可访问。API Key 留给我在设置页填写。macOS Apple Silicon 按文档附录与 README「macOS Apple Silicon 从零」处理 Rosetta、镜像加速与种子 `.sh`。
+> - **满血**：`docker compose --profile all`，验收须含 **qdrant** + searxng + lightpanda（`all` 也会起 Neo4j，Graph 功能仍默认关），再装 Python CLI。  
+> - **仅课程**：`docker compose up`（无 profile），Docker 里 **MySQL + Redis + Qdrant** 算成功；跳过 SearXNG/Lightpanda/Python CLI，并在汇报里写明「未装热点容器」。  
+> 直到 `8001/api/health` 与 `5173` 可访问。API Key（含**嵌入模型**）留给我在设置页填写。macOS Apple Silicon 按文档附录与 README「macOS Apple Silicon 从零」处理 Rosetta、镜像加速与种子 `.sh`。
+
+---
+
+## 知识库 RAG（默认随课程档）
+
+侧栏 **知识库**：上传文档 / 登记网页 / 同步作品与热点资料 → 切块嵌入 → 问答（Hybrid 检索 + 引用；证据不足则拒答）。
+
+| 依赖 | 是否默认 | 说明 |
+|------|----------|------|
+| Qdrant `6333/6334` | 是（`docker compose up` 即起） | 块向量；集合名默认 `chengwenfang_knowledge` |
+| 设置页「嵌入」供应商 / Key | 须自配 | 与多模态 Key 分开；未配则无法索引与检索 |
+| Neo4j | 否 | `docker compose --profile neo4j up -d`，并设 `chengwenfang.knowledge.graph.enabled=true` |
+| Agentic 多轮检索 | 否 | `chengwenfang.knowledge.agent.enabled`（默认 false） |
+
+热点雷达 Top10、已确认选题、资料池条目、课程/热点**主轨原稿**会按来源登记入库（摘要/标题级，非无限全文）；单文档索引 Job 成功**不**弹站内通知，避免批量刷屏。全量重建仍会通知。
+
+设计与开关细节：[`docs/知识库RAG体系设计.md`](docs/知识库RAG体系设计.md)、[`docs/知识库RAG成熟体系摘要.md`](docs/知识库RAG成熟体系摘要.md)。
+
+```powershell
+# 探测向量服务
+curl.exe -s http://127.0.0.1:6333/readyz
+# 可选 Graph
+docker compose --profile neo4j up -d
+# 应用侧打开图检索（重启后端后生效）
+# chengwenfang.knowledge.graph.enabled=true
+```
 
 ---
 
@@ -256,7 +285,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\setup-hotnews-clis.ps1
 |----|------|
 | 后端 | Spring Boot `3.3.5`（钉版，见下）、Java 21、MyBatis-Plus、Flyway、Redisson、LangChain4j |
 | 前端 | React 19、Vite 7、TypeScript、Vitest |
-| 基础设施 | MySQL 8.4、Redis 7；可选 SearXNG、Lightpanda |
+| 基础设施 | MySQL 8.4、Redis 7、**Qdrant**；可选 Neo4j、SearXNG、Lightpanda |
 | 工程 | Maven 多模块 + npm；Lombok / Hutool / MapStruct |
 
 <details>
@@ -280,12 +309,13 @@ chengwenfang/
 ├── chengwenfang-app/              # 启动：adapter.web / adapter.worker
 ├── chengwenfang-mode-course/      # 课程流水线与节点
 ├── chengwenfang-mode-hotnews/     # 雷达、选题、资料池、热点成文
+├── chengwenfang-knowledge/        # 知识库入库、切块、Hybrid/RAG 问答
 ├── chengwenfang-content/          # 主题、作品、产出、ModeDefinition
 ├── chengwenfang-quality/          # 审核与修复
 ├── chengwenfang-publishing/       # 排版、渲染、渠道发布
 ├── chengwenfang-sourcing/         # 信源与抓取相关表
 ├── chengwenfang-notification/     # 站内通知
-├── chengwenfang-prompt-workflow/   # 提示词包、工作流图
+├── chengwenfang-prompt-workflow/  # 提示词包、工作流图
 ├── chengwenfang-file|job|ai|crawler|common|infra/
 ├── src/                           # React（Vite）
 ├── contracts/ docs/ scripts/ deploy/
@@ -344,6 +374,8 @@ macOS / Linux：Homebrew 或用户目录便携 JDK/Maven；跳过 `use-utf8.ps1`
 | 能力 | 依赖 | 未就绪 |
 |------|------|--------|
 | 课程主流程 | MySQL + Redis + JDK + Node + AI | 无法开发 |
+| 知识库索引 / 问答 | Qdrant + 设置页嵌入模型 + 多模态生成 | 无法切块嵌入或问答 |
+| 知识库 Graph | Neo4j profile + `knowledge.graph.enabled=true` | 仅 Hybrid，无 Local/Global 图路径 |
 | 雷达正文 | article-extract；Jina → Trafilatura → Lightpanda → 摘要 | 正文质量下降 |
 | SearXNG / Lightpanda | Compose profile | 该渠道或回退不可用 |
 | 资料池视频 | video-transcript + ffmpeg + 多模态 AI | 解析失败提示 |
@@ -388,7 +420,9 @@ mvn -pl chengwenfang-app -am test -Dtest='*IT'
 | 文档 | 说明 |
 |------|------|
 | [`docs/README.md`](docs/README.md) | 索引 |
-| [`docs/AI从零搭建满血成文坊.md`](docs/AI从零搭建满血成文坊.md) | 满血 / AI 部署手册 |
+| [`docs/AI从零搭建满血成文坊.md`](docs/AI从零搭建满血成文坊.md) | 满血 / AI 部署手册（含 Qdrant / 知识库） |
+| [`docs/知识库RAG体系设计.md`](docs/知识库RAG体系设计.md) | 知识库 RAG 权威设计 |
+| [`docs/知识库RAG成熟体系摘要.md`](docs/知识库RAG成熟体系摘要.md) | RAG 分层与启停摘要 |
 | [`docs/代码结构与注释规范.md`](docs/代码结构与注释规范.md) | 分层与注释 |
 | [`docs/类命名词典.md`](docs/类命名词典.md) | 类命名 |
 | [`contracts/api-sse-contract.md`](contracts/api-sse-contract.md) | API / SSE |

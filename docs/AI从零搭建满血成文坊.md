@@ -6,14 +6,14 @@
 | 项 | 值 |
 |----|-----|
 | 仓库根目录 | 含 `pom.xml`、`compose.yml`、`package.json` 的目录（下文称 `$ROOT`） |
-| 目标形态 | **满血**（默认按本文）：`docker compose --profile all` → mysql+redis+**searxng+lightpanda** + 本机 Python CLI + ffmpeg + 前后端 |
-| 仅课程（非本文默认） | `docker compose up`（无 profile）→ **只有** mysql+redis；无 SearXNG/Lightpanda 不算失败，但须在汇报标明「课程档」 |
-| 人类仍须完成 | 在网页「设置」里填写真实 AI API Key（及可选微信公众号）；密钥勿写入仓库 |
+| 目标形态 | **满血**（默认按本文）：`docker compose --profile all` → mysql+redis+**qdrant**+**searxng+lightpanda**（`all` 含 Neo4j 容器；图检索默认关）+ 本机 Python CLI + ffmpeg + 前后端 |
+| 仅课程（非本文默认） | `docker compose up`（无 profile）→ **mysql+redis+qdrant**；无 SearXNG/Lightpanda 不算失败，但须在汇报标明「课程档」 |
+| 人类仍须完成 | 在网页「设置」里填写真实 AI API Key（**多模态 + 嵌入**；及可选微信公众号）；密钥勿写入仓库 |
 | 默认 OS | Windows + PowerShell（作者环境）；macOS（含 Apple Silicon）/ Linux 见文末附录与根 README「macOS Apple Silicon 从零」 |
 
-> **常见误解**：README 快速开始是「仅课程」，完成后 Docker 只有 MySQL/Redis。若用户要热点雷达/本地搜索，必须用本文阶段 B 的 `--profile all`，不能只跑 README 里的 `docker compose up`。
+> **常见误解**：README 快速开始是「仅课程」，完成后 Docker 为 MySQL/Redis/**Qdrant**（无 SearXNG）。若用户要热点雷达/本地搜索，必须用本文阶段 B 的 `--profile all`，不能只跑 README 里的 `docker compose up`。知识库问答不依赖 SearXNG，但依赖 Qdrant + 嵌入 Key。
 
-相关人工说明：[`README.md`](../README.md)。正文抽取 / 视频 / 截图 CLI：[`scripts/article-extract/README.md`](../scripts/article-extract/README.md)、[`scripts/video-transcript/README.md`](../scripts/video-transcript/README.md)、[`scripts/page-screenshot/README.md`](../scripts/page-screenshot/README.md)。一键安装：[`scripts/setup-hotnews-clis.ps1`](../scripts/setup-hotnews-clis.ps1) / [`scripts/setup-hotnews-clis.sh`](../scripts/setup-hotnews-clis.sh)。
+相关人工说明：[`README.md`](../README.md)。知识库设计：[`知识库RAG体系设计.md`](./知识库RAG体系设计.md)。正文抽取 / 视频 / 截图 CLI：[`scripts/article-extract/README.md`](../scripts/article-extract/README.md)、[`scripts/video-transcript/README.md`](../scripts/video-transcript/README.md)、[`scripts/page-screenshot/README.md`](../scripts/page-screenshot/README.md)。一键安装：[`scripts/setup-hotnews-clis.ps1`](../scripts/setup-hotnews-clis.ps1) / [`scripts/setup-hotnews-clis.sh`](../scripts/setup-hotnews-clis.sh)。
 
 ---
 
@@ -25,18 +25,20 @@
    `. .\scripts\use-utf8.ps1`  
 4. **禁止**：改 git config；把 API Key 写进仓库；对生产库 `docker compose down -v`（会删数据）除非用户明确要求。  
 5. **不要编造**：账号密码、端口以 `compose.yml` + `chengwenfang-app/src/main/resources/application.yml` 为准。  
-6. **满血 ≠ 把 Java/Whisper 打进 Docker**：当前架构是宿主机跑应用，Compose 只提供 mysql/redis/searxng/lightpanda。  
+6. **满血 ≠ 把 Java/Whisper 打进 Docker**：当前架构是宿主机跑应用，Compose 提供 mysql/redis/**qdrant**/searxng/lightpanda（`all` 另含 neo4j）。  
 7. 某步失败：停在该阶段，报告命令、完整错误、已确认的环境信息，再问用户如何继续。
 
 ### 满血完成定义（全部满足才算成功）
 
 - [ ] `GET http://127.0.0.1:8001/api/health` 返回成功（`code=ok` 或等价成功信封）  
 - [ ] 浏览器可打开 `http://127.0.0.1:5173`  
-- [ ] `docker compose --profile all ps` 中 mysql、redis、searxng、lightpanda 为 running（或 healthy）  
+- [ ] `docker compose --profile all ps` 中 mysql、redis、**qdrant**、searxng、lightpanda 为 running（或 healthy）；neo4j 随 `all` 出现亦可  
+- [ ] `curl.exe -s http://127.0.0.1:6333/readyz` 可访问（知识库向量）  
 - [ ] 存在 `scripts/article-extract/.venv/Scripts/python.exe`（Windows）且能 `import trafilatura`  
 - [ ] 存在 `scripts/video-transcript/.venv`，且本机 `ffmpeg -version` 可用；venv 内可 `import whisper`  
 - [ ] 存在 `scripts/page-screenshot/.venv`，且已 `playwright install chromium` + `import fitz`（PyMuPDF）；试跑 `-m page_screenshot` 能出 PNG  
-- [ ] 向用户说明：须在前端「设置」配置多模态 AI（写作补全与看图共用）后，生成/解析/截图摘要才真正可用；成文佐证截屏共用 page-screenshot CLI  
+- [ ] 向用户说明：须在前端「设置」配置**多模态 AI**与**嵌入模型**后，生成/解析/知识库索引与问答才真正可用；成文佐证截屏共用 page-screenshot CLI  
+
 
 ---
 
@@ -86,19 +88,22 @@ docker compose --profile all ps
 |------|------|------|
 | mysql | `127.0.0.1:3306` | 库名 `chengwenfang`，用户 `chengwenfang`，密码 `chengwenfang_dev` |
 | redis | `127.0.0.1:6379` | Job 租约等 |
+| qdrant | `127.0.0.1:6333`（HTTP）/ `6334`（gRPC） | 知识库块向量；默认随无 profile 的 `up` 启动 |
 | searxng | `127.0.0.1:8080` | 热点聚合搜索 |
 | lightpanda | `127.0.0.1:9222` | JS 正文回退（容器名 `chengwenfang-lightpanda`） |
+| neo4j（`all` / `neo4j` profile） | `7474` / `7687` | 可选 GraphRAG；应用默认 `knowledge.graph.enabled=false`，容器起来也不强制连 |
 
 可选探测：
 
 ```powershell
+curl.exe -s http://127.0.0.1:6333/readyz
 curl.exe -s "http://127.0.0.1:8080/search?q=test&format=json" | Select-Object -First 1
 docker ps --filter "name=chengwenfang-lightpanda"
 ```
 
-**验收 B（满血）**：`--wait` 成功退出；`docker compose --profile all ps` 中 **mysql、redis、searxng、lightpanda** 均在跑。缺 searxng/lightpanda → 未加 `--profile all` 或 profile 镜像拉取失败，须补齐后再继续。
+**验收 B（满血）**：`--wait` 成功退出；`docker compose --profile all ps` 中 **mysql、redis、qdrant、searxng、lightpanda** 均在跑。缺 searxng/lightpanda → 未加 `--profile all` 或 profile 镜像拉取失败，须补齐后再继续。缺 qdrant → 检查默认服务是否被误删 / 端口占用。
 
-若用户只要课程、不要热点容器：`docker compose up -d --wait`（只会有 mysql+redis；**非满血**，阶段 G 必须写明，且跳过阶段 C）。
+若用户只要课程、不要热点容器：`docker compose up -d --wait`（**mysql+redis+qdrant**；**非满血**，阶段 G 必须写明，且跳过阶段 C）。
 
 改 `deploy/searxng/settings.yml` 后：
 
@@ -266,17 +271,20 @@ chmod +x scripts/bootstrap/Initialize-ChengwenfangSeed.sh
 AI **不能**代替用户填写真实密钥。完成后请用户：
 
 1. 打开 `http://127.0.0.1:5173` → **设置**  
-   - 配置多模态 AI、图像 AI  
+   - 配置多模态 AI、图像 AI、**嵌入（Embedding）**  
    - 热点「画面解析」需要多模态（Vision）时一并配置  
-   - 使用页面上的连接测试  
-2. **热点资讯 → 来源管理**（若用本地 SearXNG）  
+   - 使用页面上的连接测试（嵌入未配则知识库无法索引）  
+2. **知识库**（侧栏）  
+   - Qdrant 已起且嵌入 Key 可用后，可上传文档或打开问答  
+   - Graph 默认关；若用户要图检索：确认 Neo4j 容器在跑，再设 `chengwenfang.knowledge.graph.enabled=true` 并重启后端  
+3. **热点资讯 → 来源管理**（若用本地 SearXNG）  
    - 类型：SearXNG 搜索  
    - 实例地址：`http://127.0.0.1:8080`  
-3. 开发配置已含 `chengwenfang.crawler-allow-loopback=true`（允许采本机 SearXNG）；勿把该开关当成生产默认。
+4. 开发配置已含 `chengwenfang.crawler-allow-loopback=true`（允许采本机 SearXNG）；勿把该开关当成生产默认。
 
 可选：`POST /api/migrations/sync-learning-content` 同步学习内容（若用户需要导入 `content/` 资源）。
 
-**验收 F**：用户确认 AI 连接测试通过；若启用 SearXNG，来源已保存实例 URL。至此「满血可运营」才成立；阶段 E 只保证进程与依赖就绪。
+**验收 F**：用户确认多模态与**嵌入**连接测试通过；若启用 SearXNG，来源已保存实例 URL。至此「满血可运营」才成立；阶段 E 只保证进程与依赖就绪。
 
 ---
 
@@ -285,11 +293,11 @@ AI **不能**代替用户填写真实密钥。完成后请用户：
 用简短列表汇报：
 
 1. 已安装 / 已存在的本机工具版本号  
-2. Compose 四服务状态  
+2. Compose 服务状态（至少 mysql、redis、**qdrant**；满血另含 searxng、lightpanda）  
 3. 三个 Python CLI（article-extract / video-transcript / page-screenshot含 Chromium+PyMuPDF）是否就绪、ffmpeg 是否在 PATH  
-4. 后端 health、前端 URL  
+4. 后端 health、前端 URL、`6333/readyz` 是否可达  
 5. 是否已执行种子脚本（`.ps1` 或 `Initialize-ChengwenfangSeed.sh`）；热点演示主题若因意图确认失败是否已说明不影响课程  
-6. 仍待用户完成的设置项（API Key、可选 SearXNG 来源）  
+6. 仍待用户完成的设置项（多模态 / **嵌入** API Key、可选 SearXNG 来源、可选 Graph）  
 7. 常用停止命令：`.\scripts\stop-java.ps1` 或结束前台 mvn/vite；`docker compose --profile all stop`  
 
 ---
@@ -301,7 +309,9 @@ AI **不能**代替用户填写真实密钥。完成后请用户：
 | Flyway / 连不上库 | `docker compose ps`；是否跳过了 `--wait`；端口 3306 是否被占用 |
 | 日志「基础配置缺失」 | 执行种子脚本（Windows `.ps1` / macOS `Initialize-ChengwenfangSeed.sh`）；不要指望启动自动灌 提示词包 |
 | `project name must not be empty` | 父目录含中文等非法字符时 Compose 默认名为空；本仓 `compose.yml` 已设 `name: chengwenfang`，或 `export COMPOSE_PROJECT_NAME=chengwenfang` |
-| 拉 Docker Hub 镜像超时 | 用国内加速源 pull `mysql:8.4` / `redis:7` 再 `docker tag` 成本地名，然后 `docker compose up`（示例见 README「macOS Apple Silicon 从零」） |
+| 拉 Docker Hub 镜像超时 | 用国内加速源 pull `mysql:8.4` / `redis:7` / `qdrant/qdrant` 再 `docker tag` 成本地名，然后 `docker compose up`（示例见 README「macOS Apple Silicon 从零」） |
+| 知识库无法索引 / 问答空 | `curl 6333/readyz`；设置页是否配置嵌入模型；Flyway 是否含 knowledge 表；见 [`知识库RAG体系设计.md`](./知识库RAG体系设计.md) |
+| Graph 无效果 | Neo4j 是否在跑；`chengwenfang.knowledge.graph.enabled` 是否为 true（默认 false） |
 | Docker Desktop（Apple Silicon）引擎起不来 | 安装 Rosetta；Settings 关闭「Use Rosetta for x86_64/amd64 emulation」后重启引擎 |
 | `nohup` 起的前后端莫名退出 | 改用阶段 E1 两个**前台**终端；勿依赖 `start.sh` 的 nohup 跨会话保活 |
 | 种子报「请先由 AI 分析并确认主题主要意图」 | 热点演示主题预期失败（无 Key）；课程主题与 catalog 仍可用；阶段 F 填 Key 后在 UI 确认 |

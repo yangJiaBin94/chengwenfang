@@ -1,10 +1,11 @@
 package com.chengwenfang.app.adapter.worker;
 
 import cn.hutool.core.util.StrUtil;
-import com.chengwenfang.notification.application.support.JobTerminalNotificationSupport;
 import com.chengwenfang.common.JobFailureMessages;
+import com.chengwenfang.job.facade.constant.JobTypes;
 import com.chengwenfang.job.facade.dto.view.JobTerminalEvent;
 import com.chengwenfang.job.facade.enums.JobStatus;
+import com.chengwenfang.notification.application.support.JobTerminalNotificationSupport;
 import com.chengwenfang.notification.facade.NotificationFacade;
 import com.chengwenfang.notification.facade.constant.NotificationMetadataKeys;
 import com.chengwenfang.prompt.facade.WorkflowFacade;
@@ -60,7 +61,7 @@ public class JobCompletionListener {
   }
 
   /**
-   * 任务进入终态后：标记关联工作流运行结束；为所有任务类型推送站内通知。
+   * 任务进入终态后：标记关联工作流运行结束；按类型决定是否推送站内通知。
    * <p>在事务提交后执行；子步骤失败仅打日志，不回滚任务终态。
    *
    * @param event 任务终态事件；null 直接忽略
@@ -77,7 +78,10 @@ public class JobCompletionListener {
     } catch (Exception exception) {
       log.warn("标记工作流运行为终态失败 jobId={} err={}", event.getJobId(), exception.toString());
     }
-    // 全部 Job 类型终态均推送站内通知
+    // 单文档索引等静默类型不推站内通知
+    if (JobTypes.SILENT_TERMINAL.contains(event.getType())) {
+      return;
+    }
     try {
       boolean succeeded = JobStatus.SUCCEEDED.getValue().equals(event.getStatus());
       Map<String, Object> metadata = new LinkedHashMap<>();
