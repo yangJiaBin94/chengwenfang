@@ -1,5 +1,6 @@
 package com.chengwenfang.ai.facade.dto.request;
 
+import com.chengwenfang.ai.facade.enums.WebSearchMode;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -26,6 +27,11 @@ public class VisionCompleteRequest {
   private List<VisionImagePart> images;
   /** 可选超时秒数；为空则使用配置文件默认多模态超时。 */
   private Integer timeoutSeconds;
+  /**
+   * 联网搜索模式；默认 {@link WebSearchMode#OFF}。
+   * 开启时由适配器声明服务端工具（当前 DeepSeek），并可能覆盖为 flash 模型。
+   */
+  private WebSearchMode webSearchMode;
 
   /**
    * 兼容只传用户提示词与场景的调用方。

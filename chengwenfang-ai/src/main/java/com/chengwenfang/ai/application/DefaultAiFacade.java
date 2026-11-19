@@ -233,6 +233,11 @@ public class DefaultAiFacade implements AiSettingsFacade, AiImageFacade, AiVisio
     return visionClient.complete(request);
   }
 
+  @Override
+  public boolean supportsWebSearch() {
+    return visionClient.supportsWebSearch();
+  }
+
   /**
    * 调用图像模型生成图片。
    */

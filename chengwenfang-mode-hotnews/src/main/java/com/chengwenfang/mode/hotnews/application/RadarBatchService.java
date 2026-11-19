@@ -10,6 +10,8 @@ import com.chengwenfang.mode.hotnews.domain.entity.RadarBatchEntity;
 import com.chengwenfang.mode.hotnews.domain.entity.TopicClusterEntity;
 import com.chengwenfang.mode.hotnews.domain.entity.TopicSourceEntity;
 import com.chengwenfang.mode.hotnews.facade.HotNewsFacade;
+import com.chengwenfang.mode.hotnews.domain.TopicScoreDetails;
+import com.chengwenfang.mode.hotnews.facade.constant.HotNewsTopicOriginKinds;
 import com.chengwenfang.mode.hotnews.facade.constant.HotNewsTopicStatuses;
 import com.chengwenfang.mode.hotnews.facade.constant.RadarBatchStatuses;
 import com.chengwenfang.mode.hotnews.facade.dto.request.RadarSurvivorPersistRequest;
@@ -61,16 +63,19 @@ public class RadarBatchService {
   private final HotNewsFacade hotNews;
   /** 视频解析共享表。 */
   private final VideoParseRunService videoParseRuns;
+  /** 选题评分明细（落库后回写 originKind）。 */
+  private final TopicScoreDetailsStore scoreDetailsStore;
 
   /**
-   * @param radarBatchMapper  雷达批次表
-   * @param itemMapper        信源条目表
-   * @param topicSourceMapper 选题-信源关联
-   * @param topicMapper       选题聚类表
-   * @param runMapper         抓取运行表
-   * @param jobs              任务门面
-   * @param hotNews           热点门面（@Lazy）
-   * @param videoParseRuns    视频解析共享表
+   * @param radarBatchMapper   雷达批次表
+   * @param itemMapper         信源条目表
+   * @param topicSourceMapper  选题-信源关联
+   * @param topicMapper        选题聚类表
+   * @param runMapper          抓取运行表
+   * @param jobs               任务门面
+   * @param hotNews            热点门面（@Lazy）
+   * @param videoParseRuns     视频解析共享表
+   * @param scoreDetailsStore  选题评分明细
    */
   public RadarBatchService(
       RadarBatchMapper radarBatchMapper,
@@ -80,7 +85,8 @@ public class RadarBatchService {
       SourceFetchRunMapper runMapper,
       JobFacade jobs,
       @Lazy HotNewsFacade hotNews,
-      VideoParseRunService videoParseRuns) {
+      VideoParseRunService videoParseRuns,
+      TopicScoreDetailsStore scoreDetailsStore) {
     this.radarBatchMapper = radarBatchMapper;
     this.itemMapper = itemMapper;
     this.topicSourceMapper = topicSourceMapper;
@@ -89,6 +95,7 @@ public class RadarBatchService {
     this.jobs = jobs;
     this.hotNews = hotNews;
     this.videoParseRuns = videoParseRuns;
+    this.scoreDetailsStore = scoreDetailsStore;
   }
 
   /**
@@ -177,6 +184,7 @@ public class RadarBatchService {
     int deduped = 0;
     List<String> sourceIds = new ArrayList<>();
     Map<String, String> briefBySourceId = new LinkedHashMap<>();
+    Map<String, String> originKindBySourceId = new LinkedHashMap<>();
     for (RadarSurvivorPersistRequest survivor : survivors) {
       if (survivor == null) {
         continue;
@@ -196,6 +204,9 @@ public class RadarBatchService {
           survivor.getFactBrief(),
           outcome.storedSummary());
       briefBySourceId.put(outcome.sourceId(), StrUtil.nullToEmpty(brief));
+      if (StrUtil.isNotBlank(survivor.getOriginKind())) {
+        originKindBySourceId.put(outcome.sourceId(), survivor.getOriginKind().trim());
+      }
       if (StrUtil.isNotBlank(survivor.getTempId())) {
         result.getSourceIdByTempId().put(survivor.getTempId(), outcome.sourceId());
       }
@@ -206,6 +217,7 @@ public class RadarBatchService {
     hotNews.aggregateTopics(themeId);
     // 同批打标共用时间戳，避免 orderBy updated_at 因毫秒差打乱稳定序
     LocalDateTime batchTaggedAt = LocalDateTime.now();
+    Map<String, String> originKindByTopicId = new LinkedHashMap<>();
     // 将本轮信源关联的簇打上批次，并收集成员速览（含去重命中的已有条目）
     for (String sourceId : sourceIds) {
       List<TopicSourceEntity> links = topicSourceMapper.selectList(new LambdaQueryWrapper<TopicSourceEntity>()
@@ -235,10 +247,55 @@ public class RadarBatchService {
             && !result.getMemberBriefsByTopicId().get(cluster.getId()).contains(brief)) {
           result.getMemberBriefsByTopicId().get(cluster.getId()).add(brief);
         }
+        String originKind = originKindBySourceId.get(sourceId);
+        if (StrUtil.isNotBlank(originKind)) {
+          originKindByTopicId.putIfAbsent(cluster.getId(), originKind);
+        }
       }
     }
+    stampOriginKinds(originKindByTopicId);
     result.setTopicCount(result.getTopicIds().size());
     return result;
+  }
+
+  /**
+   * 将本轮幸存者的 originKind 回写到选题评分明细（不覆盖已有非空值）。
+   *
+   * @param originKindByTopicId 选题 id → 来源形态
+   */
+  private void stampOriginKinds(Map<String, String> originKindByTopicId) {
+    if (originKindByTopicId == null || originKindByTopicId.isEmpty()) {
+      return;
+    }
+    for (Map.Entry<String, String> entry : originKindByTopicId.entrySet()) {
+      String topicId = entry.getKey();
+      String originKind = entry.getValue();
+      if (StrUtil.isBlank(topicId) || StrUtil.isBlank(originKind)) {
+        continue;
+      }
+      TopicScoreDetails details = scoreDetailsStore.read(topicId);
+      if (StrUtil.isNotBlank(details.getOriginKind())) {
+        continue;
+      }
+      details.setOriginKind(originKind);
+      if (HotNewsTopicOriginKinds.isAiWebSearch(originKind)) {
+        List<String> signals = details.getSignals() == null
+            ? new ArrayList<>()
+            : new ArrayList<>(details.getSignals());
+        if (!signals.contains(HotNewsTopicOriginKinds.AI_WEB_SEARCH_LABEL)) {
+          signals.add(0, HotNewsTopicOriginKinds.AI_WEB_SEARCH_LABEL);
+          details.setSignals(signals);
+        }
+        List<String> sourceTypes = details.getSourceTypes() == null
+            ? new ArrayList<>()
+            : new ArrayList<>(details.getSourceTypes());
+        if (!sourceTypes.contains(HotNewsTopicOriginKinds.AI_WEB_SEARCH)) {
+          sourceTypes.add(HotNewsTopicOriginKinds.AI_WEB_SEARCH);
+          details.setSourceTypes(sourceTypes);
+        }
+      }
+      scoreDetailsStore.write(topicId, details);
+    }
   }
 
   /**

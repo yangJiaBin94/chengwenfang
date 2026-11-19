@@ -11,6 +11,7 @@ import com.chengwenfang.ai.facade.dto.view.VisionCompleteResult;
 import com.chengwenfang.ai.facade.enums.AiProviderKind;
 import com.chengwenfang.ai.facade.enums.AiProtocol;
 import com.chengwenfang.ai.facade.enums.ModelCallStatus;
+import com.chengwenfang.ai.facade.enums.WebSearchMode;
 import com.chengwenfang.ai.infrastructure.mapper.AiProviderConfigMapper;
 import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.common.ErrorCodes;
@@ -66,12 +67,96 @@ public class AiVisionClient {
         : request.getScene();
     Integer timeoutOverride = request == null ? null : request.getTimeoutSeconds();
     List<VisionImagePart> images = request == null ? null : request.getImages();
+    WebSearchMode webSearchMode = request == null || request.getWebSearchMode() == null
+        ? WebSearchMode.OFF
+        : request.getWebSearchMode();
+    if (webSearchMode.isEnabled()) {
+      return completeWithWebSearch(cfg, systemPrompt, prompt, scene, timeoutOverride, webSearchMode);
+    }
     String text = completeInternal(cfg, systemPrompt, prompt, scene, timeoutOverride, images);
     return VisionCompleteResult.builder()
         .text(text)
         .model(cfg.getModel())
         .protocol(cfg.getProtocol())
+        .citations(List.of())
         .build();
+  }
+
+  /**
+   * 当前 vision 配置是否支持服务端联网搜索。
+   *
+   * @return 支持则为 true
+   */
+  public boolean supportsWebSearch() {
+    try {
+      return AiWebSearchCapability.supports(requireKind(AiProviderKind.VISION));
+    } catch (BusinessException exception) {
+      return false;
+    }
+  }
+
+  /**
+   * 开启联网工具的补全（当前仅 DeepSeek）。
+   */
+  private VisionCompleteResult completeWithWebSearch(
+      AiProviderConfigEntity cfg,
+      String systemPrompt,
+      String prompt,
+      String scene,
+      Integer timeoutOverride,
+      WebSearchMode mode) {
+    if (!AiWebSearchCapability.supports(cfg)) {
+      throw new BusinessException(
+          ErrorCodes.TEXT_FAILED, "当前多模态配置不支持服务端联网搜索", 400);
+    }
+    if (StrUtil.isBlank(decryptApiKey(cfg))) {
+      throw new BusinessException(ErrorCodes.AI_KEY_MISSING, "未配置多模态模型 API Key", 400);
+    }
+    long start = System.currentTimeMillis();
+    int timeoutSeconds = resolveCallTimeoutSeconds(timeoutOverride);
+    // 联网搜索默认拉长超时下限，避免深度搜读被默认 vision 超时掐断
+    timeoutSeconds = Math.max(timeoutSeconds, 180);
+    try {
+      DeepSeekWebSearchClient.Result result = DeepSeekWebSearchClient.complete(
+          cfg, decryptApiKey(cfg), systemPrompt, prompt, mode, timeoutSeconds);
+      modelCallRecorder.recordCall(
+          cfg,
+          scene,
+          ModelCallStatus.SUCCEEDED,
+          start,
+          prompt.length() + (systemPrompt == null ? 0 : systemPrompt.length()),
+          result.text() == null ? 0 : result.text().length(),
+          null);
+      return VisionCompleteResult.builder()
+          .text(result.text())
+          .model(result.model())
+          .protocol(result.protocol())
+          .citations(result.citations() == null ? List.of() : result.citations())
+          .build();
+    } catch (BusinessException exception) {
+      modelCallRecorder.recordCall(
+          cfg,
+          scene,
+          ModelCallStatus.FAILED,
+          start,
+          prompt.length() + (systemPrompt == null ? 0 : systemPrompt.length()),
+          0,
+          ErrorCodes.TEXT_FAILED);
+      throw exception;
+    } catch (Exception exception) {
+      modelCallRecorder.recordCall(
+          cfg,
+          scene,
+          ModelCallStatus.FAILED,
+          start,
+          prompt.length() + (systemPrompt == null ? 0 : systemPrompt.length()),
+          0,
+          ErrorCodes.TEXT_FAILED);
+      throw new BusinessException(
+          ErrorCodes.TEXT_FAILED,
+          "联网补全失败：" + AiUpstreamErrorMessages.humanize(exception.getMessage()),
+          502);
+    }
   }
 
   /**

@@ -14,4 +14,11 @@ public interface AiVisionFacade {
    * @return 模型输出文本及所用 model / protocol
    */
   VisionCompleteResult complete(VisionCompleteRequest request);
+
+  /**
+   * 当前多模态配置是否具备服务端联网搜索能力。
+   *
+   * @return 支持则为 true
+   */
+  boolean supportsWebSearch();
 }

@@ -56,6 +56,7 @@ public class PersistClusterRadarNodeHandler implements RadarCollectNodeHandler {
           .factBrief(candidate.getFactBrief())
           .mediaType(candidate.getMediaType())
           .siteLabel(candidate.getSiteLabel())
+          .originKind(candidate.getOriginKind())
           .build());
     }
     int inputCount = survivors.size();

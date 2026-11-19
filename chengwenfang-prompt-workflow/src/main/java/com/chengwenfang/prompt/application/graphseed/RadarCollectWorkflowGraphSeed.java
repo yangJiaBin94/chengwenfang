@@ -15,7 +15,7 @@ public final class RadarCollectWorkflowGraphSeed {
 
   /** 图描述。 */
   private static final String DESCRIPTION =
-      "热点雷达同步采集：获取→意图自适应搜索→解析速览→素材筛选→成簇→AI主题素材→Top10";
+      "热点雷达同步采集：获取→意图自适应搜索→解析速览→素材筛选→AI联网搜选题→成簇→AI主题素材→Top10";
 
   /**
    * 组装雷达采集规范图。
@@ -75,6 +75,12 @@ public final class RadarCollectWorkflowGraphSeed {
         1,
         WorkflowNodeFailurePolicy.STOP,
         WorkflowPromptPackBinding.resolve(ids, HotNewsRadarCollectPromptPackNames.MARKETING_FILTER)));
+    nodes.add(WorkflowGraphNode.radarNode(
+        HotNewsRadarCollectNodeType.AI_WEB_SEARCH_TOPICS,
+        360,
+        1,
+        WorkflowNodeFailurePolicy.CONTINUE_WITH_WARNING,
+        List.of()));
     nodes.add(WorkflowGraphNode.radarNode(
         HotNewsRadarCollectNodeType.PERSIST_CLUSTER,
         600,
