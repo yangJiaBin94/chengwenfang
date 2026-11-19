@@ -41,9 +41,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class HotNewsTopicAggregateService {
 
-  /** 从 expired 恢复为 candidate 的写作分阈值。 */
-  private static final int CANDIDATE_WRITING_SCORE_FLOOR = 60;
-
   /** 证据链角色：佐证。 */
   private static final String ROLE_EVIDENCE = "evidence";
 
@@ -111,8 +108,11 @@ public class HotNewsTopicAggregateService {
         item.setPublishedAt(published);
         itemMapper.updateById(item);
       }
+      // 不并入已过期簇，避免新证据沉没在默认列表不可见的死簇里
       TopicClusterEntity match = clusters.stream()
-          .filter(cluster -> TopicMathUtil.similar(cluster.getTitle(), item.getTitle()))
+          .filter(cluster -> cluster != null
+              && !HotNewsTopicStatuses.EXPIRED.equals(cluster.getStatus())
+              && TopicMathUtil.similar(cluster.getTitle(), item.getTitle()))
           .findFirst()
           .orElse(null);
       LocalDateTime now = LocalDateTime.now();
@@ -161,9 +161,12 @@ public class HotNewsTopicAggregateService {
       topicMapper.updateById(match);
     }
 
-    // 重算热度/可写性/置信分；官网/产品页/推销选题直接过期
+    // 重算热度/可写性/置信分；官网/产品页/推销选题直接过期（已确认生命周期不硬过期）
     LocalDateTime now = LocalDateTime.now();
     for (TopicClusterEntity cluster : clusters) {
+      if (HotNewsTopicStatuses.isConfirmedLifecycle(cluster.getStatus())) {
+        continue;
+      }
       if (MarketingPageFilter.looksLikeBrandHomeTitle(cluster.getTitle())
           || MarketingPageFilter.looksLikeNewsPortalTitle(cluster.getTitle())
           || MarketingPageFilter.looksLikeCommerceProductTitle(cluster.getTitle())) {
@@ -247,10 +250,11 @@ public class HotNewsTopicAggregateService {
   }
 
   /**
-   * 按自然日（东八区）执行每日雷达限额：
+   * 按自然日（东八区）执行每日雷达限额（只改状态，不删库）：
    * <ul>
-   *   <li>当天：按写作价值保留前 {@link TopicMathUtil#DAILY_TOPIC_LIMIT} 条；超额且未确认的物理删除</li>
-   *   <li>历史日：未确认选题一律删除（素材只在当天生效）；已确认保留</li>
+   *   <li>当天：按写作价值保留前 {@link TopicMathUtil#DAILY_TOPIC_LIMIT} 条为有效；超额且未确认的标 expired</li>
+   *   <li>历史日：未确认选题标 expired（默认列表不展示，素材与信源保留）</li>
+   *   <li>已确认选题始终保留有效状态</li>
    * </ul>
    *
    * @param themeId 主题 ID
@@ -287,39 +291,54 @@ public class HotNewsTopicAggregateService {
         return rightSeen.compareTo(leftSeen);
       });
       if (today.equals(day)) {
-        // 按写作分保留日限额内选题（与列表默认排序一致，不因来源形态优待）
+        // 只从非过期行占日限额席位，避免把硬过滤 expired 复活进池
         Set<String> topIds = new LinkedHashSet<>();
         for (TopicClusterEntity row : daily) {
           if (topIds.size() >= TopicMathUtil.DAILY_TOPIC_LIMIT) {
             break;
           }
+          if (row == null || StrUtil.isBlank(row.getId())) {
+            continue;
+          }
+          if (HotNewsTopicStatuses.EXPIRED.equals(row.getStatus())) {
+            continue;
+          }
           topIds.add(row.getId());
         }
         for (TopicClusterEntity row : daily) {
-          if (topIds.contains(row.getId())) {
-            if (HotNewsTopicStatuses.EXPIRED.equals(row.getStatus())) {
-              row.setStatus(row.getWritingScore() != null
-                      && row.getWritingScore() >= CANDIDATE_WRITING_SCORE_FLOOR
-                  ? HotNewsTopicStatuses.CANDIDATE
-                  : HotNewsTopicStatuses.DISCOVERED);
-              topicMapper.updateById(row);
-            }
+          if (row == null || topIds.contains(row.getId())) {
             continue;
           }
           if (HotNewsTopicStatuses.isConfirmedLifecycle(row.getStatus())) {
             continue;
           }
-          topicMapper.deleteById(row.getId());
+          markExpiredIfNeeded(row);
         }
       } else {
         for (TopicClusterEntity row : daily) {
           if (HotNewsTopicStatuses.isConfirmedLifecycle(row.getStatus())) {
             continue;
           }
-          topicMapper.deleteById(row.getId());
+          markExpiredIfNeeded(row);
         }
       }
     }
+  }
+
+  /**
+   * 将未过期选题标为 expired（幂等，不删库）。
+   *
+   * @param row 选题簇
+   */
+  private void markExpiredIfNeeded(TopicClusterEntity row) {
+    if (row == null || StrUtil.isBlank(row.getId())) {
+      return;
+    }
+    if (HotNewsTopicStatuses.EXPIRED.equals(row.getStatus())) {
+      return;
+    }
+    row.setStatus(HotNewsTopicStatuses.EXPIRED);
+    topicMapper.updateById(row);
   }
 
   /**

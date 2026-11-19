@@ -22,6 +22,12 @@ public class KnowledgeChatSessionEntity {
   /** 会话标题。 */
   @TableField("title")
   private String title;
+  /** 滚动摘要。 */
+  @TableField("summary")
+  private String summary;
+  /** 是否启用记忆。 */
+  @TableField("memory_enabled")
+  private Boolean memoryEnabled;
   /** 创建时间。 */
   @TableField("created_at")
   private LocalDateTime createdAt;

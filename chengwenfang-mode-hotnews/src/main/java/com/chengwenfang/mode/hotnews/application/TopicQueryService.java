@@ -99,13 +99,14 @@ public class TopicQueryService {
           .eq(TopicClusterEntity::getRadarRank, 1)
           .isNotNull(TopicClusterEntity::getRadarBatchId)
           .ne(TopicClusterEntity::getRadarBatchId, "")
+          .ne(TopicClusterEntity::getStatus, HotNewsTopicStatuses.EXPIRED)
           .orderByDesc(TopicClusterEntity::getUpdatedAt)
           .last("LIMIT 1"));
       if (batchSeed != null) {
         latestRadarBatchId = batchSeed.getRadarBatchId();
       }
     }
-    // 列表前先清掉过期未确认素材，保证「只在当天生效」
+    // 列表前先把超额/历史未确认选题标 expired（不删库），默认列表只看当天有效池
     if (StrUtil.isNotBlank(themeId)) {
       aggregate.applyDailyTopicLimit(themeId);
       aggregate.refreshTopicScores(themeId);

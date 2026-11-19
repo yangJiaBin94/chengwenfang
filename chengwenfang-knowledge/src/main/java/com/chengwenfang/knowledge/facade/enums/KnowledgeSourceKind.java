@@ -1,5 +1,8 @@
 package com.chengwenfang.knowledge.facade.enums;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+
 /** 知识库文档来源种类。 */
 public enum KnowledgeSourceKind {
   /** 系统已生成文章（work_outputs）。 */
@@ -9,7 +12,9 @@ public enum KnowledgeSourceKind {
   /** 雷达信源条目。 */
   SOURCE_ITEM("source_item"),
   /** 选题资料池条目。 */
-  RESEARCH_ITEM("research_item");
+  RESEARCH_ITEM("research_item"),
+  /** 雷达 Top10 选题簇（sourceRefId = topicId）。 */
+  RADAR_TOPIC("radar_topic");
 
   private final String value;
 
@@ -18,6 +23,7 @@ public enum KnowledgeSourceKind {
   }
 
   /** @return 持久化值 */
+  @JsonValue
   public String getValue() {
     return value;
   }
@@ -28,6 +34,7 @@ public enum KnowledgeSourceKind {
    * @param raw 原始字符串
    * @return 枚举
    */
+  @JsonCreator
   public static KnowledgeSourceKind from(String raw) {
     if (raw == null || raw.isBlank()) {
       throw new IllegalArgumentException("知识库来源种类不能为空");

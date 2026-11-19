@@ -2,7 +2,10 @@ package com.chengwenfang.knowledge.domain.rule;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.chengwenfang.knowledge.domain.model.KnowledgeChunkParams;
 import com.chengwenfang.knowledge.domain.model.KnowledgeChunkPiece;
+import com.chengwenfang.knowledge.domain.model.KnowledgeChunkRequest;
+import com.chengwenfang.knowledge.facade.enums.KnowledgeChunkProfile;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -25,34 +28,58 @@ class MarkdownChunkerTest {
             + repeatChar('B', 200);
 
     MarkdownChunker chunker = new MarkdownChunker();
-    List<KnowledgeChunkPiece> pieces = chunker.chunk("测试文档", markdown);
+    List<KnowledgeChunkPiece> pieces = chunker.chunk(request("测试文档", markdown));
 
     assertThat(pieces).hasSizeGreaterThan(1);
     assertThat(pieces).anyMatch(piece -> piece.getHeadingPath().contains("第一章"));
     assertThat(pieces).anyMatch(piece -> piece.getHeadingPath().contains("第二章"));
+    assertThat(pieces.get(0).getCharSpanStart()).isNotNull();
+    assertThat(pieces.get(0).getCharSpanEnd()).isGreaterThan(pieces.get(0).getCharSpanStart());
 
     boolean overlapFound = false;
     for (int index = 1; index < pieces.size(); index++) {
       String previous = pieces.get(index - 1).getContent();
       String current = pieces.get(index).getContent();
-      if (previous.length() >= 80 && current.length() >= 80) {
-        String tail = previous.substring(previous.length() - 80);
+      if (previous.length() >= 80 && current.length() >= 80
+          && pieces.get(index - 1).getHeadingPath().equals(pieces.get(index).getHeadingPath())) {
+        String tail = previous.substring(previous.length() - 40);
         if (current.contains(tail)) {
           overlapFound = true;
           break;
         }
       }
     }
-    assertThat(overlapFound).as("相邻块应存在约 80 字符重叠").isTrue();
+    assertThat(overlapFound).as("同节相邻块应存在重叠").isTrue();
+
+    KnowledgeChunkPiece firstChapterChild = null;
+    for (KnowledgeChunkPiece piece : pieces) {
+      if (piece.getHeadingPath() != null
+          && piece.getHeadingPath().contains("第一章")
+          && piece.getParentChunkIndex() != null) {
+        firstChapterChild = piece;
+        break;
+      }
+    }
+    assertThat(firstChapterChild).isNotNull();
+    KnowledgeChunkPiece parent = pieces.get(firstChapterChild.getParentChunkIndex());
+    assertThat(parent.getHeadingPath()).isEqualTo(firstChapterChild.getHeadingPath());
+    assertThat(pieces.stream()
+            .filter(piece -> piece.getHeadingPath() != null
+                && piece.getHeadingPath().contains("第二章")
+                && piece.getParentChunkIndex() != null)
+            .findFirst())
+        .isEmpty();
   }
 
-  /**
-   * 重复字符构造长文本。
-   *
-   * @param ch    字符
-   * @param count 次数
-   * @return 字符串
-   */
+  private static KnowledgeChunkRequest request(String title, String text) {
+    return KnowledgeChunkRequest.builder()
+        .title(title)
+        .text(text)
+        .chunkProfile(KnowledgeChunkProfile.MARKDOWN_STRUCTURED)
+        .params(KnowledgeChunkParams.defaults())
+        .build();
+  }
+
   private static String repeatChar(char ch, int count) {
     return String.valueOf(ch).repeat(count);
   }

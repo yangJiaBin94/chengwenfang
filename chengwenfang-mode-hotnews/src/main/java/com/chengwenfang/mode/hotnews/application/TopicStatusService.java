@@ -1,6 +1,7 @@
 package com.chengwenfang.mode.hotnews.application;
 
 import cn.hutool.core.util.StrUtil;
+import com.chengwenfang.mode.hotnews.application.hotnews.HotNewsKnowledgeIngestService;
 import com.chengwenfang.mode.hotnews.domain.entity.TopicClusterEntity;
 import com.chengwenfang.mode.hotnews.facade.constant.HotNewsTopicStatuses;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsTopicView;
@@ -10,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  * 选题状态：确认链路时间戳、每日雷达限额。
@@ -25,6 +28,8 @@ public class TopicStatusService {
   private final TopicQueryService query;
   /** 选题聚合（日限额）。 */
   private final HotNewsTopicAggregateService aggregate;
+  /** 已确认选题 → 知识库。 */
+  private final HotNewsKnowledgeIngestService knowledgeIngest;
 
   /**
    * 更新选题状态；status 空白时保持原状态。
@@ -39,14 +44,36 @@ public class TopicStatusService {
     LocalDateTime now = LocalDateTime.now();
     // 空白 status 保留原值，避免误清空
     String nextStatus = StrUtil.isBlank(status) ? topic.getStatus() : status;
+    boolean firstConfirm = isConfirmedTopicStatus(nextStatus) && topic.getConfirmedAt() == null;
     topic.setStatus(nextStatus);
     // 首次进入已确认链路时记录确认时间，后续 writing/completed 不覆盖
-    if (isConfirmedTopicStatus(nextStatus) && topic.getConfirmedAt() == null) {
+    if (firstConfirm) {
       topic.setConfirmedAt(now);
     }
     topic.setUpdatedAt(now);
     topicMapper.updateById(topic);
+    if (firstConfirm) {
+      scheduleKnowledgeIngestAfterCommit(topicId);
+    }
     return query.topicView(topic);
+  }
+
+  /**
+   * 事务提交后再登记知识库，避免与状态更新同事务写文件/入队。
+   *
+   * @param topicId 选题 ID
+   */
+  private void scheduleKnowledgeIngestAfterCommit(String topicId) {
+    if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+      knowledgeIngest.ingestOnTopicConfirmed(topicId);
+      return;
+    }
+    TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+      @Override
+      public void afterCommit() {
+        knowledgeIngest.ingestOnTopicConfirmed(topicId);
+      }
+    });
   }
 
   /**

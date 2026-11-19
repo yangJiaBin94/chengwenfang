@@ -79,6 +79,10 @@ export function parseRoute(pathname: string, search = ""): ParsedRoute {
   const themedCourseMatch = path.match(
     /^\/modes\/course-system\/themes\/([^/]+)\/courses\/(.+)$/,
   );
+  /** 知识库历史深链误写：无 themes 段，仍按课程详情打开。 */
+  const bareCourseSystemMatch = path.match(
+    /^\/modes\/course-system\/courses\/(.+)$/,
+  );
   const themedRouteMatch = path.match(
     /^\/modes\/course-system\/themes\/([^/]+)\/route$/,
   );
@@ -102,6 +106,10 @@ export function parseRoute(pathname: string, search = ""): ParsedRoute {
   const hotNewsArticleMatch = path.match(
     /^\/modes\/hot-news\/topics\/([^/]+)\/articles\/([^/]+)$/,
   );
+  /** 知识库历史深链：无 topic 段时仍按文章打开。 */
+  const bareHotNewsArticleMatch = path.match(
+    /^\/modes\/hot-news\/articles\/([^/]+)$/,
+  );
   const hotNewsResearchMatch = path.match(
     /^\/modes\/hot-news\/topics\/([^/]+)\/research$/,
   );
@@ -124,6 +132,15 @@ export function parseRoute(pathname: string, search = ""): ParsedRoute {
       params: {
         themeSlug: decodeURIComponent(themedCourseMatch[1]),
         courseId: decodeURIComponent(themedCourseMatch[2]),
+      },
+    };
+  }
+
+  if (bareCourseSystemMatch) {
+    return {
+      page: "course-detail",
+      params: {
+        courseId: decodeURIComponent(bareCourseSystemMatch[1]),
       },
     };
   }
@@ -214,6 +231,15 @@ export function parseRoute(pathname: string, search = ""): ParsedRoute {
       params: {
         topicId: decodeURIComponent(hotNewsArticleMatch[1]),
         articleId: decodeURIComponent(hotNewsArticleMatch[2]),
+      },
+    };
+  }
+
+  if (bareHotNewsArticleMatch) {
+    return {
+      page: "hot-news-article",
+      params: {
+        articleId: decodeURIComponent(bareHotNewsArticleMatch[1]),
       },
     };
   }

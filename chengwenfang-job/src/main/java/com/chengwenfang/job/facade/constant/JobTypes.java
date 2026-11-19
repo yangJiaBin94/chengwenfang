@@ -25,6 +25,8 @@ public final class JobTypes {
   public static final String KNOWLEDGE_INDEX_DOCUMENT = "knowledge_index_document";
   /** 知识库全量/按来源重建索引。 */
   public static final String KNOWLEDGE_REINDEX_ALL = "knowledge_reindex_all";
+  /** 知识库 MySQL/向量/图对账。 */
+  public static final String KNOWLEDGE_RECONCILE = "knowledge_reconcile";
 
   public static final Set<String> ALL = Set.of(
       HOT_NEWS_FETCH,
@@ -43,7 +45,8 @@ public final class JobTypes {
       ARTICLE_REPAIR,
       THEME_CURRICULUM_GENERATION,
       KNOWLEDGE_INDEX_DOCUMENT,
-      KNOWLEDGE_REINDEX_ALL
+      KNOWLEDGE_REINDEX_ALL,
+      KNOWLEDGE_RECONCILE
   );
 
   private JobTypes() {}

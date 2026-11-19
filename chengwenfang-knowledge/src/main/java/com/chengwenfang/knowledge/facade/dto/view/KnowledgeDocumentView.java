@@ -37,6 +37,10 @@ public class KnowledgeDocumentView {
   private String sourceVersionStamp;
   /** 前端深链。 */
   private String deepLink;
+  /** 原始附件文件 ID。 */
+  private String originFileId;
+  /** 归一化正文文件 ID（引用预览用）。 */
+  private String textFileId;
   /** 失败原因。 */
   private String errorMessage;
   /** 创建时间。 */

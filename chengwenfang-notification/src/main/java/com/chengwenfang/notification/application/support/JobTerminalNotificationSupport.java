@@ -105,6 +105,12 @@ public class JobTerminalNotificationSupport {
     if (JobTypes.THEME_CURRICULUM_GENERATION.equals(jobType)) {
       return "课表草案已生成";
     }
+    if (JobTypes.KNOWLEDGE_REINDEX_ALL.equals(jobType)) {
+      return "知识库索引已重建，可在知识库页查看统计";
+    }
+    if (JobTypes.KNOWLEDGE_INDEX_DOCUMENT.equals(jobType)) {
+      return "文档已重新索引，可在知识库页查看统计";
+    }
     if (JobTypes.COURSE_CONTENT_GENERATION.equals(jobType)
         || JobTypes.COURSE_DRAFT_GENERATION.equals(jobType)
         || JobTypes.WECHAT_ARTICLE_GENERATION.equals(jobType)) {
@@ -131,6 +137,12 @@ public class JobTerminalNotificationSupport {
     metadata.put(NotificationMetadataKeys.JOB_TYPE, jobType);
     if (StrUtil.isBlank(entityId)) {
       return "";
+    }
+    if (JobTypes.KNOWLEDGE_REINDEX_ALL.equals(jobType)) {
+      return "全部文档";
+    }
+    if (JobTypes.KNOWLEDGE_INDEX_DOCUMENT.equals(jobType)) {
+      return "文档 " + entityId.trim();
     }
     return targetResolvers.resolve(jobType, entityId, metadata).orElse("");
   }
@@ -202,6 +214,12 @@ public class JobTerminalNotificationSupport {
     }
     if (JobTypes.THEME_CURRICULUM_GENERATION.equals(jobType)) {
       return succeeded ? "课表生成完成" : "课表生成失败";
+    }
+    if (JobTypes.KNOWLEDGE_REINDEX_ALL.equals(jobType)) {
+      return succeeded ? "知识库全量重建完成" : "知识库全量重建失败";
+    }
+    if (JobTypes.KNOWLEDGE_INDEX_DOCUMENT.equals(jobType)) {
+      return succeeded ? "知识库文档索引完成" : "知识库文档索引失败";
     }
     return succeeded ? "任务已完成" : "任务失败";
   }

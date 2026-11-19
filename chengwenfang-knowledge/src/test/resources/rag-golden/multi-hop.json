@@ -1,0 +1,9 @@
+[
+  {
+    "id": "mh-1",
+    "tier": "multi_hop",
+    "question": "转化漏斗与引流方法的关系如何演进",
+    "expectDocumentIds": [],
+    "notes": "开 Graph flag 的门槛用例；Hybrid 不足时 Local 应能答"
+  }
+]

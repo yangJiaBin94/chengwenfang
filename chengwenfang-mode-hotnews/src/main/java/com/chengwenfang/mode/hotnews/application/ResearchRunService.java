@@ -20,6 +20,7 @@ import com.chengwenfang.job.facade.constant.JobTypes;
 import com.chengwenfang.job.facade.dto.job.HotNewsTopicResearchJobInput;
 import com.chengwenfang.job.facade.dto.view.JobView;
 import com.chengwenfang.job.facade.enums.JobStatus;
+import com.chengwenfang.mode.hotnews.application.hotnews.HotNewsKnowledgeIngestService;
 import com.chengwenfang.mode.hotnews.application.model.ResearchCandidate;
 import com.chengwenfang.mode.hotnews.application.research.ResearchAgentCollectResult;
 import com.chengwenfang.mode.hotnews.application.research.ResearchKeywordPlan;
@@ -81,6 +82,8 @@ public class ResearchRunService {
   private final ResearchSourcePolicyResolver researchSourcePolicyResolver;
   /** 文章正文抽取 + 事实摘要。 */
   private final ResearchArticleEnricher articleEnricher;
+  /** 资料池 → 知识库。 */
+  private final HotNewsKnowledgeIngestService knowledgeIngest;
 
   /**
    * @param researchRunMapper             调研运行 Mapper
@@ -97,6 +100,7 @@ public class ResearchRunService {
    * @param researchSupplementAgent       补搜 Agent
    * @param researchSourcePolicyResolver  来源策略
    * @param articleEnricher               文章摘要 enrich
+   * @param knowledgeIngest               知识库登记
    */
   public ResearchRunService(
       TopicResearchRunMapper researchRunMapper,
@@ -112,7 +116,8 @@ public class ResearchRunService {
       ResearchCandidateCollector collector,
       ResearchSupplementAgent researchSupplementAgent,
       ResearchSourcePolicyResolver researchSourcePolicyResolver,
-      ResearchArticleEnricher articleEnricher) {
+      ResearchArticleEnricher articleEnricher,
+      HotNewsKnowledgeIngestService knowledgeIngest) {
     this.researchRunMapper = researchRunMapper;
     this.briefMapper = briefMapper;
     this.jobs = jobs;
@@ -127,6 +132,7 @@ public class ResearchRunService {
     this.researchSupplementAgent = researchSupplementAgent;
     this.researchSourcePolicyResolver = researchSourcePolicyResolver;
     this.articleEnricher = articleEnricher;
+    this.knowledgeIngest = knowledgeIngest;
   }
 
   /**
@@ -353,6 +359,10 @@ public class ResearchRunService {
     int itemCount = replaced.itemCount();
     int conflictCount = replaced.conflictCount();
     String status = replaced.status();
+    // 资料池事务已提交：新条目登记知识库；旧自动条目删除不级联清知识库
+    TopicClusterEntity topicForTheme = topics.requireTopic(resolvedTopicId);
+    knowledgeIngest.ingestResearchItemIds(
+        topicForTheme.getThemeId(), replaced.insertedItemIds());
 
     String briefId;
     List<TopicBriefEntity> briefs = briefMapper.selectList(new LambdaQueryWrapper<TopicBriefEntity>()

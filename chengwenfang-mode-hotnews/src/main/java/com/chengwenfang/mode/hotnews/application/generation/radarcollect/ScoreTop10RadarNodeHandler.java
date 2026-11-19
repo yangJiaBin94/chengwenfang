@@ -1,6 +1,7 @@
 package com.chengwenfang.mode.hotnews.application.generation.radarcollect;
 
 import cn.hutool.core.util.StrUtil;
+import com.chengwenfang.mode.hotnews.application.hotnews.HotNewsKnowledgeIngestService;
 import com.chengwenfang.mode.hotnews.application.hotnews.TopicAiWritingScoreService;
 import com.chengwenfang.mode.hotnews.facade.HotNewsFacade;
 import com.chengwenfang.job.facade.JobFacade;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Component;
 /**
  * 按主题量表 AI 评分后标记 Top10。
  * <p>评分过程逐条上报进度并续租，避免界面长时间停在「等待执行」。
+ * <p>Top10 事务提交后再登记知识库，避免拉长排名事务且与索引入队一致。
  */
 @Slf4j
 @Component
@@ -24,6 +26,8 @@ public class ScoreTop10RadarNodeHandler implements RadarCollectNodeHandler {
   private final HotNewsFacade hotNews;
   /** 写作价值 AI 评分。 */
   private final TopicAiWritingScoreService writingScoreService;
+  /** 雷达 Top10 → 知识库。 */
+  private final HotNewsKnowledgeIngestService knowledgeIngest;
   /** 任务进度上报。 */
   private final JobFacade jobs;
 
@@ -62,16 +66,26 @@ public class ScoreTop10RadarNodeHandler implements RadarCollectNodeHandler {
     int top10 = hotNews.markRadarTop10(session.getThemeId(), session.getRadarBatchId());
     session.setTop10Count(top10);
     lightState.put(RadarCollectGraphStateKeys.TOP10_COUNT, top10);
+    // markRadarTop10 事务已提交后再入库，避免与排名/日限额同事务写文件+入队索引
+    int knowledgeWritten = knowledgeIngest.ingestTop10(
+        session.getThemeId(), session.getRadarBatchId());
     // 雷达主流程末节点：批次标完成
     hotNews.completeRadarBatch(session.getRadarBatchId());
-    String note = "评分完成 " + scored + " 条，已标记 Top10：" + top10 + " 条";
+    String note = "评分完成 "
+        + scored
+        + " 条，已标记 Top10："
+        + top10
+        + " 条，知识库登记 "
+        + knowledgeWritten
+        + " 条";
     lightState.put(RadarCollectGraphStateKeys.SCORE_TOP10_NOTE, note);
     reportProgress(jobId, stepKey, 98, note);
     log.info(
-        "雷达 AI 评分与 Top10 完成 themeId={} scored={} top10={}",
+        "雷达 AI 评分与 Top10 完成 themeId={} scored={} top10={} knowledge={}",
         session.getThemeId(),
         scored,
-        top10);
+        top10,
+        knowledgeWritten);
   }
 
   /**

@@ -1,5 +1,8 @@
 package com.chengwenfang.knowledge.facade.enums;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+
 /** 知识库介质种类。 */
 public enum KnowledgeMediaKind {
   /** Markdown 文章正文。 */
@@ -22,6 +25,7 @@ public enum KnowledgeMediaKind {
   }
 
   /** @return 持久化值 */
+  @JsonValue
   public String getValue() {
     return value;
   }
@@ -32,6 +36,7 @@ public enum KnowledgeMediaKind {
    * @param raw 原始字符串
    * @return 枚举
    */
+  @JsonCreator
   public static KnowledgeMediaKind from(String raw) {
     if (raw == null || raw.isBlank()) {
       throw new IllegalArgumentException("知识库介质种类不能为空");

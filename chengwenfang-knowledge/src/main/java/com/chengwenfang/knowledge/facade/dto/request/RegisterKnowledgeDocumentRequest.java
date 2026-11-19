@@ -33,4 +33,6 @@ public class RegisterKnowledgeDocumentRequest {
   private String rawText;
   /** 原始附件文件 ID（上传场景）。 */
   private String originFileId;
+  /** 归一化/预写正文文件 ID（登记时已落盘的文本）。 */
+  private String textFileId;
 }

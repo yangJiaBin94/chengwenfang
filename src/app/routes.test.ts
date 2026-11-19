@@ -43,6 +43,13 @@ describe("parseRoute U01–U20", () => {
     });
   });
 
+  it("bare hot-news article deep link", () => {
+    expect(parseRoute("/modes/hot-news/articles/article-9")).toEqual({
+      page: "hot-news-article",
+      params: { articleId: "article-9" },
+    });
+  });
+
   it("U05 course detail", () => {
     expect(
       parseRoute(
@@ -53,6 +60,16 @@ describe("parseRoute U01–U20", () => {
       params: {
         themeSlug: "ai-self-study-zero",
         courseId: "course-rag-03e2336d-1",
+      },
+    });
+    expect(
+      parseRoute(
+        "/modes/course-system/courses/course-ai_self_study_zero-a00375d2-1",
+      ),
+    ).toEqual({
+      page: "course-detail",
+      params: {
+        courseId: "course-ai_self_study_zero-a00375d2-1",
       },
     });
   });

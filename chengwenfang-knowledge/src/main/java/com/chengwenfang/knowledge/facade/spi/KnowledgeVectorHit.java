@@ -1,4 +1,4 @@
-package com.chengwenfang.knowledge.domain.model;
+package com.chengwenfang.knowledge.facade.spi;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

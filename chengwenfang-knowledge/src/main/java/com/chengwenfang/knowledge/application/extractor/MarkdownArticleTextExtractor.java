@@ -3,6 +3,7 @@ package com.chengwenfang.knowledge.application.extractor;
 import cn.hutool.core.util.StrUtil;
 import com.chengwenfang.knowledge.domain.model.KnowledgeIngestDraft;
 import com.chengwenfang.knowledge.domain.model.NormalizedText;
+import com.chengwenfang.knowledge.facade.enums.KnowledgeChunkProfile;
 import com.chengwenfang.knowledge.facade.enums.KnowledgeMediaKind;
 import com.chengwenfang.knowledge.facade.spi.KnowledgeTextExtractor;
 import org.springframework.stereotype.Component;
@@ -25,6 +26,7 @@ public class MarkdownArticleTextExtractor implements KnowledgeTextExtractor {
     return NormalizedText.builder()
         .title(title)
         .text(text.trim())
+        .chunkProfile(KnowledgeChunkProfile.MARKDOWN_STRUCTURED)
         .build();
   }
 }

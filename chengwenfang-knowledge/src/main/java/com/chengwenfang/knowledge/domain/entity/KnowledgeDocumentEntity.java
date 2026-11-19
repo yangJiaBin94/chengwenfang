@@ -43,6 +43,9 @@ public class KnowledgeDocumentEntity {
   /** 可检索文本哈希。 */
   @TableField("content_hash")
   private String contentHash;
+  /** 切块策略版本（与 {@code KnowledgeChunkStrategyVersions.CURRENT} 对齐才可 skip）。 */
+  @TableField("chunk_strategy_version")
+  private String chunkStrategyVersion;
   /** 来源版本戳。 */
   @TableField("source_version_stamp")
   private String sourceVersionStamp;

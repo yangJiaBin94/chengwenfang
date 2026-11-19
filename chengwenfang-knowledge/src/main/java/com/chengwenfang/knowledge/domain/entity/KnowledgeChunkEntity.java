@@ -22,12 +22,21 @@ public class KnowledgeChunkEntity {
   /** 文档 ID。 */
   @TableField("document_id")
   private String documentId;
+  /** 父块 ID。 */
+  @TableField("parent_chunk_id")
+  private String parentChunkId;
   /** 块序号。 */
   @TableField("chunk_index")
   private Integer chunkIndex;
   /** 标题路径。 */
   @TableField("heading_path")
   private String headingPath;
+  /** 原文起始偏移。 */
+  @TableField("char_span_start")
+  private Integer charSpanStart;
+  /** 原文结束偏移。 */
+  @TableField("char_span_end")
+  private Integer charSpanEnd;
   /** 块正文。 */
   @TableField("content")
   private String content;
@@ -40,6 +49,12 @@ public class KnowledgeChunkEntity {
   /** 嵌入模型名。 */
   @TableField("embedding_model")
   private String embeddingModel;
+  /** 索引版本。 */
+  @TableField("index_version")
+  private String indexVersion;
+  /** 写入索引时间。 */
+  @TableField("indexed_at")
+  private LocalDateTime indexedAt;
   /** 创建时间。 */
   @TableField("created_at")
   private LocalDateTime createdAt;

@@ -122,6 +122,8 @@ Docker Desktop 里若只看到 `mysql` / `redis`，说明走的是「仅课程�
 # PowerShell · 仓库根目录
 . .\scripts\use-utf8.ps1
 docker compose up -d --wait          # MySQL + Redis + Qdrant（知识库向量 6333/6334）
+# 可选 Graph：docker compose --profile neo4j up -d ，并设 chengwenfang.knowledge.graph.enabled=true
+# 设计见 docs/知识库RAG体系设计.md
 npm install
 powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap\Initialize-ChengwenfangSeed.ps1
 

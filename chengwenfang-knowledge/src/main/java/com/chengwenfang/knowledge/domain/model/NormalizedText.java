@@ -1,5 +1,6 @@
 package com.chengwenfang.knowledge.domain.model;
 
+import com.chengwenfang.knowledge.facade.enums.KnowledgeChunkProfile;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,4 +16,6 @@ public class NormalizedText {
   private String text;
   /** 标题（可与文档标题一致或从正文推断）。 */
   private String title;
+  /** 切块形态；空则由管线按 mediaKind 回退。 */
+  private KnowledgeChunkProfile chunkProfile;
 }

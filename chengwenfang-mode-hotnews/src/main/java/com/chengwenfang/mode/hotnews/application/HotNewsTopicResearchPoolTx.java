@@ -105,6 +105,7 @@ public class HotNewsTopicResearchPoolTx {
     int itemCount = 0;
     int remounted = 0;
     Set<String> usedTranscriptIds = new HashSet<>();
+    List<String> insertedItemIds = new ArrayList<>();
     Map<String, List<ResearchCandidate>> byTitle = new LinkedHashMap<>();
     List<ResearchCandidate> safe = collected == null ? List.of() : collected;
     for (ResearchCandidate candidate : safe) {
@@ -142,6 +143,7 @@ public class HotNewsTopicResearchPoolTx {
       }
       item.setCreatedAt(now);
       researchItemMapper.insert(item);
+      insertedItemIds.add(item.getId());
       scoreDetailsStore.write(item.getId(), candidate.getScoreDetails());
       if (video) {
         if (remount != null && remount.reusable()
@@ -209,7 +211,8 @@ public class HotNewsTopicResearchPoolTx {
     log.info(
         "资料池事务写入完成 topicId={} itemCount={} remounted={} orphans={} conflictCount={} status={}",
         topicId, itemCount, remounted, orphanIds.size(), conflictCount, status);
-    return new ReplaceResult(itemCount, conflictCount, status);
+    // 注意：整池替换会删旧自动条目，但知识库 RESEARCH_ITEM 不级联删除，历史素材保留
+    return new ReplaceResult(itemCount, conflictCount, status, List.copyOf(insertedItemIds));
   }
 
   /**
@@ -337,5 +340,7 @@ public class HotNewsTopicResearchPoolTx {
     private final int conflictCount;
     /** 落库状态。 */
     private final String status;
+    /** 本轮新写入的资料条目 ID（供事务外登记知识库）。 */
+    private final List<String> insertedItemIds;
   }
 }

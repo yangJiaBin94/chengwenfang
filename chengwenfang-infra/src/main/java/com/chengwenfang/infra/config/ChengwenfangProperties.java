@@ -53,6 +53,10 @@ public class ChengwenfangProperties {
   private int aiEmbeddingTimeoutSeconds = 60;
   /** 知识库向量库（Qdrant）连接与集合配置。 */
   private QdrantSettings qdrant = new QdrantSettings();
+  /** 知识库 RAG 功能开关与 Agent 预算。 */
+  private KnowledgeSettings knowledge = new KnowledgeSettings();
+  /** Neo4j 图库连接（Graph flag 打开时使用）。 */
+  private Neo4jSettings neo4j = new Neo4jSettings();
   /** 线程池相关配置（渠道采集等）。 */
   private ExecutorSettings executor = new ExecutorSettings();
   /** 资料池视频解析（本机 Python CLI）。 */
@@ -110,6 +114,95 @@ public class ChengwenfangProperties {
     private List<String> skipHosts = new ArrayList<>();
     /** 同主机并发上限。 */
     private int perHostConcurrency = 2;
+  }
+
+  /** 知识库 RAG 开关。 */
+  @Data
+  public static class KnowledgeSettings {
+    /** 图检索总开关。 */
+    private GraphSettings graph = new GraphSettings();
+    /** Agent 总开关与预算。 */
+    private AgentSettings agent = new AgentSettings();
+    /** LLM listwise rerank；可关以跑无 rerank 基线。 */
+    private RerankSettings rerank = new RerankSettings();
+    /** 会话记忆。 */
+    private MemorySettings memory = new MemorySettings();
+    /** 生成后忠实度校验。 */
+    private FaithfulnessSettings faithfulness = new FaithfulnessSettings();
+    /** 知识库 Prompt 版本。 */
+    private PromptSettings prompt = new PromptSettings();
+    /** 问答 Context Budget（与 Agent 轮次预算分离）。 */
+    private ContextSettings context = new ContextSettings();
+  }
+
+  /** 问答上下文配额。 */
+  @Data
+  public static class ContextSettings {
+    /** 四段切片总 token 软上限（chars≈token×4）。 */
+    private int tokenBudget = 8000;
+  }
+
+  /** Graph feature flag。 */
+  @Data
+  public static class GraphSettings {
+    /** 是否启用 Neo4j 图路径。 */
+    private boolean enabled = false;
+  }
+
+  /** Agentic 配置。 */
+  @Data
+  public static class AgentSettings {
+    /** 是否启用有界 Agent。 */
+    private boolean enabled = false;
+    /** 最大检索轮次。 */
+    private int maxRounds = 3;
+    /** token 预算（软上限，供观测与提前停）。 */
+    private int tokenBudget = 8000;
+  }
+
+  /** Rerank 配置。 */
+  @Data
+  public static class RerankSettings {
+    /** 默认开启 LLM listwise；可关。 */
+    private boolean enabled = true;
+  }
+
+  /** 记忆配置。 */
+  @Data
+  public static class MemorySettings {
+    /** 是否启用会话摘要记忆。 */
+    private boolean enabled = true;
+    /** 近重复合并相似度阈值（0–1）。 */
+    private double mergeThreshold = 0.88;
+    /** 是否从会话摘要晋升事实到长期记忆。 */
+    private boolean promoteEnabled = true;
+    /** 每 N 轮问答尝试一次摘要晋升。 */
+    private int promoteEveryNTurns = 4;
+  }
+
+  /** 知识库 Prompt 版本配置。 */
+  @Data
+  public static class PromptSettings {
+    /** 活跃版本号（如 v1）；改回旧版即回滚。 */
+    private String activeVersion = "v1";
+  }
+
+  /** 答案忠实度二次校验（LLM）。 */
+  @Data
+  public static class FaithfulnessSettings {
+    /** 默认开启；寒暄/拒答路径不调用。 */
+    private boolean enabled = true;
+  }
+
+  /** Neo4j 连接。 */
+  @Data
+  public static class Neo4jSettings {
+    /** Bolt URI。 */
+    private String uri = "bolt://127.0.0.1:7687";
+    /** 用户名。 */
+    private String username = "neo4j";
+    /** 密码。 */
+    private String password = "chengwenfang_neo4j";
   }
 
   /** Qdrant 向量库配置（知识库 RAG）。 */

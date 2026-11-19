@@ -12,6 +12,7 @@ import com.chengwenfang.crawler.facade.dto.view.FetchResult;
 import com.chengwenfang.crawler.facade.dto.view.FetchedItemView;
 import com.chengwenfang.crawler.facade.enums.ChannelType;
 import com.chengwenfang.job.facade.enums.JobStatus;
+import com.chengwenfang.mode.hotnews.application.hotnews.HotNewsKnowledgeIngestService;
 import com.chengwenfang.mode.hotnews.application.model.ResearchCandidate;
 import com.chengwenfang.mode.hotnews.domain.ChineseTextNormalizer;
 import com.chengwenfang.mode.hotnews.domain.ResearchContentClassifier;
@@ -66,6 +67,8 @@ public class ResearchPoolWriter {
   private final ResearchQueryService query;
   /** 文章正文抽取 + 事实摘要。 */
   private final ResearchArticleEnricher articleEnricher;
+  /** 资料池 → 知识库。 */
+  private final HotNewsKnowledgeIngestService knowledgeIngest;
 
   /**
    * @param topicMapper              选题簇 Mapper
@@ -80,6 +83,7 @@ public class ResearchPoolWriter {
    * @param scoreDetailsStore        资料评分明细
    * @param query                    调研查询
    * @param articleEnricher          文章摘要 enrich
+   * @param knowledgeIngest          知识库登记
    */
   public ResearchPoolWriter(
       TopicClusterMapper topicMapper,
@@ -93,7 +97,8 @@ public class ResearchPoolWriter {
       @Lazy HotNewsTopicService topics,
       ResearchItemScoreDetailsStore scoreDetailsStore,
       ResearchQueryService query,
-      ResearchArticleEnricher articleEnricher) {
+      ResearchArticleEnricher articleEnricher,
+      HotNewsKnowledgeIngestService knowledgeIngest) {
     this.topicMapper = topicMapper;
     this.researchRunMapper = researchRunMapper;
     this.researchItemMapper = researchItemMapper;
@@ -106,6 +111,7 @@ public class ResearchPoolWriter {
     this.scoreDetailsStore = scoreDetailsStore;
     this.query = query;
     this.articleEnricher = articleEnricher;
+    this.knowledgeIngest = knowledgeIngest;
   }
 
   public HotNewsResearchItemView addManualResearchItem(
@@ -205,6 +211,12 @@ public class ResearchPoolWriter {
           null,
           item.getVideoDurationSeconds());
       item.setVideoParseStatus(VideoParseStatus.NONE.getValue());
+    }
+    TopicClusterEntity topicEntity = topicMapper.selectById(topicId);
+    if (topicEntity != null && StrUtil.isNotBlank(topicEntity.getThemeId())) {
+      // 外层 Facade 事务提交后再写知识库，避免回滚留孤儿文件
+      knowledgeIngest.scheduleIngestResearchItemIds(
+          topicEntity.getThemeId(), List.of(item.getId()));
     }
     log.info("手动添加资料完成 topicId={} itemId={} site={}",
         topicId, item.getId(), ResearchContentClassifier.siteLabel(url));

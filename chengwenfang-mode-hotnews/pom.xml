@@ -20,6 +20,10 @@
     </dependency>
     <dependency>
       <groupId>com.chengwenfang</groupId>
+      <artifactId>chengwenfang-knowledge</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.chengwenfang</groupId>
       <artifactId>chengwenfang-job</artifactId>
     </dependency>
     <dependency>

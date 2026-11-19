@@ -27,6 +27,10 @@ public final class KnowledgeVectorPayloadKeys {
   public static final String THEME_ID = "themeId";
   /** 深链接。 */
   public static final String DEEP_LINK = "deepLink";
+  /** 索引版本（蓝绿读路径）。 */
+  public static final String INDEX_VERSION = "indexVersion";
+  /** 嵌入模型名（防混模检索）。 */
+  public static final String EMBEDDING_MODEL = "embeddingModel";
 
   private KnowledgeVectorPayloadKeys() {}
 }

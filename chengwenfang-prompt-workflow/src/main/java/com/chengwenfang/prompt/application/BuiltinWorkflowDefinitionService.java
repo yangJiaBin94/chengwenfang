@@ -191,7 +191,8 @@ public class BuiltinWorkflowDefinitionService {
     return CourseWorkflowNodeType.isFullCourseGraph(typeKeys)
         && wechatProgressOk
         && reviewSingleAttempt
-        && wechatSingleAttempt;
+        && wechatSingleAttempt
+        && hasNonEmptyPromptPackBindings(snapshotJson);
   }
 
   /**
@@ -324,7 +325,8 @@ public class BuiltinWorkflowDefinitionService {
    * @return 已覆盖全部 builtin typeKey（可多不可少）则为 true
    */
   private boolean isFullRadarCollectGraph(String snapshotJson) {
-    return collectTypeKeys(snapshotJson).containsAll(HotNewsRadarCollectNodeType.builtinTypeKeys());
+    return collectTypeKeys(snapshotJson).containsAll(HotNewsRadarCollectNodeType.builtinTypeKeys())
+        && hasNonEmptyPromptPackBindings(snapshotJson);
   }
 
   /**
@@ -348,7 +350,8 @@ public class BuiltinWorkflowDefinitionService {
    * @return 已覆盖全部 builtin typeKey（可多不可少）则为 true
    */
   private boolean isFullHotNewsGraph(String snapshotJson) {
-    return collectTypeKeys(snapshotJson).containsAll(HotNewsWorkflowNodeType.builtinTypeKeys());
+    return collectTypeKeys(snapshotJson).containsAll(HotNewsWorkflowNodeType.builtinTypeKeys())
+        && hasNonEmptyPromptPackBindings(snapshotJson);
   }
 
   /**
@@ -395,6 +398,30 @@ public class BuiltinWorkflowDefinitionService {
     definitions.publish(def.getId(), WorkflowPublishRequest.builder()
         .releaseNotes(releaseNotes)
         .build());
+  }
+
+  /**
+   * 快照中是否至少有一个节点挂了非空 提示词包 绑定（避免空绑定图被当成「已齐全」而跳过覆盖）。
+   *
+   * @param snapshotJson 版本快照
+   * @return 存在有效绑定则为 true
+   */
+  private boolean hasNonEmptyPromptPackBindings(String snapshotJson) {
+    Map<String, Object> snapshot = support.readDefinition(snapshotJson, new WorkflowDefinitionEntity());
+    Object nodesRaw = snapshot.get(WorkflowGraphMapKeys.NODES);
+    if (!(nodesRaw instanceof List<?> nodes) || nodes.isEmpty()) {
+      return false;
+    }
+    for (Object nodeObj : nodes) {
+      if (!(nodeObj instanceof Map<?, ?> map)) {
+        continue;
+      }
+      Object bindingsRaw = map.get(WorkflowGraphMapKeys.PROMPT_PACK_BINDINGS);
+      if (bindingsRaw instanceof List<?> bindings && !bindings.isEmpty()) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**

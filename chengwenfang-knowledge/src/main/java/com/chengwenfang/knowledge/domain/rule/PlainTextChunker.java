@@ -1,148 +1,144 @@
 package com.chengwenfang.knowledge.domain.rule;
 
 import cn.hutool.core.util.StrUtil;
+import com.chengwenfang.knowledge.domain.model.KnowledgeChunkParams;
 import com.chengwenfang.knowledge.domain.model.KnowledgeChunkPiece;
+import com.chengwenfang.knowledge.domain.model.KnowledgeChunkRequest;
+import com.chengwenfang.knowledge.facade.enums.KnowledgeChunkProfile;
+import com.chengwenfang.knowledge.facade.spi.KnowledgeChunker;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.stereotype.Component;
 
 /**
- * 纯文本切块：按段落聚合后在段内滑动窗口切分。
+ * 纯文本切块：按段落聚合后在缓冲区内滑动窗口；短文单块。
  */
-public class PlainTextChunker {
+@Component
+public class PlainTextChunker implements KnowledgeChunker {
 
-  /** 目标块长（字符）。 */
-  private static final int TARGET_CHARS = 600;
-  /** 最大块长。 */
-  private static final int MAX_CHARS = 800;
-  /** 相邻块重叠字符数。 */
-  private static final int OVERLAP_CHARS = 80;
-  /** 过短块合并阈值。 */
-  private static final int MIN_MERGE_CHARS = 120;
+  @Override
+  public boolean supports(KnowledgeChunkProfile chunkProfile) {
+    return KnowledgeChunkProfile.PLAIN == chunkProfile;
+  }
 
-  /**
-   * 将纯文本切成检索块列表。
-   *
-   * @param title 文档标题
-   * @param text  正文
-   * @return 切块列表
-   */
-  public List<KnowledgeChunkPiece> chunk(String title, String text) {
-    String body = text == null ? "" : text.trim();
+  @Override
+  public List<KnowledgeChunkPiece> chunk(KnowledgeChunkRequest request) {
+    String title = request == null ? "" : StrUtil.nullToEmpty(request.getTitle());
+    String body = request == null ? "" : StrUtil.nullToEmpty(request.getText());
+    KnowledgeChunkParams params =
+        request == null || request.getParams() == null
+            ? KnowledgeChunkParams.defaults()
+            : request.getParams();
     if (StrUtil.isBlank(body)) {
-      return List.of(buildPiece(title, "", "", 0));
+      return List.of(piece(title, "", 0, 0, 0));
     }
-    List<String> paragraphs = splitParagraphs(body);
-    List<String> rawPieces = new ArrayList<>();
+    // 全文不超过 max：单块，避免短图注/短摘过度切分
+    if (body.length() <= params.getMaxChars()) {
+      String trimmed = body.trim();
+      int start = indexOfOrZero(body, trimmed);
+      return List.of(piece(title, trimmed, 0, start, start + trimmed.length()));
+    }
+    List<ParagraphSpan> paragraphs = splitParagraphs(body);
+    List<KnowledgeChunkPiece> result = new ArrayList<>();
     StringBuilder buffer = new StringBuilder();
-    for (String paragraph : paragraphs) {
-      if (StrUtil.isBlank(paragraph)) {
+    int bufferStart = -1;
+    for (ParagraphSpan paragraph : paragraphs) {
+      if (StrUtil.isBlank(paragraph.text())) {
         continue;
       }
       if (buffer.isEmpty()) {
-        buffer.append(paragraph);
-      } else if (buffer.length() + paragraph.length() + 2 <= TARGET_CHARS) {
-        buffer.append("\n\n").append(paragraph);
+        buffer.append(paragraph.text());
+        bufferStart = paragraph.start();
+      } else if (buffer.length() + paragraph.text().length() + 2 <= params.getTargetChars()) {
+        buffer.append("\n\n").append(paragraph.text());
       } else {
-        rawPieces.addAll(windowText(buffer.toString()));
+        appendWindows(result, title, body, bufferStart, buffer.toString(), params);
         buffer.setLength(0);
-        buffer.append(paragraph);
+        buffer.append(paragraph.text());
+        bufferStart = paragraph.start();
       }
     }
     if (!buffer.isEmpty()) {
-      rawPieces.addAll(windowText(buffer.toString()));
+      appendWindows(result, title, body, bufferStart, buffer.toString(), params);
     }
-    if (rawPieces.isEmpty()) {
-      rawPieces.add(body);
+    if (result.isEmpty()) {
+      String trimmed = body.trim();
+      int start = indexOfOrZero(body, trimmed);
+      return List.of(piece(title, trimmed, 0, start, start + trimmed.length()));
     }
-    mergeShortPieces(rawPieces);
-    List<KnowledgeChunkPiece> result = new ArrayList<>();
-    for (int index = 0; index < rawPieces.size(); index++) {
-      result.add(buildPiece(title, "", rawPieces.get(index), index));
+    // 重排 chunkIndex
+    for (int index = 0; index < result.size(); index++) {
+      result.get(index).setChunkIndex(index);
     }
     return result;
   }
 
-  /**
-   * 按空行拆段落。
-   *
-   * @param text 全文
-   * @return 段落列表
-   */
-  private static List<String> splitParagraphs(String text) {
+  private static void appendWindows(
+      List<KnowledgeChunkPiece> result,
+      String title,
+      String fullBody,
+      int bufferStart,
+      String bufferText,
+      KnowledgeChunkParams params) {
+    List<TextWindowSplitter.TextWindow> windows = TextWindowSplitter.split(bufferText, params);
+    for (TextWindowSplitter.TextWindow window : windows) {
+      String content = window.text().trim();
+      if (StrUtil.isBlank(content)) {
+        continue;
+      }
+      // 仅在本缓冲窗内定位，避免全文 indexOf 撞上重复段落
+      int[] localSpan = CharSpanSupport.spanOf(bufferText, content, window.startInclusive());
+      int absoluteStart = bufferStart + localSpan[0];
+      int absoluteEnd = bufferStart + localSpan[1];
+      if (absoluteEnd > absoluteStart
+          && absoluteEnd <= fullBody.length()
+          && fullBody.substring(absoluteStart, absoluteEnd).equals(content)) {
+        result.add(piece(title, content, result.size(), absoluteStart, absoluteEnd));
+      } else {
+        int[] fallback = CharSpanSupport.spanOf(fullBody, content, bufferStart);
+        result.add(piece(title, content, result.size(), fallback[0], fallback[1]));
+      }
+    }
+  }
+
+  private static List<ParagraphSpan> splitParagraphs(String text) {
+    List<ParagraphSpan> paragraphs = new ArrayList<>();
     String[] parts = text.split("\\n\\s*\\n");
-    List<String> paragraphs = new ArrayList<>();
+    int cursor = 0;
     for (String part : parts) {
+      int found = text.indexOf(part, cursor);
+      if (found < 0) {
+        found = cursor;
+      }
       String trimmed = StrUtil.trim(part);
       if (StrUtil.isNotBlank(trimmed)) {
-        paragraphs.add(trimmed);
+        int local = part.indexOf(trimmed);
+        int start = found + Math.max(0, local);
+        paragraphs.add(new ParagraphSpan(trimmed, start));
       }
+      cursor = found + part.length();
     }
     return paragraphs;
   }
 
-  /**
-   * 段内滑动窗口。
-   *
-   * @param text 段落文本
-   * @return 窗口列表
-   */
-  private static List<String> windowText(String text) {
-    if (text.length() <= MAX_CHARS) {
-      return List.of(text);
-    }
-    List<String> windows = new ArrayList<>();
-    int start = 0;
-    while (start < text.length()) {
-      int end = Math.min(text.length(), start + TARGET_CHARS);
-      windows.add(text.substring(start, end).trim());
-      if (end >= text.length()) {
-        break;
-      }
-      start = Math.max(start + 1, end - OVERLAP_CHARS);
-    }
-    return windows;
-  }
-
-  /**
-   * 合并过短块。
-   *
-   * @param pieces 正文块
-   */
-  private static void mergeShortPieces(List<String> pieces) {
-    int index = 1;
-    while (index < pieces.size()) {
-      if (pieces.get(index).length() < MIN_MERGE_CHARS) {
-        String merged = pieces.get(index - 1) + "\n\n" + pieces.get(index);
-        pieces.set(index - 1, merged);
-        pieces.remove(index);
-      } else {
-        index++;
-      }
-    }
-  }
-
-  /**
-   * 构造单块。
-   *
-   * @param title   标题
-   * @param path    标题路径（纯文本无结构时为空）
-   * @param content 正文
-   * @param index   序号
-   * @return 切块
-   */
-  private static KnowledgeChunkPiece buildPiece(String title, String path, String content, int index) {
-    String safeTitle = StrUtil.nullToEmpty(title);
+  private static KnowledgeChunkPiece piece(
+      String title, String content, int index, int start, int end) {
     String safeContent = StrUtil.nullToEmpty(content);
-    String embedding = StrUtil.isBlank(safeTitle)
-        ? safeContent
-        : safeTitle + "\n\n" + safeContent;
-    int estimate = safeContent.replaceAll("\\s+", "").length();
     return KnowledgeChunkPiece.builder()
         .chunkIndex(index)
-        .headingPath(StrUtil.nullToEmpty(path))
+        .headingPath("")
         .content(safeContent)
-        .tokenEstimate(estimate)
-        .embeddingText(embedding)
+        .tokenEstimate(safeContent.replaceAll("\\s+", "").length())
+        .embeddingText(ChunkEmbeddingTexts.build(title, "", safeContent))
+        .charSpanStart(start)
+        .charSpanEnd(end)
         .build();
   }
+
+  private static int indexOfOrZero(String haystack, String needle) {
+    int index = haystack.indexOf(needle);
+    return index >= 0 ? index : 0;
+  }
+
+  private record ParagraphSpan(String text, int start) {}
 }

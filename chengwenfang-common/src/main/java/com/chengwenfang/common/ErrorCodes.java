@@ -86,6 +86,12 @@ public final class ErrorCodes {
   public static final String KNOWLEDGE_SESSION_NOT_FOUND = "knowledge_session_not_found";
   /** 知识库索引失败。 */
   public static final String KNOWLEDGE_INDEX_FAILED = "knowledge_index_failed";
+  /** 知识库上传文件不合法（类型/大小）。 */
+  public static final String KNOWLEDGE_UPLOAD_REJECTED = "knowledge_upload_rejected";
+  /** 知识库抽取正文过短或为空。 */
+  public static final String KNOWLEDGE_EXTRACT_EMPTY = "knowledge_extract_empty";
+  /** 知识库表格行数超过上限。 */
+  public static final String KNOWLEDGE_TABLE_TOO_LARGE = "knowledge_table_too_large";
 
   private ErrorCodes() {}
 }

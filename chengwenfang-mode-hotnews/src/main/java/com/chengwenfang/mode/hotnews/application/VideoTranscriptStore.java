@@ -1,6 +1,7 @@
 package com.chengwenfang.mode.hotnews.application;
 
 import cn.hutool.core.util.StrUtil;
+import com.chengwenfang.mode.hotnews.application.hotnews.HotNewsKnowledgeIngestService;
 import com.chengwenfang.mode.hotnews.domain.entity.TopicResearchItemEntity;
 import com.chengwenfang.mode.hotnews.facade.VideoParseSink;
 import com.chengwenfang.mode.hotnews.infrastructure.mapper.TopicResearchItemMapper;
@@ -11,8 +12,8 @@ import com.chengwenfang.sourcing.facade.enums.VideoParseStatus;
 import com.chengwenfang.sourcing.facade.enums.VideoParseStep;
 import com.chengwenfang.sourcing.infrastructure.mapper.SourceItemMapper;
 import java.time.LocalDateTime;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 /**
@@ -20,7 +21,6 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class VideoTranscriptStore {
   /** 资料池条目 Mapper。 */
   private final TopicResearchItemMapper researchItemMapper;
@@ -28,6 +28,25 @@ public class VideoTranscriptStore {
   private final SourceItemMapper sourceItemMapper;
   /** 视频解析共享表（raw_text sole-write）。 */
   private final VideoParseRunService videoParseRuns;
+  /** 解析成功后刷新资料池知识库正文。 */
+  private final HotNewsKnowledgeIngestService knowledgeIngest;
+
+  /**
+   * @param researchItemMapper 资料池 Mapper
+   * @param sourceItemMapper   信源 Mapper
+   * @param videoParseRuns     解析共享表
+   * @param knowledgeIngest    知识库登记（懒加载打断环）
+   */
+  public VideoTranscriptStore(
+      TopicResearchItemMapper researchItemMapper,
+      SourceItemMapper sourceItemMapper,
+      VideoParseRunService videoParseRuns,
+      @Lazy HotNewsKnowledgeIngestService knowledgeIngest) {
+    this.researchItemMapper = researchItemMapper;
+    this.sourceItemMapper = sourceItemMapper;
+    this.videoParseRuns = videoParseRuns;
+    this.knowledgeIngest = knowledgeIngest;
+  }
 
   /**
    * 资料池条目可写目标。
@@ -114,6 +133,8 @@ public class VideoTranscriptStore {
         // 所属表写摘要等；解析状态/原文/时长/类型 sole-write 共享表
         researchItemMapper.updateById(item);
         videoParseRuns.upsertFromResearchItem(item);
+        // 事务提交后再刷新知识库正文，避免与解析落库同事务写文件/入队
+        knowledgeIngest.scheduleRefreshResearchItemKnowledge(item.getId());
       }
     };
   }

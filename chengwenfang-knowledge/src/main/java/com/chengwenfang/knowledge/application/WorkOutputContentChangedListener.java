@@ -41,6 +41,6 @@ public class WorkOutputContentChangedListener {
         .sourceVersionStamp(versionStamp)
         .build();
     knowledgeFacade.upsertSourceDocument(request);
-    log.info("主轨变更已登记知识库 outputId={} version={}", event.getOutputId(), versionStamp);
+    log.info("主轨原稿已登记知识库 outputId={} version={}", event.getOutputId(), versionStamp);
   }
 }

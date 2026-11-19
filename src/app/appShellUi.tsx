@@ -143,6 +143,7 @@ export type AppDialogState = {
   tone?: "default" | "danger";
   inputLabel?: string;
   placeholder?: string;
+  defaultValue?: string;
   minLength?: number;
 };
 
@@ -153,7 +154,10 @@ export function AppDialog({
   dialog: AppDialogState;
   onClose: (result?: boolean | string | null) => void;
 }) {
-  const [inputValue, setInputValue] = useState("");
+  const [inputValue, setInputValue] = useState(dialog.defaultValue ?? "");
+  useEffect(() => {
+    setInputValue(dialog.defaultValue ?? "");
+  }, [dialog.defaultValue, dialog.title, dialog.message, dialog.mode]);
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape")

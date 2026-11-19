@@ -73,6 +73,31 @@ chengwenfang:
     http-port: 6333
     grpc-port: 6334
     collection: chengwenfang_knowledge
+  # 知识库 RAG：Graph 默认关（与设计 §11 一致；本机可 profile overlay 开 Local）
+  knowledge:
+    graph:
+      enabled: false
+    agent:
+      enabled: false
+      max-rounds: 3
+      token-budget: 8000
+    rerank:
+      enabled: true
+    memory:
+      enabled: true
+      merge-threshold: 0.88
+      promote-enabled: true
+      promote-every-n-turns: 4
+    faithfulness:
+      enabled: true
+    prompt:
+      active-version: v1
+    context:
+      token-budget: 8000
+  neo4j:
+    uri: bolt://127.0.0.1:7687
+    username: neo4j
+    password: ${NEO4J_PASSWORD:chengwenfang_neo4j}
   # 雷达文章正文：Jina → Trafilatura → Lightpanda(可选) → 搜索摘要
   article-content:
     jina-enabled: true

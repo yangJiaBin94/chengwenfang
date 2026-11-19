@@ -41,6 +41,13 @@ function resolveJobType(metadata: Record<string, unknown> | undefined): string {
   return metadata?.jobType != null ? String(metadata.jobType).trim() : "";
 }
 
+/** 知识库索引类任务（无课程节点轨迹，应回知识库页）。 */
+function isKnowledgeIndexJob(jobType: string): boolean {
+  return (
+    jobType === "knowledge_reindex_all" || jobType === "knowledge_index_document"
+  );
+}
+
 /**
  * 详情弹窗标题：去掉尾部重复的任务名，只保留事件类型（如「热点文章生成失败」）。
  *
@@ -264,6 +271,12 @@ export function NotificationCenter({
     const topicId =
       item.metadata?.topicId != null ? String(item.metadata.topicId).trim() : "";
     const themeSlug = resolveHotNewsThemeSlug(item.metadata);
+
+    // 知识库重建/单文档索引 → 知识库页（勿进课程执行轨迹）
+    if (isKnowledgeIndexJob(jobType)) {
+      onNavigate("/knowledge");
+      return;
+    }
 
     // 雷达采集 → 主题热点雷达页（不进采集轨迹）
     if (jobType === "hot_news_fetch") {
@@ -684,6 +697,11 @@ export function NotificationCenter({
                       return;
                     }
                   }
+                  const detailJobType = resolveJobType(detail.metadata);
+                  if (isKnowledgeIndexJob(detailJobType)) {
+                    onNavigate("/knowledge");
+                    return;
+                  }
                   if (detail.jobId) {
                     onNavigate(
                       `/executions?job=${encodeURIComponent(detail.jobId)}${detail.courseId ? `&course=${encodeURIComponent(detail.courseId)}` : ""}`,
@@ -691,7 +709,9 @@ export function NotificationCenter({
                   }
                 }}
               >
-                进入执行详情
+                {isKnowledgeIndexJob(resolveJobType(detail.metadata))
+                  ? "打开知识库"
+                  : "进入执行详情"}
               </button>
               {detail.jobId && (
                 <button

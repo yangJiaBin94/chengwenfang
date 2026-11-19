@@ -1,0 +1,23 @@
+[
+  {
+    "id": "ab-1",
+    "tier": "should_abstain",
+    "question": "火星殖民地的成文坊课表是什么",
+    "expectAbstain": true,
+    "notes": "无证据必须拒答"
+  },
+  {
+    "id": "ab-2",
+    "tier": "should_abstain",
+    "question": "本公司今天的股价是多少",
+    "expectAbstain": true,
+    "notes": "库外实时事实，沾边资料也不应硬答"
+  },
+  {
+    "id": "ab-3",
+    "tier": "should_abstain",
+    "question": "今天星期几",
+    "expectAbstain": true,
+    "notes": "与知识库无关"
+  }
+]

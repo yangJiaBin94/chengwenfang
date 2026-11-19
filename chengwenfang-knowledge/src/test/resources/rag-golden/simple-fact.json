@@ -1,0 +1,9 @@
+[
+  {
+    "id": "sf-1",
+    "tier": "simple_fact",
+    "question": "某主题下写过哪些引流方法",
+    "expectDocumentIds": [],
+    "notes": "有索引文档后填 expectDocumentIds；P0/P1 主验收档"
+  }
+]

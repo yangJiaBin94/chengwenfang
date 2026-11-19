@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { useEffect } from "react";
 import {
   AlertTriangle,
   BookOpen,
@@ -171,6 +172,30 @@ export function CourseLearningView({
   updateCourseContent,
   workspaceFallback
 }: CourseLearningViewProps) {
+  useEffect(() => {
+    if (!routeCourseId) return;
+    const heading = new URLSearchParams(window.location.search).get(
+      "citeHeading",
+    );
+    if (!heading) return;
+    const needle = heading.split(">")[0]?.trim();
+    if (!needle) return;
+    const timer = window.setTimeout(() => {
+      const root = document.querySelector(
+        ".detail-panel .markdown-reader, .detail-panel",
+      );
+      if (!root) return;
+      const nodes = root.querySelectorAll("h1, h2, h3, h4, h5, p");
+      for (const node of nodes) {
+        if (node.textContent && node.textContent.includes(needle)) {
+          node.scrollIntoView({ behavior: "smooth", block: "center" });
+          break;
+        }
+      }
+    }, 600);
+    return () => window.clearTimeout(timer);
+  }, [routeCourseId, selectedCourse?.id]);
+
   return (
     <>
       <CourseThemeSwitcher

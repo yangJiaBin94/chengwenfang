@@ -1,7 +1,9 @@
 # 本地依赖：
 #   仅库：docker compose up -d（MySQL + Redis + Qdrant）
-#   全部容器依赖（库 + SearXNG + Lightpanda）：docker compose --profile all up -d --wait
-#   单项：--profile searxng / --profile lightpanda
+#   全部容器依赖（库 + SearXNG + Lightpanda + Neo4j）：docker compose --profile all up -d --wait
+#   单项：--profile searxng / --profile lightpanda / --profile neo4j
+#   知识库 Graph：docker compose --profile neo4j up -d
+#     并设 chengwenfang.knowledge.graph.enabled=true（默认 false，不强制本机装 Neo4j）
 #
 # 密钥与 DB 密码：Compose 从项目根 .env 做变量替换（见 .env.example）。
 # 未设置时用下方 :- 后的本机开发默认值；生产请自建编排并注入强随机密钥（见 SECURITY.md）。
@@ -68,8 +70,30 @@ services:
     volumes:
       - chengwenfang-qdrant:/qdrant/storage
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:6333/"]
+      # qdrant 镜像无 wget；用 bash /dev/tcp 探测 HTTP 端口
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/6333'"]
       interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # 可选：知识库 GraphRAG（Neo4j Community）。默认不启动。
+  #   docker compose --profile neo4j up -d
+  # 应用需 chengwenfang.knowledge.graph.enabled=true 才会连接。
+  neo4j:
+    profiles: ["neo4j", "all"]
+    image: neo4j:5.26-community
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-chengwenfang_neo4j}
+      NEO4J_server_memory_heap_initial__size: 512m
+      NEO4J_server_memory_heap_max__size: 1G
+    volumes:
+      - chengwenfang-neo4j:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:7474 || exit 1"]
+      interval: 10s
       timeout: 5s
       retries: 20
 
@@ -134,4 +158,5 @@ services:
 volumes:
   chengwenfang-mysql:
   chengwenfang-qdrant:
+  chengwenfang-neo4j:
   chengwenfang-searxng-cache:

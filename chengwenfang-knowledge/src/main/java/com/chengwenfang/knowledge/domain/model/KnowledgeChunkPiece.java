@@ -21,4 +21,10 @@ public class KnowledgeChunkPiece {
   private Integer tokenEstimate;
   /** 送入嵌入模型的拼接文本。 */
   private String embeddingText;
+  /** 原文起始偏移。 */
+  private Integer charSpanStart;
+  /** 原文结束偏移。 */
+  private Integer charSpanEnd;
+  /** 父块临时键（同文档内序号或 id，入库后解析）。 */
+  private Integer parentChunkIndex;
 }

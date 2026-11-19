@@ -481,6 +481,7 @@ export function useChengwenfangPart5(s: Record<string, any>) {
     options: {
       inputLabel?: string;
       placeholder?: string;
+      defaultValue?: string;
       minLength?: number;
       tone?: "default" | "danger";
     } = {},
@@ -494,6 +495,7 @@ export function useChengwenfangPart5(s: Record<string, any>) {
         mode: "prompt",
         inputLabel: options.inputLabel,
         placeholder: options.placeholder,
+        defaultValue: options.defaultValue,
         minLength: options.minLength,
         tone: options.tone,
       });

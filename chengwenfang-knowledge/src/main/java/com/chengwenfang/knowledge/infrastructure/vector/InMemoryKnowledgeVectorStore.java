@@ -2,6 +2,10 @@ package com.chengwenfang.knowledge.infrastructure.vector;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
+import com.chengwenfang.knowledge.facade.spi.KnowledgeVectorFilter;
+import com.chengwenfang.knowledge.facade.spi.KnowledgeVectorHit;
+import com.chengwenfang.knowledge.facade.spi.KnowledgeVectorStore;
+import com.chengwenfang.knowledge.facade.spi.KnowledgeVectorUpsert;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -12,86 +16,108 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class InMemoryKnowledgeVectorStore implements KnowledgeVectorStore {
 
-  /** 点 ID → 向量点。 */
-  private final ConcurrentHashMap<String, KnowledgeVectorPoint> points = new ConcurrentHashMap<>();
+  /** 切块 ID → 向量记录。 */
+  private final ConcurrentHashMap<String, KnowledgeVectorUpsert> points = new ConcurrentHashMap<>();
 
-  /**
-   * {@inheritDoc}
-   */
+  /** {@inheritDoc} */
   @Override
-  public void upsert(List<KnowledgeVectorPoint> pointList) {
-    if (CollUtil.isEmpty(pointList)) {
+  public void upsert(List<KnowledgeVectorUpsert> items) {
+    if (CollUtil.isEmpty(items)) {
       return;
     }
-    for (KnowledgeVectorPoint point : pointList) {
-      if (point == null || StrUtil.isBlank(point.getId())) {
+    for (KnowledgeVectorUpsert item : items) {
+      if (item == null || StrUtil.isBlank(item.getChunkId())) {
         continue;
       }
-      points.put(point.getId(), point);
+      points.put(item.getChunkId(), item);
     }
   }
 
-  /**
-   * {@inheritDoc}
-   */
+  /** {@inheritDoc} */
   @Override
   public void deleteByDocumentId(String documentId) {
+    deleteByDocumentId(documentId, null);
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void deleteByDocumentId(String documentId, String indexVersion) {
     if (StrUtil.isBlank(documentId)) {
       return;
     }
-    points.entrySet().removeIf(entry -> documentId.equals(entry.getValue().getDocumentId()));
+    points.entrySet().removeIf(entry -> {
+      KnowledgeVectorUpsert point = entry.getValue();
+      if (!documentId.equals(point.getDocumentId())) {
+        return false;
+      }
+      if (StrUtil.isBlank(indexVersion)) {
+        return true;
+      }
+      return indexVersion.equals(point.getIndexVersion());
+    });
   }
 
-  /**
-   * {@inheritDoc}
-   */
+  /** {@inheritDoc} */
   @Override
-  public List<KnowledgeVectorMatch> search(float[] query, int topK, KnowledgeVectorFilter filter) {
-    if (query == null || query.length == 0 || topK <= 0) {
+  public void deleteByChunkIds(List<String> chunkIds) {
+    if (CollUtil.isEmpty(chunkIds)) {
+      return;
+    }
+    for (String chunkId : chunkIds) {
+      if (StrUtil.isNotBlank(chunkId)) {
+        points.remove(chunkId);
+      }
+    }
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public List<KnowledgeVectorHit> search(float[] queryVector, int limit, KnowledgeVectorFilter filter) {
+    if (queryVector == null || queryVector.length == 0 || limit <= 0) {
       return List.of();
     }
-    List<KnowledgeVectorMatch> matches = new ArrayList<>();
-    for (KnowledgeVectorPoint point : points.values()) {
+    List<KnowledgeVectorHit> hits = new ArrayList<>();
+    for (KnowledgeVectorUpsert point : points.values()) {
       if (!matchesFilter(point, filter)) {
         continue;
       }
-      if (point.getEmbedding() == null || point.getEmbedding().length == 0) {
+      if (point.getVector() == null || point.getVector().length == 0) {
         continue;
       }
-      double score = cosineSimilarity(query, point.getEmbedding());
-      matches.add(toMatch(point, score));
+      double score = cosineSimilarity(queryVector, point.getVector());
+      hits.add(KnowledgeVectorHit.builder()
+          .chunkId(point.getChunkId())
+          .documentId(point.getDocumentId())
+          .score(score)
+          .build());
     }
-    matches.sort(Comparator.comparingDouble(KnowledgeVectorMatch::getScore).reversed());
-    if (matches.size() > topK) {
-      return new ArrayList<>(matches.subList(0, topK));
+    hits.sort(Comparator.comparingDouble(KnowledgeVectorHit::getScore).reversed());
+    if (hits.size() > limit) {
+      return new ArrayList<>(hits.subList(0, limit));
     }
-    return matches;
+    return hits;
   }
 
-  /**
-   * {@inheritDoc}
-   */
+  /** {@inheritDoc} */
   @Override
   public void ensureCollection(int dimension) {
     // 内存实现无需预创建集合
   }
 
-  /**
-   * {@inheritDoc}
-   */
+  /** {@inheritDoc} */
   @Override
-  public boolean healthy() {
+  public boolean degraded() {
     return true;
   }
 
   /**
    * 判断点是否满足检索过滤条件。
    *
-   * @param point  向量点
+   * @param point  向量记录
    * @param filter 过滤条件
    * @return 是否命中过滤
    */
-  private boolean matchesFilter(KnowledgeVectorPoint point, KnowledgeVectorFilter filter) {
+  private boolean matchesFilter(KnowledgeVectorUpsert point, KnowledgeVectorFilter filter) {
     if (filter == null) {
       return true;
     }
@@ -99,16 +125,45 @@ public class InMemoryKnowledgeVectorStore implements KnowledgeVectorStore {
         && !filter.getDocumentId().equals(point.getDocumentId())) {
       return false;
     }
-    if (StrUtil.isNotBlank(filter.getSourceKind())
-        && !filter.getSourceKind().equals(point.getSourceKind())) {
+    if (!matchesAnyKind(
+        point.getSourceKind(), filter.getSourceKinds(), filter.getSourceKind())) {
       return false;
     }
-    if (StrUtil.isNotBlank(filter.getMediaKind())
-        && !filter.getMediaKind().equals(point.getMediaKind())) {
+    if (!matchesAnyKind(point.getMediaKind(), filter.getMediaKinds(), filter.getMediaKind())) {
       return false;
     }
     if (StrUtil.isNotBlank(filter.getThemeId()) && !filter.getThemeId().equals(point.getThemeId())) {
       return false;
+    }
+    if (StrUtil.isNotBlank(filter.getIndexVersion())
+        && !filter.getIndexVersion().equals(point.getIndexVersion())) {
+      return false;
+    }
+    if (StrUtil.isNotBlank(filter.getEmbeddingModel())
+        && !filter.getEmbeddingModel().equals(point.getEmbeddingModel())) {
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * 多选优先；否则单值；皆空则通过。
+   *
+   * @param actual 实际值
+   * @param kinds  多选
+   * @param single 单值
+   * @return 是否匹配
+   */
+  private static boolean matchesAnyKind(String actual, List<String> kinds, String single) {
+    if (CollUtil.isNotEmpty(kinds)) {
+      List<String> allowed = kinds.stream().filter(StrUtil::isNotBlank).toList();
+      if (allowed.isEmpty()) {
+        return true;
+      }
+      return allowed.contains(actual);
+    }
+    if (StrUtil.isNotBlank(single)) {
+      return single.equals(actual);
     }
     return true;
   }
@@ -136,30 +191,5 @@ public class InMemoryKnowledgeVectorStore implements KnowledgeVectorStore {
       return 0;
     }
     return dotProduct / (Math.sqrt(normLeft) * Math.sqrt(normRight));
-  }
-
-  /**
-   * 将存储点转为检索命中视图。
-   *
-   * @param point 向量点
-   * @param score 相似度
-   * @return 命中结果
-   */
-  private static KnowledgeVectorMatch toMatch(KnowledgeVectorPoint point, double score) {
-    return KnowledgeVectorMatch.builder()
-        .score(score)
-        .id(point.getId())
-        .documentId(point.getDocumentId())
-        .sourceKind(point.getSourceKind())
-        .sourceRefId(point.getSourceRefId())
-        .mediaKind(point.getMediaKind())
-        .title(point.getTitle())
-        .headingPath(point.getHeadingPath())
-        .chunkIndex(point.getChunkIndex())
-        .contentHash(point.getContentHash())
-        .themeId(point.getThemeId())
-        .deepLink(point.getDeepLink())
-        .text(point.getText())
-        .build();
   }
 }

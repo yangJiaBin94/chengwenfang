@@ -1,5 +1,8 @@
 package com.chengwenfang.knowledge.facade.enums;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+
 /** 知识库文档索引状态。 */
 public enum KnowledgeDocumentStatus {
   /** 已登记待索引。 */
@@ -20,6 +23,7 @@ public enum KnowledgeDocumentStatus {
   }
 
   /** @return 持久化值 */
+  @JsonValue
   public String getValue() {
     return value;
   }
@@ -30,6 +34,7 @@ public enum KnowledgeDocumentStatus {
    * @param raw 原始字符串
    * @return 枚举
    */
+  @JsonCreator
   public static KnowledgeDocumentStatus from(String raw) {
     if (raw == null || raw.isBlank()) {
       throw new IllegalArgumentException("知识库文档状态不能为空");

@@ -1,6 +1,7 @@
 package com.chengwenfang.knowledge.infrastructure.vector;
 
 import com.chengwenfang.infra.config.ChengwenfangProperties;
+import com.chengwenfang.knowledge.facade.spi.KnowledgeVectorStore;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -19,7 +20,7 @@ public class KnowledgeVectorConfig {
   private final ChengwenfangProperties properties;
 
   /**
-   * 注册 {@link KnowledgeVectorStore}；Qdrant 启用但连接失败时回退内存并打警告日志。
+   * 注册 facade SPI {@link KnowledgeVectorStore}；Qdrant 启用但连接失败时回退内存。
    *
    * @return 向量存储实现
    */

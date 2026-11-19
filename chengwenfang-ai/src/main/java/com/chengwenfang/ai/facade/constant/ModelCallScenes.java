@@ -106,6 +106,10 @@ public final class ModelCallScenes {
   public static final String KNOWLEDGE_RAG_CHAT = "knowledge_rag_chat";
   /** 知识库检索 query 改写。 */
   public static final String KNOWLEDGE_QUERY_REWRITE = "knowledge_query_rewrite";
+  /** 知识库检索模式路由。 */
+  public static final String KNOWLEDGE_RETRIEVE_ROUTE = "knowledge_retrieve_route";
+  /** 知识库答案忠实度校验。 */
+  public static final String KNOWLEDGE_ANSWER_FAITHFULNESS = "knowledge_answer_faithfulness";
   /** 文本嵌入向量。 */
   public static final String EMBEDDING = "embedding";
 

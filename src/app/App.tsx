@@ -349,7 +349,12 @@ export function App() {
               showNotice={showNotice}
             />
           ) : activeNav === "knowledge" ? (
-            <KnowledgePage navigate={navigate} showNotice={showNotice} />
+            <KnowledgePage
+              navigate={navigate}
+              showNotice={showNotice}
+              confirmAction={confirmAction}
+              promptAction={promptAction}
+            />
           ) : activeNav === "executions" ? (
             <ExecutionTrajectoryPage
               jobs={generationJobs}

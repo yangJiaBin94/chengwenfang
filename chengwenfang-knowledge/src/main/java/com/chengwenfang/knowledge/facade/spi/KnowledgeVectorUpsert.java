@@ -1,27 +1,27 @@
-package com.chengwenfang.knowledge.infrastructure.vector;
+package com.chengwenfang.knowledge.facade.spi;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/** 向量检索命中结果。 */
+/** 向量 upsert 载荷。 */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class KnowledgeVectorMatch {
-  /** 相似度得分（余弦，越大越相似）。 */
-  private double score;
-  /** Qdrant 点 ID。 */
-  private String id;
+public class KnowledgeVectorUpsert {
+  /** 切块 ID（兼 Qdrant 点 ID）。 */
+  private String chunkId;
   /** 所属文档 ID。 */
   private String documentId;
+  /** 嵌入向量。 */
+  private float[] vector;
   /** 来源类型。 */
   private String sourceKind;
-  /** 来源引用 ID。 */
+  /** 来源业务 ID。 */
   private String sourceRefId;
-  /** 媒体类型。 */
+  /** 介质类型。 */
   private String mediaKind;
   /** 标题。 */
   private String title;
@@ -33,8 +33,12 @@ public class KnowledgeVectorMatch {
   private String contentHash;
   /** 主题 ID。 */
   private String themeId;
-  /** 深链接。 */
+  /** 深链。 */
   private String deepLink;
-  /** 正文摘录。 */
-  private String text;
+  /** 索引版本。 */
+  private String indexVersion;
+  /** 嵌入模型名。 */
+  private String embeddingModel;
+  /** 块正文（写入 payload）。 */
+  private String content;
 }
