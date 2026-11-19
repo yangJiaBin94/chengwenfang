@@ -279,7 +279,9 @@ public class BuiltinSeedImporter implements ApplicationRunner {
    */
   private int countHotNewsChannels(String themeId) {
     Integer count = jdbc.queryForObject(
-        "SELECT COUNT(1) FROM source_channels WHERE theme_id=?", Integer.class, themeId);
+        "SELECT COUNT(1) FROM source_channels WHERE theme_id=? AND deleted_at IS NULL",
+        Integer.class,
+        themeId);
     return count == null ? 0 : count;
   }
 

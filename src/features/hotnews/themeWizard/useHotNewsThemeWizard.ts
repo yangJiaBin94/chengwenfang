@@ -5,15 +5,20 @@ import {
   getContentTheme,
   hotNewsThemePath,
   patchThemeBriefing,
+  saveHotNewsThemeConfig,
   suggestHotNewsCollectStrategy,
   suggestHotNewsCoreIntent,
-  suggestHotNewsGithubQuery,
   suggestHotNewsScoringRubric,
   suggestHotNewsSearchQueries,
   type ContentThemeData,
   type ScoringRubric,
   type ScoringRubricDimension,
 } from "../../course/api";
+import {
+  generateHotNewsSourcesByAi,
+  listHotNewsRadarCollectRuns,
+  listHotNewsRuns,
+} from "../api";
 import {
   MAX_RUBRIC_DIMS,
   MAX_SEARCH_QUERIES,
@@ -25,7 +30,6 @@ import {
   atomizeSearchTerms,
   domainLabelOf,
   emptyBriefing,
-  ensureSearxngChannel,
   mapResumeStep,
   mergeSearchQueries,
   parseSearchQueries,
@@ -44,6 +48,7 @@ export function useHotNewsThemeWizard({
   onCommitted,
   showNotice,
   navigate,
+  confirmAction,
 }: HotNewsThemeWizardProps) {
   const [step, setStep] = useState(1);
   const [themeId, setThemeId] = useState<string | null>(resumeThemeIdOrCode || null);
@@ -55,9 +60,10 @@ export function useHotNewsThemeWizard({
   const [busy, setBusy] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
   const [rubricGenerating, setRubricGenerating] = useState(false);
-  const [githubQueryGenerating, setGithubQueryGenerating] = useState(false);
   const [intentGenerating, setIntentGenerating] = useState(false);
   const [strategyGenerating, setStrategyGenerating] = useState(false);
+  /** resume 主题详情是否仍在加载（避免启用主题未加载完就误打 patchBriefing）。 */
+  const [resumeLoading, setResumeLoading] = useState(Boolean(resumeThemeIdOrCode));
   /** 首次建稿后 navigate 会改 URL；跳过紧随其后的 resume 重载，避免冲掉表单。 */
   const skipNextResumeLoadRef = useRef(false);
   /** resume 加载代数，用于丢弃过期响应。 */
@@ -66,20 +72,28 @@ export function useHotNewsThemeWizard({
   const showNoticeRef = useRef(showNotice);
   showNoticeRef.current = showNotice;
 
+  const editingEnabledTheme =
+    theme?.status === "enabled" || theme?.status === "disabled";
+
   const stepTitle = useMemo(() => {
-    const titles = ["", "基本信息", "意图与策略", "采集范围", "评分量表", "确认启用"];
+    const titles = editingEnabledTheme
+      ? ["", "基本信息", "意图与策略", "采集范围", "评分量表", "确认保存"]
+      : ["", "基本信息", "意图与策略", "采集范围", "评分量表", "确认启用"];
     return titles[step] || "";
-  }, [step]);
+  }, [step, editingEnabledTheme]);
 
   useEffect(() => {
     if (!resumeThemeIdOrCode) {
+      setResumeLoading(false);
       return;
     }
     if (skipNextResumeLoadRef.current) {
       skipNextResumeLoadRef.current = false;
+      setResumeLoading(false);
       return;
     }
     const generation = ++resumeLoadGenerationRef.current;
+    setResumeLoading(true);
     void (async () => {
       try {
         const loaded = await getContentTheme(resumeThemeIdOrCode);
@@ -138,6 +152,10 @@ export function useHotNewsThemeWizard({
           "加载主题失败",
           error instanceof Error ? error.message : "请稍后重试",
         );
+      } finally {
+        if (generation === resumeLoadGenerationRef.current) {
+          setResumeLoading(false);
+        }
       }
     })();
   }, [resumeThemeIdOrCode]);
@@ -168,18 +186,34 @@ export function useHotNewsThemeWizard({
     nextBriefing: BriefingState,
     nextQueries: string[],
   ) {
-    const id = await ensureDraft();
     const normalized = atomizeSearchTerms(nextQueries).slice(0, MAX_SEARCH_QUERIES);
-    const payload = {
+    const mergedBriefing: BriefingState = {
       ...nextBriefing,
-      schema_version: 3,
-      step: nextStep,
-      scoring_rubric: nextBriefing.scoring_rubric || null,
       radar: {
         ...nextBriefing.radar,
         search_queries: normalized.length
           ? normalized
           : nextBriefing.radar.search_queries,
+      },
+    };
+    // resume 未完成时禁止打 patch；已启用/停用主题逐步编辑只改本地，最终 save-config 落库
+    if (resumeLoading && !theme) {
+      throw new Error("主题配置仍在加载，请稍后再试");
+    }
+    if (editingEnabledTheme) {
+      setBriefing(mergedBriefing);
+      setSearchQueries(mergedBriefing.radar.search_queries);
+      return theme as ContentThemeData;
+    }
+    const id = await ensureDraft();
+    const payload = {
+      ...mergedBriefing,
+      schema_version: 3,
+      step: nextStep,
+      scoring_rubric: mergedBriefing.scoring_rubric || null,
+      radar: {
+        ...mergedBriefing.radar,
+        search_queries: mergedBriefing.radar.search_queries,
       },
     };
     const updated = await patchThemeBriefing(id, {
@@ -191,14 +225,8 @@ export function useHotNewsThemeWizard({
     });
     setTheme(updated);
     setThemeId(updated.id);
-    setBriefing({
-      ...nextBriefing,
-      radar: {
-        ...nextBriefing.radar,
-        search_queries: payload.radar.search_queries,
-      },
-    });
-    setSearchQueries(payload.radar.search_queries);
+    setBriefing(mergedBriefing);
+    setSearchQueries(mergedBriefing.radar.search_queries);
     return updated;
   }
 
@@ -294,50 +322,6 @@ export function useHotNewsThemeWizard({
       );
     } finally {
       setSuggesting(false);
-    }
-  }
-
-  /** 调用 AI 生成 GitHub 查询串，写入 radar.github_query。 */
-  async function generateGithubQueryByAi() {
-    if (!briefing.naming.name.trim()) {
-      showNotice("请先填写主题名称", "主题名称会用于生成 GitHub 查询串。");
-      return;
-    }
-    setGithubQueryGenerating(true);
-    try {
-      const result = await suggestHotNewsGithubQuery({
-        name: briefing.naming.name,
-        description: briefing.naming.description,
-        domainLabel: domainLabelOf(briefing),
-        searchQueries: searchQueries.length
-          ? searchQueries
-          : briefing.radar.search_queries,
-      });
-      const query = String(result.query || "").trim();
-      if (!result.fromAi || !query) {
-        showNotice(
-          "AI 未能生成 GitHub 查询串",
-          "请检查 AI 设置后重试，或手动填写（如 AI OR LLM OR agent）。",
-        );
-        return;
-      }
-      resumeLoadGenerationRef.current += 1;
-      const nextBriefing: BriefingState = {
-        ...briefing,
-        radar: { ...briefing.radar, github_query: query },
-      };
-      setBriefing(nextBriefing);
-      if (themeId) {
-        await saveBriefing(step, nextBriefing, searchQueries);
-      }
-      showNotice("已用 AI 生成 GitHub 查询串", "可按需微调后再进入下一步。");
-    } catch (error) {
-      showNotice(
-        "AI 生成失败",
-        error instanceof Error ? error.message : "请检查 AI 设置后重试",
-      );
-    } finally {
-      setGithubQueryGenerating(false);
     }
   }
 
@@ -548,10 +532,6 @@ export function useHotNewsThemeWizard({
         return;
       }
       resumeLoadGenerationRef.current += 1;
-      const seedChannels =
-        strategy.mode === "unstructured"
-          ? ensureSearxngChannel(briefing.radar.seed_channels)
-          : briefing.radar.seed_channels;
       const nextBriefing: BriefingState = {
         ...briefing,
         collect_strategy: {
@@ -559,7 +539,6 @@ export function useHotNewsThemeWizard({
           rationale: strategy.rationale || "",
           user_override: false,
         },
-        radar: { ...briefing.radar, seed_channels: seedChannels },
       };
       setBriefing(nextBriefing);
       if (themeId) {
@@ -614,41 +593,13 @@ export function useHotNewsThemeWizard({
         );
         return;
       }
-      if (briefing.radar.seed_channels.length === 0) {
-        showNotice("请完善必填项", "请至少选择一个初始搜索渠道。");
-        return;
-      }
-      if (unstructured) {
-        const hasWeb =
-          briefing.radar.seed_channels.includes("searxng") ||
-          briefing.radar.seed_channels.includes("tavily");
-        if (!hasWeb) {
-          showNotice(
-            "请完善必填项",
-            "非结构化策略须勾选 SearXNG 或 Tavily 作为联网搜索通道。",
-          );
-          return;
-        }
-      }
-      if (
-        briefing.radar.seed_channels.includes("github") &&
-        !briefing.radar.github_query.trim()
-      ) {
-        showNotice(
-          "请完善必填项",
-          "勾选 GitHub 渠道时请点「AI 生成」或手动填写查询串。",
-        );
-        return;
-      }
       nextQueries = normalized;
       nextBriefing = {
         ...briefing,
         radar: {
           ...briefing.radar,
           search_queries: normalized,
-          seed_channels: unstructured
-            ? ensureSearxngChannel(briefing.radar.seed_channels)
-            : briefing.radar.seed_channels,
+          seed_channels: [],
         },
       };
       setBriefing(nextBriefing);
@@ -684,12 +635,13 @@ export function useHotNewsThemeWizard({
     try {
       const unstructured = briefing.collect_strategy.mode === "unstructured";
       const normalized = atomizeSearchTerms(searchQueries).slice(0, MAX_SEARCH_QUERIES);
+      const actionLabel = editingEnabledTheme ? "保存" : "启用";
       if (!briefing.core_intent.confirmed || !briefing.core_intent.summary.trim()) {
-        showNotice("请确认主要意图", "启用前须确认主要意图。");
+        showNotice("请确认主要意图", `${actionLabel}前须确认主要意图。`);
         return;
       }
       if (!briefing.collect_strategy.mode) {
-        showNotice("请选择采集策略", "启用前须选定策略模式。");
+        showNotice("请选择采集策略", `${actionLabel}前须选定策略模式。`);
         return;
       }
       if (!unstructured && normalized.length === 0) {
@@ -709,30 +661,75 @@ export function useHotNewsThemeWizard({
         radar: {
           ...briefing.radar,
           search_queries: normalized,
-          seed_channels: unstructured
-            ? ensureSearxngChannel(briefing.radar.seed_channels)
-            : briefing.radar.seed_channels,
+          seed_channels: [],
         },
         scoring_rubric: briefing.scoring_rubric,
       };
-      if (themeId) {
-        const existing = await getContentTheme(themeId);
-        if (existing.status === "enabled") {
-          showNotice("主题已启用", "该主题此前已启用，正在返回主题列表。");
-          await onCommitted(existing);
+
+      if (themeId && editingEnabledTheme) {
+        const [collectRuns, fetchRuns] = await Promise.all([
+          listHotNewsRadarCollectRuns(themeId),
+          listHotNewsRuns(themeId),
+        ]);
+        const radarBusy =
+          (collectRuns || []).some(
+            (job) => job.status === "pending" || job.status === "running",
+          ) ||
+          (fetchRuns || []).some(
+            (run) => run.status === "pending" || run.status === "running",
+          );
+        if (radarBusy) {
+          showNotice("无法保存", "雷达采集进行中，请结束后再修改主题配置。");
           return;
         }
+        if (confirmAction) {
+          const ok = await confirmAction(
+            "保存主题配置？",
+            "将刷新 SearXNG，并按新意图同步沉淀池渠道；手工与 AI 补源渠道会保留。已采选题不会自动重算。",
+            "danger",
+          );
+          if (!ok) {
+            return;
+          }
+        }
+        const result = await saveHotNewsThemeConfig(themeId, {
+          briefing: nextBriefing as unknown as Record<string, unknown>,
+          name: nextBriefing.naming.name.trim() || undefined,
+          description: nextBriefing.naming.description,
+        });
+        const refreshed = await getContentTheme(result.themeId);
+        setTheme(refreshed);
+        showNotice(
+          "配置已保存",
+          `已同步配源，当前约 ${result.channelCount} 个渠道。`,
+        );
+        await onCommitted(refreshed);
+        return;
       }
+
       const updated = await saveBriefing(WIZARD_STEP_COUNT, nextBriefing, normalized);
       const result = await commitHotNewsTheme(updated.id);
       const enabled = await getContentTheme(result.themeId);
+      let aiSupplementNote = "";
+      try {
+        const generated = await generateHotNewsSourcesByAi(result.themeId);
+        const createdCount = generated.created?.length || 0;
+        if (createdCount > 0) {
+          aiSupplementNote = `，AI 另补 ${createdCount} 个渠道`;
+        }
+      } catch {
+        aiSupplementNote = "；AI 补源未完成，可在来源管理重试";
+      }
       showNotice(
         "主题已启用",
-        `已创建 ${result.channelCount} 个初始渠道，可开始采集。`,
+        `已自动配置 ${result.channelCount} 个渠道${aiSupplementNote}，可开始采集。`,
       );
       await onCommitted(enabled);
     } catch (error) {
-      showNotice("启用失败", error instanceof Error ? error.message : "请稍后重试");
+      showNotice(
+        editingEnabledTheme ? "保存失败" : "启用失败",
+        error instanceof Error ? error.message : "请稍后重试",
+      );
     } finally {
       setBusy(false);
     }
@@ -743,6 +740,8 @@ export function useHotNewsThemeWizard({
     setStep,
     stepTitle,
     theme,
+    editingEnabledTheme,
+    resumeLoading,
     briefing,
     setBriefing,
     searchQueries,
@@ -752,13 +751,11 @@ export function useHotNewsThemeWizard({
     busy,
     suggesting,
     rubricGenerating,
-    githubQueryGenerating,
     intentGenerating,
     strategyGenerating,
     onCancel,
     addQueryChip,
     generateQueriesByAi,
-    generateGithubQueryByAi,
     generateRubricByAi,
     generateIntentByAi,
     generateStrategyByAi,

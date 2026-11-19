@@ -271,6 +271,7 @@ public class ResearchSourcePolicyResolver {
     }
     List<SourceChannelEntity> channels = channelMapper.selectList(new LambdaQueryWrapper<SourceChannelEntity>()
         .eq(SourceChannelEntity::getThemeId, themeId)
+        .isNull(SourceChannelEntity::getDeletedAt)
         .eq(SourceChannelEntity::getEnabled, true)
         .in(SourceChannelEntity::getChannelType, List.of(
             ChannelType.WEB.getValue(),

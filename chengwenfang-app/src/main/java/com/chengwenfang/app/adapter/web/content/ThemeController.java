@@ -5,6 +5,7 @@ import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.common.ErrorCodes;
 import com.chengwenfang.mode.hotnews.application.hotnews.HotNewsThemeCollectStrategyAssistService;
 import com.chengwenfang.mode.hotnews.application.hotnews.HotNewsThemeCommitOrchestrator;
+import com.chengwenfang.mode.hotnews.application.hotnews.HotNewsThemeSaveConfigOrchestrator;
 import com.chengwenfang.mode.hotnews.application.hotnews.HotNewsThemeCoreIntentAssistService;
 import com.chengwenfang.mode.hotnews.application.hotnews.HotNewsThemeGithubQueryAssistService;
 import com.chengwenfang.mode.hotnews.application.hotnews.HotNewsThemeScoringRubricAssistService;
@@ -68,6 +69,8 @@ public class ThemeController {
   private final JobFacade jobs;
   /** 热点主题确认启用编排。 */
   private final HotNewsThemeCommitOrchestrator hotNewsThemeCommit;
+  /** 热点主题配置保存（双写 + 重建渠道）。 */
+  private final HotNewsThemeSaveConfigOrchestrator hotNewsThemeSaveConfig;
   /** 热点主题搜索词 AI 建议。 */
   private final HotNewsThemeSearchQueryAssistService hotNewsSearchQueryAssist;
   /** 热点主题主要意图 AI 推导。 */
@@ -217,9 +220,24 @@ public class ThemeController {
    * @return 启用结果
    */
   @PostMapping("/themes/{themeId}/hot-news:commit")
-  @Operation(summary = "确认热点主题并创建初始渠道")
+  @Operation(summary = "确认热点主题并自动配源（SearXNG + 沉淀池）")
   public ApiResult<HotNewsThemeCommitView> commitHotNews(@PathVariable String themeId) {
     return ApiResult.ok(hotNewsThemeCommit.commit(themeId));
+  }
+
+  /**
+   * 保存已启用/停用热点主题配置：同步 briefing 与 defaults，刷新 SearXNG 并按意图 diff 同步沉淀池渠道（保留手工与 AI 补源）。
+   *
+   * @param themeId 主题 id
+   * @param request 问卷补丁
+   * @return 保存结果（含当前渠道数）
+   */
+  @PostMapping("/themes/{themeId}/hot-news:save-config")
+  @Operation(summary = "保存热点主题配置并同步配源渠道")
+  public ApiResult<HotNewsThemeCommitView> saveHotNewsConfig(
+      @PathVariable String themeId,
+      @Valid @RequestBody(required = false) ThemeBriefingPatchRequest request) {
+    return ApiResult.ok(hotNewsThemeSaveConfig.saveConfig(themeId, request));
   }
 
   /**

@@ -19,7 +19,9 @@ export function HotNewsThemeWizard(props: HotNewsThemeWizardProps) {
     setStep,
     stepTitle,
     theme,
+    editingEnabledTheme,
     busy,
+    resumeLoading,
     rubricGenerating,
     onCancel,
     goNext,
@@ -28,14 +30,22 @@ export function HotNewsThemeWizard(props: HotNewsThemeWizardProps) {
 
   return (
     <section className="theme-wizard hot-news-theme-wizard">
-      <div className="context-line">热点资讯模式 / 新建主题分区</div>
+      <div className="context-line">
+        {editingEnabledTheme
+          ? "热点资讯模式 / 主题配置"
+          : "热点资讯模式 / 新建主题分区"}
+      </div>
       <header className="theme-wizard-header">
         <div>
           <span className="section-kicker">Hot News Theme</span>
-          <h2>{theme?.name || "新建主题分区"}</h2>
+          <h2>
+            {theme?.name || (editingEnabledTheme ? "主题配置" : "新建主题分区")}
+          </h2>
           <p>
             步骤 {step} / {WIZARD_STEP_COUNT}：{stepTitle}
-            。先确认主要意图与采集策略，再配置搜索词与评分量表；写作价值按本主题量表打分。
+            {editingEnabledTheme
+              ? "。保存后将刷新 SearXNG 并按意图同步沉淀池渠道；手工与 AI 补源渠道会保留。"
+              : "。先确认主要意图与采集策略，再配置搜索词与评分量表；渠道将在启用时自动配置。"}
           </p>
         </div>
         <button type="button" className="ghost-button" onClick={onCancel} disabled={busy}>
@@ -61,17 +71,14 @@ export function HotNewsThemeWizard(props: HotNewsThemeWizardProps) {
       {step === 3 && (
         <StepRadar
           briefing={model.briefing}
-          setBriefing={model.setBriefing}
           searchQueries={model.searchQueries}
           setSearchQueries={model.setSearchQueries}
           queryInput={model.queryInput}
           setQueryInput={model.setQueryInput}
           busy={model.busy}
           suggesting={model.suggesting}
-          githubQueryGenerating={model.githubQueryGenerating}
           addQueryChip={model.addQueryChip}
           generateQueriesByAi={model.generateQueriesByAi}
-          generateGithubQueryByAi={model.generateGithubQueryByAi}
         />
       )}
       {step === 4 && (
@@ -107,7 +114,7 @@ export function HotNewsThemeWizard(props: HotNewsThemeWizardProps) {
           <button
             type="button"
             className="primary-button"
-            disabled={busy || rubricGenerating}
+            disabled={busy || resumeLoading || rubricGenerating}
             onClick={() => void goNext()}
           >
             {busy ? "保存中…" : "下一步"}
@@ -116,10 +123,16 @@ export function HotNewsThemeWizard(props: HotNewsThemeWizardProps) {
           <button
             type="button"
             className="primary-button"
-            disabled={busy}
+            disabled={busy || resumeLoading}
             onClick={() => void commit()}
           >
-            {busy ? "启用中…" : "启用主题"}
+            {busy
+              ? editingEnabledTheme
+                ? "保存中…"
+                : "启用中…"
+              : editingEnabledTheme
+                ? "保存配置"
+                : "启用主题"}
           </button>
         )}
       </footer>

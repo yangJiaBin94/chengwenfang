@@ -81,7 +81,7 @@ public class HotNewsFetchService {
   private final HotNewsTopicService topics;
 
   /**
-   * 主题下是否仍有进行中的抓取 / 研究 / 成文任务。
+   * 主题下是否仍有进行中的任务：Job（含雷达 FormalGraph）、抓取 run、选题调研、成文。
    *
    * @param themeId 主题主键
    * @return 存在进行中任务时为 true
@@ -90,7 +90,11 @@ public class HotNewsFetchService {
     if (StrUtil.isBlank(themeId)) {
       return false;
     }
-    // 抓取运行仍在排队或执行
+    // 按 jobs.theme_id 查 pending/running（含雷达 FormalGraph，比前端 collect-runs 更宽）
+    if (jobs.hasActiveJobsForTheme(themeId)) {
+      return true;
+    }
+    // 抓取运行仍在排队或执行（Job 未必带 themeId 时兜底）
     Long fetchActive = runMapper.selectCount(new LambdaQueryWrapper<SourceFetchRunEntity>()
         .eq(SourceFetchRunEntity::getThemeId, themeId)
         .in(SourceFetchRunEntity::getStatus,

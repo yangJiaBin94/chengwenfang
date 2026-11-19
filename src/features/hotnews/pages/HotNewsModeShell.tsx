@@ -6,6 +6,7 @@ import {
   patchContentTheme,
 } from "../../course/api";
 import type { ContentThemeData } from "../../course/api";
+import { listHotNewsRadarCollectRuns, listHotNewsRuns } from "../api";
 import { HotNewsPage } from "./HotNewsPage";
 import { HotNewsArticleWorkspace } from "./HotNewsArticleWorkspace";
 import { HotNewsExecutionPage } from "./HotNewsExecutionPage";
@@ -100,6 +101,7 @@ export function HotNewsModeShell({
         resumeThemeIdOrCode={hotNewsThemeWizardResumeId}
         showNotice={showNotice}
         navigate={navigate}
+        confirmAction={confirmAction}
         onCancel={() => {
           setHotNewsThemeWizardOpen(false);
           setHotNewsThemeWizardResumeId(null);
@@ -379,6 +381,53 @@ export function HotNewsModeShell({
                   {(theme.status === "enabled" ||
                     theme.status === "disabled") && (
                     <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void (async () => {
+                            try {
+                              const [collectRuns, fetchRuns] = await Promise.all(
+                                [
+                                  listHotNewsRadarCollectRuns(theme.id),
+                                  listHotNewsRuns(theme.id),
+                                ],
+                              );
+                              const radarBusy =
+                                (collectRuns || []).some(
+                                  (job) =>
+                                    job.status === "pending" ||
+                                    job.status === "running",
+                                ) ||
+                                (fetchRuns || []).some(
+                                  (run) =>
+                                    run.status === "pending" ||
+                                    run.status === "running",
+                                );
+                              if (radarBusy) {
+                                showNotice(
+                                  "无法编辑",
+                                  "雷达采集进行中，请结束后再打开主题配置。",
+                                );
+                                return;
+                              }
+                              setHotNewsThemeWizardResumeId(theme.id);
+                              setHotNewsThemeWizardOpen(true);
+                              void navigate(
+                                hotNewsThemePath(theme.code, "wizard"),
+                              );
+                            } catch (error) {
+                              showNotice(
+                                "无法打开配置",
+                                error instanceof Error
+                                  ? error.message
+                                  : "请稍后重试",
+                              );
+                            }
+                          })();
+                        }}
+                      >
+                        主题配置
+                      </button>
                       <button
                         type="button"
                         onClick={() => {

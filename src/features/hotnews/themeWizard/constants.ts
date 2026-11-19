@@ -8,13 +8,6 @@ export const DOMAIN_OPTIONS = [
   { value: "custom", label: "自定义" },
 ] as const;
 
-/** 初始搜索渠道选项。 */
-export const SEED_CHANNEL_OPTIONS = [
-  { value: "searxng", label: "SearXNG（推荐）" },
-  { value: "tavily", label: "Tavily" },
-  { value: "github", label: "GitHub" },
-] as const;
-
 /** 评分维度数量下限。 */
 export const MIN_RUBRIC_DIMS = 3;
 /** 评分维度数量上限。 */

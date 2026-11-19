@@ -12,4 +12,11 @@ public final class HotNewsThemeSeedChannelKeys {
   public static final String TAVILY = "tavily";
   /** GitHub 搜索渠道。 */
   public static final String GITHUB = "github";
+
+  /** 启用时创建的 SearXNG 渠道固定展示名。 */
+  public static final String SEARXNG_DISPLAY_NAME = "SearXNG 搜索";
+  /** 启用时创建的 Tavily 渠道固定展示名。 */
+  public static final String TAVILY_DISPLAY_NAME = "Tavily 搜索";
+  /** 启用时创建的 GitHub 渠道固定展示名。 */
+  public static final String GITHUB_DISPLAY_NAME = "GitHub 搜索";
 }

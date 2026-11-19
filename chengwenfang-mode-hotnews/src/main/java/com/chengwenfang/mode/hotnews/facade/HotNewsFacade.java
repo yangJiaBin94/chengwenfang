@@ -73,7 +73,7 @@ public interface HotNewsFacade {
   /** 局部更新频道字段。 */
   HotNewsChannelView patchChannel(String channelId, HotNewsChannelPatchRequest body);
 
-  /** 软删除频道（禁用）。 */
+  /** 假删频道（写 deleted_at；停用请用 patch enabled）。 */
   HotNewsChannelDeleteView deleteChannel(String channelId);
 
   /** 探测频道连通性与样例条目数。 */

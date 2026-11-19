@@ -1,4 +1,4 @@
-import { COLLECT_STRATEGY_OPTIONS, SEED_CHANNEL_OPTIONS } from "../constants";
+import { COLLECT_STRATEGY_OPTIONS } from "../constants";
 import type { HotNewsThemeWizardModel } from "../useHotNewsThemeWizard";
 
 type StepConfirmProps = Pick<
@@ -12,12 +12,6 @@ type StepConfirmProps = Pick<
  * @param props 确认页展示数据
  */
 export function StepConfirm({ briefing, searchQueries }: StepConfirmProps) {
-  const seedChannelLabels = briefing.radar.seed_channels
-    .map(
-      (value) =>
-        SEED_CHANNEL_OPTIONS.find((item) => item.value === value)?.label || value,
-    )
-    .join("、");
   const keywords =
     searchQueries.length || briefing.radar.search_queries.length
       ? (searchQueries.length ? searchQueries : briefing.radar.search_queries).join(
@@ -63,7 +57,8 @@ export function StepConfirm({ briefing, searchQueries }: StepConfirmProps) {
           <strong>关键词</strong>：{keywords}
         </li>
         <li>
-          <strong>初始渠道</strong>：{seedChannelLabels || "未选"}
+          <strong>渠道配置</strong>
+          ：启用后自动配置 SearXNG、沉淀池匹配渠道，并尝试 AI 推荐补源；之后可在来源管理调整。
         </li>
         <li>
           <strong>评分维度</strong>：
@@ -72,7 +67,7 @@ export function StepConfirm({ briefing, searchQueries }: StepConfirmProps) {
             .join(" · ") || "未配置"}
         </li>
       </ul>
-      <p>确认后主题将启用，并按清单创建初始搜索渠道；之后可在来源管理中继续调整。</p>
+      <p>确认后主题将启用并自动配源；AI 补源失败时可在来源管理中重试「AI 生成」。</p>
     </div>
   );
 }

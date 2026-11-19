@@ -513,6 +513,7 @@ public class TopicQueryService {
       List<SourceChannelEntity> themeChannels = channelMapper.selectList(
           new LambdaQueryWrapper<SourceChannelEntity>()
               .eq(SourceChannelEntity::getThemeId, themeId)
+              .isNull(SourceChannelEntity::getDeletedAt)
               .eq(SourceChannelEntity::getEnabled, true));
       for (SourceChannelEntity channel : themeChannels) {
         if (channel == null) {

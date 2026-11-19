@@ -180,6 +180,13 @@ public class ContentFacadeImpl implements ContentFacade {
 
   /** {@inheritDoc} */
   @Override
+  public ContentThemeView saveHotNewsConfigBriefing(
+      String themeId, ThemeBriefingPatchRequest request) {
+    return themes.saveHotNewsConfigBriefing(themeId, request);
+  }
+
+  /** {@inheritDoc} */
+  @Override
   public void assertThemeActive(String themeId) {
     themes.requireActiveTheme(themeId);
   }

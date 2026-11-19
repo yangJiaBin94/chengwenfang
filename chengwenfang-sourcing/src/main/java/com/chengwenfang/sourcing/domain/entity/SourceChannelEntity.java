@@ -70,4 +70,7 @@ public class SourceChannelEntity {
   /** 更新时间。 */
   @TableField("updated_at")
   private LocalDateTime updatedAt;
+  /** 假删时间；非空表示已删除，不参与列表与采集，行保留供历史关联。 */
+  @TableField("deleted_at")
+  private LocalDateTime deletedAt;
 }

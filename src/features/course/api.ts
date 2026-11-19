@@ -489,6 +489,31 @@ export async function commitHotNewsTheme(themeId: string) {
   }>(response);
 }
 
+/** 保存已启用热点主题配置：双写 briefing/defaults，刷新 SearXNG 并按意图同步沉淀池渠道。 */
+export async function saveHotNewsThemeConfig(
+  themeId: string,
+  body: {
+    briefing?: Record<string, unknown>;
+    name?: string;
+    description?: string;
+  },
+) {
+  const response = await fetch(
+    `/api/themes/${encodeURIComponent(themeId)}/hot-news:save-config`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+  );
+  return readPayload<{
+    themeId: string;
+    status: string;
+    channelCount: number;
+    seededChannelTypes: string[];
+  }>(response);
+}
+
 /** AI 总结热点主题短搜索词（失败时后端回退规则建议）。 */
 export async function suggestHotNewsSearchQueries(body: {
   name?: string;

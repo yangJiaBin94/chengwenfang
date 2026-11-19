@@ -179,7 +179,7 @@ public final class HotNewsThemeBriefingSupport {
    * 校验热点主题启用前必填项。
    *
    * <p>必填：主题名、已确认主要意图、已选采集策略、合法评分量表。
-   * 结构化策略另需至少一条搜索词；非结构化可空搜索词但须有联网搜索种子渠道。
+   * 结构化策略另需至少一条搜索词；非结构化可空搜索词（联网底座由启用管线创建 SearXNG）。
    *
    * @param briefing 问卷 map
    */
@@ -202,27 +202,14 @@ public final class HotNewsThemeBriefingSupport {
     }
     normalizeSearchQueriesInPlace(briefing);
     List<String> queries = searchQueries(briefing);
-    List<String> seedChannels = seedChannelTypes(briefing);
-    if (strategy.isUnstructured()) {
-      boolean hasWebSearch = seedChannels.contains(HotNewsThemeSeedChannelKeys.SEARXNG)
-          || seedChannels.contains(HotNewsThemeSeedChannelKeys.TAVILY);
-      if (!hasWebSearch) {
-        throw new BusinessException(
-            ErrorCodes.THEME_INVALID_STATUS,
-            "非结构化策略须至少勾选 SearXNG 或 Tavily 作为联网搜索通道",
-            400);
-      }
-    } else if (queries.isEmpty()) {
+    // 联网底座由启用管线固定创建 SearXNG；问卷不再要求勾选 seed_channels
+    if (!strategy.isUnstructured() && queries.isEmpty()) {
       throw new BusinessException(
           ErrorCodes.THEME_INVALID_STATUS,
           "请至少确认一条可检索的短关键词（每条不超过 "
               + SearchQueryNormalizer.MAX_QUERY_CHARS
               + " 字，勿粘贴整段主题描述）",
           400);
-    }
-    if (seedChannels.contains(HotNewsThemeSeedChannelKeys.GITHUB)
-        && StrUtil.isBlank(githubQuery(briefing))) {
-      throw new BusinessException(ErrorCodes.THEME_INVALID_STATUS, "已勾选 GitHub 渠道时须填写 GitHub 查询串", 400);
     }
     // 启用前必须固化合法评分量表
     ScoringRubricView rubric = ScoringRubricSupport.readFrom(briefing);

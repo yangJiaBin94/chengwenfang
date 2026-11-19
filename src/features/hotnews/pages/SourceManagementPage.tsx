@@ -258,7 +258,8 @@ export function SourceManagementPage({
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<"all" | HotNewsSource["type"]>("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | "enabled" | "disabled">("all");
+  /** 默认只看已启用；假删渠道后端已排除，停用仍可在「已停用」筛选项看到。 */
+  const [statusFilter, setStatusFilter] = useState<"all" | "enabled" | "disabled">("enabled");
   const [listPage, setListPage] = useState(1);
   const [pageSize, setPageSize] = useState<ListPageSize>(5);
   const [pageSizeOpen, setPageSizeOpen] = useState(false);
@@ -381,7 +382,7 @@ export function SourceManagementPage({
     if (enabledCount >= MAX_CHANNELS_PER_THEME) {
       showNotice(
         "来源数量已达上限",
-        `每个主题最多 ${MAX_CHANNELS_PER_THEME} 个已启用来源，请先停用或归档不用的来源。`,
+        `每个主题最多 ${MAX_CHANNELS_PER_THEME} 个已启用来源，请先停用或删除不用的来源。`,
       );
       return;
     }
@@ -534,18 +535,18 @@ export function SourceManagementPage({
 
   async function removeSource(source: HotNewsSource) {
     const confirmed = await confirmAction(
-      "归档这个来源？",
-      `${source.name} 将停止参与采集，但历史采集数据会保留。之后可以用同名来源重新添加。`,
+      "删除这个来源？",
+      `${source.name} 将从列表中移除并不再参与采集；历史采集记录仍可关联到该来源。停用请用开关，不要用删除。`,
       "danger",
     );
     if (!confirmed) return;
     setDeletingId(source.id);
     try {
       await deleteHotNewsSource(source.id);
-      showNotice("来源已归档", "历史采集记录仍然保留。");
+      showNotice("来源已删除", "历史采集记录仍然保留并可关联。");
       await loadPage(listPage);
     } catch (error) {
-      showNotice("归档失败", error instanceof Error ? error.message : "请稍后重试");
+      showNotice("删除失败", error instanceof Error ? error.message : "请稍后重试");
     } finally {
       setDeletingId(null);
     }
@@ -700,7 +701,7 @@ export function SourceManagementPage({
                   <div className="source-management-address"><b>{TYPE_LABELS[source.type] || source.type}</b><span title={addressHint(source)}>{addressHint(source)}</span></div>
                   <div className="source-management-status">{source.lastSuccessAt ? <><CheckCircle2 size={14} /><span>最近成功<br />{formatSourceSuccessTime(source.lastSuccessAt)}</span></> : <><span className="source-status-dot" />尚未执行</>}</div>
                   <button className={`source-management-switch ${source.enabled ? "active" : ""}`} type="button" role="switch" aria-checked={source.enabled} aria-label={`${source.enabled ? "停用" : "启用"}${source.name}`} onClick={() => void toggleSource(source)}><span /></button>
-                  <div className="source-management-actions"><button className="icon-button" type="button" title="测试来源" aria-label={`测试${source.name}`} disabled={testingId === source.id} onClick={() => void testSource(source)}><Wifi size={15} /></button><button className="icon-button" type="button" title="编辑来源" aria-label={`编辑${source.name}`} onClick={() => openEdit(source)}><Pencil size={15} /></button><button className="icon-button danger-icon-button" type="button" title="归档来源" aria-label={`归档${source.name}`} disabled={deletingId === source.id} onClick={() => void removeSource(source)}><Trash2 size={15} /></button></div>
+                  <div className="source-management-actions"><button className="icon-button" type="button" title="测试来源" aria-label={`测试${source.name}`} disabled={testingId === source.id} onClick={() => void testSource(source)}><Wifi size={15} /></button><button className="icon-button" type="button" title="编辑来源" aria-label={`编辑${source.name}`} onClick={() => openEdit(source)}><Pencil size={15} /></button><button className="icon-button danger-icon-button" type="button" title="删除来源" aria-label={`删除${source.name}`} disabled={deletingId === source.id} onClick={() => void removeSource(source)}><Trash2 size={15} /></button></div>
                 </article>
               );
             })}

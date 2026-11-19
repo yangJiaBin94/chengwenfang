@@ -1,5 +1,4 @@
 import { COLLECT_STRATEGY_OPTIONS } from "../constants";
-import { ensureSearxngChannel } from "../briefingUtils";
 import type { HotNewsThemeWizardModel } from "../useHotNewsThemeWizard";
 
 type StepIntentProps = Pick<
@@ -156,26 +155,19 @@ export function StepIntent({
               strategy.mode === option.value ? "chip selected" : "chip"
             }
             onClick={() =>
-              setBriefing((current) => {
-                const seedChannels =
-                  option.value === "unstructured"
-                    ? ensureSearxngChannel(current.radar.seed_channels)
-                    : current.radar.seed_channels;
-                return {
-                  ...current,
-                  collect_strategy: {
-                    mode: option.value,
-                    rationale:
-                      current.collect_strategy.mode === option.value
-                        ? current.collect_strategy.rationale
-                        : option.hint,
-                    user_override:
-                      Boolean(current.collect_strategy.mode) &&
-                      current.collect_strategy.mode !== option.value,
-                  },
-                  radar: { ...current.radar, seed_channels: seedChannels },
-                };
-              })
+              setBriefing((current) => ({
+                ...current,
+                collect_strategy: {
+                  mode: option.value,
+                  rationale:
+                    current.collect_strategy.mode === option.value
+                      ? current.collect_strategy.rationale
+                      : option.hint,
+                  user_override:
+                    Boolean(current.collect_strategy.mode) &&
+                    current.collect_strategy.mode !== option.value,
+                },
+              }))
             }
           >
             {option.label}

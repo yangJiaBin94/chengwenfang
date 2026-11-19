@@ -35,7 +35,7 @@ export function emptyBriefing(): BriefingState {
     radar: {
       search_queries: [],
       github_query: "",
-      seed_channels: ["searxng"],
+      seed_channels: [],
     },
     expression: {
       tone: "chatty_tech",
@@ -95,24 +95,6 @@ export function validateRubric(rubric: ScoringRubric | null | undefined): string
     return `维度权重之和须为 100，当前为 ${weightSum}。`;
   }
   return null;
-}
-
-/** 多选 chip 切换。 */
-export function toggleInList(list: string[], value: string): string[] {
-  return list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
-}
-
-/** SearXNG 渠道键（非结构化强制保留）。 */
-export const SEARXNG_CHANNEL = "searxng";
-
-/**
- * 确保渠道列表含 SearXNG（非结构化策略锁定用）。
- *
- * @param channels 当前渠道
- * @return 含 searxng 的新列表
- */
-export function ensureSearxngChannel(channels: string[]): string[] {
-  return channels.includes(SEARXNG_CHANNEL) ? channels : [...channels, SEARXNG_CHANNEL];
 }
 
 /**

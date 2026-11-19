@@ -115,6 +115,15 @@ public interface ContentFacade {
   HotNewsThemeCommitView commitHotNewsTheme(String themeId);
 
   /**
+   * 热点已启用/停用主题保存问卷并同步 defaults（不改 status、不建渠道）。
+   *
+   * @param themeId 主题 id/code
+   * @param request 问卷补丁
+   * @return 更新后主题
+   */
+  ContentThemeView saveHotNewsConfigBriefing(String themeId, ThemeBriefingPatchRequest request);
+
+  /**
    * 断言主题存在且未软删（供跨域接口守卫）。
    *
    * @param themeId 主题 id/code

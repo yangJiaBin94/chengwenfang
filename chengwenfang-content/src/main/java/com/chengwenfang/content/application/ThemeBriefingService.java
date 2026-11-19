@@ -45,6 +45,71 @@ public class ThemeBriefingService {
   public ContentThemeView patchBriefing(String themeId, ThemeBriefingPatchRequest request) {
     ContentThemeEntity theme = lifecycle.requireActiveTheme(themeId);
     lifecycle.assertEditableBriefing(theme);
+    return mergeAndSaveBriefing(theme, request);
+  }
+
+  /**
+   * 热点已启用/停用主题保存配置：合并 briefing 并同步 defaults（不改 status）。
+   *
+   * @param themeId 主题 id/code
+   * @param request 问卷补丁
+   * @return 更新后主题
+   */
+  @Transactional
+  public ContentThemeView saveHotNewsConfigBriefing(
+      String themeId, ThemeBriefingPatchRequest request) {
+    ContentThemeEntity theme = lifecycle.requireActiveTheme(themeId);
+    ContentModeEntity mode = lifecycle.requireMode(theme.getModeCode());
+    if (!ContentModeIds.isHotNews(mode.getCode(), mode.getCode())) {
+      throw new BusinessException(ErrorCodes.THEME_INVALID_STATUS, "仅热点资讯主题支持保存配置", 400);
+    }
+    String status = theme.getStatus();
+    if (!ContentThemeStatus.ENABLED.getValue().equals(status)
+        && !ContentThemeStatus.DISABLED.getValue().equals(status)) {
+      throw new BusinessException(
+          ErrorCodes.THEME_INVALID_STATUS, "仅已启用或已停用的热点主题可保存配置", 400);
+    }
+    Map<String, Object> briefing = mergeBriefingIntoTheme(theme, request);
+    HotNewsThemeBriefingSupport.normalizeSearchQueriesInPlace(briefing);
+    // 先校验再落库，避免半成品 briefing
+    HotNewsThemeBriefingSupport.assertReadyToCommit(briefing);
+    LocalDateTime now = LocalDateTime.now();
+    profileStore.saveBriefing(theme.getId(), briefing, now);
+    profileStore.saveDefaults(
+        theme.getId(), HotNewsThemeBriefingSupport.buildDefaults(briefing), now);
+    theme.setUpdatedAt(now);
+    themeMapper.updateById(theme);
+    log.info("热点主题配置已保存并同步 defaults themeId={}", theme.getId());
+    return lifecycle.getTheme(theme.getId());
+  }
+
+  /**
+   * 合并补丁并落库 briefing。
+   *
+   * @param theme   已加载主题
+   * @param request 补丁
+   * @return 更新后主题视图
+   */
+  private ContentThemeView mergeAndSaveBriefing(
+      ContentThemeEntity theme, ThemeBriefingPatchRequest request) {
+    Map<String, Object> existing = mergeBriefingIntoTheme(theme, request);
+    HotNewsThemeBriefingSupport.normalizeSearchQueriesInPlace(existing);
+    LocalDateTime now = LocalDateTime.now();
+    profileStore.saveBriefing(theme.getId(), existing, now);
+    theme.setUpdatedAt(now);
+    themeMapper.updateById(theme);
+    return lifecycle.getTheme(theme.getId());
+  }
+
+  /**
+   * 将补丁合并进主题实体字段与 briefing map（不落库）。
+   *
+   * @param theme   主题实体（name/description/code 可能被改写）
+   * @param request 补丁
+   * @return 合并后的 briefing
+   */
+  private Map<String, Object> mergeBriefingIntoTheme(
+      ContentThemeEntity theme, ThemeBriefingPatchRequest request) {
     ThemeBriefingPatchRequest body = request == null ? new ThemeBriefingPatchRequest() : request;
     Map<String, Object> existing = new LinkedHashMap<>(profileStore.loadBriefing(theme.getId()));
     if (body.getBriefing() != null) {
@@ -90,14 +155,7 @@ public class ThemeBriefingService {
         theme.setCode(code);
       }
     }
-
-    // 搜索词在保存时规范化，避免把主题描述整段写进 radar.search_queries
-    HotNewsThemeBriefingSupport.normalizeSearchQueriesInPlace(existing);
-    LocalDateTime now = LocalDateTime.now();
-    profileStore.saveBriefing(theme.getId(), existing, now);
-    theme.setUpdatedAt(now);
-    themeMapper.updateById(theme);
-    return lifecycle.getTheme(theme.getId());
+    return existing;
   }
 
   /**

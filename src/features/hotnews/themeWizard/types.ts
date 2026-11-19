@@ -7,6 +7,12 @@ export type HotNewsThemeWizardProps = {
   onCommitted: (theme: ContentThemeData) => void | Promise<void>;
   showNotice: (title: string, detail: string) => void;
   navigate: (path: string) => void;
+  /** 危险操作确认；编辑已启用主题保存前用于配源同步确认。 */
+  confirmAction?: (
+    title: string,
+    message: string,
+    tone?: "default" | "danger",
+  ) => Promise<boolean>;
 };
 
 /** 热点主题问卷状态；保留完整结构以便旧草稿 resume 与成文上下文兼容。 */

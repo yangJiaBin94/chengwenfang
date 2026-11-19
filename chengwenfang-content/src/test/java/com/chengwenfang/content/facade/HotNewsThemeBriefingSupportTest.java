@@ -34,9 +34,24 @@ class HotNewsThemeBriefingSupportTest {
     @SuppressWarnings("unchecked")
     Map<String, Object> radar = (Map<String, Object>) briefing.get("radar");
     radar.put("search_queries", List.of());
+    radar.put("seed_channels", List.of());
     Map<String, Object> strategy = new LinkedHashMap<>();
     strategy.put("mode", "unstructured");
     strategy.put("rationale", "需要先发现再深挖");
+    briefing.put("collect_strategy", strategy);
+    assertDoesNotThrow(() -> HotNewsThemeBriefingSupport.assertReadyToCommit(briefing));
+  }
+
+  @Test
+  void assertReadyToCommit_acceptsUnstructuredWithoutSeedChannels() {
+    Map<String, Object> briefing = validBriefing();
+    @SuppressWarnings("unchecked")
+    Map<String, Object> radar = (Map<String, Object>) briefing.get("radar");
+    radar.put("search_queries", List.of());
+    radar.put("seed_channels", List.of());
+    Map<String, Object> strategy = new LinkedHashMap<>();
+    strategy.put("mode", "unstructured");
+    strategy.put("rationale", "自适应");
     briefing.put("collect_strategy", strategy);
     assertDoesNotThrow(() -> HotNewsThemeBriefingSupport.assertReadyToCommit(briefing));
   }
@@ -71,6 +86,20 @@ class HotNewsThemeBriefingSupportTest {
     Map<String, Object> radar = (Map<String, Object>) briefing.get("radar");
     radar.remove("seed_channels");
     assertEquals(List.of(HotNewsThemeSeedChannelKeys.SEARXNG), HotNewsThemeBriefingSupport.seedChannelTypes(briefing));
+  }
+
+  @Test
+  void buildDefaults_mirrorsIntentQueriesAndRubricForDualWrite() {
+    Map<String, Object> briefing = validBriefing();
+    Map<String, Object> defaults = HotNewsThemeBriefingSupport.buildDefaults(briefing);
+    assertEquals(List.of("Foo 发布"), defaults.get("search_queries"));
+    @SuppressWarnings("unchecked")
+    Map<String, Object> intent = (Map<String, Object>) defaults.get("core_intent");
+    assertEquals("盯测试领域最新可写事件", intent.get("summary"));
+    assertTrue(Boolean.TRUE.equals(intent.get("confirmed")));
+    ScoringRubricView fromDefaults = ScoringRubricSupport.readFrom(defaults);
+    assertTrue(fromDefaults != null && fromDefaults.getDimensions() != null);
+    assertEquals(3, fromDefaults.getDimensions().size());
   }
 
   @Test

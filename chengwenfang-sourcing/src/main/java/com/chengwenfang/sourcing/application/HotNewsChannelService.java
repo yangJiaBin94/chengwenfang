@@ -60,6 +60,7 @@ public class HotNewsChannelService {
   public List<HotNewsChannelView> listChannels(String themeId) {
     return channelMapper.selectList(new LambdaQueryWrapper<SourceChannelEntity>()
             .eq(themeId != null, SourceChannelEntity::getThemeId, themeId)
+            .isNull(SourceChannelEntity::getDeletedAt)
             .orderByDesc(SourceChannelEntity::getUpdatedAt))
         .stream()
         .map(this::channelView)
@@ -82,6 +83,7 @@ public class HotNewsChannelService {
 
     LambdaQueryWrapper<SourceChannelEntity> filterQuery = new LambdaQueryWrapper<SourceChannelEntity>()
         .eq(StrUtil.isNotBlank(themeId), SourceChannelEntity::getThemeId, themeId)
+        .isNull(SourceChannelEntity::getDeletedAt)
         .eq(StrUtil.isNotBlank(type), SourceChannelEntity::getChannelType, type)
         .eq(enabled != null, SourceChannelEntity::getEnabled, enabled);
     if (StrUtil.isNotBlank(keyword)) {
@@ -113,9 +115,11 @@ public class HotNewsChannelService {
 
     long enabledCount = channelMapper.selectCount(new LambdaQueryWrapper<SourceChannelEntity>()
         .eq(StrUtil.isNotBlank(themeId), SourceChannelEntity::getThemeId, themeId)
+        .isNull(SourceChannelEntity::getDeletedAt)
         .eq(SourceChannelEntity::getEnabled, true));
     long themeTotal = channelMapper.selectCount(new LambdaQueryWrapper<SourceChannelEntity>()
-        .eq(StrUtil.isNotBlank(themeId), SourceChannelEntity::getThemeId, themeId));
+        .eq(StrUtil.isNotBlank(themeId), SourceChannelEntity::getThemeId, themeId)
+        .isNull(SourceChannelEntity::getDeletedAt));
     long disabledCount = Math.max(0, themeTotal - enabledCount);
 
     return HotNewsChannelPageView.builder()
@@ -145,6 +149,7 @@ public class HotNewsChannelService {
     entity.setBaseUrl(req.getBaseUrl());
     entity.setTrustLevel(0);
     entity.setEnabled(req.getEnabled() == null || Boolean.TRUE.equals(req.getEnabled()));
+    entity.setDeletedAt(null);
     entity.setCreatedAt(LocalDateTime.now());
     entity.setUpdatedAt(LocalDateTime.now());
     if (channelMapper.selectById(entity.getId()) == null) {
@@ -158,6 +163,9 @@ public class HotNewsChannelService {
       channelMapper.updateById(entity);
     } else {
       SourceChannelEntity existing = channelMapper.selectById(entity.getId());
+      if (existing != null && existing.getDeletedAt() != null) {
+        throw new BusinessException(ErrorCodes.CHANNEL_NOT_FOUND, "频道已删除", 404);
+      }
       ChannelFetchConfig previous = configStore.read(existing);
       ChannelFetchConfig updateConfig = prepareConfigForWrite(
           entity.getChannelType(), req.getConfig(), entity.getBaseUrl());
@@ -168,6 +176,7 @@ public class HotNewsChannelService {
       entity.setCreatedAt(existing.getCreatedAt());
       entity.setHasConfig(existing.getHasConfig());
       entity.setApiKeyCiphertext(existing.getApiKeyCiphertext());
+      entity.setDeletedAt(null);
       configStore.write(entity, updateConfig, previous);
       channelMapper.updateById(entity);
     }
@@ -200,14 +209,11 @@ public class HotNewsChannelService {
    * @param channelId 频道主键
    * @param body      补丁请求；null 按空对象（仅刷新 updatedAt）
    * @return 更新后的频道视图
-   * @throws BusinessException 频道不存在时（CHANNEL_NOT_FOUND / 404）
+   * @throws BusinessException 频道不存在或已假删时（CHANNEL_NOT_FOUND / 404）
    */
   @Transactional
   public HotNewsChannelView patchChannel(String channelId, HotNewsChannelPatchRequest body) {
-    SourceChannelEntity channel = channelMapper.selectById(channelId);
-    if (channel == null) {
-      throw new BusinessException(ErrorCodes.CHANNEL_NOT_FOUND, "频道不存在", 404);
-    }
+    SourceChannelEntity channel = requireAliveChannel(channelId);
     HotNewsChannelPatchRequest req = body == null ? new HotNewsChannelPatchRequest() : body;
     if (req.getName() != null) {
       channel.setName(req.getName());
@@ -240,25 +246,23 @@ public class HotNewsChannelService {
   }
 
   /**
-   * 软删除频道：将 enabled 置为 false，不物理删除历史条目。
+   * 假删频道：写入 deleted_at，列表与采集不再出现；行保留供历史条目外键关联。停用仍用 enabled。
    *
    * @param channelId 频道主键
-   * @return 含 id 与删除时间（取 updatedAt）的删除视图
-   * @throws BusinessException 频道不存在时（CHANNEL_NOT_FOUND / 404）
+   * @return 含 id 与假删时间的删除视图
+   * @throws BusinessException 频道不存在或已假删时（CHANNEL_NOT_FOUND / 404）
    */
   @Transactional
   public HotNewsChannelDeleteView deleteChannel(String channelId) {
-    SourceChannelEntity channel = channelMapper.selectById(channelId);
-    if (channel == null) {
-      throw new BusinessException(ErrorCodes.CHANNEL_NOT_FOUND, "频道不存在", 404);
-    }
+    SourceChannelEntity channel = requireAliveChannel(channelId);
     LocalDateTime now = LocalDateTime.now();
+    channel.setDeletedAt(now);
     channel.setEnabled(false);
     channel.setUpdatedAt(now);
     channelMapper.updateById(channel);
     return HotNewsChannelDeleteView.builder()
         .id(channel.getId())
-        .deletedAt(channel.getUpdatedAt() == null ? now : channel.getUpdatedAt())
+        .deletedAt(now)
         .build();
   }
 
@@ -267,13 +271,10 @@ public class HotNewsChannelService {
    *
    * @param channelId 频道主键
    * @return 连通性结果视图（ok/success、错误码文案、itemCount、checkedAt）
-   * @throws BusinessException 频道不存在时（CHANNEL_NOT_FOUND / 404）
+   * @throws BusinessException 频道不存在或已假删时（CHANNEL_NOT_FOUND / 404）
    */
   public HotNewsChannelTestView testChannel(String channelId) {
-    SourceChannelEntity channel = channelMapper.selectById(channelId);
-    if (channel == null) {
-      throw new BusinessException(ErrorCodes.CHANNEL_NOT_FOUND, "频道不存在", 404);
-    }
+    SourceChannelEntity channel = requireAliveChannel(channelId);
     ChannelFetchConfig config = configStore.read(channel);
     FetchResult result = fetchFacade.testConnection(FetchRequest.builder()
         .url(channel.getBaseUrl())
@@ -303,6 +304,7 @@ public class HotNewsChannelService {
   public List<ChannelView> loadChannels(String themeId, List<String> channelIds) {
     LambdaQueryWrapper<SourceChannelEntity> query = new LambdaQueryWrapper<SourceChannelEntity>()
         .eq(SourceChannelEntity::getThemeId, themeId)
+        .isNull(SourceChannelEntity::getDeletedAt)
         .eq(SourceChannelEntity::getEnabled, true);
     if (channelIds != null && !channelIds.isEmpty()) {
       query.in(SourceChannelEntity::getId, channelIds);
@@ -348,13 +350,14 @@ public class HotNewsChannelService {
         .config(toPublicConfig(full))
         .credentialConfigured(credentialConfigured)
         .lastSuccessAt(channel.getLastSuccessAt())
+        .deletedAt(channel.getDeletedAt())
         .createdAt(channel.getCreatedAt())
         .updatedAt(channel.getUpdatedAt())
         .build();
   }
 
   /**
-   * 统计主题下已启用渠道数（归档/停用不占配额，便于腾出名额后新建）。
+   * 统计主题下未假删且已启用的渠道数（停用与假删都不占配额）。
    *
    * @param themeId 主题 id
    * @return 已启用数量
@@ -365,8 +368,24 @@ public class HotNewsChannelService {
     }
     Long count = channelMapper.selectCount(new LambdaQueryWrapper<SourceChannelEntity>()
         .eq(SourceChannelEntity::getThemeId, themeId)
+        .isNull(SourceChannelEntity::getDeletedAt)
         .eq(SourceChannelEntity::getEnabled, true));
     return count == null ? 0L : count;
+  }
+
+  /**
+   * 读取未假删的频道；不存在或已假删均按不存在处理。
+   *
+   * @param channelId 频道主键
+   * @return 存活频道实体
+   * @throws BusinessException 不存在或已假删
+   */
+  private SourceChannelEntity requireAliveChannel(String channelId) {
+    SourceChannelEntity channel = channelMapper.selectById(channelId);
+    if (channel == null || channel.getDeletedAt() != null) {
+      throw new BusinessException(ErrorCodes.CHANNEL_NOT_FOUND, "频道不存在", 404);
+    }
+    return channel;
   }
 
   /**

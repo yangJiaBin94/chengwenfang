@@ -186,6 +186,19 @@ public class ThemeService {
   }
 
   /**
+   * 热点已启用/停用主题保存问卷并同步 defaults。
+   *
+   * @param themeId 主题 id/code
+   * @param request 问卷补丁
+   * @return 更新后主题
+   */
+  @Transactional
+  public ContentThemeView saveHotNewsConfigBriefing(
+      String themeId, ThemeBriefingPatchRequest request) {
+    return briefing.saveHotNewsConfigBriefing(themeId, request);
+  }
+
+  /**
    * 补丁主题元数据或停用/启用。
    *
    * @param themeId 主题 id/code
