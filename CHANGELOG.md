@@ -8,6 +8,18 @@ where releases are tagged.
 
 ## [Unreleased]
 
+### Added
+
+- 知识库 RAG（`chengwenfang-knowledge`）：文档/网页/作品入库、按 profile 切块（`chunk_strategy_version=c2`）、Qdrant Hybrid 检索问答（引用 / 拒答）；可选 Neo4j Graph 与 Agentic（默认关）。
+- Compose 默认拉起 **Qdrant**（6333/6334）；`docker compose --profile neo4j`（及 `all`）可选 Neo4j。
+- 热点雷达 Top10 / 已确认选题 / 资料池条目 / 主轨原稿登记入库；单文档索引 Job 终态不推站内通知。
+- README、`docs/AI从零搭建满血成文坊.md`、`docs/知识库RAG*.md`、`contracts/api-sse-contract.md` 补充知识库部署 / API / 开关说明。
+- 热点成文节点 `hot_news_attach_evidence`：审校后由 AI 决定是否截来源佐证图（网页 `--find-text` / PDF 首页 PyMuPDF），插入 `/api/files/…` 并剥正文裸外链；依赖 `scripts/page-screenshot`（Chromium + PyMuPDF）。
+- `scripts/start.sh` for macOS / Linux course-only (or `--all-deps`) start.
+- Backend `Dockerfile` + compose profile `app` (jar only; Vite still on host).
+- `.env.example` lists `MYSQL_*` + `CHENGWENFANG_SECRET_KEY` for Compose substitution.
+- `docs/screenshots/hotnews-walkthrough.gif` and `05-hotnews-radar.png`.
+
 ### Changed
 
 - 产品「Skill」更名为 **PromptPack（提示词包）**：模块 `chengwenfang-prompt-workflow`、API `/api/settings/prompt-packs`、表 `prompt_packs` 等；与 Cursor Agent Skill（`.cursor/skills/`）区分。
@@ -21,14 +33,6 @@ where releases are tagged.
 - Theme list `itemCount` / `candidateCount` via `ThemeListMetricsContributor` SPI (hot-news MP impl); drop content-module JdbcTemplate cross-table counts.
 - `prod` profile: require `CHENGWENFANG_SECRET_KEY`, disable `crawler-allow-loopback`.
 - `server.address` overridable via `SERVER_ADDRESS` (Docker sets `0.0.0.0`).
-
-### Added
-
-- 热点成文节点 `hot_news_attach_evidence`：审校后由 AI 决定是否截来源佐证图（网页 `--find-text` / PDF 首页 PyMuPDF），插入 `/api/files/…` 并剥正文裸外链；依赖 `scripts/page-screenshot`（Chromium + PyMuPDF）。
-- `scripts/start.sh` for macOS / Linux course-only (or `--all-deps`) start.
-- Backend `Dockerfile` + compose profile `app` (jar only; Vite still on host).
-- `.env.example` lists `MYSQL_*` + `CHENGWENFANG_SECRET_KEY` for Compose substitution.
-- `docs/screenshots/hotnews-walkthrough.gif` and `05-hotnews-radar.png`.
 
 ### Fixed
 

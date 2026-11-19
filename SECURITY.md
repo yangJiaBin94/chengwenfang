@@ -15,6 +15,9 @@ Defaults that matter:
   `SERVER_PORT`; the compose `app` profile binds the container to `0.0.0.0` but
   publishes only `127.0.0.1:8001`)
 - Vite dev server uses `127.0.0.1:5173`
+- Compose also publishes **Qdrant** on `6333/6334` (knowledge vectors) and,
+  with `--profile neo4j` / `all`, **Neo4j** on `7474/7687`. Treat these like
+  the app: do not expose them to the public internet without access control
 - `chengwenfang.crawler-allow-loopback` is `true` only for local SearXNG; `prod`
   forces `false`
 

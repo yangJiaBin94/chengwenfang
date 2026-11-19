@@ -11,6 +11,10 @@ among others:
   extraction. This project invokes it as an unmodified external process /
   container; it is not distributed as a derivative work of Lightpanda.
 - SearXNG: optional local metasearch service via Docker Compose.
+- Qdrant: default local vector store for knowledge RAG (ports 6333/6334).
+- Neo4j Community: optional GraphRAG sidecar via Compose profile `neo4j`
+  / `all`; graph retrieval stays off until
+  `chengwenfang.knowledge.graph.enabled=true`.
 - MySQL, Redis, and other images listed in compose.yml under their
   respective upstream licenses.
 - npm and Maven dependencies declared in package.json / pom.xml under
