@@ -27,9 +27,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 /**
@@ -37,11 +41,32 @@ import org.springframework.stereotype.Service;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class TopicAiWritingScoreService {
+  /** 内容域门面。 */
   private final ContentFacade content;
+  /** 热点域门面。 */
   private final HotNewsFacade hotNews;
+  /** 视觉/文本补全。 */
   private final AiVisionFacade ai;
+  /** 有界评分线程池（复用雷达文章解析池，避免无限扇出打爆上游）。 */
+  private final Executor scoreExecutor;
+
+  /**
+   * @param content        内容域
+   * @param hotNews        热点域
+   * @param ai             AI 补全
+   * @param scoreExecutor  有界并行执行器
+   */
+  public TopicAiWritingScoreService(
+      ContentFacade content,
+      HotNewsFacade hotNews,
+      AiVisionFacade ai,
+      @Qualifier("radarArticleEnrichExecutor") Executor scoreExecutor) {
+    this.content = content;
+    this.hotNews = hotNews;
+    this.ai = ai;
+    this.scoreExecutor = scoreExecutor;
+  }
 
   /**
    * 对本雷达批次选题按主题量表 AI 评分。
@@ -55,7 +80,7 @@ public class TopicAiWritingScoreService {
   }
 
   /**
-   * 对本雷达批次选题按主题量表 AI 评分，并按条回调进度。
+   * 对本雷达批次选题按主题量表 AI 评分（有界并行），并按条回调进度。
    *
    * @param themeId      主题 ID
    * @param radarBatchId 批次 ID
@@ -74,23 +99,26 @@ public class TopicAiWritingScoreService {
       return 0;
     }
     String themeContext = resolveThemeContext(themeId);
-    List<TopicWritingScoreApplyRequest> applies = new ArrayList<>();
     int total = topics.size();
-    int done = 0;
+    ConcurrentLinkedQueue<TopicWritingScoreApplyRequest> applies = new ConcurrentLinkedQueue<>();
+    AtomicInteger done = new AtomicInteger();
+    List<CompletableFuture<Void>> futures = new ArrayList<>(total);
     for (HotNewsTopicView topic : topics) {
-      if (topic == null || StrUtil.isBlank(topic.getId())) {
-        done++;
-        notifyProgress(onProgress, done, total);
-        continue;
-      }
-      TopicWritingScoreApplyRequest scored = scoreOne(rubric, themeContext, topic);
-      if (scored != null) {
-        applies.add(scored);
-      }
-      done++;
-      notifyProgress(onProgress, done, total);
+      futures.add(CompletableFuture.runAsync(() -> {
+        try {
+          if (topic != null && StrUtil.isNotBlank(topic.getId())) {
+            TopicWritingScoreApplyRequest scored = scoreOne(rubric, themeContext, topic);
+            if (scored != null) {
+              applies.add(scored);
+            }
+          }
+        } finally {
+          notifyProgress(onProgress, done.incrementAndGet(), total);
+        }
+      }, scoreExecutor));
     }
-    int written = hotNews.applyWritingScores(applies);
+    CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
+    int written = hotNews.applyWritingScores(new ArrayList<>(applies));
     log.info(
         "雷达 AI 写作评分完成 themeId={} batch={} topics={} written={}",
         themeId,

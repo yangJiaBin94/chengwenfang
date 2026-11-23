@@ -328,13 +328,13 @@ public class ChengwenfangProperties {
     private String threadNamePrefix = "channel-fetch-";
   }
 
-  /** 雷达文章解析线程池参数。 */
+  /** 雷达文章解析线程池参数（评分/筛选复用）。 */
   @Data
   public static class RadarArticleEnrichExecutorSettings {
     /** 核心线程数。 */
-    private int corePoolSize = 6;
+    private int corePoolSize = 15;
     /** 最大线程数。 */
-    private int maxPoolSize = 8;
+    private int maxPoolSize = 15;
     /** 有界队列容量。 */
     private int queueCapacity = 64;
     /** 空闲线程保活秒数。 */

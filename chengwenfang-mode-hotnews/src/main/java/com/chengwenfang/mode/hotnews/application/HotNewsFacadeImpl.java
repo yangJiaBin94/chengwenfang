@@ -515,7 +515,8 @@ public class HotNewsFacadeImpl implements HotNewsFacade {
   @Transactional
   public int markRadarTop10(String themeId, String radarBatchId) {
     int marked = radar.markRadarTop10Ranks(themeId, radarBatchId);
-    topics.applyDailyTopicLimit(themeId);
+    // 写作评分已完成：关闭「待评分保护」，按写作分公平淘汰（含 AI 联网选题）
+    topics.applyDailyTopicLimit(themeId, true);
     return marked;
   }
 

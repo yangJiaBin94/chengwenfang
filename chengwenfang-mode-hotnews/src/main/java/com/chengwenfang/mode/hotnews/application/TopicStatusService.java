@@ -77,12 +77,22 @@ public class TopicStatusService {
   }
 
   /**
-   * 按自然日执行每日雷达限额。
+   * 按自然日执行每日雷达限额（评分前：保留待写作评分选题）。
    *
    * @param themeId 主题 ID
    */
   public void applyDailyTopicLimit(String themeId) {
-    aggregate.applyDailyTopicLimit(themeId);
+    aggregate.applyDailyTopicLimit(themeId, false);
+  }
+
+  /**
+   * 按自然日执行每日雷达限额。
+   *
+   * @param themeId        主题 ID
+   * @param expireUnscored 是否淘汰尚未写出写作分的 discovered 选题
+   */
+  public void applyDailyTopicLimit(String themeId, boolean expireUnscored) {
+    aggregate.applyDailyTopicLimit(themeId, expireUnscored);
   }
 
   /**

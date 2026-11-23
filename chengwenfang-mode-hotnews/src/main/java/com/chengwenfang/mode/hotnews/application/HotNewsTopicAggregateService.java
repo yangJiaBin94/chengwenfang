@@ -251,16 +251,30 @@ public class HotNewsTopicAggregateService {
   }
 
   /**
+   * 按自然日执行每日雷达限额（评分前默认调用：保留待写作评分选题）。
+   *
+   * @param themeId 主题 ID
+   */
+  public void applyDailyTopicLimit(String themeId) {
+    applyDailyTopicLimit(themeId, false);
+  }
+
+  /**
    * 按自然日（东八区）执行每日雷达限额（只改状态，不删库）：
    * <ul>
    *   <li>当天：按写作价值保留前 {@link TopicMathUtil#DAILY_TOPIC_LIMIT} 条为有效；超额且未确认的标 expired</li>
    *   <li>历史日：未确认选题标 expired（默认列表不展示，素材与信源保留）</li>
    *   <li>已确认选题始终保留有效状态</li>
+   *   <li>手动选题始终保留且不占雷达名额</li>
+   *   <li>{@code expireUnscored=false}（落库/列表）：{@code discovered} 且写作分未出的待评分选题保留，
+   *       避免 AI 联网等素材在写作评分前被挤掉</li>
+   *   <li>{@code expireUnscored=true}（写作评分后）：待评分保护关闭，按写作分公平淘汰</li>
    * </ul>
    *
-   * @param themeId 主题 ID
+   * @param themeId         主题 ID
+   * @param expireUnscored  是否淘汰尚未写出写作分的 discovered 选题
    */
-  public void applyDailyTopicLimit(String themeId) {
+  public void applyDailyTopicLimit(String themeId, boolean expireUnscored) {
     List<TopicClusterEntity> rows = topicMapper.selectList(
         new LambdaQueryWrapper<TopicClusterEntity>().eq(TopicClusterEntity::getThemeId, themeId));
     if (rows.isEmpty()) {
@@ -306,6 +320,20 @@ public class HotNewsTopicAggregateService {
             topIds.add(row.getId());
           }
         }
+        // 评分前：待写作评分的 discovered 一并保留（含 AI 联网选题），不占日限额席位
+        if (!expireUnscored) {
+          for (TopicClusterEntity row : daily) {
+            if (row == null || StrUtil.isBlank(row.getId())) {
+              continue;
+            }
+            if (HotNewsTopicStatuses.EXPIRED.equals(row.getStatus())) {
+              continue;
+            }
+            if (isPendingWritingScore(row)) {
+              topIds.add(row.getId());
+            }
+          }
+        }
         int radarKept = 0;
         for (TopicClusterEntity row : daily) {
           if (row == null || StrUtil.isBlank(row.getId())) {
@@ -341,6 +369,23 @@ public class HotNewsTopicAggregateService {
         }
       }
     }
+  }
+
+  /**
+   * 是否仍待主题量表 AI 写作评分（落库事实分阶段 writingScore 固定为 0）。
+   *
+   * @param row 选题簇
+   * @return 待评分则为 true
+   */
+  static boolean isPendingWritingScore(TopicClusterEntity row) {
+    if (row == null) {
+      return false;
+    }
+    if (!HotNewsTopicStatuses.DISCOVERED.equals(row.getStatus())) {
+      return false;
+    }
+    int writingScore = row.getWritingScore() == null ? 0 : row.getWritingScore();
+    return writingScore <= 0;
   }
 
   /**

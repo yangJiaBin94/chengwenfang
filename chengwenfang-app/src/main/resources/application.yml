@@ -167,10 +167,10 @@ chengwenfang:
       queue-capacity: 100
       keep-alive-seconds: 60
       thread-name-prefix: channel-fetch-
-    # 雷达文章解析（Bean: radarArticleEnrichExecutor；拉正文 + 速览）
+    # 雷达文章解析（Bean: radarArticleEnrichExecutor；拉正文 + 速览；评分/筛选复用）
     radar-article-enrich:
-      core-pool-size: 6
-      max-pool-size: 8
+      core-pool-size: 15
+      max-pool-size: 15
       queue-capacity: 64
       keep-alive-seconds: 60
       thread-name-prefix: radar-article-
