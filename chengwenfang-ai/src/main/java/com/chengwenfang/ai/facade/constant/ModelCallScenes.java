@@ -36,6 +36,8 @@ public final class ModelCallScenes {
   public static final String RADAR_AI_THEME_SEED = "radar_ai_theme_seed";
   /** 雷达采集：AI 联网自搜选题（服务端 web search）。 */
   public static final String RADAR_AI_WEB_SEARCH = "radar_ai_web_search";
+  /** 雷达采集：按主题量表生成联网搜索指令（无 web search）。 */
+  public static final String RADAR_AI_WEB_SEARCH_BRIEF = "radar_ai_web_search_brief";
   /** 雷达采集：联网结果二次结构化抽取。 */
   public static final String RADAR_AI_WEB_SEARCH_STRUCTURE = "radar_ai_web_search_structure";
 
@@ -64,6 +66,12 @@ public final class ModelCallScenes {
   public static final String HOT_NEWS_TOPIC_RESEARCH_KEYWORDS = "hot_news_topic_research_keywords";
   /** 选题资料池：AI Agent 多轮检索决策。 */
   public static final String HOT_NEWS_TOPIC_RESEARCH_AGENT = "hot_news_topic_research_agent";
+  /** 选题资料池：AI 联网搜佐证资料。 */
+  public static final String HOT_NEWS_TOPIC_RESEARCH_AI_WEB_SEARCH =
+      "hot_news_topic_research_ai_web_search";
+  /** 选题资料池：AI 联网结果二次结构化。 */
+  public static final String HOT_NEWS_TOPIC_RESEARCH_AI_WEB_SEARCH_STRUCTURE =
+      "hot_news_topic_research_ai_web_search_structure";
   /** 选题资料池：现生成来源策略（优选域/角度，不落库）。 */
   public static final String HOT_NEWS_TOPIC_RESEARCH_SOURCE_POLICY =
       "hot_news_topic_research_source_policy";

@@ -33,6 +33,7 @@ import {
   listHotNewsArticles,
   listHotNewsRadarCollectRuns,
   pageHotNewsTopics,
+  createHotNewsManualTopic,
   ensureHotNewsArticle,
   startHotNewsFetch,
   updateHotNewsTopicStatus,
@@ -135,6 +136,13 @@ export function HotNewsPage({
   const [collectStageTitle, setCollectStageTitle] = useState("");
   const [collectProgress, setCollectProgress] = useState(0);
   const previousCollectStatus = useRef("");
+  /** 手动添加选题弹窗。 */
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manualTitle, setManualTitle] = useState("");
+  const [manualSummary, setManualSummary] = useState("");
+  const [manualUrl, setManualUrl] = useState("");
+  const [manualBusy, setManualBusy] = useState(false);
+  const manualSubmitLock = useRef(false);
 
   const collectRunning = Boolean(
     collectJob &&
@@ -365,6 +373,46 @@ export function HotNewsPage({
     }
   }
 
+  function openManualTopicModal() {
+    setManualTitle("");
+    setManualSummary("");
+    setManualUrl("");
+    setManualOpen(true);
+  }
+
+  async function submitManualTopic() {
+    if (manualSubmitLock.current || manualBusy) return;
+    const title = manualTitle.trim();
+    if (!title) {
+      showNotice("请填写标题", "选题标题不能为空。");
+      return;
+    }
+    const summary = manualSummary.trim();
+    const url = manualUrl.trim();
+    manualSubmitLock.current = true;
+    setManualBusy(true);
+    try {
+      await createHotNewsManualTopic(themeId, {
+        title,
+        ...(summary ? { summary } : {}),
+        ...(url ? { url } : {}),
+      });
+      setManualOpen(false);
+      setFilter("today");
+      setListPage(1);
+      showNotice("选题已添加", "已进入待选题，确认后可进入资料池深挖。");
+      await loadTopicsPage(1, true);
+    } catch (error) {
+      showNotice(
+        "添加选题失败",
+        error instanceof Error ? error.message : "请稍后重试",
+      );
+    } finally {
+      manualSubmitLock.current = false;
+      setManualBusy(false);
+    }
+  }
+
   async function openTopicDetail(topic: HotNewsTopic) {
     setDetailTopic(topic);
     setDetailTab("evidence");
@@ -466,7 +514,13 @@ export function HotNewsPage({
       listPage={listPage}
       listPageCount={listPageCount}
       loading={loading}
+      manualBusy={manualBusy}
+      manualOpen={manualOpen}
+      manualSummary={manualSummary}
+      manualTitle={manualTitle}
+      manualUrl={manualUrl}
       navigate={navigate}
+      openManualTopicModal={openManualTopicModal}
       openResearchPool={openResearchPool}
       openTopicDetail={openTopicDetail}
       pageSize={pageSize}
@@ -477,12 +531,17 @@ export function HotNewsPage({
       setDetailTopic={setDetailTopic}
       setFilter={setFilter}
       setListPage={setListPage}
+      setManualOpen={setManualOpen}
+      setManualSummary={setManualSummary}
+      setManualTitle={setManualTitle}
+      setManualUrl={setManualUrl}
       setPageSize={setPageSize}
       setPageSizeOpen={setPageSizeOpen}
       setSortBy={setSortBy}
       setStatus={setStatus}
       setTopicQuery={setTopicQuery}
       sortBy={sortBy}
+      submitManualTopic={submitManualTopic}
       sources={sources}
       sourcesPath={sourcesPath}
       startFetch={startFetch}

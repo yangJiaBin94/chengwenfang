@@ -80,6 +80,25 @@ class HotNewsThemeBriefingSupportTest {
   }
 
   @Test
+  void collectStrategy_defaultsRequireTopicFreshnessTrueWhenMissing() {
+    Map<String, Object> briefing = validBriefing();
+    assertTrue(HotNewsThemeBriefingSupport.collectStrategy(briefing).isRequireTopicFreshness());
+    Map<String, Object> defaults = HotNewsThemeBriefingSupport.buildDefaults(briefing);
+    @SuppressWarnings("unchecked")
+    Map<String, Object> strategy = (Map<String, Object>) defaults.get("collect_strategy");
+    assertEquals(Boolean.TRUE, strategy.get("require_topic_freshness"));
+  }
+
+  @Test
+  void collectStrategy_respectsExplicitFalse() {
+    Map<String, Object> briefing = validBriefing();
+    @SuppressWarnings("unchecked")
+    Map<String, Object> strategy = (Map<String, Object>) briefing.get("collect_strategy");
+    strategy.put("require_topic_freshness", false);
+    assertTrue(!HotNewsThemeBriefingSupport.collectStrategy(briefing).isRequireTopicFreshness());
+  }
+
+  @Test
   void seedChannelTypes_defaultsToSearxng() {
     Map<String, Object> briefing = validBriefing();
     @SuppressWarnings("unchecked")

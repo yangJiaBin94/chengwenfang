@@ -74,10 +74,14 @@ public final class RadarCollectGraphStateKeys {
   public static final String AI_WEB_SEARCH_ADDED_COUNT = "aiWebSearchAddedCount";
   /** AI 联网搜选题引用数。 */
   public static final String AI_WEB_SEARCH_CITATION_COUNT = "aiWebSearchCitationCount";
+  /** 联网搜索指令是否来自量表 AI 生成。 */
+  public static final String AI_WEB_SEARCH_BRIEF_FROM_AI = "aiWebSearchBriefFromAi";
   /** 主要意图提示块。 */
   public static final String CORE_INTENT_PROMPT = "coreIntentPrompt";
   /** 采集策略模式。 */
   public static final String COLLECT_STRATEGY_MODE = "collectStrategyMode";
+  /** 是否追求话题素材时效性。 */
+  public static final String REQUIRE_TOPIC_FRESHNESS = "requireTopicFreshness";
   /** 自适应搜索备注。 */
   public static final String ADAPTIVE_SEARCH_NOTE = "adaptiveSearchNote";
   /** 评分取 Top10 步骤可读摘要。 */

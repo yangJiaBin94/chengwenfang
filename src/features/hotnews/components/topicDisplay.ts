@@ -241,6 +241,10 @@ export function topicOriginTags(topic: HotNewsTopic): string[] {
   if (isAiThemeSeedTopic(topic)) {
     return [TOPIC_ORIGIN_LABELS[TopicOriginKind.AI_THEME_SEED]];
   }
+  const kind = topic.originKind || topic.scoreDetails?.originKind;
+  if (kind === TopicOriginKind.MANUAL) {
+    return [TOPIC_ORIGIN_LABELS[TopicOriginKind.MANUAL]];
+  }
   const sites = (topic.siteLabels || []).filter(Boolean);
   const medias = (topic.mediaTypes || []).filter(Boolean);
   if (sites.length || medias.length) {

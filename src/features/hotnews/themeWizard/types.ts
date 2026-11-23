@@ -59,6 +59,8 @@ export type BriefingState = {
     mode: string;
     rationale: string;
     user_override: boolean;
+    /** 是否追求话题素材时效性；默认 true，开启后发布日须在 7 天内。 */
+    require_topic_freshness: boolean;
   };
   /** 主题级写作价值评分量表；启用前必须合法。 */
   scoring_rubric?: ScoringRubric | null;

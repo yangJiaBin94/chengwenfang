@@ -35,6 +35,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -123,8 +124,10 @@ public class TopicQueryService {
           .orderByAsc(TopicClusterEntity::getTitle)
           .orderByAsc(TopicClusterEntity::getId)
           .last("LIMIT " + topLimit));
-      if (!top.isEmpty()) {
-        return top.stream().map(this::topicView).toList();
+      // 手动选题可能不在批次 TopN 内：并入未过期的 manual，避免添加后列表看不见
+      List<TopicClusterEntity> merged = mergeManualTopicsIntoRadarPool(themeId, top, capped);
+      if (!merged.isEmpty()) {
+        return merged.stream().map(this::topicView).toList();
       }
     }
     LambdaQueryWrapper<TopicClusterEntity> query = new LambdaQueryWrapper<TopicClusterEntity>()
@@ -305,6 +308,67 @@ public class TopicQueryService {
   }
 
   /**
+   * 将主题下未过期的手动选题并入雷达池（去重后按写作分排序并截断）。
+   *
+   * @param themeId 主题 ID
+   * @param pool    当前批次 TopN
+   * @param capped  返回上限
+   * @return 合并后的列表
+   */
+  private List<TopicClusterEntity> mergeManualTopicsIntoRadarPool(
+      String themeId, List<TopicClusterEntity> pool, int capped) {
+    LinkedHashMap<String, TopicClusterEntity> byId = new LinkedHashMap<>();
+    if (pool != null) {
+      for (TopicClusterEntity row : pool) {
+        if (row != null && StrUtil.isNotBlank(row.getId())) {
+          byId.put(row.getId(), row);
+        }
+      }
+    }
+    if (StrUtil.isBlank(themeId)) {
+      return new ArrayList<>(byId.values());
+    }
+    List<TopicClusterEntity> candidates = topicMapper.selectList(new LambdaQueryWrapper<TopicClusterEntity>()
+        .eq(TopicClusterEntity::getThemeId, themeId)
+        .ne(TopicClusterEntity::getStatus, HotNewsTopicStatuses.EXPIRED)
+        .orderByDesc(TopicClusterEntity::getWritingScore)
+        .orderByDesc(TopicClusterEntity::getUpdatedAt)
+        .last("LIMIT 50"));
+    for (TopicClusterEntity row : candidates) {
+      if (row == null || StrUtil.isBlank(row.getId()) || byId.containsKey(row.getId())) {
+        continue;
+      }
+      TopicScoreDetails details = scoreDetailsStore.read(row.getId());
+      if (details == null || !HotNewsTopicOriginKinds.isManual(details.getOriginKind())) {
+        continue;
+      }
+      byId.put(row.getId(), row);
+    }
+    List<TopicClusterEntity> merged = new ArrayList<>(byId.values());
+    merged.sort((left, right) -> {
+      int byScore = Integer.compare(
+          right.getWritingScore() == null ? 0 : right.getWritingScore(),
+          left.getWritingScore() == null ? 0 : left.getWritingScore());
+      if (byScore != 0) {
+        return byScore;
+      }
+      LocalDateTime leftSeen = left.getUpdatedAt() == null ? left.getCreatedAt() : left.getUpdatedAt();
+      LocalDateTime rightSeen = right.getUpdatedAt() == null ? right.getCreatedAt() : right.getUpdatedAt();
+      if (leftSeen != null && rightSeen != null) {
+        int byTime = rightSeen.compareTo(leftSeen);
+        if (byTime != 0) {
+          return byTime;
+        }
+      }
+      return StrUtil.nullToEmpty(left.getId()).compareTo(StrUtil.nullToEmpty(right.getId()));
+    });
+    if (merged.size() > capped) {
+      return merged.subList(0, capped);
+    }
+    return merged;
+  }
+
+  /**
    * 雷达列表是否展示该选题：非当日确认的已选题只在「已选题」页出现。
    *
    * @param topic 选题视图
@@ -382,6 +446,9 @@ public class TopicQueryService {
     }
     if (HotNewsTopicOriginKinds.isAiThemeSeed(topic.getOriginKind())) {
       return HotNewsTopicOriginKinds.AI_THEME_SEED_LABEL;
+    }
+    if (HotNewsTopicOriginKinds.isManual(topic.getOriginKind())) {
+      return HotNewsTopicOriginKinds.MANUAL_LABEL;
     }
     List<String> labels = new ArrayList<>();
     if (topic.getSiteLabels() != null) {

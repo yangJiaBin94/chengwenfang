@@ -21,6 +21,7 @@ import com.chengwenfang.mode.hotnews.facade.HotNewsFacade;
 import com.chengwenfang.mode.hotnews.facade.dto.request.TopicWritingScoreApplyRequest;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsTopicSourceView;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsTopicView;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -243,8 +244,14 @@ public class TopicAiWritingScoreService {
           .append(dim.getDescription())
           .append('\n');
     }
+    List<HotNewsTopicSourceView> sources = listTopicSourcesSafe(topic == null ? null : topic.getId());
+    LocalDateTime publishFrom = topic == null ? null : topic.getPublishFrom();
+    LocalDateTime publishTo = topic == null ? null : topic.getPublishTo();
     return """
         主题上下文：
+        %s
+
+        时间事实（与量表维度无关，打分必须使用）：
         %s
 
         评分量表指引：%s
@@ -254,77 +261,46 @@ public class TopicAiWritingScoreService {
         标题：%s
         摘要：%s
         来源数：%s
-        来源列表（请据此判断可信度与一手性）：
+        来源列表（含发布时间；请据此判断可信度、一手性与时效）：
         %s
         请按量表逐维打分。
         """.formatted(
         StrUtil.blankToDefault(themeContext, "无"),
+        TopicWritingScoreTimeFacts.buildBlock(LocalDateTime.now(), sources, publishFrom, publishTo),
         StrUtil.blankToDefault(rubric.getScoreGuidance(), "无"),
         dims,
         StrUtil.blankToDefault(topic.getTitle(), ""),
         StrUtil.blankToDefault(topic.getSummary(), ""),
         topic.getSourceCount() == null ? "0" : String.valueOf(topic.getSourceCount()),
-        formatSourceLines(topic.getId()));
+        TopicWritingScoreTimeFacts.formatSourceLines(sources, 12));
   }
 
   /**
-   * 组装选题来源 URL/域名摘要，供 AI 判断可信度。
+   * 安全读取选题来源；失败返回空列表。
    *
    * @param topicId 选题 ID
-   * @return 多行文本；无来源时返回「无」
+   * @return 来源列表；永不为 null
    */
-  private String formatSourceLines(String topicId) {
+  private List<HotNewsTopicSourceView> listTopicSourcesSafe(String topicId) {
     if (StrUtil.isBlank(topicId)) {
-      return "无";
+      return List.of();
     }
     try {
       List<HotNewsTopicSourceView> sources = hotNews.listTopicSources(topicId);
-      if (CollUtil.isEmpty(sources)) {
-        return "无";
-      }
-      StringBuilder lines = new StringBuilder();
-      int index = 0;
-      for (HotNewsTopicSourceView source : sources) {
-        if (source == null || StrUtil.isBlank(source.getUrl())) {
-          continue;
-        }
-        index++;
-        if (index > 12) {
-          lines.append("- …其余来源已省略\n");
-          break;
-        }
-        lines.append("- ")
-            .append(StrUtil.blankToDefault(source.getSiteLabel(), hostOf(source.getUrl())))
-            .append(" | ")
-            .append(source.getUrl());
-        if (StrUtil.isNotBlank(source.getTitle())) {
-          lines.append(" | ").append(StrUtil.maxLength(source.getTitle(), 80));
-        }
-        lines.append('\n');
-      }
-      return lines.length() == 0 ? "无" : lines.toString().trim();
+      return sources == null ? List.of() : sources;
     } catch (Exception exception) {
       log.warn("读取选题来源失败 topicId={} err={}", topicId, exception.getMessage());
-      return "无";
+      return List.of();
     }
   }
 
   /**
-   * 从 URL 提取 host，失败时返回原串截断。
+   * 读取主题写作价值评分量表（briefing 优先，否则 defaults）。
    *
-   * @param url 链接
-   * @return 域名或短 URL
+   * @param themeId 主题 ID
+   * @return 量表；缺失或失败为 null
    */
-  private static String hostOf(String url) {
-    try {
-      String host = java.net.URI.create(url).getHost();
-      return StrUtil.blankToDefault(host, StrUtil.maxLength(url, 40));
-    } catch (Exception ignored) {
-      return StrUtil.maxLength(url, 40);
-    }
-  }
-
-  private ScoringRubricView loadRubric(String themeId) {
+  public ScoringRubricView loadRubric(String themeId) {
     if (StrUtil.isBlank(themeId)) {
       return null;
     }

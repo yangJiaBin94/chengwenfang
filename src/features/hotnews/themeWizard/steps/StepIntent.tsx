@@ -1,3 +1,4 @@
+import { HOT_NEWS_TOPIC_FRESHNESS_WINDOW_DAYS } from "../../freshness";
 import { COLLECT_STRATEGY_OPTIONS } from "../constants";
 import type { HotNewsThemeWizardModel } from "../useHotNewsThemeWizard";
 
@@ -166,6 +167,8 @@ export function StepIntent({
                   user_override:
                     Boolean(current.collect_strategy.mode) &&
                     current.collect_strategy.mode !== option.value,
+                  require_topic_freshness:
+                    current.collect_strategy.require_topic_freshness !== false,
                 },
               }))
             }
@@ -182,6 +185,50 @@ export function StepIntent({
       ) : (
         <p className="muted">请选择或让 AI 推荐一种策略。</p>
       )}
+      <h3 style={{ marginTop: "1.25rem" }}>话题素材时效性</h3>
+      <p>
+        开启后，搜索与筛选要求素材发布日必须在近{" "}
+        {HOT_NEWS_TOPIC_FRESHNESS_WINDOW_DAYS}{" "}
+        天内，且必须有可核验发布日期；关闭则不做该硬闸。渠道抓取回溯窗口与此天数一致。
+      </p>
+      <div className="chip-row">
+        <button
+          type="button"
+          className={
+            strategy.require_topic_freshness !== false ? "chip selected" : "chip"
+          }
+          disabled={busy}
+          onClick={() =>
+            setBriefing((current) => ({
+              ...current,
+              collect_strategy: {
+                ...current.collect_strategy,
+                require_topic_freshness: true,
+              },
+            }))
+          }
+        >
+          追求时效性（推荐）
+        </button>
+        <button
+          type="button"
+          className={
+            strategy.require_topic_freshness === false ? "chip selected" : "chip"
+          }
+          disabled={busy}
+          onClick={() =>
+            setBriefing((current) => ({
+              ...current,
+              collect_strategy: {
+                ...current.collect_strategy,
+                require_topic_freshness: false,
+              },
+            }))
+          }
+        >
+          不强制时效
+        </button>
+      </div>
     </div>
   );
 }

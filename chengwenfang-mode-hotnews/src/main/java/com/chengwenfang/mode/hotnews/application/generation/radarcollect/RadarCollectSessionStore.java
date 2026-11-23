@@ -68,6 +68,11 @@ public class RadarCollectSessionStore {
     private String coreIntentPrompt = "";
     /** 采集策略模式值；可空（缺省按结构化）。 */
     private String collectStrategyMode = "";
+    /**
+     * 是否追求话题素材时效性；缺省 true。
+     * <p>开启后对发布日做硬闸（必须有日期且落在近 N 天内）。
+     */
+    private boolean requireTopicFreshness = true;
     /** 采集 run ID。 */
     private String fetchRunId;
     /** 批次 ID。 */
@@ -125,6 +130,24 @@ public class RadarCollectSessionStore {
 
     public void setCollectStrategyMode(String collectStrategyMode) {
       this.collectStrategyMode = StrUtil.nullToEmpty(collectStrategyMode);
+    }
+
+    /**
+     * 是否开启话题素材时效硬闸。
+     *
+     * @return true 表示要求近窗内有发布日
+     */
+    public boolean isRequireTopicFreshness() {
+      return requireTopicFreshness;
+    }
+
+    /**
+     * 设置话题素材时效硬闸开关。
+     *
+     * @param requireTopicFreshness true 开启
+     */
+    public void setRequireTopicFreshness(boolean requireTopicFreshness) {
+      this.requireTopicFreshness = requireTopicFreshness;
     }
 
     public String getFetchRunId() {

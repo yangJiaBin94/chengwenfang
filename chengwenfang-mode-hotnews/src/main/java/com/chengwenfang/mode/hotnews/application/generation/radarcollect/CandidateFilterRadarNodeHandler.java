@@ -2,6 +2,7 @@ package com.chengwenfang.mode.hotnews.application.generation.radarcollect;
 
 import cn.hutool.core.util.StrUtil;
 import com.chengwenfang.common.ThemeTitleRelevance;
+import com.chengwenfang.content.facade.constant.HotNewsTopicFreshness;
 import com.chengwenfang.crawler.facade.MarketingPageFilter;
 import com.chengwenfang.sourcing.facade.SourceVideoTitleFilter;
 import com.chengwenfang.infra.config.ChengwenfangProperties;
@@ -77,12 +78,40 @@ public class CandidateFilterRadarNodeHandler implements RadarCollectNodeHandler 
     int inputCount = pending.size();
     reportProgress(jobId, stepKey, 72, "素材筛选：参与 " + inputCount + " 条…");
 
+    // 0) 时效硬闸：开启时无日期或超窗（近 7 天）直接弃用
+    int freshnessDropped = 0;
+    if (session.isRequireTopicFreshness()) {
+      for (RadarCollectCandidate candidate : pending) {
+        if (RadarCollectFreshnessGate.shouldDiscard(
+            candidate.getPublishedAt(), true)) {
+          discard(candidate, RadarCollectFreshnessGate.discardReason(candidate.getPublishedAt()));
+          freshnessDropped++;
+        }
+      }
+      if (freshnessDropped > 0) {
+        reportProgress(
+            jobId,
+            stepKey,
+            72,
+            "素材筛选：时效硬闸丢弃 "
+                + freshnessDropped
+                + " 条（须近 "
+                + HotNewsTopicFreshness.WINDOW_DAYS
+                + " 天内且有发布日）");
+        log.info("素材筛选时效硬闸丢弃 {} 条 themeId={}", freshnessDropped, session.getThemeId());
+      }
+    }
+
     // 1) 本地规则先拦硬广和空标题。有主要意图时幸存者整包按意图筛；否则仅词典未命中问模型
     boolean hasIntent = StrUtil.isNotBlank(session.getCoreIntentPrompt());
     List<RadarCollectCandidate> needMarketing = new ArrayList<>();
     List<RadarCollectCandidate> needThemeModel = new ArrayList<>();
+    int ruleTotal = inputCount - freshnessDropped;
     int ruleScanned = 0;
     for (RadarCollectCandidate candidate : pending) {
+      if (candidate.isDiscarded()) {
+        continue;
+      }
       ruleScanned++;
       RadarCollectLeaseSupport.renew(lightState);
       ThemeTitleRelevance.Decision themeDecision = ThemeTitleRelevance.judge(
@@ -99,15 +128,15 @@ public class CandidateFilterRadarNodeHandler implements RadarCollectNodeHandler 
       } else {
         needMarketing.add(candidate);
       }
-      if (ruleScanned % 8 == 0 || ruleScanned == inputCount) {
+      if (ruleTotal > 0 && (ruleScanned % 8 == 0 || ruleScanned == ruleTotal)) {
         reportProgress(
             jobId,
             stepKey,
-            progressFor(ruleScanned, inputCount, 72, 74),
+            progressFor(ruleScanned, ruleTotal, 72, 74),
             "素材筛选：规则过滤 "
                 + ruleScanned
                 + " / "
-                + inputCount
+                + ruleTotal
                 + "，待主题判定 "
                 + needThemeModel.size()
                 + " 条，待营销判定 "

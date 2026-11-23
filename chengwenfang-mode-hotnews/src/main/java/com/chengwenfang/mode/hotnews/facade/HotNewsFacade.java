@@ -11,6 +11,7 @@ import com.chengwenfang.mode.hotnews.facade.dto.request.HotNewsGenerationSetting
 import com.chengwenfang.mode.hotnews.facade.dto.request.HotNewsOptimizeCritiqueRequest;
 import com.chengwenfang.mode.hotnews.facade.dto.request.HotNewsRewriteRequest;
 import com.chengwenfang.mode.hotnews.facade.dto.request.ManualResearchItemRequest;
+import com.chengwenfang.mode.hotnews.facade.dto.request.ManualTopicCreateRequest;
 import com.chengwenfang.sourcing.facade.dto.request.QuerySiteBlockUpsertRequest;
 import com.chengwenfang.mode.hotnews.facade.dto.request.AiThemeSeedPersistRequest;
 import com.chengwenfang.mode.hotnews.facade.dto.request.RadarSurvivorPersistRequest;
@@ -412,6 +413,15 @@ public interface HotNewsFacade {
    */
   HotNewsTopicView persistAiThemeSeedTopic(
       String themeId, String radarBatchId, AiThemeSeedPersistRequest request);
+
+  /**
+   * 用户手动添加选题（状态为 candidate，可选原文链接证据）。
+   *
+   * @param themeId 主题 ID
+   * @param request 标题/摘要/链接
+   * @return 新建选题视图
+   */
+  HotNewsTopicView createManualTopic(String themeId, ManualTopicCreateRequest request);
 
   /**
    * 列出本雷达批次下未过期选题（供 AI 写作价值评分）。

@@ -538,6 +538,8 @@ export function useHotNewsThemeWizard({
           mode: strategy.mode,
           rationale: strategy.rationale || "",
           user_override: false,
+          require_topic_freshness:
+            briefing.collect_strategy.require_topic_freshness !== false,
         },
       };
       setBriefing(nextBriefing);

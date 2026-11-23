@@ -5,6 +5,7 @@ import com.chengwenfang.common.ThemeTitleRelevance;
 import com.chengwenfang.mode.hotnews.domain.entity.TopicClusterEntity;
 import com.chengwenfang.mode.hotnews.domain.entity.TopicSourceEntity;
 import com.chengwenfang.mode.hotnews.facade.dto.request.AiThemeSeedPersistRequest;
+import com.chengwenfang.mode.hotnews.facade.dto.request.ManualTopicCreateRequest;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsArticleSkeletonView;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsBriefSourceRow;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsBriefView;
@@ -119,6 +120,18 @@ public class HotNewsTopicService {
   public HotNewsTopicView persistAiThemeSeedTopic(
       String themeId, String radarBatchId, AiThemeSeedPersistRequest request) {
     return seed.persistAiThemeSeedTopic(themeId, radarBatchId, request);
+  }
+
+  /**
+   * 用户手动添加选题（candidate）。
+   *
+   * @param themeId 主题 ID
+   * @param request 标题/摘要/链接
+   * @return 新建选题视图
+   */
+  @Transactional
+  public HotNewsTopicView createManualTopic(String themeId, ManualTopicCreateRequest request) {
+    return seed.createManualTopic(themeId, request);
   }
 
   /**

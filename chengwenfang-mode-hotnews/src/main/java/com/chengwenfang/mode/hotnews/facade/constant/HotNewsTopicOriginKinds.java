@@ -23,6 +23,19 @@ public final class HotNewsTopicOriginKinds {
   public static final String AI_WEB_SEARCH_CHANNEL_BASE_URL =
       "https://local.chengwenfang/ai-web-search";
 
+  /** 用户手动添加的选题。 */
+  public static final String MANUAL = "manual";
+
+  /** 展示标签：手动添加。 */
+  public static final String MANUAL_LABEL = "手动添加";
+
+  /**
+   * 主题下「手动添加」占位渠道 baseUrl（disabled，不参与 FETCH_CHANNELS）。
+   * 用于手动选题附带链接时 source_items.channel_id 外键。
+   */
+  public static final String MANUAL_CHANNEL_BASE_URL =
+      "https://local.chengwenfang/manual-topic";
+
   private HotNewsTopicOriginKinds() {}
 
   /**
@@ -43,5 +56,15 @@ public final class HotNewsTopicOriginKinds {
    */
   public static boolean isAiWebSearch(String originKind) {
     return AI_WEB_SEARCH.equals(originKind);
+  }
+
+  /**
+   * 是否为用户手动添加选题。
+   *
+   * @param originKind 来源形态
+   * @return 匹配则为 true
+   */
+  public static boolean isManual(String originKind) {
+    return MANUAL.equals(originKind);
   }
 }

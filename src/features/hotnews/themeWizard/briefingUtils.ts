@@ -52,6 +52,7 @@ export function emptyBriefing(): BriefingState {
       mode: "",
       rationale: "",
       user_override: false,
+      require_topic_freshness: true,
     },
     scoring_rubric: null,
   };

@@ -190,13 +190,15 @@ export type TopicScoreDetails = {
   originKind?: string | null;
 };
 
-/** AI 主题种子素材来源形态（与后端 HotNewsTopicOriginKinds 对齐）。 */
+/** 选题来源形态（与后端 HotNewsTopicOriginKinds 对齐）。 */
 export const TopicOriginKind = {
   AI_THEME_SEED: "ai_theme_seed",
+  MANUAL: "manual",
 } as const;
 
 export const TOPIC_ORIGIN_LABELS: Record<string, string> = {
   [TopicOriginKind.AI_THEME_SEED]: "AI 主题素材",
+  [TopicOriginKind.MANUAL]: "手动添加",
 };
 
 /** 是否为 AI 主题种子素材。 */
@@ -212,6 +214,9 @@ export function isAiThemeSeedTopic(topic: {
 export function channelTypeShortLabel(type: string): string {
   if (type === TopicOriginKind.AI_THEME_SEED) {
     return TOPIC_ORIGIN_LABELS[TopicOriginKind.AI_THEME_SEED];
+  }
+  if (type === TopicOriginKind.MANUAL) {
+    return TOPIC_ORIGIN_LABELS[TopicOriginKind.MANUAL];
   }
   if (type in CHANNEL_TYPE_SHORT_LABELS) {
     return CHANNEL_TYPE_SHORT_LABELS[type as ChannelTypeValue];

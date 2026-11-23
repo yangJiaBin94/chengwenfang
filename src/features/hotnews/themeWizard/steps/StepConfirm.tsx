@@ -1,3 +1,4 @@
+import { HOT_NEWS_TOPIC_FRESHNESS_WINDOW_DAYS } from "../../freshness";
 import { COLLECT_STRATEGY_OPTIONS } from "../constants";
 import type { HotNewsThemeWizardModel } from "../useHotNewsThemeWizard";
 
@@ -52,6 +53,12 @@ export function StepConfirm({ briefing, searchQueries }: StepConfirmProps) {
           {briefing.collect_strategy.rationale
             ? ` — ${briefing.collect_strategy.rationale}`
             : ""}
+        </li>
+        <li>
+          <strong>话题素材时效性</strong>：
+          {briefing.collect_strategy.require_topic_freshness !== false
+            ? `开启（发布日须在近 ${HOT_NEWS_TOPIC_FRESHNESS_WINDOW_DAYS} 天内）`
+            : "关闭（不强制时效硬闸）"}
         </li>
         <li>
           <strong>关键词</strong>：{keywords}

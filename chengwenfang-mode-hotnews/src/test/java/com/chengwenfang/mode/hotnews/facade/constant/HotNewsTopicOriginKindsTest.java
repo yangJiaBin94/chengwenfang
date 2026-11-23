@@ -15,4 +15,12 @@ class HotNewsTopicOriginKindsTest {
     assertThat(HotNewsTopicOriginKinds.isAiThemeSeed(null)).isFalse();
     assertThat(HotNewsTopicOriginKinds.isAiThemeSeed("")).isFalse();
   }
+
+  @Test
+  void isManual_matchesConstantOnly() {
+    assertThat(HotNewsTopicOriginKinds.isManual(HotNewsTopicOriginKinds.MANUAL)).isTrue();
+    assertThat(HotNewsTopicOriginKinds.isManual(HotNewsTopicOriginKinds.AI_THEME_SEED)).isFalse();
+    assertThat(HotNewsTopicOriginKinds.isManual(null)).isFalse();
+    assertThat(HotNewsTopicOriginKinds.isManual("")).isFalse();
+  }
 }

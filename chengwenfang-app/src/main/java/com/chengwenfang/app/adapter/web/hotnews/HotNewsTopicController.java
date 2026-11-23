@@ -11,6 +11,7 @@ import com.chengwenfang.mode.hotnews.facade.HotNewsFacade;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsTopicPageView;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsTopicSourceView;
 import com.chengwenfang.mode.hotnews.facade.dto.request.HotNewsTopicStatusRequest;
+import com.chengwenfang.mode.hotnews.facade.dto.request.ManualTopicCreateRequest;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsTopicView;
 import com.chengwenfang.job.facade.dto.view.JobView;
 import jakarta.validation.Valid;
@@ -58,6 +59,21 @@ public class HotNewsTopicController {
       @RequestParam(defaultValue = "50") int limit) {
     content.assertThemeActive(themeId);
     return ApiResult.ok(hotNews.listTopics(themeId, status, limit));
+  }
+
+  /**
+   * 手动添加选题（状态为 candidate，仍需确认）。
+   *
+   * @param themeId 主题 ID
+   * @param body    标题必填；摘要与链接可选
+   * @return 新建选题视图
+   */
+  @PostMapping("/themes/{themeId}/hot-news/topics")
+  @Operation(summary = "手动添加选题")
+  public ApiResult<HotNewsTopicView> createManualTopic(
+      @PathVariable String themeId, @Valid @RequestBody ManualTopicCreateRequest body) {
+    content.assertThemeEnabled(themeId);
+    return ApiResult.ok(hotNews.createManualTopic(themeId, body));
   }
 
   /**

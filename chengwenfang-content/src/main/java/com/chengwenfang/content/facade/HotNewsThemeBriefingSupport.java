@@ -6,6 +6,7 @@ import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.common.ErrorCodes;
 import com.chengwenfang.common.SearchQueryNormalizer;
 import com.chengwenfang.content.facade.constant.HotNewsThemeSeedChannelKeys;
+import com.chengwenfang.content.facade.constant.HotNewsTopicFreshness;
 import com.chengwenfang.content.facade.dto.view.ScoringRubricView;
 import com.chengwenfang.content.facade.dto.view.ThemeCollectStrategyView;
 import com.chengwenfang.content.facade.dto.view.ThemeCoreIntentView;
@@ -165,14 +166,43 @@ public final class HotNewsThemeBriefingSupport {
   public static ThemeCollectStrategyView collectStrategy(Map<String, Object> briefing) {
     Map<String, Object> raw = nestedMap(briefing, "collect_strategy");
     if (raw.isEmpty()) {
-      return ThemeCollectStrategyView.builder().build();
+      // 缺整块策略时时效仍默认开启，与已有主题兼容
+      return ThemeCollectStrategyView.builder().requireTopicFreshness(true).build();
     }
     return ThemeCollectStrategyView.builder()
         .mode(StrUtil.trim(StrUtil.nullToEmpty(stringOrNull(raw.get("mode")))).toLowerCase())
         .rationale(StrUtil.trim(StrUtil.nullToEmpty(stringOrNull(raw.get("rationale")))))
         .userOverride(Boolean.TRUE.equals(raw.get("user_override"))
             || "true".equalsIgnoreCase(StrUtil.nullToEmpty(stringOrNull(raw.get("user_override")))))
+        .requireTopicFreshness(readRequireTopicFreshness(raw))
         .build();
+  }
+
+  /**
+   * 读取时效开关；字段缺失时默认 true。
+   *
+   * @param raw collect_strategy map
+   * @return 是否要求时效
+   */
+  private static boolean readRequireTopicFreshness(Map<String, Object> raw) {
+    Object value = raw.get(HotNewsTopicFreshness.REQUIRE_TOPIC_FRESHNESS_KEY);
+    if (value == null) {
+      return true;
+    }
+    if (value instanceof Boolean bool) {
+      return bool;
+    }
+    String text = StrUtil.trim(StrUtil.nullToEmpty(stringOrNull(value)));
+    if (StrUtil.isBlank(text)) {
+      return true;
+    }
+    if ("false".equalsIgnoreCase(text) || "0".equals(text)) {
+      return false;
+    }
+    if ("true".equalsIgnoreCase(text) || "1".equals(text)) {
+      return true;
+    }
+    return true;
   }
 
   /**
@@ -256,6 +286,8 @@ public final class HotNewsThemeBriefingSupport {
       strategyMap.put("mode", strategy.getMode());
       strategyMap.put("rationale", strategy.getRationale());
       strategyMap.put("user_override", strategy.isUserOverride());
+      strategyMap.put(
+          HotNewsTopicFreshness.REQUIRE_TOPIC_FRESHNESS_KEY, strategy.isRequireTopicFreshness());
       defaults.put("collect_strategy", strategyMap);
     }
     ScoringRubricView rubric = ScoringRubricSupport.readFrom(briefing);

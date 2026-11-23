@@ -15,6 +15,8 @@ public enum ArticlePublishDateSource {
   AI_HTML("ai_html", "HTML补爬AI"),
   /** Trafilatura metadata.date 回退解析。 */
   METADATA("metadata", "元数据回退"),
+  /** AI 联网选题二次结构化回填的发布日。 */
+  AI_WEB_SEARCH("ai_web_search", "联网选题AI"),
   /** 有正文但各路均未抽到日期。 */
   NONE("none", "未抽到"),
   /** 无可用正文，未进入发布日抽取。 */
@@ -61,6 +63,10 @@ public enum ArticlePublishDateSource {
 
   /** 是否已拿到可用发布日。 */
   public boolean isResolved() {
-    return this == CHANNEL || this == AI_CONTENT || this == AI_HTML || this == METADATA;
+    return this == CHANNEL
+        || this == AI_CONTENT
+        || this == AI_HTML
+        || this == METADATA
+        || this == AI_WEB_SEARCH;
   }
 }

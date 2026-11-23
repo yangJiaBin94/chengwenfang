@@ -16,6 +16,8 @@ public final class HotNewsResearchAgentLimits {
   public static final int MAX_FETCH_PER_ROUND = 5;
   /** finish 最多采纳条数。 */
   public static final int MAX_FINISH_ITEMS = 12;
+  /** AI 联网搜资料最多采纳条数。 */
+  public static final int MAX_AI_WEB_SEARCH_ITEMS = 10;
 
   private HotNewsResearchAgentLimits() {}
 }

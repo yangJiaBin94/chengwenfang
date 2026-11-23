@@ -6,6 +6,7 @@ import com.chengwenfang.common.PageQuery;
 import com.chengwenfang.crawler.facade.dto.view.FetchedItemView;
 import com.chengwenfang.mode.hotnews.facade.HotNewsFacade;
 import com.chengwenfang.mode.hotnews.facade.dto.request.AiThemeSeedPersistRequest;
+import com.chengwenfang.mode.hotnews.facade.dto.request.ManualTopicCreateRequest;
 import com.chengwenfang.mode.hotnews.facade.dto.request.HotNewsArticleContentUpdateRequest;
 import com.chengwenfang.mode.hotnews.facade.dto.request.HotNewsArticleUpdateRequest;
 import com.chengwenfang.sourcing.facade.dto.request.HotNewsChannelCreateRequest;
@@ -183,6 +184,11 @@ public class HotNewsFacadeImpl implements HotNewsFacade {
   public HotNewsTopicView persistAiThemeSeedTopic(
       String themeId, String radarBatchId, AiThemeSeedPersistRequest request) {
     return topics.persistAiThemeSeedTopic(themeId, radarBatchId, request);
+  }
+
+  @Override
+  public HotNewsTopicView createManualTopic(String themeId, ManualTopicCreateRequest request) {
+    return topics.createManualTopic(themeId, request);
   }
 
   @Override

@@ -37,14 +37,15 @@ public final class ResearchContentClassifier {
   private static final List<String> VIDEO_PATH_SQL_KEYWORDS = List.of(
       "/watch", "/video/", "/videos/", "/reel/", "/shorts", "v=", "/av", "/BV", "/bv");
   /**
-   * SQL LIKE 用的标题关键词，近似 {@link #VIDEO_TITLE}。
+   * SQL LIKE 用的标题关键词，近似 {@link #VIDEO_TITLE}（不含宽泛的 video/观看）。
    */
   private static final List<String> VIDEO_TITLE_SQL_KEYWORDS = List.of(
-      "video", "youtube", "bilibili", "抖音", "短视频", "观看", "trailer", "pv");
+      "youtube", "bilibili", "抖音", "短视频", "trailer", "pv");
   private static final Pattern VIDEO_PATH = Pattern.compile(
       "(?i)/(watch|video|videos|av\\d+|bv[0-9a-z]+|reel|shorts)(/|\\?|$)|[?&]v=");
+  /** 无 URL 时的标题兜底；不用裸 video/观看，避免论文题误判。 */
   private static final Pattern VIDEO_TITLE = Pattern.compile(
-      "(?i)(\\bvideo\\b|youtube|bilibili|抖音|短视频|观看|trailer|\\bpv\\b)");
+      "(?i)(youtube|bilibili|抖音|短视频|trailer|\\bpv\\b)");
   /**
    * 常见站点展示名；按插入顺序匹配，更具体的域名在前。
    */
@@ -95,7 +96,16 @@ public final class ResearchContentClassifier {
 
   private ResearchContentClassifier() {}
 
-  /** 是否为视频资料（优先看 URL，其次标题关键词）。 */
+  /**
+   * 是否为视频资料。
+   *
+   * <p>优先视频域名与路径；有明确非视频 URL 时不再用标题判视频（避免 arxiv 论文题含 Video 被探时长）。
+   * 标题强关键词仅在无 URL / 解析不出 host 时兜底。
+   *
+   * @param url   链接；可空
+   * @param title 标题；可空
+   * @return true 表示按视频处理
+   */
   public static boolean isVideo(String url, String title) {
     String host = hostOf(url);
     if (!host.isBlank()) {
@@ -112,6 +122,10 @@ public final class ResearchContentClassifier {
     String rawUrl = url == null ? "" : url.trim();
     if (!rawUrl.isBlank() && VIDEO_PATH.matcher(rawUrl).find()) {
       return true;
+    }
+    // 已有可解析的非视频 URL：信任 URL，忽略标题
+    if (!host.isBlank()) {
+      return false;
     }
     String rawTitle = title == null ? "" : title.trim();
     return !rawTitle.isBlank() && VIDEO_TITLE.matcher(rawTitle).find();

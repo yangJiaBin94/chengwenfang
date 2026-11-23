@@ -23,6 +23,11 @@ public class AiWebSearchTopicAiResult {
   private String summary;
   /** 可写角度说明。 */
   private String whyWrite;
+  /**
+   * 原文发布/首发日期（ISO 或常见日期串，如 2026-11-20）。
+   * <p>无法从草稿/引用判断时留空；落库侧无日期会跳过该条。
+   */
+  private String publishedAt;
 
   /**
    * AI 联网自搜选题批次。

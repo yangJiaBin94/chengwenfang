@@ -7,6 +7,7 @@ import com.chengwenfang.common.IdsUtil;
 import com.chengwenfang.common.ThemeTitleRelevance;
 import com.chengwenfang.content.facade.ContentFacade;
 import com.chengwenfang.content.facade.HotNewsThemeBriefingSupport;
+import com.chengwenfang.content.facade.constant.HotNewsTopicFreshness;
 import com.chengwenfang.content.facade.dto.view.ContentThemeView;
 import com.chengwenfang.content.facade.dto.view.ThemeCollectStrategyView;
 import com.chengwenfang.content.facade.dto.view.ThemeCoreIntentView;
@@ -96,6 +97,10 @@ public class LoadContextRadarNodeHandler implements RadarCollectNodeHandler {
       ContentThemeView theme = content.getTheme(themeId);
       if (theme == null) {
         session.setThemeRelevanceProfile(new ThemeTitleRelevance.Profile("", List.of(), List.of()));
+        session.setRequireTopicFreshness(true);
+        session.setHours(Math.max(session.getHours(), HotNewsTopicFreshness.windowHours()));
+        lightState.put(RadarCollectGraphStateKeys.REQUIRE_TOPIC_FRESHNESS, true);
+        lightState.put(RadarCollectGraphStateKeys.HOURS, session.getHours());
         return;
       }
       Map<String, Object> briefing = readBriefing(theme.getBriefingJson());
@@ -110,19 +115,35 @@ public class LoadContextRadarNodeHandler implements RadarCollectNodeHandler {
       session.setThemeRelevanceProfile(new ThemeTitleRelevance.Profile(name, queries, mustWatch));
       session.setCoreIntentPrompt(intentPrompt);
       session.setCollectStrategyMode(strategy.hasMode() ? strategy.getMode() : "");
+      // 缺字段时 BriefingSupport 已默认 true；已有主题等同开启时效
+      session.setRequireTopicFreshness(strategy.isRequireTopicFreshness());
+      if (session.isRequireTopicFreshness()) {
+        // 渠道 stale 窗口至少覆盖 7 天硬闸，避免 72h 过早裁掉 4～7 日素材
+        session.setHours(Math.max(session.getHours(), HotNewsTopicFreshness.windowHours()));
+      }
       lightState.put(RadarCollectGraphStateKeys.CORE_INTENT_PROMPT, intentPrompt);
       lightState.put(RadarCollectGraphStateKeys.COLLECT_STRATEGY_MODE, session.getCollectStrategyMode());
+      lightState.put(
+          RadarCollectGraphStateKeys.REQUIRE_TOPIC_FRESHNESS, session.isRequireTopicFreshness());
+      lightState.put(RadarCollectGraphStateKeys.HOURS, session.getHours());
       log.info(
-          "雷达主题信号已加载 themeId={} name={} queries={} mustWatch={} intent={} strategy={}",
+          "雷达主题信号已加载 themeId={} name={} queries={} mustWatch={} intent={} strategy={} freshness={} hours={}",
           themeId,
           name,
           queries.size(),
           mustWatch.size(),
           StrUtil.isNotBlank(intentPrompt),
-          session.getCollectStrategyMode());
+          session.getCollectStrategyMode(),
+          session.isRequireTopicFreshness(),
+          session.getHours());
     } catch (Exception exception) {
       log.warn("加载主题相关性信号失败 themeId={} err={}", themeId, exception.getMessage());
       session.setThemeRelevanceProfile(new ThemeTitleRelevance.Profile("", List.of(), List.of()));
+      // 加载失败时仍默认开启时效，与产品缺省一致
+      session.setRequireTopicFreshness(true);
+      session.setHours(Math.max(session.getHours(), HotNewsTopicFreshness.windowHours()));
+      lightState.put(RadarCollectGraphStateKeys.REQUIRE_TOPIC_FRESHNESS, true);
+      lightState.put(RadarCollectGraphStateKeys.HOURS, session.getHours());
     }
   }
 

@@ -9,7 +9,9 @@ import {
   ExternalLink,
   FileText,
   Globe2,
+  Link2,
   Maximize2,
+  Plus,
   RefreshCcw,
   Rss,
   Search,
@@ -74,7 +76,13 @@ export function HotNewsPageViewMain(props: Record<string, any>) {
     listPage,
     listPageCount,
     loading,
+    manualBusy,
+    manualOpen,
+    manualSummary,
+    manualTitle,
+    manualUrl,
     navigate,
+    openManualTopicModal,
     openResearchPool,
     openTopicDetail,
     pageSize,
@@ -85,6 +93,10 @@ export function HotNewsPageViewMain(props: Record<string, any>) {
     setDetailTopic,
     setFilter,
     setListPage,
+    setManualOpen,
+    setManualSummary,
+    setManualTitle,
+    setManualUrl,
     setPageSize,
     setPageSizeOpen,
     setSortBy,
@@ -94,6 +106,7 @@ export function HotNewsPageViewMain(props: Record<string, any>) {
     sources,
     sourcesPath,
     startFetch,
+    submitManualTopic,
     successChannels,
     themeId,
     themeName,
@@ -156,6 +169,15 @@ export function HotNewsPageViewMain(props: Record<string, any>) {
                 </button>
               </div>
               <div className="hot-news-section-tools">
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => openManualTopicModal()}
+                  disabled={manualBusy}
+                >
+                  <Plus size={14} />
+                  手动添加
+                </button>
                 <label className="hot-news-sort">
                   排序
                   <select
@@ -427,6 +449,100 @@ export function HotNewsPageViewMain(props: Record<string, any>) {
             </div>
           )}
         </div>
+
+      {manualOpen ? (
+        <div
+          className="modal-backdrop"
+          onMouseDown={() => {
+            if (!manualBusy) setManualOpen(false);
+          }}
+        >
+          <div
+            className="modal-card hot-research-manual-modal"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <header className="modal-header">
+              <div>
+                <span className="eyebrow">热点雷达</span>
+                <h3>手动添加选题</h3>
+              </div>
+              <button
+                className="icon-button"
+                type="button"
+                disabled={manualBusy}
+                onClick={() => setManualOpen(false)}
+                aria-label="关闭"
+              >
+                <X size={16} />
+              </button>
+            </header>
+            <div className="hot-research-manual-body">
+              <p>填写标题即可加入待选题；摘要与原文链接可选，仍需点「确认选题」后进入资料池。</p>
+              <label className="hot-research-manual-field">
+                <span>标题（必填）</span>
+                <input
+                  type="text"
+                  value={manualTitle}
+                  onChange={(event) => setManualTitle(event.target.value)}
+                  placeholder="例如：某模型发布引发的行业讨论"
+                  disabled={manualBusy}
+                  autoFocus
+                />
+              </label>
+              <label className="hot-research-manual-field">
+                <span>摘要（可选）</span>
+                <textarea
+                  rows={3}
+                  value={manualSummary}
+                  onChange={(event) => setManualSummary(event.target.value)}
+                  placeholder="一句话事实速览或写作切口"
+                  disabled={manualBusy}
+                />
+              </label>
+              <label className="hot-research-manual-field">
+                <span>
+                  <Link2 size={14} />
+                  原文链接（可选）
+                </span>
+                <input
+                  type="text"
+                  inputMode="url"
+                  spellCheck={false}
+                  autoComplete="off"
+                  value={manualUrl}
+                  onChange={(event) => setManualUrl(event.target.value)}
+                  placeholder="https://…"
+                  disabled={manualBusy}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      void submitManualTopic();
+                    }
+                  }}
+                />
+              </label>
+            </div>
+            <div className="modal-actions">
+              <button
+                className="secondary-button"
+                type="button"
+                disabled={manualBusy}
+                onClick={() => setManualOpen(false)}
+              >
+                取消
+              </button>
+              <button
+                className="primary-button"
+                type="button"
+                disabled={manualBusy || !manualTitle.trim()}
+                onClick={() => void submitManualTopic()}
+              >
+                {manualBusy ? "提交中…" : "添加"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
     </>
   );

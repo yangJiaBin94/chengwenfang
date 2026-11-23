@@ -21,6 +21,12 @@ public class ThemeCollectStrategyView {
   private String rationale;
   /** 用户是否改过 AI 推荐。 */
   private boolean userOverride;
+  /**
+   * 是否追求话题素材时效性；缺省 true。
+   * <p>开启后采集对发布日做硬闸（近 N 天内且必须有日期）。
+   */
+  @Builder.Default
+  private boolean requireTopicFreshness = true;
 
   /**
    * 解析为枚举；缺省 STRUCTURED。

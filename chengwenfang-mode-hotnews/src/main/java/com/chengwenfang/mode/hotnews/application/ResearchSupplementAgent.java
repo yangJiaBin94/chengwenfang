@@ -23,6 +23,7 @@ import com.chengwenfang.mode.hotnews.application.research.ResearchAgentAction;
 import com.chengwenfang.mode.hotnews.application.research.ResearchAgentCollectResult;
 import com.chengwenfang.mode.hotnews.application.research.ResearchAgentSelectedItem;
 import com.chengwenfang.mode.hotnews.application.research.ResearchAgentTurnResponse;
+import com.chengwenfang.mode.hotnews.application.research.ResearchAiWebSearchCollectResult;
 import com.chengwenfang.mode.hotnews.application.research.ResearchSourcePolicy;
 import com.chengwenfang.mode.hotnews.domain.ChineseTextNormalizer;
 import com.chengwenfang.mode.hotnews.domain.TopicResearchPlanner;
@@ -36,12 +37,16 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
- * 选题资料补充：有界 AI 决策循环 + SearXNG/搜索渠道执行。
+ * 选题资料补充：渠道预搜与 AI 联网并行播种命中池，再有界决策循环。
  */
 @Slf4j
 @Service
@@ -52,6 +57,8 @@ public class ResearchSupplementAgent {
   private final AiVisionFacade ai;
   /** 搜索渠道采集。 */
   private final ResearchCandidateCollector collector;
+  /** AI 联网搜资料。 */
+  private final ResearchAiWebSearchCollector aiWebSearchCollector;
   /** 网页抓取。 */
   private final FetchFacade fetchFacade;
 
@@ -96,33 +103,11 @@ public class ResearchSupplementAgent {
     StringBuilder toolLog = new StringBuilder();
     int rounds = 0;
 
+    boolean tavilyOnly = collector.isTavilyOnly(searchChannels);
     try {
-      // 预检索：Tavily 用短角度词（域名走 API 参数）；SearXNG 仍用 site:
-      String subject = TopicResearchPlanner.extractShortQuery(
-          TopicResearchPlanner.extractSubject(title));
-      if (StrUtil.isBlank(subject)) {
-        subject = StrUtil.maxLength(StrUtil.nullToEmpty(title).trim(), 32);
-      }
-      boolean tavilyOnly = collector.isTavilyOnly(searchChannels);
-      List<String> seedQueries = tavilyOnly
-          ? ResearchSourcePolicyResolver.buildAngleQueries(subject, policy)
-          : ResearchSourcePolicyResolver.buildSiteScopedQueries(subject, policy);
-      if (!seedQueries.isEmpty()) {
-        toolLog.append(tavilyOnly ? "preferred angle queries=" : "preferred site queries=")
-            .append(seedQueries.size())
-            .append('\n');
-        for (int index = 0; index < seedQueries.size(); index += HotNewsResearchAgentLimits.MAX_QUERIES_PER_ROUND) {
-          int end = Math.min(index + HotNewsResearchAgentLimits.MAX_QUERIES_PER_ROUND, seedQueries.size());
-          runSearch(
-              seedQueries.subList(index, end),
-              searchChannels,
-              blocked,
-              hitByUrl,
-              queriesRun,
-              toolLog,
-              policy);
-        }
-      }
+      // 渠道预搜与 AI 联网并行播种命中池，再进入决策循环
+      seedHitsInParallel(
+          title, summary, searchChannels, blocked, hitByUrl, queriesRun, toolLog, policy, tavilyOnly);
 
       for (int round = 1; round <= HotNewsResearchAgentLimits.MAX_ROUNDS; round++) {
         rounds = round;
@@ -222,6 +207,371 @@ public class ResearchSupplementAgent {
         .webCandidates(List.of())
         .build();
   }
+
+  /**
+   * 并行执行渠道预搜与 AI 联网搜，合并写入命中池。
+   *
+   * @param title          选题标题
+   * @param summary        选题摘要
+   * @param searchChannels 搜索渠道
+   * @param blocked        已占用 URL
+   * @param hitByUrl       命中池
+   * @param queriesRun     已跑检索词
+   * @param toolLog        工具日志
+   * @param policy         来源策略
+   * @param tavilyOnly     是否仅 Tavily
+   */
+  private void seedHitsInParallel(
+      String title,
+      String summary,
+      List<SourceChannelEntity> searchChannels,
+      Set<String> blocked,
+      Map<String, SearchHitView> hitByUrl,
+      List<String> queriesRun,
+      StringBuilder toolLog,
+      ResearchSourcePolicy policy,
+      boolean tavilyOnly) {
+    String subject = TopicResearchPlanner.extractShortQuery(
+        TopicResearchPlanner.extractSubject(title));
+    if (StrUtil.isBlank(subject)) {
+      subject = StrUtil.maxLength(StrUtil.nullToEmpty(title).trim(), 32);
+    }
+    boolean useTavilyAngles = tavilyOnly;
+    String seedSubject = subject;
+    // 专用短生命周期池：避免长耗时联网任务占满 commonPool
+    ExecutorService pool = Executors.newFixedThreadPool(2);
+    try {
+      CompletableFuture<ChannelSeedResult> channelFuture = CompletableFuture.supplyAsync(() -> {
+        try {
+          Map<String, SearchHitView> channelHits = new LinkedHashMap<>();
+          List<String> channelQueries = new ArrayList<>();
+          StringBuilder channelLog = new StringBuilder();
+          List<String> seedQueries = useTavilyAngles
+              ? ResearchSourcePolicyResolver.buildAngleQueries(seedSubject, policy)
+              : ResearchSourcePolicyResolver.buildSiteScopedQueries(seedSubject, policy);
+          if (!seedQueries.isEmpty()) {
+            channelLog.append(useTavilyAngles ? "preferred angle queries=" : "preferred site queries=")
+                .append(seedQueries.size())
+                .append('\n');
+            for (int index = 0;
+                index < seedQueries.size();
+                index += HotNewsResearchAgentLimits.MAX_QUERIES_PER_ROUND) {
+              int end = Math.min(
+                  index + HotNewsResearchAgentLimits.MAX_QUERIES_PER_ROUND, seedQueries.size());
+              runSearch(
+                  seedQueries.subList(index, end),
+                  searchChannels,
+                  blocked,
+                  channelHits,
+                  channelQueries,
+                  channelLog,
+                  policy);
+            }
+          }
+          return new ChannelSeedResult(channelHits, channelQueries, channelLog.toString());
+        } catch (Exception exception) {
+          log.warn("资料补充渠道预搜失败 title={} err={}", title, exception.getMessage());
+          return new ChannelSeedResult(
+              Map.of(),
+              List.of(),
+              "channel seed failed=" + StrUtil.blankToDefault(exception.getMessage(), "unknown") + '\n');
+        }
+      }, pool);
+
+      CompletableFuture<ResearchAiWebSearchCollectResult> aiFuture = CompletableFuture.supplyAsync(
+          () -> {
+            try {
+              return aiWebSearchCollector.collect(title, summary, blocked, policy);
+            } catch (Exception exception) {
+              log.warn("资料补充 AI 联网预搜线程失败 title={} err={}", title, exception.getMessage());
+              return ResearchAiWebSearchCollectResult.builder()
+                  .used(false)
+                  .skipReason("AI 联网线程失败："
+                      + StrUtil.blankToDefault(exception.getMessage(), "unknown"))
+                  .build();
+            }
+          },
+          pool);
+
+      // 两侧各自降级，互不拖垮；再按配额合并
+      ChannelSeedResult channelSeed = channelFuture
+          .exceptionally(exception -> {
+            log.warn("资料补充渠道预搜 Future 失败 title={} err={}", title, exception.getMessage());
+            return new ChannelSeedResult(
+                Map.of(),
+                List.of(),
+                "channel seed future failed="
+                    + StrUtil.blankToDefault(exception.getMessage(), "unknown")
+                    + '\n');
+          })
+          .join();
+      ResearchAiWebSearchCollectResult aiSeed = aiFuture
+          .exceptionally(exception -> {
+            log.warn("资料补充 AI 联网 Future 失败 title={} err={}", title, exception.getMessage());
+            return ResearchAiWebSearchCollectResult.builder()
+                .used(false)
+                .skipReason("AI 联网 Future 失败："
+                    + StrUtil.blankToDefault(exception.getMessage(), "unknown"))
+                .build();
+          })
+          .join();
+
+      // 合并/记日志失败不抛出：已入池命中保留，继续进入 decide
+      try {
+        applyParallelSeedResults(channelSeed, aiSeed, blocked, policy, hitByUrl, queriesRun, toolLog);
+      } catch (Exception exception) {
+        log.warn("资料补充播种合并失败 title={} poolSize={} err={}",
+            title, hitByUrl.size(), exception.getMessage());
+        toolLog.append("seed merge failed=")
+            .append(StrUtil.blankToDefault(exception.getMessage(), "unknown"))
+            .append(" keptHits=")
+            .append(hitByUrl.size())
+            .append('\n');
+      }
+    } finally {
+      pool.shutdown();
+      try {
+        if (!pool.awaitTermination(5, TimeUnit.MINUTES)) {
+          pool.shutdownNow();
+        }
+      } catch (InterruptedException interrupted) {
+        pool.shutdownNow();
+        Thread.currentThread().interrupt();
+      }
+    }
+  }
+
+  /**
+   * 将两侧播种结果写入命中池与工具日志（供 decide 使用）。
+   *
+   * @param channelSeed 渠道预搜结果
+   * @param aiSeed      AI 联网结果；可空
+   * @param blocked     已占用 URL
+   * @param policy      来源策略
+   * @param hitByUrl    命中池
+   * @param queriesRun  已跑检索词
+   * @param toolLog     工具日志
+   */
+  static void applyParallelSeedResults(
+      ChannelSeedResult channelSeed,
+      ResearchAiWebSearchCollectResult aiSeed,
+      Set<String> blocked,
+      ResearchSourcePolicy policy,
+      Map<String, SearchHitView> hitByUrl,
+      List<String> queriesRun,
+      StringBuilder toolLog) {
+    ChannelSeedResult safeChannel = channelSeed == null
+        ? new ChannelSeedResult(Map.of(), List.of(), "")
+        : channelSeed;
+    for (String query : safeChannel.queries()) {
+      if (StrUtil.isNotBlank(query) && !queriesRun.contains(query)) {
+        queriesRun.add(query);
+      }
+    }
+    toolLog.append(StrUtil.nullToEmpty(safeChannel.log()));
+
+    List<SearchHitView> aiHits = aiSeed == null || aiSeed.getHits() == null
+        ? List.of()
+        : aiSeed.getHits();
+    int before = hitByUrl.size();
+    mergeParallelSeedHits(safeChannel.hits(), aiHits, blocked, policy, hitByUrl);
+    int addedTotal = hitByUrl.size() - before;
+
+    if (aiSeed == null) {
+      toolLog.append("ai_web_search: 空结果\n");
+      return;
+    }
+    if (!aiSeed.isUsed() || CollUtil.isEmpty(aiHits)) {
+      toolLog.append("ai_web_search skipped=")
+          .append(StrUtil.blankToDefault(aiSeed.getSkipReason(), "no_hits"))
+          .append(" citations=")
+          .append(aiSeed.getCitationCount())
+          .append(" poolAdded=")
+          .append(addedTotal)
+          .append(" totalHits=")
+          .append(hitByUrl.size())
+          .append('\n');
+      log.info(
+          "资料补充 AI 联网播种跳过 used={} reason={} citations={} poolSize={}",
+          aiSeed.isUsed(),
+          aiSeed.getSkipReason(),
+          aiSeed.getCitationCount(),
+          hitByUrl.size());
+      return;
+    }
+    toolLog.append("ai_web_search citations=")
+        .append(aiSeed.getCitationCount())
+        .append(" aiHits=")
+        .append(aiHits.size())
+        .append(" poolAdded=")
+        .append(addedTotal)
+        .append(" totalHits=")
+        .append(hitByUrl.size())
+        .append('\n');
+  }
+
+  /**
+   * 并行播种结果合并：按「可入池」AI 条数预留配额，渠道先填剩余；AI 写入后若有空位再回填渠道。
+   *
+   * @param channelHits 渠道命中
+   * @param aiHits      AI 联网命中
+   * @param blocked     已占用 URL
+   * @param policy      来源策略；可空
+   * @param hitByUrl    目标命中池
+   */
+  static void mergeParallelSeedHits(
+      Map<String, SearchHitView> channelHits,
+      List<SearchHitView> aiHits,
+      Set<String> blocked,
+      ResearchSourcePolicy policy,
+      Map<String, SearchHitView> hitByUrl) {
+    Map<String, SearchHitView> aiAdmissible = takeAdmissibleHits(
+        toHitMap(aiHits),
+        blocked,
+        policy,
+        HotNewsResearchAgentLimits.MAX_AI_WEB_SEARCH_ITEMS);
+    int aiReserve = aiAdmissible.size();
+    int channelCap = Math.max(0, HotNewsResearchAgentLimits.MAX_HITS - aiReserve);
+    mergeHits(channelHits, blocked, policy, hitByUrl, channelCap);
+    mergeHits(aiAdmissible, blocked, policy, hitByUrl, HotNewsResearchAgentLimits.MAX_HITS);
+    // 与渠道撞车等导致预留未用尽时，回填渠道占满剩余名额
+    if (hitByUrl.size() < HotNewsResearchAgentLimits.MAX_HITS) {
+      mergeHits(channelHits, blocked, policy, hitByUrl, HotNewsResearchAgentLimits.MAX_HITS);
+    }
+  }
+
+  /**
+   * 筛选可通过占用/屏蔽/营销过滤的命中，并截断条数。
+   *
+   * @param source   来源
+   * @param blocked  已占用 URL
+   * @param policy   来源策略
+   * @param maxItems 上限
+   * @return 可入池命中
+   */
+  static Map<String, SearchHitView> takeAdmissibleHits(
+      Map<String, SearchHitView> source,
+      Set<String> blocked,
+      ResearchSourcePolicy policy,
+      int maxItems) {
+    Map<String, SearchHitView> out = new LinkedHashMap<>();
+    if (source == null || source.isEmpty() || maxItems <= 0) {
+      return out;
+    }
+    for (Map.Entry<String, SearchHitView> entry : source.entrySet()) {
+      if (out.size() >= maxItems) {
+        break;
+      }
+      SearchHitView hit = entry.getValue();
+      String urlKey = entry.getKey();
+      if (!isAdmissibleHit(urlKey, hit, blocked, policy, out)) {
+        continue;
+      }
+      out.put(urlKey, hit);
+    }
+    return out;
+  }
+
+  /**
+   * 将命中列表转为规范化 URL 映射。
+   *
+   * @param hits 命中
+   * @return 映射
+   */
+  static Map<String, SearchHitView> toHitMap(List<SearchHitView> hits) {
+    Map<String, SearchHitView> map = new LinkedHashMap<>();
+    if (hits == null) {
+      return map;
+    }
+    for (SearchHitView hit : hits) {
+      if (hit == null || StrUtil.isBlank(hit.getUrl())) {
+        continue;
+      }
+      String key = TopicResearchPlanner.normalizeUrl(hit.getUrl());
+      if (StrUtil.isNotBlank(key)) {
+        map.putIfAbsent(key, hit);
+      }
+    }
+    return map;
+  }
+
+  /**
+   * 合并命中到共享池（去重、占用/屏蔽域、营销过滤、池上限）。
+   *
+   * @param source     来源命中
+   * @param blocked    已占用 URL
+   * @param policy     来源策略；可空
+   * @param hitByUrl   目标池
+   * @param maxPoolSize 本池允许的最大条数
+   * @return 新写入条数
+   */
+  static int mergeHits(
+      Map<String, SearchHitView> source,
+      Set<String> blocked,
+      ResearchSourcePolicy policy,
+      Map<String, SearchHitView> hitByUrl,
+      int maxPoolSize) {
+    if (source == null || source.isEmpty() || maxPoolSize <= 0) {
+      return 0;
+    }
+    int added = 0;
+    for (Map.Entry<String, SearchHitView> entry : source.entrySet()) {
+      if (hitByUrl.size() >= maxPoolSize) {
+        break;
+      }
+      SearchHitView hit = entry.getValue();
+      String urlKey = entry.getKey();
+      if (!isAdmissibleHit(urlKey, hit, blocked, policy, hitByUrl)) {
+        continue;
+      }
+      hitByUrl.put(urlKey, hit);
+      added++;
+    }
+    return added;
+  }
+
+  /**
+   * 命中是否可写入目标池（占用/重复/屏蔽域/营销页）。
+   *
+   * @param urlKey   规范化 URL
+   * @param hit      命中
+   * @param blocked  已占用 URL
+   * @param policy   来源策略
+   * @param present  已存在于池中的键集合（目标池或预筛集合）
+   * @return 可写入时 true
+   */
+  static boolean isAdmissibleHit(
+      String urlKey,
+      SearchHitView hit,
+      Set<String> blocked,
+      ResearchSourcePolicy policy,
+      Map<String, SearchHitView> present) {
+    if (hit == null || StrUtil.isBlank(hit.getUrl()) || StrUtil.isBlank(urlKey)) {
+      return false;
+    }
+    if (blocked != null && blocked.contains(urlKey)) {
+      return false;
+    }
+    if (present != null && present.containsKey(urlKey)) {
+      return false;
+    }
+    if (ResearchSourcePolicyResolver.isBlockedUrl(hit.getUrl(), policy)) {
+      return false;
+    }
+    return !MarketingPageFilter.shouldSkip(hit.getUrl(), hit.getTitle());
+  }
+
+  /**
+   * 渠道预搜线程结果。
+   *
+   * @param hits    命中
+   * @param queries 检索词
+   * @param log     工具日志片段
+   */
+  record ChannelSeedResult(
+      Map<String, SearchHitView> hits,
+      List<String> queries,
+      String log) {}
 
   /**
    * 将命中池转为候选（跳过已有来源 URL、屏蔽域、营销页）。

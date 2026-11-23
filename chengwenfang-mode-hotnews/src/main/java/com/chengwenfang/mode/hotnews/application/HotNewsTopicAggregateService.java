@@ -13,6 +13,7 @@ import com.chengwenfang.mode.hotnews.domain.TopicScoreDetails;
 import com.chengwenfang.sourcing.domain.entity.SourceItemEntity;
 import com.chengwenfang.mode.hotnews.domain.entity.TopicClusterEntity;
 import com.chengwenfang.mode.hotnews.domain.entity.TopicSourceEntity;
+import com.chengwenfang.mode.hotnews.facade.constant.HotNewsTopicOriginKinds;
 import com.chengwenfang.mode.hotnews.facade.constant.HotNewsTopicStatuses;
 import com.chengwenfang.sourcing.facade.enums.SourceLifecycleStatus;
 import com.chengwenfang.sourcing.infrastructure.mapper.SourceItemMapper;
@@ -293,17 +294,34 @@ public class HotNewsTopicAggregateService {
       if (today.equals(day)) {
         // 只从非过期行占日限额席位，避免把硬过滤 expired 复活进池
         Set<String> topIds = new LinkedHashSet<>();
+        // 手动选题始终保留，且不占用雷达日限额名额
         for (TopicClusterEntity row : daily) {
-          if (topIds.size() >= TopicMathUtil.DAILY_TOPIC_LIMIT) {
-            break;
-          }
           if (row == null || StrUtil.isBlank(row.getId())) {
             continue;
           }
           if (HotNewsTopicStatuses.EXPIRED.equals(row.getStatus())) {
             continue;
           }
+          if (isManualOriginTopic(row.getId())) {
+            topIds.add(row.getId());
+          }
+        }
+        int radarKept = 0;
+        for (TopicClusterEntity row : daily) {
+          if (row == null || StrUtil.isBlank(row.getId())) {
+            continue;
+          }
+          if (topIds.contains(row.getId())) {
+            continue;
+          }
+          if (HotNewsTopicStatuses.EXPIRED.equals(row.getStatus())) {
+            continue;
+          }
+          if (radarKept >= TopicMathUtil.DAILY_TOPIC_LIMIT) {
+            break;
+          }
           topIds.add(row.getId());
+          radarKept++;
         }
         for (TopicClusterEntity row : daily) {
           if (row == null || topIds.contains(row.getId())) {
@@ -323,6 +341,20 @@ public class HotNewsTopicAggregateService {
         }
       }
     }
+  }
+
+  /**
+   * 是否为用户手动添加选题（读评分明细 originKind）。
+   *
+   * @param topicId 选题 ID
+   * @return 手动选题为 true
+   */
+  private boolean isManualOriginTopic(String topicId) {
+    if (StrUtil.isBlank(topicId)) {
+      return false;
+    }
+    TopicScoreDetails details = scoreDetailsStore.read(topicId);
+    return details != null && HotNewsTopicOriginKinds.isManual(details.getOriginKind());
   }
 
   /**

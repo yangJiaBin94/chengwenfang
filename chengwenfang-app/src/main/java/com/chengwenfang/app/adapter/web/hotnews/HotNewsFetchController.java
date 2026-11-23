@@ -2,6 +2,7 @@ package com.chengwenfang.app.adapter.web.hotnews;
 
 import com.chengwenfang.common.ApiResult;
 import com.chengwenfang.content.facade.ContentFacade;
+import com.chengwenfang.content.facade.constant.HotNewsTopicFreshness;
 import com.chengwenfang.mode.hotnews.facade.HotNewsFacade;
 import com.chengwenfang.sourcing.facade.constant.HotNewsFetchKeys;
 import com.chengwenfang.sourcing.facade.dto.view.HotNewsFetchRunView;
@@ -39,19 +40,19 @@ public class HotNewsFetchController {
   /**
    * 启动热点抓取任务。
    *
-   * @param body 抓取请求；null 时 themeId=default、hours=72、channelIds 空
+   * @param body 抓取请求；null 时 themeId=default、hours=时效窗口、channelIds 空
    * @return 已入队的抓取 Job
    */
   @PostMapping("/hot-news/fetch")
   @Operation(summary = "启动热点抓取任务")
   public ApiResult<JobView> fetch(@Valid @RequestBody(required = false) HotNewsFetchStartRequest body) {
-    // 缺省：default 主题、全部频道、72 小时窗口
+    // 缺省：default 主题、全部频道；hours 与时效硬闸共用 HotNewsTopicFreshness
     HotNewsFetchStartRequest req = body == null ? new HotNewsFetchStartRequest() : body;
     String themeId = req.getThemeId() == null || req.getThemeId().isBlank()
         ? HotNewsFetchKeys.DEFAULT_THEME_ID
         : req.getThemeId();
     List<String> channelIds = req.getChannelIds() == null ? List.of() : req.getChannelIds();
-    int hours = req.getHours() == null ? 72 : req.getHours();
+    int hours = req.getHours() == null ? HotNewsTopicFreshness.windowHours() : req.getHours();
     return ApiResult.ok(hotNews.startFetch(
         themeId, channelIds, hours, fetchInputEnricher.enrich(themeId, channelIds, hours)));
   }
@@ -60,7 +61,7 @@ public class HotNewsFetchController {
    * 按主题启动抓取任务。
    *
    * @param themeId 主题 ID
-   * @param body    抓取请求；null 时 hours=72、channelIds 空
+   * @param body    抓取请求；null 时 hours=时效窗口、channelIds 空
    * @return 已入队的抓取 Job
    */
   @PostMapping("/themes/{themeId}/hot-news/fetch-runs")
@@ -70,7 +71,7 @@ public class HotNewsFetchController {
     content.assertThemeEnabled(themeId);
     HotNewsFetchStartRequest req = body == null ? new HotNewsFetchStartRequest() : body;
     List<String> channelIds = req.getChannelIds() == null ? List.of() : req.getChannelIds();
-    int hours = req.getHours() == null ? 72 : req.getHours();
+    int hours = req.getHours() == null ? HotNewsTopicFreshness.windowHours() : req.getHours();
     return ApiResult.ok(hotNews.startFetch(
         themeId, channelIds, hours, fetchInputEnricher.enrich(themeId, channelIds, hours)));
   }

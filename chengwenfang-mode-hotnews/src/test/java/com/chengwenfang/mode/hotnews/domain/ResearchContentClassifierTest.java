@@ -24,6 +24,25 @@ class ResearchContentClassifierTest {
   }
 
   @Test
+  void arxiv_with_video_in_title_is_article() {
+    assertThat(ResearchContentClassifier.isVideo(
+        "https://arxiv.org/abs/2405.16381",
+        "StreamPro: Reinforcement Learning with Multi-Grained Rewards for Proactive Streaming Video Understanding"))
+        .isFalse();
+    assertThat(ResearchContentClassifier.mediaLabel(
+        "https://arxiv.org/abs/2405.16381",
+        "StreamPro: Streaming Video Understanding")).isEqualTo("文章");
+  }
+
+  @Test
+  void title_keyword_fallback_only_without_url() {
+    assertThat(ResearchContentClassifier.isVideo(null, "本周抖音热门")).isTrue();
+    assertThat(ResearchContentClassifier.isVideo("", "短视频合集")).isTrue();
+    assertThat(ResearchContentClassifier.isVideo(
+        "https://example.org/post", "本周抖音热门")).isFalse();
+  }
+
+  @Test
   void resolves_site_label_from_url() {
     assertThat(ResearchContentClassifier.siteLabel(
         "https://www.bilibili.com/video/BV1xx411c7mD")).isEqualTo("B站");

@@ -11,6 +11,7 @@ import type {
   ResearchItemScoreDetails,
   TopicScoreDetails,
 } from "./model";
+import { HOT_NEWS_TOPIC_FRESHNESS_WINDOW_HOURS } from "./freshness";
 import {
   HOT_NEWS_DOCUMENT_KIND_DRAFT,
   HOT_NEWS_DOCUMENT_KIND_WECHAT,
@@ -465,7 +466,11 @@ export function startHotNewsFetch(themeId: string, channelIds?: string[]) {
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ channelIds: channelIds || null, hours: 72 }),
+      body: JSON.stringify({
+        channelIds: channelIds || null,
+        // 与后端 HotNewsTopicFreshness.windowHours() 对齐（7 天）
+        hours: HOT_NEWS_TOPIC_FRESHNESS_WINDOW_HOURS,
+      }),
     },
   ).then((r) => read<JobData>(r));
 }
@@ -558,6 +563,18 @@ export function updateHotNewsTopicStatus(id: string, status: string) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ status }),
+  }).then((r) => read<HotNewsTopic>(r));
+}
+
+/** 手动添加选题（candidate）。 */
+export function createHotNewsManualTopic(
+  themeId: string,
+  body: { title: string; summary?: string; url?: string },
+) {
+  return fetch(`/api/themes/${encodeURIComponent(themeId)}/hot-news/topics`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
   }).then((r) => read<HotNewsTopic>(r));
 }
 export function startHotNewsTopicResearch(topicId: string) {
