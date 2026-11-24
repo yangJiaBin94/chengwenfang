@@ -187,6 +187,8 @@ GitHub Actions 跑 Vitest 和 Maven 单元测试，排除 `*IT` 与 fingerprint 
 
 ## 贡献与许可
 
+技术讨论可添加作者微信：`Y1990448025`。
+
 欢迎 Issue / PR：[CONTRIBUTING.md](CONTRIBUTING.md)。行为准则：[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)。
 
 [Apache License 2.0](LICENSE) · 第三方说明 [NOTICE](NOTICE) · 变更 [CHANGELOG.md](CHANGELOG.md)
