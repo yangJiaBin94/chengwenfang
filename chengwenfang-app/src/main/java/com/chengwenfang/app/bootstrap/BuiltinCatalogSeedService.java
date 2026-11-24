@@ -114,18 +114,6 @@ public class BuiltinCatalogSeedService {
   }
 
   /**
-   * 空库，或提示词包已写入但信源沉淀池仍为空（上次主题确认中断）时需要自动导入。
-   *
-   * @return 是否应再跑一次缺则插的导入
-   */
-  public boolean needsAutoSeed() {
-    return needsAutoSeed(
-        countRows("SELECT COUNT(1) FROM prompt_packs WHERE deleted_at IS NULL"),
-        countRows("SELECT COUNT(1) FROM workflow_definitions"),
-        countRows("SELECT COUNT(1) FROM source_channel_catalog"));
-  }
-
-  /**
    * 提示词包与工作流都还没有时视为空库。
    *
    * @param promptPacks 未删除提示词包数
@@ -134,18 +122,6 @@ public class BuiltinCatalogSeedService {
    */
   static boolean libraryEmpty(int promptPacks, int workflows) {
     return promptPacks == 0 && workflows == 0;
-  }
-
-  /**
-   * 空库，或库已有提示词包但沉淀池仍是 0 行时，自动导入应再跑。
-   *
-   * @param promptPacks     未删除提示词包数
-   * @param workflows       工作流定义数
-   * @param sourceChannels  沉淀池行数
-   * @return 是否应导入
-   */
-  static boolean needsAutoSeed(int promptPacks, int workflows, int sourceChannels) {
-    return libraryEmpty(promptPacks, workflows) || sourceChannels == 0;
   }
 
   /**
