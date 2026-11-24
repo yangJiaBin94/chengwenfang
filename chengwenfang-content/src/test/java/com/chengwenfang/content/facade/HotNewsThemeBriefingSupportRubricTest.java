@@ -46,9 +46,16 @@ class HotNewsThemeBriefingSupportRubricTest {
     Map<String, Object> radar = new LinkedHashMap<>();
     radar.put("search_queries", List.of("AI 资讯"));
     radar.put("seed_channels", List.of("searxng"));
+    Map<String, Object> intent = new LinkedHashMap<>();
+    intent.put("summary", "盯测试领域最新可写事件");
+    intent.put("confirmed", true);
+    Map<String, Object> strategy = new LinkedHashMap<>();
+    strategy.put("mode", "structured");
     Map<String, Object> briefing = new LinkedHashMap<>();
     briefing.put("naming", naming);
     briefing.put("radar", radar);
+    briefing.put("core_intent", intent);
+    briefing.put("collect_strategy", strategy);
     return briefing;
   }
 

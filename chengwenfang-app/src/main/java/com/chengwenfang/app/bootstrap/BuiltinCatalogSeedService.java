@@ -108,13 +108,55 @@ public class BuiltinCatalogSeedService {
    * @return 是否空库
    */
   public boolean isEmptyLibrary() {
-    Integer promptPacks = jdbc.queryForObject(
-        "SELECT COUNT(1) FROM prompt_packs WHERE deleted_at IS NULL", Integer.class);
-    Integer workflows = jdbc.queryForObject(
-        "SELECT COUNT(1) FROM workflow_definitions", Integer.class);
-    int promptPackCount = promptPacks == null ? 0 : promptPacks;
-    int workflowCount = workflows == null ? 0 : workflows;
-    return promptPackCount == 0 && workflowCount == 0;
+    return libraryEmpty(countRows(
+        "SELECT COUNT(1) FROM prompt_packs WHERE deleted_at IS NULL"),
+        countRows("SELECT COUNT(1) FROM workflow_definitions"));
+  }
+
+  /**
+   * 空库，或提示词包已写入但信源沉淀池仍为空（上次主题确认中断）时需要自动导入。
+   *
+   * @return 是否应再跑一次缺则插的导入
+   */
+  public boolean needsAutoSeed() {
+    return needsAutoSeed(
+        countRows("SELECT COUNT(1) FROM prompt_packs WHERE deleted_at IS NULL"),
+        countRows("SELECT COUNT(1) FROM workflow_definitions"),
+        countRows("SELECT COUNT(1) FROM source_channel_catalog"));
+  }
+
+  /**
+   * 提示词包与工作流都还没有时视为空库。
+   *
+   * @param promptPacks 未删除提示词包数
+   * @param workflows   工作流定义数
+   * @return 是否空库
+   */
+  static boolean libraryEmpty(int promptPacks, int workflows) {
+    return promptPacks == 0 && workflows == 0;
+  }
+
+  /**
+   * 空库，或库已有提示词包但沉淀池仍是 0 行时，自动导入应再跑。
+   *
+   * @param promptPacks     未删除提示词包数
+   * @param workflows       工作流定义数
+   * @param sourceChannels  沉淀池行数
+   * @return 是否应导入
+   */
+  static boolean needsAutoSeed(int promptPacks, int workflows, int sourceChannels) {
+    return libraryEmpty(promptPacks, workflows) || sourceChannels == 0;
+  }
+
+  /**
+   * 读取计数；空结果按 0。
+   *
+   * @param sql 计数语句
+   * @return 行数
+   */
+  private int countRows(String sql) {
+    Integer count = jdbc.queryForObject(sql, Integer.class);
+    return count == null ? 0 : count;
   }
 
   /**
@@ -172,8 +214,9 @@ public class BuiltinCatalogSeedService {
         }
       }
     }
-    importDefaultThemes(resolveCatalog(defaultThemesPath));
+    // 沉淀池与演示主题互不依赖；主题确认失败不能挡住渠道种子
     int[] channelCatalogStats = importSourceChannelCatalog(resolveCatalog(sourceChannelCatalogPath));
+    importDefaultThemes(resolveCatalog(defaultThemesPath));
     log.info(
         "基础配置导入完成 promptPacksWritten={} promptPacksSkipped={} workflowsPublished={} workflowsSkipped={} themesWritten={} themesSkipped={} sourceChannelsWritten={} sourceChannelsSkipped={} force={}",
         promptPackCreated,
@@ -278,8 +321,26 @@ public class BuiltinCatalogSeedService {
    */
   private void importDefaultThemes(Path themesFile) throws Exception {
     JsonNode root = objectMapper.readTree(themesFile.toFile());
-    seedCourseTheme(root.path("courseTheme"));
-    seedHotNewsTheme(root.path("hotNewsTheme"));
+    // 热点演示主题在未确认主要意图时会拒绝启用；不能因此丢掉课程主题或已经写入的沉淀池
+    seedThemeIsolated("课程演示主题", () -> seedCourseTheme(root.path("courseTheme")));
+    seedThemeIsolated("热点演示主题", () -> seedHotNewsTheme(root.path("hotNewsTheme")));
+  }
+
+  /**
+   * 单个演示主题失败只记日志，让同一次导入的其余种子继续。
+   *
+   * @param label 主题说明
+   * @param seed  导入动作
+   */
+  private void seedThemeIsolated(String label, Runnable seed) {
+    try {
+      seed.run();
+    } catch (RuntimeException exception) {
+      log.warn(
+          "{}未完成，其余种子继续。若是热点主题，请在设置填好多模态 Key 后于主题页确认主要意图。原因：{}",
+          label,
+          exception.getMessage());
+    }
   }
 
   /**

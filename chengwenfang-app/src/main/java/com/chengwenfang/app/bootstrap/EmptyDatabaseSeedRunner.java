@@ -38,11 +38,11 @@ public class EmptyDatabaseSeedRunner implements ApplicationRunner {
       return;
     }
     try {
-      if (!seedService.isEmptyLibrary()) {
-        log.info("库内已有提示词包或工作流，跳过自动种子");
+      if (!seedService.needsAutoSeed()) {
+        log.info("库内已有提示词包、工作流和信源沉淀池，跳过自动种子");
         return;
       }
-      log.info("检测到空库，开始自动导入内置提示词包、三条主工作流与演示主题");
+      log.info("检测到空库或未完成的种子，开始导入内置提示词包、三条主工作流、演示主题和信源沉淀池");
       seedService.importConfigured(false);
       log.info("空库自动种子完成");
     } catch (Exception exception) {

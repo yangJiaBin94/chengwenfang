@@ -41,6 +41,7 @@ where releases are tagged.
 
 ### Fixed
 
+- 空库自动种子在热点演示主题尚未确认主要意图时仍导入信源沉淀池，并在沉淀池为空时下次启动补种。
 - `app` 容器依赖并连接 Compose 服务 `qdrant`。Qdrant 已启用但连不上时启动失败，不再静默回退内存向量库。
 - AI settings connection test uses the on-page form draft (not saved DB config); blank apiKey still falls back to the stored secret.
 - Radar collect persists per-channel `channelRuns` so coverage and channel breakdown are available after a run (including failure fallback).
