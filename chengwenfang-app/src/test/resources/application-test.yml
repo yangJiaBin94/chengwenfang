@@ -14,6 +14,9 @@ spring:
 
 chengwenfang:
   environment: test
+  bootstrap:
+    # 集成测试自备数据，不把仓库种子灌进测试库
+    auto-seed: false
   # 与开发目录隔离，避免污染本地 .chengwenfang
   runtime-dir: .chengwenfang-it
   # 缩短轮询/租约，加快 Job / SSE 相关用例

@@ -470,7 +470,23 @@ export async function pushWechatMpDraft(body: {
 
 /* ---- System ---- */
 
-/** 内置提示词包 / 工作流系统就绪视图。 */
+/** 系统就绪单项状态。未加装与默认关闭不是默认档故障。 */
+export type SystemReadinessStatus = "pass" | "fail" | "not_installed" | "optional_off";
+
+/** 系统就绪分组：默认档 / 热点加装 / 可选关闭。 */
+export type SystemReadinessSection = "default" | "hotnews" | "optional";
+
+/** 系统就绪检查项。 */
+export type SystemReadinessItem = {
+  key: string;
+  label: string;
+  section: SystemReadinessSection;
+  status: SystemReadinessStatus;
+  detail: string;
+  required: boolean;
+};
+
+/** 课程 + 知识库系统就绪视图，含热点加装与可选开关。 */
 export type BuiltinReadyView = {
   ready: boolean;
   issues: string[];
@@ -478,6 +494,7 @@ export type BuiltinReadyView = {
   promptPackCount: number;
   expectedPromptPackCount: number;
   workflowReady: boolean;
+  checks?: SystemReadinessItem[];
 };
 
 /**

@@ -1,19 +1,24 @@
 # 知识库 RAG 体系设计
 
-本文是成文坊知识库 RAG 的权威设计；工程按 P0→P4 串行落地。成熟实践摘要见 [知识库RAG成熟体系摘要.md](./知识库RAG成熟体系摘要.md)。
+本文描述知识库现在怎么工作。摘要见 [知识库RAG成熟体系摘要.md](./知识库RAG成熟体系摘要.md)。
+
+默认开启：入库切块、Hybrid 检索、查询改写、重排、引用与拒答、会话、反馈、「请记住」记忆。
+
+需配置：Qdrant（默认 `docker compose up` 已包含）和设置里的嵌入 Key。未配嵌入 Key 时索引与问答失败，系统就绪不通过。
+
+默认关闭：Graph（Neo4j）与 Agentic。写作规范审核在质量模块，不走这套 RAG。
 
 ## 1. 目标与非目标
 
 **目标**
 
 - 写作素材与跨作品问答：有出处、可拒答、可重建。
-- 默认路径稳定便宜；Graph（Neo4j）与 Agentic 按金标/规模启用。
+- 默认路径是 Hybrid。Graph 与 Agentic 有实现，开关默认关。
 
 **非目标**
 
-- 不上外部 rerank SaaS、不以 Global GraphRAG 为默认问答路径。
-- 不以旧 MVP 输出为回归金标。
-- 不按日历强行开 P3/P4。
+- 不上外部 rerank SaaS，不以 Global GraphRAG 为默认问答路径。
+- 不把质量模块的规范审核并进知识库问答。
 
 ## 2. 双平面与数据契约
 
@@ -47,13 +52,15 @@
 
 ## 4. 幻觉治理
 
-| 阶段 | 要求 |
-|---|---|
-| P0 | 无证据硬拒答；声明级引用必显 |
-| P1 | 关键结论可回溯到 citation span（忠实度门禁） |
-| P3 | 低置信边默认禁用；纠错后按 `sourceChunkId` 增量重建 |
+当前问答要求：
+
+- 无证据则拒答，并给出引用。
+- 关键结论可回溯到 citation span（忠实度校验默认开，可关）。
+- 图边只在 Graph 打开后参与。低置信边默认禁用；纠错后按 `sourceChunkId` 增量重建。
 
 拒答文案约定：`知识库中未找到足够相关的内容，无法基于现有资料回答。请换一个与已入库作品相关的问题。`（固定短语，见 `KnowledgeRagConstants.ABSTAIN_MESSAGE`）。
+
+这和课程 / 热点文的质量审核不是同一条链路。审核看写作规范，不靠这次检索。
 
 ## 5. 记忆分层
 
@@ -85,15 +92,15 @@
 
 | 档 | 用途 |
 |---|---|
-| 简单事实 | P0/P1 主验收 |
-| 多跳关系 | **开 P3 Graph flag 的门槛** |
-| 应拒答 | P0 起必测 |
+| 简单事实 | 默认 Hybrid 路径 |
+| 多跳关系 | 考虑打开 Graph 之前先看这一档 |
+| 应拒答 | 默认路径必须能拒答 |
 
 Rerank：默认可开 LLM listwise，**必须可关**；始终保留无 rerank 基线对比 Recall/延迟/费用。
 
 资源目录：`chengwenfang-knowledge/src/test/resources/rag-golden/`。
 
-## 9. 可观测性（字段契约，P0 列齐，P4 落盘）
+## 9. 可观测性
 
 按 `sessionId` 可追查：`query`、`rewrittenQuery`、`mode`、`round`、命中 `chunkId`、融合分、是否 rerank、是否走图、拒答原因、耗时、token。
 
@@ -129,19 +136,19 @@ chengwenfang:
     password: ${NEO4J_PASSWORD:chengwenfang_neo4j}
 ```
 
-## 12. 里程碑验收
+## 12. 当前行为
 
-| 阶段 | 验收 |
+| 能力 | 现在 |
 |---|---|
-| P0 | 硬拒答；声明级引用；检索侧过滤；`indexVersion`/`charSpan` 字段与读约定；应拒答金标 |
-| P1 | 可关 rerank + 基线对比；span 忠实度；简单事实 Recall 有记录 |
-| P2 | 指代多轮可解；关记忆回退 |
-| P3 | Docker Neo4j profile；多跳金标；纠错与增量重建；关 flag 回退 |
-| P4 | 有界 Agent；提前停；session 观测；前端模式；简单问不进 Agent |
+| 拒答、引用、检索侧过滤、`indexVersion` / `charSpan` | 默认路径 |
+| 可关的 rerank、span 忠实度 | 默认开，配置可关 |
+| 会话摘要与「请记住」 | 默认开；关掉记忆则退回单轮 |
+| Neo4j、多跳、图边纠错 | 代码在；`knowledge.graph.enabled` 默认 false。`docker compose --profile all` 可以拉起 Neo4j 容器，应用不会因此打开 |
+| 有界 Agent、提前停 | 代码在；`knowledge.agent.enabled` 默认 false。简单问走固定管线 |
 
-## 13. 手动摄入与切块形态（产品二期，正交于 P0–P4）
+## 13. 手动摄入与切块形态
 
-与 RAG 检索里程碑独立：产品「资料库二期」补齐手动上传 / 网页 / 多介质抽取。
+与默认问答路径同时存在：手动上传、网页，以及作品 / 热点资料登记。
 
 ### 摄入
 

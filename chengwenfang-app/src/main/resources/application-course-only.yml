@@ -1,4 +1,4 @@
-# Profile：仅课程 — 关掉热点重依赖 CLI（视频解析 / Lightpanda）
+# Profile：课程成文 — 关掉热点重依赖 CLI（视频解析 / Lightpanda）。知识库与 Qdrant 仍按主配置。
 # 启动：--spring.profiles.active=course-only
 # 仍需 MySQL、Redis、JDK；正文 Trafilatura 可按需自装，课程主流程不依赖。
 

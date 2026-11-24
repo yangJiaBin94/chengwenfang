@@ -18,18 +18,22 @@ Thanks for helping improve Chengwenfang. Please keep changes focused and local-f
 
 ## Setup
 
+Default profile is course plus knowledge base (MySQL, Redis, Qdrant). Same entry as the README:
+
 ```powershell
-docker compose up -d --wait
-npm install
-powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap\Initialize-ChengwenfangSeed.ps1
-mvn -pl chengwenfang-app -am spring-boot:run
-# other terminal
-npm run dev:frontend
+. .\scripts\use-utf8.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\start-java.ps1
 ```
 
-macOS / Linux: use `./scripts/bootstrap/Initialize-ChengwenfangSeed.sh` instead of the
-`.ps1`; prefer two foreground terminals over `scripts/start.sh` nohup. See README
-「macOS Apple Silicon 从零」for Rosetta, Hub mirrors, and portable JDK/Maven.
+```bash
+./scripts/start.sh
+```
+
+An empty database imports 提示词包, the three main workflows, and demo themes on startup. Re-seed or force overwrite with `scripts/bootstrap/Initialize-ChengwenfangSeed.ps1` or `.sh`. Fill API keys in Settings yourself. Python CLI paths follow the OS venv layout; do not edit `python-executable` for Linux versus Windows.
+
+Hot-news add-on: `start-java.ps1 -AllDeps` or `./scripts/start.sh --all-deps` (`docker compose --profile all` plus the three CLIs). Neo4j may start with that profile; `chengwenfang.knowledge.graph.enabled` stays false.
+
+If `start.sh` nohup dies with the terminal, use two foreground processes after `docker compose up -d --wait`: `mvn -pl chengwenfang-app -am spring-boot:run` and `npm run dev:frontend`.
 
 ## Tests
 
@@ -38,7 +42,9 @@ npm test
 mvn -pl chengwenfang-app -am test
 ```
 
-**CI gate** (see README「CI 门禁」): Actions runs Vitest + Maven unit tests only.
+Stack: Java 21, Spring Boot 3.3.5 (`spring-boot.version` in the root POM), MyBatis-Plus, Flyway, React 19, Vite, MySQL 8.4, Redis 7, Qdrant. Optional containers: Neo4j, SearXNG, Lightpanda.
+
+**CI gate**: Actions runs Vitest + Maven unit tests only.
 `*IT` / `ChengwenfangIT` and `golden/fingerprint/**` are excluded in
 `.github/workflows/ci.yml` (Docker/Testcontainers cost + CRLF fingerprint flake).
 When you change persistence or HTTP adapters, run the IT suites locally with

@@ -16,7 +16,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\setup-hotnews-clis.ps1
 # 只要截图：加 -SkipVideo
 ```
 
-macOS / Linux：`./scripts/setup-hotnews-clis.sh`（并将 yml 中 `python-executable` 改为 `.venv/bin/python`）。
+macOS / Linux：`./scripts/setup-hotnews-clis.sh`。解释器按操作系统自动选择 `.venv/bin/python`，不必改 `python-executable`。
 
 ### 手动安装
 

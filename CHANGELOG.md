@@ -10,6 +10,9 @@ where releases are tagged.
 
 ### Added
 
+- 空库启动自动导入提示词包、三条主工作流与演示主题；`scripts/bootstrap` 仍用于补种和强制覆盖。
+- 系统就绪（`GET /api/system/builtin-ready` 与设置面板）增加 Qdrant 真连接、生成 / 嵌入 / 图像 Key、三条 CLI、SearXNG / Lightpanda，以及默认关闭的 Graph / Agent。
+- `docs/体验手册.md`：课程、热点加装、知识库、提示词包四条点击路径。
 - 知识库 RAG（`chengwenfang-knowledge`）：文档/网页/作品入库、按 profile 切块（`chunk_strategy_version=c2`）、Qdrant Hybrid 检索问答（引用 / 拒答）；可选 Neo4j Graph 与 Agentic（默认关）。
 - Compose 默认拉起 **Qdrant**（6333/6334）；`docker compose --profile neo4j`（及 `all`）可选 Neo4j。
 - 热点雷达 Top10 / 已确认选题 / 资料池条目 / 主轨原稿登记入库；单文档索引 Job 终态不推站内通知。
@@ -22,6 +25,8 @@ where releases are tagged.
 
 ### Changed
 
+- 默认安装称为「课程 + 知识库」。`start.sh` / `start-java.ps1` 拉起 MySQL、Redis、Qdrant；`--all-deps` / `-AllDeps` 再拉满血容器并安装三条 Python CLI。Python 路径按操作系统选择 venv。
+- README 主路径改为一键脚本，操作顺序改到体验手册。AI 部署手册只给助手执行。
 - 产品「Skill」更名为 **PromptPack（提示词包）**：模块 `chengwenfang-prompt-workflow`、API `/api/settings/prompt-packs`、表 `prompt_packs` 等；与 Cursor Agent Skill（`.cursor/skills/`）区分。
 - README facade: real UI screenshots (1440×900), course-only quick start first, accurate module tree, optional hot-news deps called out.
 - README visuals: hero GIF + course-route under badges; populated radar as feature shot; theme/workflow/settings under details.
@@ -36,6 +41,7 @@ where releases are tagged.
 
 ### Fixed
 
+- `app` 容器依赖并连接 Compose 服务 `qdrant`。Qdrant 已启用但连不上时启动失败，不再静默回退内存向量库。
 - AI settings connection test uses the on-page form draft (not saved DB config); blank apiKey still falls back to the stored secret.
 - Radar collect persists per-channel `channelRuns` so coverage and channel breakdown are available after a run (including failure fallback).
 - Theme cards show real hot-news source-item and candidate-topic counts instead of hardcoded zeros.

@@ -73,6 +73,14 @@ chengwenfang:
     http-port: 6333
     grpc-port: 6334
     collection: chengwenfang_knowledge
+  # 空库启动时自动导入提示词包 / 工作流 / 演示主题；补种或强制覆盖仍用 scripts/bootstrap
+  bootstrap:
+    auto-seed: true
+  # 系统就绪探测：宿主机走发布端口；app 容器内由 Compose 改成服务名
+  readiness:
+    searxng-url: http://127.0.0.1:8080
+    lightpanda-host: 127.0.0.1
+    lightpanda-port: 9222
   # 知识库 RAG：Graph 默认关（与设计 §11 一致；本机可 profile overlay 开 Local）
   knowledge:
     graph:
@@ -123,14 +131,15 @@ chengwenfang:
     per-host-concurrency: 2
   article-extract:
     enabled: true
-    # 使用本目录 venv（含 trafilatura）；勿用系统 python
-    python-executable: scripts/article-extract/.venv/Scripts/python.exe
+    # 留空或 python：运行时按操作系统选择 .venv（Windows Scripts/python.exe，其它 bin/python），不必改本文件
+    python-executable: python
     working-directory: scripts/article-extract
     step-timeout-seconds: 30
   # 资料补充文章摘要 Vision 兜底（Playwright 分段截图；需多模态 AI + setup-hotnews-clis）
   page-screenshot:
     enabled: true
-    python-executable: scripts/page-screenshot/.venv/Scripts/python.exe
+    # 留空或 python：按操作系统选择本目录 venv，不必手改
+    python-executable: python
     working-directory: scripts/page-screenshot
     timeout-seconds: 45
     max-shots: 3
@@ -138,8 +147,8 @@ chengwenfang:
   # 资料池视频解析（本机 Python CLI：yt-dlp / ffmpeg / Whisper）
   video-transcript:
     enabled: true
-    # 使用本目录 venv（含 yt-dlp / openai-whisper）；勿用系统 python
-    python-executable: scripts/video-transcript/.venv/Scripts/python.exe
+    # 留空或 python：按操作系统选择本目录 venv，不必手改
+    python-executable: python
     working-directory: scripts/video-transcript
     step-timeout-seconds: 900
     max-per-topic: 20

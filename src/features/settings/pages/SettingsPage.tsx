@@ -48,8 +48,6 @@ import {
   listPageNumbers,
   type ListPageSize,
 } from "../../../shared/api/pagination";
-import { fetchBuiltinReady } from "../api";
-import type { BuiltinReadyView } from "../api";
 import {
   SystemReadyPanel,
 } from "../components/SystemReadyPanel";
@@ -261,7 +259,7 @@ export function AiSettingsPage({
                 {saveMessage ||
                   (updatedAt
                     ? `数据库最近保存：${new Intl.DateTimeFormat("zh-CN", { dateStyle: "short", timeStyle: "short" }).format(new Date(updatedAt))}`
-                    : "配置将保存到本地 PostgreSQL 数据库")}
+                    : "配置将保存到本机 MySQL，密钥不会写入仓库")}
               </small>
               <button
                 className="save-settings"

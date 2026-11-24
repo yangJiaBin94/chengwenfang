@@ -80,6 +80,6 @@ else
 fi
 
 echo
-echo "完成。请将 application.yml 中 python-executable 改为 .venv/bin/python（非 Windows）。"
+echo "完成。解释器路径按操作系统自动选择 venv，不必修改 application.yml 的 python-executable。"
 echo "开发默认启用 page-screenshot；资料补充 Vision 还需在设置里配置多模态 Vision。"
 echo "验收: scripts/page-screenshot/.venv/bin/python -m page_screenshot --url https://example.com --out-dir .tmp-shots --max-shots 1"

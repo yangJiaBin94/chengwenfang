@@ -76,7 +76,8 @@ if (-not $SkipPageScreenshot) {
 }
 
 Write-Host ""
-Write-Host "完成。开发默认已启用 chengwenfang.page-screenshot.enabled（见 application.yml）。"
+Write-Host "完成。解释器路径按操作系统自动选择 venv，不必修改 application.yml 的 python-executable。"
+Write-Host "开发默认已启用 chengwenfang.page-screenshot.enabled（见 application.yml）。"
 Write-Host "资料补充 Vision 兜底还需在「设置」配置好多模态 Vision。"
 Write-Host "验收截图 CLI："
 Write-Host "  .\scripts\page-screenshot\.venv\Scripts\python.exe -m page_screenshot --url `"https://example.com`" --out-dir .tmp-shots --max-shots 1"

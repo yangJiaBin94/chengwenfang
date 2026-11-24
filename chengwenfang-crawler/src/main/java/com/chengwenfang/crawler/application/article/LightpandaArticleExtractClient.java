@@ -5,6 +5,7 @@ import cn.hutool.json.JSONUtil;
 import com.chengwenfang.crawler.facade.constant.ArticleBrowserModes;
 import com.chengwenfang.crawler.facade.constant.ArticleContentDefaults;
 import com.chengwenfang.infra.config.ChengwenfangProperties;
+import com.chengwenfang.infra.support.OsPythonExecutableResolver;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -142,26 +143,16 @@ public class LightpandaArticleExtractClient implements LightpandaArticleExtracto
   }
 
   /**
-   * 解析 Python 可执行路径（相对 contentRoot）。
+   * 按当前操作系统解析 venv 解释器；配置里的跨平台路径不会覆盖本机布局。
    *
    * @param configured 配置值
-   * @return 路径
+   * @return 解释器路径
    */
   private Path resolveExecutable(String configured) {
-    Path path = Path.of(StrUtil.blankToDefault(configured, "python"));
-    if (path.isAbsolute()) {
-      return path.normalize();
-    }
-    Path fromContentRoot =
-        Path.of(properties.getContentRoot()).resolve(path).toAbsolutePath().normalize();
-    if (Files.isRegularFile(fromContentRoot) || Files.isExecutable(fromContentRoot)) {
-      return fromContentRoot;
-    }
-    Path fromCwd = Path.of(".").resolve(path).toAbsolutePath().normalize();
-    if (Files.isRegularFile(fromCwd)) {
-      return fromCwd;
-    }
-    return path;
+    return OsPythonExecutableResolver.resolve(
+        Path.of(StrUtil.blankToDefault(properties.getContentRoot(), ".")),
+        properties.getArticleExtract().getWorkingDirectory(),
+        configured);
   }
 
   /**

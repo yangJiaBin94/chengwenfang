@@ -18,6 +18,11 @@ Defaults that matter:
 - Compose also publishes **Qdrant** on `6333/6334` (knowledge vectors) and,
   with `--profile neo4j` / `all`, **Neo4j** on `7474/7687`. Treat these like
   the app: do not expose them to the public internet without access control
+- The optional `app` container connects to the Compose service name `qdrant`.
+  A failed Qdrant connection does not count as ready and does not silently
+  switch to an in-memory vector store. There is still no login page
+- System readiness (`/api/system/builtin-ready`) stays failed until an
+  embedding key is configured. Missing keys are not seeded
 - `chengwenfang.crawler-allow-loopback` is `true` only for local SearXNG; `prod`
   forces `false`
 

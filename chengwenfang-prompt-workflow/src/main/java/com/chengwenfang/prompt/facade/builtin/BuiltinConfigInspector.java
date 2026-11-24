@@ -28,9 +28,9 @@ import lombok.experimental.Accessors;
  * 只读检查内置提示词包 与三条主工作流是否已在库中就绪（门面层，供 app / 启动体检共用）。
  */
 public final class BuiltinConfigInspector {
-  /** 首次部署脚本提示（日志与 HTTP 面板共用，不写库）。 */
+  /** 仍缺内置配置时的补种提示（空库启动会自动导入；本提示用于补种 / 强制覆盖）。 */
   public static final String BOOTSTRAP_HINT =
-      "powershell -ExecutionPolicy Bypass -File .\\scripts\\bootstrap\\Initialize-ChengwenfangSeed.ps1";
+      "空库启动会自动导入。若仍缺失，请补种：powershell -ExecutionPolicy Bypass -File .\\scripts\\bootstrap\\Initialize-ChengwenfangSeed.ps1 （macOS/Linux 用 scripts/bootstrap/Initialize-ChengwenfangSeed.sh；覆盖已有行加 -Force 或 --force）";
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
 

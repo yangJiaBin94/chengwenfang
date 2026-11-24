@@ -22,11 +22,11 @@ public class SystemController {
   private final BuiltinReadyQuery builtinReadyQuery;
 
   /**
-   * 返回内置提示词包 / 工作流是否就绪及问题列表。
+   * 返回课程 + 知识库是否就绪，以及热点加装、Graph / Agent 的可选状态。
    *
    * @return 就绪视图
    */
-  @Operation(summary = "内置配置就绪体检")
+  @Operation(summary = "系统就绪体检")
   @GetMapping("/builtin-ready")
   public ApiResult<BuiltinReadyView> builtinReady() {
     return ApiResult.ok(builtinReadyQuery.inspect());

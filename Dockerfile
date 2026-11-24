@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# Backend jar only. Infra (MySQL/Redis) stays in compose; Vite frontend stays on the host.
+# Backend jar only. Infra (MySQL/Redis/Qdrant) stays in compose; Vite frontend stays on the host.
 #
 #   docker compose up -d --wait
 #   docker compose --profile app up -d --build app
@@ -20,7 +20,10 @@ WORKDIR /app
 RUN useradd --system --uid 10001 --create-home chengwenfang
 # finalName is fixed in chengwenfang-app/pom.xml (version bumps do not rename the jar)
 COPY --from=build /src/chengwenfang-app/target/chengwenfang-app.jar /app/app.jar
-RUN chown chengwenfang:chengwenfang /app/app.jar
+COPY --from=build /src/scripts/bootstrap/builtin-catalog.json /app/bootstrap/builtin-catalog.json
+COPY --from=build /src/scripts/bootstrap/default-themes.json /app/bootstrap/default-themes.json
+COPY --from=build /src/scripts/bootstrap/source-channel-catalog.json /app/bootstrap/source-channel-catalog.json
+RUN chown -R chengwenfang:chengwenfang /app
 
 USER chengwenfang
 EXPOSE 8001

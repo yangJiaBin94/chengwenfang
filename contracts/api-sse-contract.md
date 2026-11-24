@@ -58,7 +58,7 @@ data: {"id","eventType","step","progress","message","payload","createdAt"}
 
 ## Knowledge (`/api/knowledge`)
 
-依赖本机 Qdrant（默认 `127.0.0.1:6333`）与设置页嵌入模型；设计见 `docs/知识库RAG体系设计.md`。
+依赖 Qdrant 与设置页嵌入模型。宿主机默认 `127.0.0.1:6333`；`app` 容器使用 Compose 服务名 `qdrant`。未连通或内存向量库不算系统就绪（`GET /api/system/builtin-ready`）。设计见 `docs/知识库RAG体系设计.md`。
 
 | 方法 | 路径 | 说明 |
 |------|------|------|

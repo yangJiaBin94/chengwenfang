@@ -5,6 +5,7 @@ import cn.hutool.json.JSONUtil;
 import com.chengwenfang.sourcing.application.model.VideoTranscriptCliResult;
 import com.chengwenfang.sourcing.facade.enums.VideoParseStep;
 import com.chengwenfang.infra.config.ChengwenfangProperties;
+import com.chengwenfang.infra.support.OsPythonExecutableResolver;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -39,8 +40,13 @@ public class VideoTranscriptCliRunner {
   public VideoTranscriptCliResult run(String url, Path workDir, VideoParseStep step) {
     ChengwenfangProperties.VideoTranscriptSettings settings = properties.getVideoTranscript();
     Path cwd = resolveWorkingDirectory(settings.getWorkingDirectory());
+    // 按操作系统选择 venv，不要求用户改 python-executable
+    Path python = OsPythonExecutableResolver.resolve(
+        Path.of(StrUtil.blankToDefault(properties.getContentRoot(), ".")),
+        settings.getWorkingDirectory(),
+        settings.getPythonExecutable());
     List<String> command = new ArrayList<>();
-    command.add(StrUtil.blankToDefault(settings.getPythonExecutable(), "python"));
+    command.add(python.toString());
     command.add("-m");
     command.add("video_transcript");
     command.add("--url");

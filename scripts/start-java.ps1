@@ -1,8 +1,7 @@
 param(
   [switch]$SkipCompose,
   [switch]$OpenBrowser,
-  # 同时拉起 SearXNG + Lightpanda（compose profile: all）
-  # 热点 Python CLI 请另跑：.\scripts\setup-hotnews-clis.ps1
+  # 满血：compose profile all（SearXNG + Lightpanda + Neo4j 容器；Graph 开关仍默认关）并安装三条 Python CLI
   [switch]$AllDeps,
   # 与另一成文坊实例并存：后端 8002、前端 5174、Redis DB 1（不改 compose MySQL 端口）
   [switch]$BesidePrivate
@@ -20,14 +19,20 @@ $redisDb = if ($BesidePrivate) { "1" } else { "0" }
 
 if (-not $SkipCompose) {
   if ($AllDeps) {
-    Write-Host "Starting MySQL + Redis + SearXNG + Lightpanda..."
+    Write-Host "Starting MySQL + Redis + Qdrant + SearXNG + Lightpanda + Neo4j (Graph switch stays off)..."
     docker compose --profile all up -d --wait
+    if ($LASTEXITCODE -ne 0) { throw "docker compose failed" }
+    Write-Host "Installing article-extract, video-transcript, page-screenshot..."
+    & "$PSScriptRoot\setup-hotnews-clis.ps1"
   } else {
-    Write-Host "Starting MySQL + Redis (3306 / 6379)..."
+    Write-Host "Starting MySQL + Redis + Qdrant (course + knowledge base)..."
     docker compose up -d --wait
+    if ($LASTEXITCODE -ne 0) { throw "docker compose failed" }
   }
-  if ($LASTEXITCODE -ne 0) { throw "docker compose failed" }
 }
+
+Write-Host "Python CLI path is chosen by OS (venv). Do not edit python-executable."
+Write-Host "Empty database is seeded automatically when the backend starts."
 
 Write-Host "Building chengwenfang-app..."
 mvn -pl chengwenfang-app -am -DskipTests package

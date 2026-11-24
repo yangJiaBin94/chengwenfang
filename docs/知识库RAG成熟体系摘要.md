@@ -1,10 +1,16 @@
 # 知识库 RAG 成熟体系摘要
 
-与 Cursor 画布 `mature-rag-architecture` 同一叙事，便于仓库内链接；完整契约与里程碑见 [知识库RAG体系设计.md](./知识库RAG体系设计.md)。
+完整字段与开关见 [知识库RAG体系设计.md](./知识库RAG体系设计.md)。
+
+默认开启：入库切块、Hybrid、改写、重排、引用与拒答、会话、反馈、记忆。
+
+需配置：Qdrant（随默认 `docker compose up`）和嵌入 Key。未配嵌入 Key 不能把索引或问答当成成功。
+
+默认关闭：Graph 与 Agentic。质量模块的写作规范审核是另一条链路。
 
 ## 核心结论
 
-成熟体系 = **知识平面 + 在线回答平面**；默认 **Hybrid →（可选）Rerank → 强制引用/拒答**；记忆分层；**Graph / Agentic 按需、有界**；评测与 trace 当门禁。
+知识平面负责入库，在线回答平面负责检索和生成。默认路径是 Hybrid，然后可选重排，再强制引用或拒答。记忆分会话摘要和「请记住」。Graph / Agentic 有界，开关默认关。
 
 ## 分层检索
 
@@ -30,6 +36,6 @@
 
 工作窗 / 会话摘要 / 长期语义 / 事件日志；多轮用摘要 + 检索式回忆，不整段历史塞窗。
 
-## 启用纪律
+## 开关
 
-金标分档（简单事实 / 多跳 / 应拒答）驱动开 Graph / Agent；feature flag；Neo4j 仅 `docker compose --profile neo4j` 启动。
+简单事实和应拒答走默认 Hybrid。多跳才考虑打开 Graph。Neo4j 容器用 `docker compose --profile neo4j` 或满血档的 `--profile all`；容器在跑也不等于 `knowledge.graph.enabled=true`。Agent 同样默认关。

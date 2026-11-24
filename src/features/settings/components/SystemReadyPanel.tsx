@@ -1,55 +1,36 @@
-import { useEffect, useRef, useState } from "react";
-import {
-  Check,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  Eye,
-  FileText,
-  Image,
-  Search,
-  Upload,
-  X,
-} from "lucide-react";
-import { testAiConnection } from "../api";
-import {
-  loadWechatMpSettings,
-  saveWechatMpSettings,
-  testWechatMpConnection,
-} from "../api";
-import type { WechatMpSettings } from "../api";
-import {
-  listLayoutThemes,
-  cloneLayoutTheme,
-  createLayoutTheme,
-  setLayoutThemeStatus,
-  updateLayoutTheme,
-  deleteLayoutTheme,
-} from "../api";
-import type { LayoutThemeData } from "../api";
-import {
-  imageProtocolOptions,
-  textProtocolOptions,
-  visionProtocolOptions,
-} from "../model";
-import type { AiProviderConfig, AiSettings, AiSettingsKind } from "../model";
-import {
-  createPromptPack,
-  deletePromptPack,
-  listPromptPacks,
-  pagePromptPacks,
-  updatePromptPack,
-  updatePromptPack as savePromptPackApi,
-} from "../api";
-import type { PromptPack } from "../api";
-import {
-  LIST_PAGE_SIZE_OPTIONS,
-  listPageNumbers,
-  type ListPageSize,
-} from "../../../shared/api/pagination";
+import { useEffect, useState } from "react";
 import { fetchBuiltinReady } from "../api";
-import type { BuiltinReadyView } from "../api";
+import type {
+  BuiltinReadyView,
+  SystemReadinessItem,
+  SystemReadinessSection,
+  SystemReadinessStatus,
+} from "../api";
+
+const SECTIONS: { id: SystemReadinessSection; title: string; hint: string }[] = [
+  {
+    id: "default",
+    title: "课程 + 知识库",
+    hint: "这些项都通过后，默认档才算就绪。密钥要在设置里自己填，种子不会写入。",
+  },
+  {
+    id: "hotnews",
+    title: "热点加装",
+    hint: "未加装会少雷达搜索、JS 页正文或截图，不是课程和知识库坏了。满血启动会装上三条 CLI，并拉起 SearXNG / Lightpanda。",
+  },
+  {
+    id: "optional",
+    title: "可选能力",
+    hint: "Graph 与 Agent 默认关闭。Neo4j 容器可以随满血档起来，应用开关不会因此打开。",
+  },
+];
+
+function statusLabel(status: SystemReadinessStatus): string {
+  if (status === "pass") return "通过";
+  if (status === "fail") return "未通过";
+  if (status === "not_installed") return "未加装";
+  return "默认关闭";
+}
 
 export function SystemReadyPanel() {
   const [view, setView] = useState<BuiltinReadyView | null>(null);
@@ -99,11 +80,13 @@ export function SystemReadyPanel() {
     return (
       <div className="system-ready-panel">
         <div className="settings-hero">
-          <p>正在检查内置配置…</p>
+          <p>正在检查系统就绪…</p>
         </div>
       </div>
     );
   }
+
+  const checks = view?.checks ?? [];
 
   return (
     <div className="system-ready-panel">
@@ -112,8 +95,8 @@ export function SystemReadyPanel() {
           <span className="section-kicker">System Readiness</span>
           <h2>系统就绪</h2>
           <p>
-            检查库内内置提示词包 与三条主工作流是否已种子化并可生成。缺项时请按提示执行
-            bootstrap 脚本。
+            只在本机使用：无登录、无鉴权，不要把 5173 / 8001 暴露到公网。默认档是课程 + 知识库
+            （MySQL、Redis、Qdrant）。空库启动会自动导入提示词包和三条主工作流。
           </p>
         </div>
         <div className="save-settings-wrap">
@@ -133,11 +116,13 @@ export function SystemReadyPanel() {
             className={`system-ready-status ${view.ready ? "is-ok" : "is-error"}`}
             role="status"
           >
-            {view.ready ? "通过：内置配置已就绪" : "未通过：存在缺失或不可用项"}
+            {view.ready
+              ? "通过：课程 + 知识库已就绪"
+              : "未通过：课程 + 知识库还有必需项。热点未加装不会单独导致这里失败。"}
           </div>
           <dl className="system-ready-summary">
             <div>
-              <dt>PromptPack</dt>
+              <dt>提示词包</dt>
               <dd>
                 {view.promptPackCount} / 期望 {view.expectedPromptPackCount}
               </dd>
@@ -147,9 +132,24 @@ export function SystemReadyPanel() {
               <dd>{view.workflowReady ? "就绪" : "未就绪"}</dd>
             </div>
           </dl>
+          {SECTIONS.map((section) => {
+            const rows = checks.filter((check) => check.section === section.id);
+            if (rows.length === 0) return null;
+            return (
+              <section className="system-ready-group" key={section.id}>
+                <h3>{section.title}</h3>
+                <p>{section.hint}</p>
+                <ul>
+                  {rows.map((check) => (
+                    <CheckRow key={check.key} check={check} />
+                  ))}
+                </ul>
+              </section>
+            );
+          })}
           {view.issues.length > 0 ? (
             <section className="system-ready-issues">
-              <h3>问题列表</h3>
+              <h3>还需处理</h3>
               <ul>
                 {view.issues.map((issue) => (
                   <li key={issue}>{issue}</li>
@@ -159,12 +159,22 @@ export function SystemReadyPanel() {
           ) : null}
           {!view.ready && view.bootstrapHint ? (
             <section className="system-ready-hint">
-              <h3>Bootstrap 提示</h3>
+              <h3>补种</h3>
               <code>{view.bootstrapHint}</code>
             </section>
           ) : null}
         </>
       ) : null}
     </div>
+  );
+}
+
+function CheckRow({ check }: { check: SystemReadinessItem }) {
+  return (
+    <li className={`system-ready-check is-${check.status}`}>
+      <span className="system-ready-check-label">{check.label}</span>
+      <span className={`system-ready-chip is-${check.status}`}>{statusLabel(check.status)}</span>
+      <span className="system-ready-check-detail">{check.detail}</span>
+    </li>
   );
 }

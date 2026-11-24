@@ -140,6 +140,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      qdrant:
+        condition: service_healthy
     ports:
       - "127.0.0.1:8001:8001"
     environment:
@@ -151,6 +153,17 @@ services:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: "6379"
       SPRING_DATA_REDIS_DATABASE: "0"
+      # 容器内必须走服务名；127.0.0.1 会连到自身并被拒绝（不再回退内存库）
+      CHENGWENFANG_QDRANT_ENABLED: "true"
+      CHENGWENFANG_QDRANT_HOST: qdrant
+      CHENGWENFANG_QDRANT_HTTP_PORT: "6333"
+      CHENGWENFANG_QDRANT_GRPC_PORT: "6334"
+      CHENGWENFANG_READINESS_SEARXNG_URL: http://searxng:8080
+      CHENGWENFANG_READINESS_LIGHTPANDA_HOST: lightpanda
+      CHENGWENFANG_READINESS_LIGHTPANDA_PORT: "9222"
+      CHENGWENFANG_BOOTSTRAP_CATALOG: /app/bootstrap/builtin-catalog.json
+      CHENGWENFANG_BOOTSTRAP_DEFAULT_THEMES: /app/bootstrap/default-themes.json
+      CHENGWENFANG_BOOTSTRAP_SOURCE_CHANNEL_CATALOG: /app/bootstrap/source-channel-catalog.json
       CHENGWENFANG_SECRET_KEY: ${CHENGWENFANG_SECRET_KEY:-chengwenfang-dev-secret-key-change-me!!}
     restart: unless-stopped
 

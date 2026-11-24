@@ -7,39 +7,108 @@
 [![React](https://img.shields.io/badge/React-19-61DAFB.svg)](https://react.dev/)
 
 <p align="center">
-  <a href="docs/screenshots/hotnews-walkthrough.gif">
-    <img src="docs/screenshots/hotnews-walkthrough.gif" alt="热点走查：主题 → 雷达 → 来源" width="880" />
-  </a><br />
-  <sub>热点资讯 · 主题 → 雷达选题 → 来源管理</sub>
-</p>
-
-<p align="center">
   <a href="docs/screenshots/06-course-route.png">
-    <img src="docs/screenshots/06-course-route.png" alt="课程主路径：七个系列推进内容生产" width="880" />
+    <img src="docs/screenshots/06-course-route.png" alt="课程路线：按系列推进内容生产" width="880" />
   </a><br />
-  <sub>课程体系 · 课程路线（系列推进与生产状态）</sub>
+  <sub>课程体系 · 课程路线</sub>
 </p>
 
-**本机运行的个人内容生产工具**：课程写作与热点资讯成文共用一套工作流，数据只落在你自己的电脑上。
+本机上的个人内容生产工具。用它写课程、改公众号文、把热点分步写成稿；知识库能带着引用回答，证据不够就拒答。数据留在你自己的机器上。
 
-| 模式 | 链路 |
-|------|------|
-| 课程体系 | 学习素材 → 原稿 / 公众号文 → 配图 → 排版 → 审核与修复 |
-| 热点资讯 | 雷达采集 → 选题与资料池 → 分步生成成文 |
-| 知识库 RAG | 素材入库切块 → Qdrant 向量检索 → 带引用问答（可拒答） |
+**仅限本机**：默认绑定 `127.0.0.1`，没有登录、没有鉴权。谁能打开这个地址，谁就能读写你的稿和密钥。请不要对公网暴露。二次开发前先读 [SECURITY.md](SECURITY.md)。Lightpanda 是可选的 AGPL 边车，不是默认档的一部分。
 
-技术形态：Java 21（Spring Boot 3.3）模块化单体 + React / Vite；**无登录、无多人协作**。
-
-> ⚠️ **仅限本机**：默认绑定 `127.0.0.1`，[无鉴权](SECURITY.md)，请勿对公网暴露。  
-> 本仓库**不附带**个人课程正文，仅含 bootstrap 演示主题（见 [`content/README.md`](content/README.md)）。
-
-[仅课程快速开始](#快速开始仅课程主流程推荐) · [更多截图](#更多界面) · [文档](#文档) · [贡献](CONTRIBUTING.md) · [安全](SECURITY.md) · [变更](CHANGELOG.md)
+[一键开始](#一键开始课程--知识库) · [体验手册](docs/体验手册.md) · [文档](docs/README.md) · [贡献](CONTRIBUTING.md) · [安全](SECURITY.md)
 
 ---
 
-## 更多界面
+## 给谁用
 
-**热点雷达** — 写作价值排序、来源渠道与采集统计（有货状态）。
+**作者。** 按课程路线从原稿走到公众号文、配图、排版和审核；热点是加装档。填好设置里的 Key 之后，跟着 [体验手册](docs/体验手册.md) 可以走出第一篇。空库会自己灌入提示词包、三条主工作流和演示主题。
+
+**开发者。** 这是一个 Java 21 模块化单体加 React。业务按 COLA 分层：门面、编排、领域规则分开。提示词包绑在工作流图的节点上，生成走已发布的图，而不是把提示词散落在页面里。架构和 CI 细节在文末可展开区，以及 [CONTRIBUTING.md](CONTRIBUTING.md)。
+
+**二次开发。** 可以加模式、工作流节点、渠道和排版主题。HTTP / SSE 以 [contracts/api-sse-contract.md](contracts/api-sse-contract.md) 为准。它没有账号体系，不能直接当成 SaaS 或公网服务；要对外提供，必须自己加访问控制，见 [SECURITY.md](SECURITY.md)。仓库里的 `.cursor/skills` 是给贡献者的 Agent Skill，不是产品里的「提示词包」。
+
+---
+
+## 一键开始（课程 + 知识库）
+
+默认档包含 MySQL、Redis 和 Qdrant。知识库随 `docker compose up` 一起起来，不是满血档才有。热点搜索、无头浏览器和三条 Python CLI 是加装。
+
+需要：Docker、JDK 21、Maven、Node.js 22 及以上。API Key 仍要你在设置里自己填，种子和仓库都不会写入真实密钥。
+
+### Windows
+
+```powershell
+# 仓库根目录
+. .\scripts\use-utf8.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\start-java.ps1
+```
+
+### macOS / Linux
+
+```bash
+chmod +x scripts/start.sh
+./scripts/start.sh
+```
+
+脚本会拉起 MySQL、Redis、Qdrant，编译并启动后端（8001）和前端（5173）。空库自动导入提示词包与三条主工作流。Python 解释器按操作系统选择各 CLI 目录下的 venv，不用改 `application.yml`。
+
+打开 **http://127.0.0.1:5173** → **设置**，填写多模态（生成）、图像、嵌入三类 Key 并测试连接。然后打开 **设置 → 系统就绪**。嵌入 Key 没配、或 Qdrant 只是内存库，这里都不会显示通过。
+
+接着按 [体验手册](docs/体验手册.md) 走课程成文或知识库问答。
+
+| 地址 | 用途 |
+|------|------|
+| http://127.0.0.1:5173 | 前端（`/api` 代理到 8001） |
+| http://127.0.0.1:8001/api/health | 健康检查 |
+| http://127.0.0.1:8001/api/system/builtin-ready | 系统就绪（与设置里同一份清单） |
+| http://127.0.0.1:6333/readyz | Qdrant |
+
+停止：Windows `.\scripts\stop-java.ps1`；macOS / Linux `kill $(cat .chengwenfang-backend.pid .chengwenfang-frontend.pid)`。
+
+部分 IDE 会把 `start.sh` 的后台进程带走。这时用两个前台终端：`mvn -pl chengwenfang-app -am spring-boot:run` 与 `npm run dev:frontend`。Compose 仍要先 `docker compose up -d --wait`。
+
+### 热点加装（不是默认）
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\start-java.ps1 -AllDeps
+```
+
+```bash
+./scripts/start.sh --all-deps
+```
+
+这会执行 `docker compose --profile all`（在默认三件套之外加上 SearXNG、Lightpanda、Neo4j 容器），并安装 `article-extract`、`video-transcript`、`page-screenshot`。Neo4j 可以起来，应用侧 Graph 开关仍然默认关闭。没加装时，雷达搜索、JS 页正文和佐证截图会缺，课程和知识库照常。说明见 [体验手册](docs/体验手册.md) 的热点一节。
+
+Lightpanda 官方镜像是 AGPL-3.0。本仓库没有改它的源码，只把它当作可选边车，也不用它绕过验证码或登录墙。
+
+### 可选：后端放进容器
+
+前端仍在本机 Vite。`app` 容器依赖并连接 Compose 里的 `qdrant` 服务名，不会去连容器内部的 `127.0.0.1`。连不上 Qdrant 时进程失败，不会静默改用内存向量库。
+
+```bash
+docker compose up -d --wait
+docker compose --profile app up -d --build app
+npm install && npm run dev:frontend
+```
+
+---
+
+## 能做什么
+
+| 侧栏 | 能力 |
+|------|------|
+| 课程体系 | 主题与课表；原稿 / 公众号文；配图、版本、审核、任务轨迹 |
+| 热点资讯 | 雷达、来源、选题资料池、分步成文（加装档更完整） |
+| 知识库 | 上传 / 网页 / 作品入库；切块索引；带引用的问答，证据不够则拒答 |
+| 工作流 | 三条主工作流图，节点上绑定提示词包 |
+| 设置 | AI Key、提示词包、排版主题、系统就绪 |
+
+<details>
+<summary>更多界面</summary>
+
+**热点雷达**
 
 <p align="center">
   <a href="docs/screenshots/05-hotnews-radar.png">
@@ -47,390 +116,77 @@
   </a>
 </p>
 
-<details>
-<summary>主题总览 · 工作流 · AI 设置</summary>
-
-**课程主题** — 系列 / 课次计数。
+**热点走查**
 
 <p align="center">
-  <a href="docs/screenshots/01-course-mode.png">
-    <img src="docs/screenshots/01-course-mode.png" alt="课程体系教学模式" width="880" />
+  <a href="docs/screenshots/hotnews-walkthrough.gif">
+    <img src="docs/screenshots/hotnews-walkthrough.gif" alt="热点走查：主题、雷达、来源" width="880" />
   </a>
 </p>
 
-**热点主题** — 来源条目与候选选题计数。
-
-<p align="center">
-  <a href="docs/screenshots/02-hotnews-mode.png">
-    <img src="docs/screenshots/02-hotnews-mode.png" alt="热点资讯模式" width="880" />
-  </a>
-</p>
-
-**工作流** — 热点采集与课程生成流程清单。
-
-<p align="center">
-  <a href="docs/screenshots/03-workflows.png">
-    <img src="docs/screenshots/03-workflows.png" alt="工作流" width="880" />
-  </a>
-</p>
-
-**设置** — 多模态 / 图片 / 嵌入 AI 分供应商（Key 已脱敏）。
-
-<p align="center">
-  <a href="docs/screenshots/04-settings-ai.png">
-    <img src="docs/screenshots/04-settings-ai.png" alt="设置 · AI 配置" width="880" />
-  </a>
-</p>
+**课程主题 / 热点主题 / 工作流 / 设置** 见 `docs/screenshots/` 下 `01` 至 `04`。
 
 </details>
 
 ---
 
-## 功能一览
+## 文档
 
-| 侧栏 | 能力 |
-|------|------|
-| 课程体系教学模式 | 主题与课表；原稿 / 公众号文；配图、版本、审核、任务轨迹 |
-| 热点资讯模式 | 热点雷达、来源管理、选题资料池补充与话题过滤、分步生成 |
-| 知识库 | 上传 / 网页 / 作品入库；切块索引；Hybrid 检索问答与引用；统计与重建 |
-| 工作流 | 提示词包 与生成工作流图 |
-| 回收站 / 设置 | 恢复已删主题；配置 AI（含嵌入）与本机公众号等 |
-
-课程侧典型路径：
-
-```text
-素材与路线 → 课程原稿 → 公众号文章 → 配图
-  → 排版（复制 Markdown / 打开 mdnice）→ 审核 → AI 修复 → 人工确认
-```
+给人看的操作顺序在 [docs/体验手册.md](docs/体验手册.md)。索引在 [docs/README.md](docs/README.md)。交给 AI 助手从零搭满血环境时，用 [docs/AI从零搭建满血成文坊.md](docs/AI从零搭建满血成文坊.md)，那不是人类的主入口。
 
 ---
 
-## 快速开始（仅课程主流程，推荐）
+<details>
+<summary>部署档、端口并存与 Apple Silicon</summary>
 
-先跑通课程即可。**不必**装 Python / ffmpeg，也**不必**起 SearXNG / Lightpanda。
+| 档 | 命令 | 容器 |
+|----|------|------|
+| 课程 + 知识库（默认） | `docker compose up -d --wait` | MySQL、Redis、Qdrant |
+| 热点满血 | `docker compose --profile all up -d --wait` | 再加 SearXNG、Lightpanda、Neo4j 容器 |
+| 只加 Graph 容器 | `docker compose --profile neo4j up -d` | Neo4j。应用开关默认仍关，要自己设 `chengwenfang.knowledge.graph.enabled=true` |
 
-| 部署档 | Docker 命令 | 容器 | 适合 |
-|--------|-------------|------|------|
-| **仅课程（默认）** | `docker compose up -d --wait` | MySQL + Redis + **Qdrant**（6333/6334） | 课程写作 + 知识库向量检索 |
-| **热点满血** | `docker compose --profile all up -d --wait` | 再加 SearXNG + Lightpanda（及 Neo4j） | 雷达搜索 / JS 页正文回退；另需 [热点模式](#热点模式可选加装) 的 Python CLI |
-| **知识库 Graph（可选）** | `docker compose --profile neo4j up -d` | Neo4j（7474/7687） | 需再设 `chengwenfang.knowledge.graph.enabled=true`；默认关闭 |
+与另一实例并存：`.\scripts\start-java.ps1 -BesidePrivate -SkipCompose`（后端 8002、前端 5174、Redis database 1）。库名保持 `chengwenfang`，另一实例用不同库名。
 
-Docker Desktop 里应能看到 `mysql` / `redis` / `qdrant`。若没有 SearXNG / Lightpanda，说明走的是「仅课程」档，**不是漏装**。要热点容器：同一仓库根目录执行 `--profile all`（或 `./scripts/start.sh --all-deps`）。
+macOS Apple Silicon、没有 Homebrew 时：用户目录放 JDK 21 与 Maven，Docker Desktop 可装到 `~/Applications`。引擎若卡在 Rosetta，先 `softwareupdate --install-rosetta`，再在 Docker Desktop 里关掉「Use Rosetta for x86_64/amd64 emulation」。父目录含中文时项目名已固定为 `chengwenfang`。镜像拉取超时时，先从可用镜像站 pull `mysql:8.4`、`redis:7`、`qdrant/qdrant`，`docker tag` 成官方名后再 `docker compose up`。
 
-需要：Docker Desktop、JDK 21、Maven、Node.js **22+**。
+生产 profile（`--spring.profiles.active=prod`）必须设置 `CHENGWENFANG_SECRET_KEY`，并关闭环回采集。样板见 [.env.example](.env.example)。
 
-### Windows
+</details>
 
-```powershell
-# PowerShell · 仓库根目录
-. .\scripts\use-utf8.ps1
-docker compose up -d --wait          # MySQL + Redis + Qdrant（知识库向量 6333/6334）
-# 可选 Graph：docker compose --profile neo4j up -d ，并设 chengwenfang.knowledge.graph.enabled=true
-# 设计见 docs/知识库RAG体系设计.md
-npm install
-powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap\Initialize-ChengwenfangSeed.ps1
-
-# 终端 1 — 后端
-mvn -pl chengwenfang-app -am spring-boot:run
-# 终端 2 — 前端
-npm run dev:frontend
-```
-
-### macOS / Linux（含 Apple Silicon）
-
-```bash
-# 仓库根目录；compose.yml 已固定 name=chengwenfang
-docker compose up -d --wait          # MySQL + Redis + Qdrant（知识库向量 6333/6334）
-npm install
-chmod +x scripts/bootstrap/Initialize-ChengwenfangSeed.sh
-./scripts/bootstrap/Initialize-ChengwenfangSeed.sh
-
-# 用两个独立前台终端（勿依赖 nohup 后台；部分 IDE/会话会把后台进程带走）
-# 终端 1 — 后端
-mvn -pl chengwenfang-app -am spring-boot:run
-# 终端 2 — 前端
-npm run dev:frontend
-```
-
-Apple Silicon / 空环境常见坑（细节见下方「macOS Apple Silicon 从零」）：
-
-| 现象 | 处理 |
-|------|------|
-| 无 Homebrew / 无 sudo | 用户目录便携 JDK 21 + Maven；Docker Desktop 可装到 `~/Applications` |
-| Docker 引擎起不来 / Rosetta 失败 | 先装 Rosetta；Docker Desktop → Settings 关掉强制用 Rosetta 跑 x86/amd64 |
-| `project name must not be empty` | 父目录含中文时旧版会空名；本仓已设 `name: chengwenfang`，也可 `export COMPOSE_PROJECT_NAME=chengwenfang` |
-| 拉 `mysql:8.4` / `redis:7` 超时 | 先从镜像加速源 pull 再 `docker tag` 成本地名（见下方） |
-| 种子脚本是 `.ps1` | 用 `Initialize-ChengwenfangSeed.sh`；热点演示主题可能因未配 API Key 跳过意图确认，**课程主题与提示词包不受影响** |
-
-打开 **http://127.0.0.1:5173** → **设置** 填写 AI API Key 并测试连接（Key 须你自己填，种子不会写入）。
-
-| 地址 | 用途 |
-|------|------|
-| http://127.0.0.1:5173 | 前端（`/api` → 8001） |
-| http://127.0.0.1:8001/api/health | 健康检查 |
-| http://127.0.0.1:8001/swagger-ui.html | API 文档（开发） |
-
-一键脚本：
-
-```powershell
-# Windows
-powershell -ExecutionPolicy Bypass -File .\scripts\start-java.ps1
-
-# macOS / Linux：课程主流程更推荐上面「双前台终端」；start.sh 用 nohup，在部分会话里进程会退出
-chmod +x scripts/start.sh && ./scripts/start.sh
-```
-
-**可选：后端跑在 Docker**（前端仍用本机 Vite；不是「全家桶一镜像」；`app` profile 里的密钥/密码是本机开发默认，不是生产样板）：
-
-```powershell
-docker compose up -d --wait
-docker compose --profile app up -d --build app
-npm install && npm run dev:frontend
-```
-
-停止后端：`.\scripts\stop-java.ps1`（Windows）、`kill $(cat .chengwenfang-backend.pid .chengwenfang-frontend.pid)`（`start.sh`），或 `docker compose --profile app stop app`。
-
-### macOS Apple Silicon 从零（无 Homebrew 也可）
-
-目标：只跑**课程主流程**（MySQL + Redis + Qdrant + 本机 JDK/Maven/Node）。热点满血（SearXNG / Python CLI）另见 [热点模式](#热点模式可选加装)；知识库见 [知识库 RAG](#知识库-rag默认随课程档)。
-
-1. **工具**（已有 Homebrew 则用 brew 装 `temurin@21` / `maven` / Docker Desktop；否则用户目录便携即可）  
-   - JDK 21（如 Temurin）→ 例如 `~/tools/jdk-21`，`export JAVA_HOME=...` 并加入 `PATH`  
-   - Maven 3.9.x → 例如 `~/tools/apache-maven-3.9.9/bin` 加入 `PATH`  
-   - Node.js **22+**（已有可跳过）  
-   - Docker Desktop：可装到 `~/Applications`，首次打开并完成引擎启动  
-2. **Rosetta**：若引擎报 Rosetta 安装失败，终端执行 `softwareupdate --install-rosetta`（按系统提示）；然后在 Docker Desktop 设置里**关闭**「Use Rosetta for x86_64/amd64 emulation」后再重启引擎。  
-3. **Compose 项目名**：本仓 `compose.yml` 已写 `name: chengwenfang`。若仍报空项目名：`export COMPOSE_PROJECT_NAME=chengwenfang`。  
-4. **镜像拉取超时**（国内常见）：先 pull 再打官方 tag，再 `docker compose up`：
-
-```bash
-# 加速源示例（以当时可用的镜像站为准；站名会变）
-docker pull docker.m.daocloud.io/library/mysql:8.4
-docker tag  docker.m.daocloud.io/library/mysql:8.4 mysql:8.4
-docker pull docker.m.daocloud.io/library/redis:7
-docker tag  docker.m.daocloud.io/library/redis:7 redis:7
-docker compose up -d --wait
-```
-
-5. **种子**：`./scripts/bootstrap/Initialize-ChengwenfangSeed.sh`（不要找 `.ps1`）。日志里热点演示主题若因「请先由 AI 分析并确认主题主要意图」失败，可忽略——填好 API Key 后在 UI 确认意图即可；提示词包、工作流、课程主题已导入则课程主流程可用。  
-6. **进程**：在 Cursor / 终端各开一个前台会话跑后端与 Vite；不要依赖 `nohup ... &` 跨会话保活。  
-7. **你仍须手动完成**：浏览器打开设置页填写 AI API Key。本次若只跟课程，不必装 SearXNG / Python CLI。
-
-### 用 AI 从零搭建
-
-交给 Cursor / Codex 等执行：
-
-**[`docs/AI从零搭建满血成文坊.md`](docs/AI从零搭建满血成文坊.md)**
-
-> 请阅读并严格执行 `docs/AI从零搭建满血成文坊.md`。  
-> - **满血**：`docker compose --profile all`，验收须含 **qdrant** + searxng + lightpanda（`all` 也会起 Neo4j，Graph 功能仍默认关），再装 Python CLI。  
-> - **仅课程**：`docker compose up`（无 profile），Docker 里 **MySQL + Redis + Qdrant** 算成功；跳过 SearXNG/Lightpanda/Python CLI，并在汇报里写明「未装热点容器」。  
-> 直到 `8001/api/health` 与 `5173` 可访问。API Key（含**嵌入模型**）留给我在设置页填写。macOS Apple Silicon 按文档附录与 README「macOS Apple Silicon 从零」处理 Rosetta、镜像加速与种子 `.sh`。
-
----
-
-## 知识库 RAG（默认随课程档）
-
-侧栏 **知识库**：上传文档 / 登记网页 / 同步作品与热点资料 → 切块嵌入 → 问答（Hybrid 检索 + 引用；证据不足则拒答）。
-
-| 依赖 | 是否默认 | 说明 |
-|------|----------|------|
-| Qdrant `6333/6334` | 是（`docker compose up` 即起） | 块向量；集合名默认 `chengwenfang_knowledge` |
-| 设置页「嵌入」供应商 / Key | 须自配 | 与多模态 Key 分开；未配则无法索引与检索 |
-| Neo4j | 否 | `docker compose --profile neo4j up -d`，并设 `chengwenfang.knowledge.graph.enabled=true` |
-| Agentic 多轮检索 | 否 | `chengwenfang.knowledge.agent.enabled`（默认 false） |
-
-热点雷达 Top10、已确认选题、资料池条目、课程/热点**主轨原稿**会按来源登记入库（摘要/标题级，非无限全文）；单文档索引 Job 成功**不**弹站内通知，避免批量刷屏。全量重建仍会通知。
-
-设计与开关细节：[`docs/知识库RAG体系设计.md`](docs/知识库RAG体系设计.md)、[`docs/知识库RAG成熟体系摘要.md`](docs/知识库RAG成熟体系摘要.md)。
-
-```powershell
-# 探测向量服务
-curl.exe -s http://127.0.0.1:6333/readyz
-# 可选 Graph
-docker compose --profile neo4j up -d
-# 应用侧打开图检索（重启后端后生效）
-# chengwenfang.knowledge.graph.enabled=true
-```
-
----
-
-## 热点模式（可选加装）
-
-雷达正文、资料池视频解析、资料补充截图 Vision 才需要下面这些；**跳过不影响课程**。
-
-| 依赖 | 作用 |
-|------|------|
-| `scripts/article-extract` venv | 网页正文抽取（Trafilatura / Lightpanda） |
-| `scripts/video-transcript` venv + 本机 `ffmpeg` | 视频口播 / 抽帧 |
-| `scripts/page-screenshot` venv + Chromium + PyMuPDF | 资料补充截图 Vision 兜底；成文佐证截屏（网页定位 / PDF 首页） |
-| `docker compose --profile all` | SearXNG（搜索）+ Lightpanda（JS 页回退） |
-
-```powershell
-docker compose --profile all up -d --wait
-# 一键安装三个 Python CLI（含 Playwright Chromium + PyMuPDF）
-powershell -ExecutionPolicy Bypass -File .\scripts\setup-hotnews-clis.ps1
-# macOS / Linux：chmod +x scripts/setup-hotnews-clis.sh && ./scripts/setup-hotnews-clis.sh
-# 或：.\scripts\start-java.ps1 -AllDeps
-# 或：./scripts/start.sh --all-deps
-```
-
-分项说明：[`scripts/article-extract/README.md`](scripts/article-extract/README.md)、[`scripts/video-transcript/README.md`](scripts/video-transcript/README.md)、[`scripts/page-screenshot/README.md`](scripts/page-screenshot/README.md)。资料补充 Vision 还需在「设置」配置好多模态模型；成文佐证截屏与 Vision 共用同一 CLI（`page-screenshot.enabled`）。
-
----
-
-## 技术栈与结构
+<details>
+<summary>模块、技术栈与 CI</summary>
 
 | 层 | 选型 |
 |----|------|
-| 后端 | Spring Boot `3.3.5`（钉版，见下）、Java 21、MyBatis-Plus、Flyway、Redisson、LangChain4j |
+| 后端 | Spring Boot 3.3.5（根 `pom.xml` 的 `spring-boot.version`）、Java 21、MyBatis-Plus、Flyway、Redisson |
 | 前端 | React 19、Vite 7、TypeScript、Vitest |
-| 基础设施 | MySQL 8.4、Redis 7、**Qdrant**；可选 Neo4j、SearXNG、Lightpanda |
-| 工程 | Maven 多模块 + npm；Lombok / Hutool / MapStruct |
-
-<details>
-<summary>Spring Boot 钉版与升级</summary>
-
-版本写在根 `pom.xml` 的 `spring-boot.version`（当前 **3.3.5**），经 `spring-boot-dependencies` BOM 统一管理；不要在子模块另起一套 Boot 版本。
-
-| 策略 | 做法 |
-|------|------|
-| 为何钉 3.3.x | 与本仓已验证的 MyBatis-Plus / Redisson / springdoc / LangChain4j 组合对齐；公开仓优先可复现，不追每周最新 minor |
-| 同 minor 补丁 | 可跟 Dependabot（Maven）升到 3.3.x 最新补丁；合并前跑 `npm test` + `mvn -pl chengwenfang-app -am test` |
-| 升到 3.4+ / 下一 major | 先单独 PR：改 `spring-boot.version`，过全量单测与本机课程主流程冒烟；若 starter API 或默认配置行为变化，同步改 `application*.yml` 与适配层 |
-| 不做什么 | 不为「徽章好看」跨 minor 盲升；不在 Dockerfile / 文档写死另一套 Boot 号而不改 BOM |
-
-</details>
-
-COLA 分层：Adapter → Application → Facade → Infrastructure。守卫测试：`ModuleArchitectureTest`。详见 [架构 Skill](.cursor/skills/chengwenfang-cola-architecture/SKILL.md)、[`docs/代码结构与注释规范.md`](docs/代码结构与注释规范.md)。
+| 基础设施 | MySQL 8.4、Redis 7、Qdrant；可选 Neo4j、SearXNG、Lightpanda |
+| 工程 | Maven 多模块；Lombok、Hutool、MapStruct |
 
 ```text
-chengwenfang/
-├── chengwenfang-app/              # 启动：adapter.web / adapter.worker
-├── chengwenfang-mode-course/      # 课程流水线与节点
-├── chengwenfang-mode-hotnews/     # 雷达、选题、资料池、热点成文
-├── chengwenfang-knowledge/        # 知识库入库、切块、Hybrid/RAG 问答
-├── chengwenfang-content/          # 主题、作品、产出、ModeDefinition
-├── chengwenfang-quality/          # 审核与修复
-├── chengwenfang-publishing/       # 排版、渲染、渠道发布
-├── chengwenfang-sourcing/         # 信源与抓取相关表
-├── chengwenfang-notification/     # 站内通知
-├── chengwenfang-prompt-workflow/  # 提示词包、工作流图
-├── chengwenfang-file|job|ai|crawler|common|infra/
-├── src/                           # React（Vite）
-├── contracts/ docs/ scripts/ deploy/
-├── compose.yml  pom.xml  package.json
+chengwenfang-app/                 启动与 HTTP
+chengwenfang-mode-course/         课程流水线
+chengwenfang-mode-hotnews/        雷达、选题、热点成文
+chengwenfang-knowledge/           知识库
+chengwenfang-content/             主题、作品、产出
+chengwenfang-quality/             审核与修复（不是知识库 RAG）
+chengwenfang-publishing/          排版与渠道
+chengwenfang-sourcing/            信源
+chengwenfang-prompt-workflow/     提示词包与工作流图
+chengwenfang-file|job|ai|crawler|common|infra/
+src/                              React
 ```
 
----
+依赖方向和命名见 [docs/代码结构与注释规范.md](docs/代码结构与注释规范.md)、[docs/类命名词典.md](docs/类命名词典.md)。守卫测试是 `ModuleArchitectureTest`。
 
-## 更多安装与配置
-
-<details>
-<summary>环境检查 / winget 示例</summary>
-
-```powershell
-winget install Docker.DockerDesktop Microsoft.OpenJDK.21 OpenJS.NodeJS.LTS
-# Maven、Python、ffmpeg 按需；装完新开终端
-java -version; mvn -version; node -v; docker compose version
-```
-
-macOS / Linux：Homebrew 或用户目录便携 JDK/Maven；跳过 `use-utf8.ps1`。满血热点时 `application.yml` 里三处 `python-executable` 改为 `.venv/bin/python`。Apple Silicon 细节见上文「macOS Apple Silicon 从零」。
+GitHub Actions 跑 Vitest 和 Maven 单元测试，排除 `*IT` 与 fingerprint 金样。改持久化或 HTTP 时请在本机用 Docker 跑 IT。细节写在 [CONTRIBUTING.md](CONTRIBUTING.md)。Spring Boot 钉在 3.3.x：补丁可跟 Dependabot；升到 3.4 或下一个 major 要单独 PR，并跑单元测试和课程冒烟。
 
 </details>
-
-<details>
-<summary>与另一实例并存（端口 / Redis DB）</summary>
-
-默认 **8001 / 5173**、Redis **database=0**。并存时：
-
-```powershell
-.\scripts\start-java.ps1 -BesidePrivate -SkipCompose
-# 或环境变量 SERVER_PORT=8002 SPRING_DATA_REDIS_DATABASE=1 VITE_DEV_PORT=5174 …
-```
-
-库名保持 `chengwenfang`（另一实例可用 `chengwenfang_private`）。
-
-</details>
-
-<details>
-<summary>生产 Profile 注意</summary>
-
-```text
---spring.profiles.active=prod
-```
-
-- **必须**设置环境变量 `CHENGWENFANG_SECRET_KEY`（无开发默认值，未设置则启动失败）  
-- `crawler-allow-loopback=false`（不允许采环回）  
-- Swagger 关闭  
-
-本机 Compose / jar 的密钥与 DB 密码从 **`.env`**（或进程环境变量）注入；样板见 [`.env.example`](.env.example)，勿把真实密钥提交进仓。详见 [`SECURITY.md`](SECURITY.md)。
-
-</details>
-
-<details>
-<summary>能力依赖矩阵</summary>
-
-| 能力 | 依赖 | 未就绪 |
-|------|------|--------|
-| 课程主流程 | MySQL + Redis + JDK + Node + AI | 无法开发 |
-| 知识库索引 / 问答 | Qdrant + 设置页嵌入模型 + 多模态生成 | 无法切块嵌入或问答 |
-| 知识库 Graph | Neo4j profile + `knowledge.graph.enabled=true` | 仅 Hybrid，无 Local/Global 图路径 |
-| 雷达正文 | article-extract；Jina → Trafilatura → Lightpanda → 摘要 | 正文质量下降 |
-| SearXNG / Lightpanda | Compose profile | 该渠道或回退不可用 |
-| 资料池视频 | video-transcript + ffmpeg + 多模态 AI | 解析失败提示 |
-| 资料补充截图摘要 | page-screenshot + Playwright Chromium + 多模态 Vision（开发默认开） | 保留原 snippet / 可关 `page-screenshot.enabled` |
-| 成文佐证截屏 | 同上 + PyMuPDF（PDF 首页）；工作流节点 `hot_news_attach_evidence` | 跳过截屏、只保留文字出处；可关 `page-screenshot.enabled` |
-
-Lightpanda 镜像 AGPL-3.0，本仓未改源码；不用于绕过验证码 / 登录墙。
-
-</details>
-
----
-
-## 测试与文档
-
-```powershell
-. .\scripts\use-utf8.ps1
-mvn -pl chengwenfang-app -am test
-npm test
-```
-
-### CI 门禁（GitHub Actions）
-
-工作流 [`.github/workflows/ci.yml`](.github/workflows/ci.yml) 在 `push` / `pull_request` 上跑两道必过门禁：
-
-| Job | 跑什么 | 不跑什么 |
-|-----|--------|----------|
-| `frontend` | `npm ci` + Vitest（Node 22） | — |
-| `backend` | `mvn -pl chengwenfang-app -am test`，并 **排除** `**/*IT.java`、`ChengwenfangIT`、以及 `golden/fingerprint/**` | 需 Docker / Testcontainers 的集成测试；跨 OS 易因 CRLF 抖动的 fingerprint 金样 |
-
-原因：公开 CI 无稳定的本机 Docker 服务编排时长与密钥，IT 与 fingerprint 金样在 Actions 上易红、成本高；门禁以可复现的单元测试为主。
-
-本地改持久化、HTTP 适配层或整仓冒烟时，请自行跑 IT（需 Docker Desktop）：
-
-```powershell
-. .\scripts\use-utf8.ps1
-# 与 CI 相同（默认也会跑到 IT，若本机 Surefire 未额外 excludes）
-mvn -pl chengwenfang-app -am test
-# 或只跑集成套件（类名 *IT）
-mvn -pl chengwenfang-app -am test -Dtest='*IT'
-```
-
-| 文档 | 说明 |
-|------|------|
-| [`docs/README.md`](docs/README.md) | 索引 |
-| [`docs/AI从零搭建满血成文坊.md`](docs/AI从零搭建满血成文坊.md) | 满血 / AI 部署手册（含 Qdrant / 知识库） |
-| [`docs/知识库RAG体系设计.md`](docs/知识库RAG体系设计.md) | 知识库 RAG 权威设计 |
-| [`docs/知识库RAG成熟体系摘要.md`](docs/知识库RAG成熟体系摘要.md) | RAG 分层与启停摘要 |
-| [`docs/代码结构与注释规范.md`](docs/代码结构与注释规范.md) | 分层与注释 |
-| [`docs/类命名词典.md`](docs/类命名词典.md) | 类命名 |
-| [`contracts/api-sse-contract.md`](contracts/api-sse-contract.md) | API / SSE |
 
 ---
 
 ## 贡献与许可
 
-欢迎 Issue / PR：[`CONTRIBUTING.md`](CONTRIBUTING.md)。行为准则：[`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)。
+欢迎 Issue / PR：[CONTRIBUTING.md](CONTRIBUTING.md)。行为准则：[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)。
 
-[Apache License 2.0](LICENSE) · 第三方说明 [`NOTICE`](NOTICE) · 变更 [`CHANGELOG.md`](CHANGELOG.md)
+[Apache License 2.0](LICENSE) · 第三方说明 [NOTICE](NOTICE) · 变更 [CHANGELOG.md](CHANGELOG.md)

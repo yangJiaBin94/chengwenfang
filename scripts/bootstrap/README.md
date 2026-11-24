@@ -1,10 +1,12 @@
-# 首次部署：提示词包 与工作流种子
+# 提示词包与工作流种子
 
-运行时以 MySQL 为准。应用启动**不会**把代码里的提示词或流程图写回数据库，只做只读体检；缺配置时在日志里提示执行本脚本。
+运行时以 MySQL 为准。空库（还没有提示词包、也没有工作流定义）在应用启动时自动导入本目录的种子，然后继续跑，不退出。已有数据不会被启动过程覆盖。
 
-## 何时执行
+本目录的脚本留给补种和强制覆盖：缺行时补上，`-Force` / `--force` 时用仓库种子覆盖已有内置行。
 
-MySQL 已启动之后、日常使用之前，执行一次（库名见 `application.yml`，默认 `chengwenfang`；与私有实例共用宿主机 MySQL 时勿再起本仓 mysql 容器，确保库已创建即可）：
+## 何时手工执行
+
+自动导入没跑成，或要强制覆盖时再跑（库名见 `application.yml`，默认 `chengwenfang`；与私有实例共用宿主机 MySQL 时勿再起本仓 mysql 容器，确保库已创建即可）：
 
 ```powershell
 # Windows
@@ -39,8 +41,8 @@ powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap\Initialize-Chengwen
 
 `builtin-catalog.json`：
 
-- 课程 PromptPack（含 global 规则 / 审校 / 配图检查，以及可编辑的「作者风格」）
-- 热点成文 提示词包、雷达采集 PromptPack（含热点作者风格等）
+- 课程提示词包（含 global 规则 / 审校 / 配图检查，以及可编辑的「作者风格」）
+- 热点成文提示词包、雷达采集提示词包（含热点作者风格等）
 - 三条已发布工作流图：课程生成、热点成文、雷达采集（节点上的 提示词包 先按名称占位，导入时换成库内 id；课程图已挂「作者风格」）
 - 排版主题：`mdnice · 紫韵 Optima`（稳定 key=`mdnice-ziyun-optima`）
 
@@ -61,7 +63,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap\Initialize-Chengwen
 
 - **提示词正文**：只维护在 `builtin-catalog.json`（或前端改库）。**不要**在 Java 里嵌 `systemInstructions`。
 - **沉淀池渠道**：只维护在 `source-channel-catalog.json`，并保持 `SourceChannelCatalogCodes` / `Tags` 与 JSON 一致。
-- 导入后以 MySQL `prompt_packs` / `source_channel_catalog` 表为准；应用启动不会把代码提示词写回库。
+- 导入后以 MySQL `prompt_packs` / `source_channel_catalog` 表为准。启动只在空库时导入；已改过的提示词包不会被下次启动盖掉。
 - 若只刷新三条内置工作流图、保留现有 提示词包 正文，可运行：
 
 ```text
@@ -81,17 +83,17 @@ java "-Dfile.encoding=UTF-8" "-Dserver.port=18099" -jar chengwenfang-app\target\
 
 日常启动也会自动核对：缺 builtin 节点则覆盖发布（见 `BuiltinWorkflowGraphSyncRunner`）。
 
-## CLI 配置档：仅课程 / 满血热点
+## CLI 配置档：课程 + 知识库 / 满血热点
 
-本地不想一次装齐 Python CLI 时，可用 Spring Profile 选档（与种子导入无关，改的是运行时开关）：
+默认档已经包含 Qdrant。本地不想装 Python CLI 时，可以用 Spring Profile 关掉热点侧开关（与种子导入无关）：
 
 | Profile | 含义 | 启动示例 |
 |---------|------|----------|
-| `course-only` | 关掉视频解析与 Lightpanda / Trafilatura；适合只跑课程成文 | `mvn -pl chengwenfang-app -am spring-boot:run -Dspring-boot.run.profiles=course-only` |
+| `course-only` | 关掉视频解析与 Lightpanda / Trafilatura；适合只跑课程成文和知识库 | `mvn -pl chengwenfang-app -am spring-boot:run -Dspring-boot.run.profiles=course-only` |
 | `hotnews-full` | 打开雷达正文瀑布 + 资料池视频解析 | 同上，profiles=`hotnews-full` |
 
 对应文件：`chengwenfang-app/src/main/resources/application-course-only.yml`、`application-hotnews-full.yml`。
 
-**满血热点**请先跑 `powershell -ExecutionPolicy Bypass -File .\scripts\setup-hotnews-clis.ps1`（`article-extract` / `video-transcript` / `page-screenshot`+Chromium+PyMuPDF），并 `docker compose --profile all`（SearXNG + Lightpanda）。CLI 未就绪时相关 Job 会失败并写中文错误，不会静默用占位正文；截图 Vision 还需设置里配置多模态模型；成文佐证截屏与 Vision 共用 page-screenshot（PDF 依赖 PyMuPDF）。
+**满血热点**请跑 `scripts/setup-hotnews-clis.ps1` 或 `.sh`（`article-extract` / `video-transcript` / `page-screenshot`，含 Chromium 与 PyMuPDF），并 `docker compose --profile all`（SearXNG + Lightpanda；Neo4j 容器可随 all 起来，Graph 开关仍默认关）。解释器按操作系统选择 venv，不必改 `python-executable`。CLI 未就绪时相关 Job 会失败并写中文错误，不会静默用占位正文；截图还要设置里的多模态模型。网页佐证截图对不上定位文本时不会用首屏顶上；PDF 取首页。
 
 Worker 并发（与 Profile 无关）：`worker-concurrency` 为全局上限；`worker-text/image/fetch-concurrency` 为分类型槽，防止出图 / Whisper 饿死短任务。指标见 Actuator `GET /actuator/metrics`（如 `chengwenfang.jobs`、`chengwenfang.jobs.lease.reclaim`、`chengwenfang.jobs.duration`）。

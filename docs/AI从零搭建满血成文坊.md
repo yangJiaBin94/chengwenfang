@@ -1,17 +1,17 @@
 # AI 从零搭建满血成文坊（执行手册）
 
-> **给人类**：把本文件路径发给 AI（Cursor / Codex 等），并说明目标是「按文档从零搭满血环境直到前后端可访问」。  
-> **给 AI**：严格按本文阶段执行；每阶段先探测再安装；每步用「验收命令」确认后再进入下一步。不要跳过验收，不要臆造未在仓库出现的端口/账号/路径。
+> **给 AI 助手执行**，不是人类的安装主入口。人请读根目录 [README.md](../README.md) 和 [体验手册.md](./体验手册.md)。  
+> **给 AI**：严格按本文阶段执行；每阶段先探测再安装；每步用「验收命令」确认后再进入下一步。不要跳过验收，不要臆造未在仓库出现的端口/账号/路径。产品名是提示词包，模块是 `chengwenfang-prompt-workflow`。
 
 | 项 | 值 |
 |----|-----|
 | 仓库根目录 | 含 `pom.xml`、`compose.yml`、`package.json` 的目录（下文称 `$ROOT`） |
 | 目标形态 | **满血**（默认按本文）：`docker compose --profile all` → mysql+redis+**qdrant**+**searxng+lightpanda**（`all` 含 Neo4j 容器；图检索默认关）+ 本机 Python CLI + ffmpeg + 前后端 |
-| 仅课程（非本文默认） | `docker compose up`（无 profile）→ **mysql+redis+qdrant**；无 SearXNG/Lightpanda 不算失败，但须在汇报标明「课程档」 |
+| 课程 + 知识库（非本文默认） | `docker compose up`（无 profile）→ **mysql+redis+qdrant**；无 SearXNG/Lightpanda 不算失败，但须在汇报标明「课程 + 知识库档」 |
 | 人类仍须完成 | 在网页「设置」里填写真实 AI API Key（**多模态 + 嵌入**；及可选微信公众号）；密钥勿写入仓库 |
 | 默认 OS | Windows + PowerShell（作者环境）；macOS（含 Apple Silicon）/ Linux 见文末附录与根 README「macOS Apple Silicon 从零」 |
 
-> **常见误解**：README 快速开始是「仅课程」，完成后 Docker 为 MySQL/Redis/**Qdrant**（无 SearXNG）。若用户要热点雷达/本地搜索，必须用本文阶段 B 的 `--profile all`，不能只跑 README 里的 `docker compose up`。知识库问答不依赖 SearXNG，但依赖 Qdrant + 嵌入 Key。
+> **常见误解**：README 主路径是「课程 + 知识库」，完成后 Docker 为 MySQL/Redis/**Qdrant**（无 SearXNG）。知识库随默认 `docker compose up` 就有，不是满血才有。若用户要热点雷达/本地搜索，必须用本文阶段 B 的 `--profile all`。知识库问答不依赖 SearXNG，但依赖 Qdrant 真连通 + 嵌入 Key。Graph 容器若随 `all` 起来，应用开关 `knowledge.graph.enabled` 仍默认 false。
 
 相关人工说明：[`README.md`](../README.md)。知识库设计：[`知识库RAG体系设计.md`](./知识库RAG体系设计.md)。正文抽取 / 视频 / 截图 CLI：[`scripts/article-extract/README.md`](../scripts/article-extract/README.md)、[`scripts/video-transcript/README.md`](../scripts/video-transcript/README.md)、[`scripts/page-screenshot/README.md`](../scripts/page-screenshot/README.md)。一键安装：[`scripts/setup-hotnews-clis.ps1`](../scripts/setup-hotnews-clis.ps1) / [`scripts/setup-hotnews-clis.sh`](../scripts/setup-hotnews-clis.sh)。
 
@@ -33,11 +33,12 @@
 - [ ] `GET http://127.0.0.1:8001/api/health` 返回成功（`code=ok` 或等价成功信封）  
 - [ ] 浏览器可打开 `http://127.0.0.1:5173`  
 - [ ] `docker compose --profile all ps` 中 mysql、redis、**qdrant**、searxng、lightpanda 为 running（或 healthy）；neo4j 随 `all` 出现亦可  
-- [ ] `curl.exe -s http://127.0.0.1:6333/readyz` 可访问（知识库向量）  
-- [ ] 存在 `scripts/article-extract/.venv/Scripts/python.exe`（Windows）且能 `import trafilatura`  
+- [ ] `curl.exe -s http://127.0.0.1:6333/readyz` 可访问；应用连的是真 Qdrant，内存回退不算成功（容器内主机名是 `qdrant`，不是 `127.0.0.1`）  
+- [ ] 空库启动后提示词包与三条主工作流已导入（设置 → 系统就绪，或 `GET /api/system/builtin-ready`）。不必先手工跑种子脚本  
+- [ ] 存在 `scripts/article-extract/.venv` 且能 `import trafilatura`（Windows 为 `Scripts/python.exe`，其它系统为 `bin/python`，由程序按操作系统选择）  
 - [ ] 存在 `scripts/video-transcript/.venv`，且本机 `ffmpeg -version` 可用；venv 内可 `import whisper`  
 - [ ] 存在 `scripts/page-screenshot/.venv`，且已 `playwright install chromium` + `import fitz`（PyMuPDF）；试跑 `-m page_screenshot` 能出 PNG  
-- [ ] 向用户说明：须在前端「设置」配置**多模态 AI**与**嵌入模型**后，生成/解析/知识库索引与问答才真正可用；成文佐证截屏共用 page-screenshot CLI  
+- [ ] 用户在设置里对**多模态（生成）**和**嵌入**做了连接测试并通过。未测通过不算满血完成。成文佐证截屏共用 page-screenshot CLI  
 
 
 ---
@@ -103,7 +104,7 @@ docker ps --filter "name=chengwenfang-lightpanda"
 
 **验收 B（满血）**：`--wait` 成功退出；`docker compose --profile all ps` 中 **mysql、redis、qdrant、searxng、lightpanda** 均在跑。缺 searxng/lightpanda → 未加 `--profile all` 或 profile 镜像拉取失败，须补齐后再继续。缺 qdrant → 检查默认服务是否被误删 / 端口占用。
 
-若用户只要课程、不要热点容器：`docker compose up -d --wait`（**mysql+redis+qdrant**；**非满血**，阶段 G 必须写明，且跳过阶段 C）。
+若用户只要课程 + 知识库、不要热点容器：`docker compose up -d --wait`（**mysql+redis+qdrant**；**非满血**，阶段 G 必须写明，且跳过阶段 C）。Qdrant 属于这一档，不要把它写成满血才有。
 
 改 `deploy/searxng/settings.yml` 后：
 
@@ -113,13 +114,9 @@ docker compose --profile searxng up -d --force-recreate searxng
 
 ---
 
-## 阶段 C — 本机 Python CLI（正文 + 视频 + 截图 Vision）
+## 阶段 C — 本机 Python CLI（正文 + 视频 + 截图）
 
-开发配置默认路径（Windows，见 `application.yml`）：
-
-- `chengwenfang.article-extract.python-executable` → `scripts/article-extract/.venv/Scripts/python.exe`  
-- `chengwenfang.video-transcript.python-executable` → `scripts/video-transcript/.venv/Scripts/python.exe`  
-- `chengwenfang.page-screenshot.python-executable` → `scripts/page-screenshot/.venv/Scripts/python.exe`（`enabled=true`）
+`application.yml` 里三处 `python-executable` 保持 `python` 即可。运行时按操作系统选择 venv：Windows 为 `.venv/Scripts/python.exe`，其它系统为 `.venv/bin/python`。不要为了换系统去改配置文件。`page-screenshot.enabled` 默认为 true。
 
 ### C0 一键安装（推荐）
 
@@ -129,7 +126,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\setup-hotnews-clis.ps1
 # 等价分项：C1 + C2 + C3
 ```
 
-macOS / Linux：`chmod +x scripts/setup-hotnews-clis.sh && ./scripts/setup-hotnews-clis.sh`（并将 yml 中三处 `python-executable` 改为 `.venv/bin/python`）。
+macOS / Linux：`chmod +x scripts/setup-hotnews-clis.sh && ./scripts/setup-hotnews-clis.sh`。装完不必改 `python-executable`。
 
 ### C1 正文抽取
 
@@ -247,7 +244,7 @@ curl.exe -s -o NUL -w "%{http_code}" http://127.0.0.1:5173
 
 库表：后端首次启动时 Flyway 自动迁移，无需手工导 SQL。
 
-内置提示词包 与三条工作流不在启动时从代码写入。阶段 E 验收通过后执行一次：
+空库会在后端启动时自动导入提示词包、三条主工作流、演示主题和信源沉淀池，然后继续运行。下面的脚本只在自动导入失败，或需要强制覆盖时再执行：
 
 ```powershell
 # Windows
@@ -260,7 +257,7 @@ chmod +x scripts/bootstrap/Initialize-ChengwenfangSeed.sh
 ./scripts/bootstrap/Initialize-ChengwenfangSeed.sh
 ```
 
-未执行时，再次启动后端日志会出现「基础配置缺失」及上述命令；进程不因此退出。详见 [`scripts/bootstrap/README.md`](../scripts/bootstrap/README.md)。同次导入还会写入信源沉淀池（`source-channel-catalog.json`），说明见 [`docs/信源沉淀池.md`](./信源沉淀池.md)。
+自动导入失败时，日志会出现「基础配置缺失」和补种命令；进程不因此退出。详见 [`scripts/bootstrap/README.md`](../scripts/bootstrap/README.md)。信源沉淀池说明见 [`docs/信源沉淀池.md`](./信源沉淀池.md)。
 
 热点演示主题若报「请先由 AI 分析并确认主题主要意图」：catalog / 课程主题通常已成功；阶段 F 填 Key 后在 UI 确认意图即可，勿因此判定整次种子失败。
 
@@ -296,8 +293,8 @@ AI **不能**代替用户填写真实密钥。完成后请用户：
 2. Compose 服务状态（至少 mysql、redis、**qdrant**；满血另含 searxng、lightpanda）  
 3. 三个 Python CLI（article-extract / video-transcript / page-screenshot含 Chromium+PyMuPDF）是否就绪、ffmpeg 是否在 PATH  
 4. 后端 health、前端 URL、`6333/readyz` 是否可达  
-5. 是否已执行种子脚本（`.ps1` 或 `Initialize-ChengwenfangSeed.sh`）；热点演示主题若因意图确认失败是否已说明不影响课程  
-6. 仍待用户完成的设置项（多模态 / **嵌入** API Key、可选 SearXNG 来源、可选 Graph）  
+5. 空库是否已自动导入提示词包（系统就绪）；热点演示主题若因意图确认失败是否已说明不影响课程  
+6. 仍待用户完成的设置项（多模态 / **嵌入** API Key 的连接测试、可选 SearXNG 来源）。Graph 即使容器已起也默认关  
 7. 常用停止命令：`.\scripts\stop-java.ps1` 或结束前台 mvn/vite；`docker compose --profile all stop`  
 
 ---
@@ -307,7 +304,7 @@ AI **不能**代替用户填写真实密钥。完成后请用户：
 | 现象 | 排查 |
 |------|------|
 | Flyway / 连不上库 | `docker compose ps`；是否跳过了 `--wait`；端口 3306 是否被占用 |
-| 日志「基础配置缺失」 | 执行种子脚本（Windows `.ps1` / macOS `Initialize-ChengwenfangSeed.sh`）；不要指望启动自动灌 提示词包 |
+| 日志「基础配置缺失」 | 空库本应自动导入。仍缺失时再跑种子脚本（Windows `.ps1` / macOS `Initialize-ChengwenfangSeed.sh`） |
 | `project name must not be empty` | 父目录含中文等非法字符时 Compose 默认名为空；本仓 `compose.yml` 已设 `name: chengwenfang`，或 `export COMPOSE_PROJECT_NAME=chengwenfang` |
 | 拉 Docker Hub 镜像超时 | 用国内加速源 pull `mysql:8.4` / `redis:7` / `qdrant/qdrant` 再 `docker tag` 成本地名，然后 `docker compose up`（示例见 README「macOS Apple Silicon 从零」） |
 | 知识库无法索引 / 问答空 | `curl 6333/readyz`；设置页是否配置嵌入模型；Flyway 是否含 knowledge 表；见 [`知识库RAG体系设计.md`](./知识库RAG体系设计.md) |
@@ -335,8 +332,8 @@ AI **不能**代替用户填写真实密钥。完成后请用户：
 - Compose：命令相同；项目名已由 `compose.yml` 的 `name: chengwenfang` 固定。镜像超时则先加速源 pull + tag。  
 - 种子：`./scripts/bootstrap/Initialize-ChengwenfangSeed.sh`（不要调用 `.ps1`）。  
 - 进程：优先阶段 E1 双前台终端；`scripts/start.sh` 的 `nohup` 在部分 IDE 会话里会被带走。  
-- Python venv 解释器为 `.venv/bin/python`，**必须**改 `application.yml`（或环境覆盖）中三处 `python-executable`（article-extract / video-transcript / page-screenshot），否则 Java 仍找 Windows 路径。  
-- 仅课程主流程时：跳过阶段 C 与 SearXNG/Lightpanda；阶段 G 须标明「未装热点满血依赖」。  
+- Python venv 解释器为 `.venv/bin/python`。程序会自己选这条路径，**不要**改 `application.yml` 的 `python-executable`。  
+- 只要课程 + 知识库时：跳过阶段 C 与 SearXNG/Lightpanda；Qdrant 仍要在。阶段 G 须标明「未装热点满血依赖」。  
 - `start-java.ps1` 不可用时改用阶段 E1。  
 
 ---

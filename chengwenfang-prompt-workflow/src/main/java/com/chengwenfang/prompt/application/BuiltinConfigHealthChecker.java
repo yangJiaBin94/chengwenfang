@@ -41,7 +41,7 @@ public class BuiltinConfigHealthChecker implements ApplicationRunner {
       }
     }
     log.error(
-        "基础配置未就绪，生成能力可能不可用。请执行：{}",
+        "基础配置未就绪，生成能力可能不可用。空库应已自动导入；若仍缺失请补种：{}",
         BuiltinConfigInspector.BOOTSTRAP_HINT);
   }
 }

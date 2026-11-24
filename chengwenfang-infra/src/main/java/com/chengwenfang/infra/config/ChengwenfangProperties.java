@@ -53,6 +53,8 @@ public class ChengwenfangProperties {
   private int aiEmbeddingTimeoutSeconds = 60;
   /** 知识库向量库（Qdrant）连接与集合配置。 */
   private QdrantSettings qdrant = new QdrantSettings();
+  /** 系统就绪面板探测的可选热点依赖地址。 */
+  private ReadinessSettings readiness = new ReadinessSettings();
   /** 知识库 RAG 功能开关与 Agent 预算。 */
   private KnowledgeSettings knowledge = new KnowledgeSettings();
   /** Neo4j 图库连接（Graph flag 打开时使用）。 */
@@ -205,10 +207,26 @@ public class ChengwenfangProperties {
     private String password = "chengwenfang_neo4j";
   }
 
+  /**
+   * 系统就绪探测地址。
+   * <p>宿主机默认环回发布端口；应用容器内应改成 Compose 服务名。
+   */
+  @Data
+  public static class ReadinessSettings {
+    /** SearXNG 根地址（探测时追加 {@code /healthz}）。 */
+    private String searxngUrl = "http://127.0.0.1:8080";
+    /** Lightpanda 主机名。 */
+    private String lightpandaHost = "127.0.0.1";
+    /** Lightpanda 端口。 */
+    private int lightpandaPort = 9222;
+    /** Python CLI 依赖探测超时（秒）。 */
+    private int cliProbeTimeoutSeconds = 8;
+  }
+
   /** Qdrant 向量库配置（知识库 RAG）。 */
   @Data
   public static class QdrantSettings {
-    /** 为 true 时使用 Qdrant；false 时回退内存向量存储。 */
+    /** 为 true 时必须连上 Qdrant；false 时使用内存实现且不计为就绪。 */
     private boolean enabled = true;
     /** Qdrant 主机名或 IP。 */
     private String host = "127.0.0.1";
