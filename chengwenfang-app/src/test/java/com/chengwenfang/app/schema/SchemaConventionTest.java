@@ -35,7 +35,10 @@ class SchemaConventionTest extends ChengwenfangIT {
       // workflow_node_runs 沿用原列名的调试快照
       "input_summary",
       "output_summary",
-      "config_snapshot");
+      "config_snapshot",
+      // 视频抽帧：文件 id 列表与逐帧说明，V5/V6 已落地
+      "frame_file_ids",
+      "frame_captions");
 
   /** 禁止作为列名的裸保留字（须改为 {@code <x>_key} / {@code <x>_type}）。 */
   static final Set<String> FORBIDDEN_COLUMN_NAMES = Set.of("key", "type");
