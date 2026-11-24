@@ -10,8 +10,8 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 /**
- * 空库或演示主题基线未齐时自动导入内置提示词包、工作流与演示主题，不退出进程。
- * <p>已齐备则跳过。补种或强制覆盖仍用 {@code scripts/bootstrap} 脚本。
+ * 空库或仍为草稿的演示主题基线未齐时自动导入，不退出进程。
+ * <p>已启用/停用的演示主题视为用户领地，不再 reopen。强制补种仍用 {@code scripts/bootstrap}。
  */
 @Slf4j
 @Component

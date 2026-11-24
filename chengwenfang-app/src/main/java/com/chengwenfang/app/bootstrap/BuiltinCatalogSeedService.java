@@ -120,8 +120,8 @@ public class BuiltinCatalogSeedService {
   }
 
   /**
-   * 是否需要自动补种：空库，或演示主题/已发布工作流基线未齐。
-   * <p>避免「提示词包已写入、后续主题失败」后永远跳过。
+   * 是否需要自动补种：空库，或仍可自动修复的草稿演示主题/工作流未齐。
+   * <p>避免「提示词包已写入、后续主题失败」后永远跳过；已启用/停用的主题不再触发补种。
    *
    * @return 需要自动导入则为 true
    */
@@ -131,19 +131,23 @@ public class BuiltinCatalogSeedService {
     }
     return !seedBaselineComplete(
         countPublishedWorkflows(),
+        isSeedThemeConfirmed(COURSE_SEED_THEME_ID),
         countThemeCourses(COURSE_SEED_THEME_ID),
+        isSeedThemeConfirmed(HOT_NEWS_SEED_THEME_ID),
         countHotNewsChannels(HOT_NEWS_SEED_THEME_ID));
   }
 
   /**
-   * 自动种子后的基线是否已齐（三条已发布工作流 + 两演示主题有内容）。
+   * 自动种子后的基线是否已齐（不必再自动补种）。
    *
    * @return 齐则为 true
    */
   public boolean isSeedBaselineComplete() {
     return seedBaselineComplete(
         countPublishedWorkflows(),
+        isSeedThemeConfirmed(COURSE_SEED_THEME_ID),
         countThemeCourses(COURSE_SEED_THEME_ID),
+        isSeedThemeConfirmed(HOT_NEWS_SEED_THEME_ID),
         countHotNewsChannels(HOT_NEWS_SEED_THEME_ID));
   }
 
@@ -159,15 +163,46 @@ public class BuiltinCatalogSeedService {
   }
 
   /**
-   * 种子基线是否齐备。
+   * 自动补种视角下的基线是否齐备。
+   * <p>已启用/停用的演示主题视为用户领地（即使 0 课/0 渠道也不再自动修）；
+   * 仅对缺失或仍为草稿且内容空的主题继续补齐。
    *
    * @param publishedWorkflows 已发布工作流定义数
+   * @param courseConfirmed    课程演示主题是否已启用或停用
    * @param courseLessons      课程演示主题课壳数
+   * @param hotNewsConfirmed   热点演示主题是否已启用或停用
    * @param hotNewsChannels    热点演示主题渠道数
    * @return 齐则为 true
    */
-  static boolean seedBaselineComplete(int publishedWorkflows, int courseLessons, int hotNewsChannels) {
-    return publishedWorkflows >= 3 && courseLessons > 0 && hotNewsChannels > 0;
+  static boolean seedBaselineComplete(
+      int publishedWorkflows,
+      boolean courseConfirmed,
+      int courseLessons,
+      boolean hotNewsConfirmed,
+      int hotNewsChannels) {
+    if (publishedWorkflows < 3) {
+      return false;
+    }
+    boolean courseOk = courseConfirmed || courseLessons > 0;
+    boolean hotNewsOk = hotNewsConfirmed || hotNewsChannels > 0;
+    return courseOk && hotNewsOk;
+  }
+
+  /**
+   * 演示主题是否已启用或停用（用户领地，自动种子不 reopen）。
+   *
+   * @param themeId 主题 id
+   * @return 已确认则为 true；不存在或仍为草稿为 false
+   */
+  private boolean isSeedThemeConfirmed(String themeId) {
+    List<Map<String, Object>> rows = jdbc.queryForList(
+        "SELECT status FROM themes WHERE id=? LIMIT 1", themeId);
+    if (rows.isEmpty()) {
+      return false;
+    }
+    String status = String.valueOf(rows.get(0).get("status"));
+    return ContentThemeStatus.ENABLED.matches(status)
+        || ContentThemeStatus.DISABLED.matches(status);
   }
 
   /**
@@ -398,10 +433,10 @@ public class BuiltinCatalogSeedService {
         1);
     int seriesRows = countThemeSeries(theme.getId());
     int courseRows = countThemeCourses(theme.getId());
-    // 已确认且已有课表：跳过；已确认但 0 课：回退为 draft 再补全课表
-    if ((ContentThemeStatus.ENABLED.matches(theme.getStatus())
-            || ContentThemeStatus.DISABLED.matches(theme.getStatus()))
-        && (seriesRows > 0 || courseRows > 0)) {
+    boolean confirmed = ContentThemeStatus.ENABLED.matches(theme.getStatus())
+        || ContentThemeStatus.DISABLED.matches(theme.getStatus());
+    // 已确认主题：非 force 一律跳过，避免自动补种 reopen 覆盖用户进度
+    if (confirmed && !force) {
       log.info(
           "跳过已确认课程种子主题 id={} status={} series={} courses={}",
           theme.getId(),
@@ -410,8 +445,17 @@ public class BuiltinCatalogSeedService {
           courseRows);
       return;
     }
-    if (ContentThemeStatus.ENABLED.matches(theme.getStatus())
-        || ContentThemeStatus.DISABLED.matches(theme.getStatus())) {
+    if (confirmed && (seriesRows > 0 || courseRows > 0)) {
+      log.info(
+          "跳过已确认课程种子主题 id={} status={} series={} courses={}",
+          theme.getId(),
+          theme.getStatus(),
+          seriesRows,
+          courseRows);
+      return;
+    }
+    // force 且已确认但 0 课：回退为 draft 再补全课壳
+    if (confirmed) {
       reopenEmptySeedTheme(theme.getId());
       log.info("空课表种子主题已回退为 draft 以补全课壳 id={}", theme.getId());
     }
@@ -579,10 +623,10 @@ public class BuiltinCatalogSeedService {
         text(node, "description"),
         1);
     int channelRows = countHotNewsChannels(theme.getId());
-    // 已确认且已有渠道：跳过；已确认但 0 渠道：回退为 draft 再走完整确认路径
-    if ((ContentThemeStatus.ENABLED.matches(theme.getStatus())
-            || ContentThemeStatus.DISABLED.matches(theme.getStatus()))
-        && channelRows > 0) {
+    boolean confirmed = ContentThemeStatus.ENABLED.matches(theme.getStatus())
+        || ContentThemeStatus.DISABLED.matches(theme.getStatus());
+    // 已确认主题：非 force 一律跳过，避免每次重启 reopen 并写入种子问卷后强制 commit
+    if (confirmed && !force) {
       log.info(
           "跳过已确认热点种子主题 id={} status={} channels={}",
           theme.getId(),
@@ -590,8 +634,16 @@ public class BuiltinCatalogSeedService {
           channelRows);
       return;
     }
-    if (ContentThemeStatus.ENABLED.matches(theme.getStatus())
-        || ContentThemeStatus.DISABLED.matches(theme.getStatus())) {
+    if (confirmed && channelRows > 0) {
+      log.info(
+          "跳过已确认热点种子主题 id={} status={} channels={}",
+          theme.getId(),
+          theme.getStatus(),
+          channelRows);
+      return;
+    }
+    // force 且已确认但 0 渠道：回退为 draft 再走完整确认路径
+    if (confirmed) {
       reopenEmptySeedTheme(theme.getId());
       log.info("空渠道种子主题已回退为 draft 以补全初始渠道 id={}", theme.getId());
     }
