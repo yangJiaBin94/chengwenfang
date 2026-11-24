@@ -31,6 +31,9 @@ public class BuiltinInspectView {
   /** 期望的内置提示词包 数量。 */
   private int expectedPromptPackCount;
 
+  /** 内置提示词包是否均无提示词包域问题。 */
+  private boolean promptPackReady;
+
   /** 三条主工作流是否均无工作流域问题。 */
   private boolean workflowReady;
 }

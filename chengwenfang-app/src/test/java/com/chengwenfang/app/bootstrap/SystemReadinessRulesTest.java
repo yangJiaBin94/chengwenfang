@@ -3,6 +3,7 @@ package com.chengwenfang.app.bootstrap;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.chengwenfang.ai.facade.dto.view.ProviderPublicView;
+import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -94,9 +95,30 @@ class SystemReadinessRulesTest {
   }
 
   @Test
-  void promptPacksStayReadyWhenOnlyWorkflowFails() {
-    assertThat(SystemReadinessRules.promptPacksReady(12, 12, false, false)).isTrue();
-    assertThat(SystemReadinessRules.promptPacksReady(3, 12, false, true)).isFalse();
-    assertThat(SystemReadinessRules.promptPacksReady(12, 12, true, true)).isTrue();
+  void promptPacksFollowPackDomainNotWorkflow() {
+    assertThat(SystemReadinessRules.promptPacksReady(12, 12, true)).isTrue();
+    assertThat(SystemReadinessRules.promptPacksReady(12, 12, false)).isFalse();
+    assertThat(SystemReadinessRules.promptPacksReady(3, 12, true)).isFalse();
+  }
+
+  @Test
+  void imageKeyCanBeOptionalForDefaultProfile() {
+    SystemReadinessItem item = SystemReadinessRules.apiKey(
+        SystemReadinessKeys.IMAGE_KEY,
+        "图像 Key",
+        ProviderPublicView.builder().apiKeyConfigured(false).build(),
+        "未配置",
+        false);
+
+    assertThat(item.getStatus()).isEqualTo(SystemReadinessStatus.FAIL);
+    assertThat(item.isRequired()).isFalse();
+  }
+
+  @Test
+  void bareInterpreterCommandIsRecognizedForPathFallback() {
+    assertThat(SystemReadinessProbe.isBareInterpreterCommand(Path.of("python"))).isTrue();
+    assertThat(SystemReadinessProbe.isBareInterpreterCommand(Path.of("python3"))).isTrue();
+    assertThat(SystemReadinessProbe.isBareInterpreterCommand(
+        Path.of("scripts/article-extract/.venv/bin/python"))).isFalse();
   }
 }

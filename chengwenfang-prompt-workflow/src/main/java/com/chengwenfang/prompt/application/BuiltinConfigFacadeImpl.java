@@ -47,6 +47,7 @@ public class BuiltinConfigFacadeImpl implements BuiltinConfigFacade {
         .bootstrapHint(BuiltinConfigInspector.BOOTSTRAP_HINT)
         .promptPackCount(promptPackRows.size())
         .expectedPromptPackCount(BuiltinConfigInspector.expectedPromptPacks().size())
+        .promptPackReady(!BuiltinConfigInspector.hasPromptPackIssue(issues))
         .workflowReady(!BuiltinConfigInspector.hasWorkflowIssue(issues))
         .build();
   }

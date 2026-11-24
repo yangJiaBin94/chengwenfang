@@ -694,6 +694,25 @@
         ],
         "scoreGuidance": "按四维打分后加权"
       },
+      "core_intent": {
+        "summary": "跟踪大模型、Agent 与开源发布等可写成深度分析的 AI 前沿动态",
+        "material_wants": [
+          "一手发布",
+          "可核实报道",
+          "可落地洞察"
+        ],
+        "material_avoids": [
+          "纯八卦",
+          "无来源传闻"
+        ],
+        "success_looks_like": "当天能筛出值得写的选题并落到雷达 Top10",
+        "confirmed": true
+      },
+      "collect_strategy": {
+        "mode": "structured",
+        "rationale": "演示主题用固定搜索词与渠道，便于空库开箱即用",
+        "user_override": false
+      },
       "expression": {
         "tone": "chatty",
         "boundaries": ""

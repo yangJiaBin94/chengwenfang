@@ -25,7 +25,7 @@ public final class OsPythonExecutableResolver {
    * @param contentRoot       仓库根；相对路径以此为基准
    * @param workingDirectory  CLI 工作目录（相对仓库根或绝对路径）
    * @param configured        配置中的解释器；可空、命令名，或显式路径
-   * @return 应交给子进程的路径（venv 尚未安装时仍返回本机应有的 venv 路径）
+   * @return 应交给子进程的路径；venv 未装且配置为命令名时回落 PATH 命令
    */
   public static Path resolve(Path contentRoot, String workingDirectory, String configured) {
     return resolve(contentRoot, workingDirectory, configured, isWindowsOs());
@@ -44,19 +44,26 @@ public final class OsPythonExecutableResolver {
       Path contentRoot, String workingDirectory, String configured, boolean windows) {
     Path root = contentRoot == null ? Path.of(".").toAbsolutePath() : contentRoot.toAbsolutePath();
     Path osVenv = venvPython(root, workingDirectory, windows);
-    // 配置写成另一套系统的 venv 时直接忽略，避免非 Windows 还要改 yml
+    // 配置写成另一套系统的 venv 时：有本机 venv 用 venv，否则回落命令名
     if (isForeignOsLayout(configured, windows)) {
-      return osVenv;
+      if (isExistingFile(osVenv)) {
+        return osVenv;
+      }
+      return Path.of(windows ? "python" : "python3");
     }
     Path configuredPath = toAbsolute(root, configured);
     if (isExistingFile(configuredPath)) {
       return configuredPath;
     }
-    if (isExistingFile(osVenv) || isGenericCommand(configured)) {
+    if (isExistingFile(osVenv)) {
       return osVenv;
     }
+    if (isGenericCommand(configured)) {
+      // venv 未装：回落 PATH 上的 python / python3 / py
+      return Path.of(StrUtil.blankToDefault(StrUtil.trim(configured), windows ? "python" : "python3"));
+    }
     if (configuredPath == null) {
-      return osVenv;
+      return Path.of(windows ? "python" : "python3");
     }
     return configuredPath;
   }

@@ -150,6 +150,24 @@ public final class BuiltinConfigInspector {
   }
 
   /**
+   * 是否存在提示词包域问题。
+   *
+   * @param issues 结构化问题
+   * @return true 表示提示词包未就绪
+   */
+  public static boolean hasPromptPackIssue(List<BuiltinIssue> issues) {
+    if (issues == null) {
+      return false;
+    }
+    for (BuiltinIssue issue : issues) {
+      if (issue != null && issue.isPromptPack()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
    * 内置提示词包 期望清单（名称 + 场景）。
    *
    * @return 期望列表

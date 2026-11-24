@@ -52,10 +52,10 @@ public class SystemReadinessProbe {
     List<SystemReadinessItem> items = new ArrayList<>();
     int promptPackCount = builtin == null ? 0 : builtin.getPromptPackCount();
     int expected = builtin == null ? 0 : builtin.getExpectedPromptPackCount();
-    boolean builtinReady = builtin != null && builtin.isReady();
+    boolean promptPackReady = builtin != null && builtin.isPromptPackReady();
     boolean workflowReady = builtin != null && builtin.isWorkflowReady();
     boolean promptReady = SystemReadinessRules.promptPacksReady(
-        promptPackCount, expected, builtinReady, workflowReady);
+        promptPackCount, expected, promptPackReady);
     items.add(SystemReadinessRules.item(
         SystemReadinessKeys.PROMPT_PACKS,
         "内置提示词包",
@@ -91,11 +91,13 @@ public class SystemReadinessProbe {
         "嵌入 Key",
         settings == null ? null : settings.getEmbedding(),
         "未配置。知识库入库和问答不会成功，请在设置里填写嵌入模型并测试连接。"));
+    // 配图非课程+知识库主路径必填，缺省不挡默认档就绪
     items.add(SystemReadinessRules.apiKey(
         SystemReadinessKeys.IMAGE_KEY,
         "图像 Key",
         settings == null ? null : settings.getImage(),
-        "未配置。配图与封面会停住；请在设置里填写图片供应商并测试连接。"));
+        "未配置。配图与封面会停住；请在设置里填写图片供应商并测试连接。",
+        false));
 
     ChengwenfangProperties.ArticleExtractSettings article = properties.getArticleExtract();
     items.add(probeCli(
@@ -158,13 +160,14 @@ public class SystemReadinessProbe {
     boolean agentEnabled = properties.getKnowledge() != null
         && properties.getKnowledge().getAgent() != null
         && properties.getKnowledge().getAgent().isEnabled();
+    // 尚无独立连通探测，开启即记 PASS，避免「已开启但不可用」假分支
     items.add(SystemReadinessRules.optionalSwitch(
         SystemReadinessKeys.AGENT,
         "Agent",
         agentEnabled,
-        agentEnabled,
+        true,
         "默认关闭，不参与知识库问答。",
-        "已开启。",
+        "已开启（未单独探测可用性）。",
         "已开启但不可用。"));
     return items;
   }
@@ -205,9 +208,30 @@ public class SystemReadinessProbe {
         Path.of(StrUtil.blankToDefault(properties.getContentRoot(), ".")),
         workingDirectory,
         configuredPython);
-    boolean present = Files.isRegularFile(python);
-    boolean importsOk = present && modulesImport(python, modules);
+    // 文件路径或 PATH 命令名：以能跑通模块探测为准，避免 python 命令假阴性
+    boolean filePresent = Files.isRegularFile(python);
+    boolean importsOk = modulesImport(python, modules);
+    boolean present = filePresent || importsOk || isBareInterpreterCommand(python);
     return SystemReadinessRules.cli(key, label, present, importsOk, python.toString(), purpose);
+  }
+
+  /**
+   * 解析结果是否为无目录的解释器命令名（如 {@code python}），由 PATH 解析。
+   *
+   * @param python 解析路径
+   * @return 命令名则为 true
+   */
+  static boolean isBareInterpreterCommand(Path python) {
+    if (python == null) {
+      return false;
+    }
+    String text = StrUtil.trim(python.toString());
+    if (StrUtil.isBlank(text)) {
+      return false;
+    }
+    return !text.contains("/")
+        && !text.contains("\\")
+        && python.getNameCount() == 1;
   }
 
   /**

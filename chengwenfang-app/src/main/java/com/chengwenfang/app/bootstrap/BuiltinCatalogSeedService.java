@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.chengwenfang.common.FlexiblePayload;
 import com.chengwenfang.common.IdsUtil;
 import com.chengwenfang.content.facade.ContentFacade;
+import com.chengwenfang.content.facade.HotNewsThemeBriefingSupport;
 import com.chengwenfang.content.facade.constant.ContentModeIds;
 import com.chengwenfang.content.facade.dto.request.CurriculumDraftSaveRequest;
 import com.chengwenfang.content.facade.dto.request.ThemeBriefingPatchRequest;
@@ -48,6 +49,11 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class BuiltinCatalogSeedService {
+  /** 课程演示主题固定 id（与 default-themes.json 一致）。 */
+  static final String COURSE_SEED_THEME_ID = "theme-ai-self-study-zero";
+  /** 热点演示主题固定 id（与 default-themes.json 一致）。 */
+  static final String HOT_NEWS_SEED_THEME_ID = "theme-ai-frontier";
+
   /** 提示词包门面。 */
   private final PromptPackFacade promptPacks;
   /** 工作流门面。 */
@@ -114,6 +120,34 @@ public class BuiltinCatalogSeedService {
   }
 
   /**
+   * 是否需要自动补种：空库，或演示主题/已发布工作流基线未齐。
+   * <p>避免「提示词包已写入、后续主题失败」后永远跳过。
+   *
+   * @return 需要自动导入则为 true
+   */
+  public boolean needsAutoSeed() {
+    if (isEmptyLibrary()) {
+      return true;
+    }
+    return !seedBaselineComplete(
+        countPublishedWorkflows(),
+        countThemeCourses(COURSE_SEED_THEME_ID),
+        countHotNewsChannels(HOT_NEWS_SEED_THEME_ID));
+  }
+
+  /**
+   * 自动种子后的基线是否已齐（三条已发布工作流 + 两演示主题有内容）。
+   *
+   * @return 齐则为 true
+   */
+  public boolean isSeedBaselineComplete() {
+    return seedBaselineComplete(
+        countPublishedWorkflows(),
+        countThemeCourses(COURSE_SEED_THEME_ID),
+        countHotNewsChannels(HOT_NEWS_SEED_THEME_ID));
+  }
+
+  /**
    * 提示词包与工作流都还没有时视为空库。
    *
    * @param promptPacks 未删除提示词包数
@@ -125,6 +159,18 @@ public class BuiltinCatalogSeedService {
   }
 
   /**
+   * 种子基线是否齐备。
+   *
+   * @param publishedWorkflows 已发布工作流定义数
+   * @param courseLessons      课程演示主题课壳数
+   * @param hotNewsChannels    热点演示主题渠道数
+   * @return 齐则为 true
+   */
+  static boolean seedBaselineComplete(int publishedWorkflows, int courseLessons, int hotNewsChannels) {
+    return publishedWorkflows >= 3 && courseLessons > 0 && hotNewsChannels > 0;
+  }
+
+  /**
    * 读取计数；空结果按 0。
    *
    * @param sql 计数语句
@@ -133,6 +179,17 @@ public class BuiltinCatalogSeedService {
   private int countRows(String sql) {
     Integer count = jdbc.queryForObject(sql, Integer.class);
     return count == null ? 0 : count;
+  }
+
+  /**
+   * 已发布工作流定义数。
+   *
+   * @return 行数
+   */
+  private int countPublishedWorkflows() {
+    return countRows(
+        "SELECT COUNT(1) FROM workflow_definitions WHERE published_version_id IS NOT NULL"
+            + " AND TRIM(published_version_id) <> ''");
   }
 
   /**
@@ -313,7 +370,7 @@ public class BuiltinCatalogSeedService {
       seed.run();
     } catch (RuntimeException exception) {
       log.warn(
-          "{}未完成，其余种子继续。若是热点主题，请在设置填好多模态 Key 后于主题页确认主要意图。原因：{}",
+          "{}未完成，其余种子继续。可稍后执行补种脚本或检查主题问卷是否齐全。原因：{}",
           label,
           exception.getMessage());
     }
@@ -358,16 +415,21 @@ public class BuiltinCatalogSeedService {
       reopenEmptySeedTheme(theme.getId());
       log.info("空课表种子主题已回退为 draft 以补全课壳 id={}", theme.getId());
     }
-    Map<String, Object> briefing = objectMapper.convertValue(
-        node.path("briefing"), new TypeReference<Map<String, Object>>() {});
-    content.patchThemeBriefing(
-        theme.getId(),
-        ThemeBriefingPatchRequest.builder()
-            .name(text(node, "name"))
-            .description(text(node, "description"))
-            .code(text(node, "code"))
-            .briefing(FlexiblePayload.of(briefing))
-            .build());
+    // 非 force：用户已推进的问卷保留；ensureSeedTheme 的 step=1 stub 仍覆盖为完整种子
+    if (force || !shouldPreserveCourseBriefing(objectMapper, theme.getBriefingJson())) {
+      Map<String, Object> briefing = objectMapper.convertValue(
+          node.path("briefing"), new TypeReference<Map<String, Object>>() {});
+      content.patchThemeBriefing(
+          theme.getId(),
+          ThemeBriefingPatchRequest.builder()
+              .name(text(node, "name"))
+              .description(text(node, "description"))
+              .code(text(node, "code"))
+              .briefing(FlexiblePayload.of(briefing))
+              .build());
+    } else {
+      log.info("保留已有课程主题问卷，不覆盖种子 briefing id={}", theme.getId());
+    }
     CurriculumDraftView draft = objectMapper.convertValue(
         node.path("curriculumDraft"), CurriculumDraftView.class);
     content.saveCurriculumDraft(
@@ -414,6 +476,72 @@ public class BuiltinCatalogSeedService {
         "UPDATE themes SET status=?, updated_at=UTC_TIMESTAMP(3) WHERE id=?",
         ContentThemeStatus.DRAFT.getValue(),
         themeId);
+  }
+
+  /**
+   * 库内热点问卷是否已满足启用校验（可跳过种子覆盖）。
+   *
+   * @param briefingJson 主题 briefing_json
+   * @return 可 commit 则为 true
+   */
+  private boolean hotNewsBriefingCommitReady(String briefingJson) {
+    if (StrUtil.isBlank(briefingJson)) {
+      return false;
+    }
+    try {
+      Map<String, Object> briefing = objectMapper.readValue(
+          briefingJson, new TypeReference<Map<String, Object>>() {});
+      HotNewsThemeBriefingSupport.assertReadyToCommit(briefing);
+      return true;
+    } catch (Exception ignored) {
+      return false;
+    }
+  }
+
+  /**
+   * 是否保留库内课程问卷（避免冲掉用户修改）。
+   * <p>{@code ensureSeedTheme} 写入的 step=1 + 仅 naming stub 不算「已有问卷」。
+   *
+   * @param briefingJson 主题 briefing_json
+   * @return 应保留则为 true
+   */
+  static boolean shouldPreserveCourseBriefing(String briefingJson) {
+    return shouldPreserveCourseBriefing(new ObjectMapper(), briefingJson);
+  }
+
+  /**
+   * @param mapper       JSON 解析器
+   * @param briefingJson 主题 briefing_json
+   * @return 应保留则为 true
+   */
+  static boolean shouldPreserveCourseBriefing(ObjectMapper mapper, String briefingJson) {
+    if (mapper == null || StrUtil.isBlank(briefingJson)) {
+      return false;
+    }
+    try {
+      Map<String, Object> briefing = mapper.readValue(
+          briefingJson, new TypeReference<Map<String, Object>>() {});
+      if (briefing == null || briefing.isEmpty()) {
+        return false;
+      }
+      int step = 0;
+      Object rawStep = briefing.get("step");
+      if (rawStep instanceof Number number) {
+        step = number.intValue();
+      } else if (rawStep != null) {
+        try {
+          step = Integer.parseInt(String.valueOf(rawStep).trim());
+        } catch (NumberFormatException ignored) {
+          step = 0;
+        }
+      }
+      Object goals = briefing.get("goals");
+      boolean hasGoals = goals instanceof Map<?, ?> goalsMap && !goalsMap.isEmpty();
+      // stub：仅命名起步，仍应用完整种子
+      return step > 1 || hasGoals;
+    } catch (Exception ignored) {
+      return false;
+    }
   }
 
   /**
@@ -467,16 +595,21 @@ public class BuiltinCatalogSeedService {
       reopenEmptySeedTheme(theme.getId());
       log.info("空渠道种子主题已回退为 draft 以补全初始渠道 id={}", theme.getId());
     }
-    Map<String, Object> briefing = objectMapper.convertValue(
-        node.path("briefing"), new TypeReference<Map<String, Object>>() {});
-    content.patchThemeBriefing(
-        theme.getId(),
-        ThemeBriefingPatchRequest.builder()
-            .name(text(node, "name"))
-            .description(text(node, "description"))
-            .code(text(node, "code"))
-            .briefing(FlexiblePayload.of(briefing))
-            .build());
+    // 非 force：库内问卷已可 commit 则保留；否则写入种子（含已确认主要意图）
+    if (force || !hotNewsBriefingCommitReady(theme.getBriefingJson())) {
+      Map<String, Object> briefing = objectMapper.convertValue(
+          node.path("briefing"), new TypeReference<Map<String, Object>>() {});
+      content.patchThemeBriefing(
+          theme.getId(),
+          ThemeBriefingPatchRequest.builder()
+              .name(text(node, "name"))
+              .description(text(node, "description"))
+              .code(text(node, "code"))
+              .briefing(FlexiblePayload.of(briefing))
+              .build());
+    } else {
+      log.info("保留已有热点主题问卷，不覆盖种子 briefing id={}", theme.getId());
+    }
     // 与 ThemeController hot-news:commit 同一编排，确保渠道/查询词与手动创建一致
     HotNewsThemeCommitView committed = hotNewsThemeCommit.commit(theme.getId());
     log.info(

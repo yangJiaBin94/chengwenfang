@@ -10,19 +10,15 @@ public final class SystemReadinessRules {
   private SystemReadinessRules() {}
 
   /**
-   * 提示词包数量是否达到内置期望，且不存在仅属于提示词包的体检问题。
+   * 提示词包数量是否达到内置期望，且无提示词包域体检问题。
    *
-   * @param count         库内数量
-   * @param expected      期望数量
-   * @param builtinReady  体检是否全部通过
-   * @param workflowReady 工作流是否通过
+   * @param count           库内数量
+   * @param expected        期望数量
+   * @param promptPackReady 提示词包域是否通过（与工作流解耦）
    * @return 提示词包项是否通过
    */
-  public static boolean promptPacksReady(
-      int count, int expected, boolean builtinReady, boolean workflowReady) {
-    boolean countOk = expected > 0 && count >= expected;
-    // 工作流单独失败时，数量够则提示词包仍算通过
-    return countOk && (builtinReady || !workflowReady);
+  public static boolean promptPacksReady(int count, int expected, boolean promptPackReady) {
+    return expected > 0 && count >= expected && promptPackReady;
   }
 
   /**
@@ -86,16 +82,35 @@ public final class SystemReadinessRules {
   }
 
   /**
+   * API Key 是否已配置（不读取明文）；缺 Key 时计入默认档必填。
+   *
+   * @param key           稳定键
+   * @param label         标题
+   * @param provider      公开配置；可空
+   * @param missingDetail 未配置时的说明
+   * @return 检查项
+   */
+  public static SystemReadinessItem apiKey(
+      String key, String label, ProviderPublicView provider, String missingDetail) {
+    return apiKey(key, label, provider, missingDetail, true);
+  }
+
+  /**
    * API Key 是否已配置（不读取明文）。
    *
    * @param key           稳定键
    * @param label         标题
    * @param provider      公开配置；可空
    * @param missingDetail 未配置时的说明
-   * @return 检查项；缺 Key 为失败
+   * @param required      是否计入默认档必填
+   * @return 检查项
    */
   public static SystemReadinessItem apiKey(
-      String key, String label, ProviderPublicView provider, String missingDetail) {
+      String key,
+      String label,
+      ProviderPublicView provider,
+      String missingDetail,
+      boolean required) {
     boolean configured = provider != null && provider.isApiKeyConfigured();
     boolean enabled = provider == null || provider.getEnabled() == null || Boolean.TRUE.equals(provider.getEnabled());
     boolean modelPresent = provider != null && StrUtil.isNotBlank(provider.getModel());
@@ -106,7 +121,7 @@ public final class SystemReadinessRules {
           SystemReadinessSection.DEFAULT_PROFILE,
           SystemReadinessStatus.PASS,
           "已配置（密钥不回显）",
-          true);
+          required);
     }
     String detail;
     if (!configured) {
@@ -122,7 +137,7 @@ public final class SystemReadinessRules {
         SystemReadinessSection.DEFAULT_PROFILE,
         SystemReadinessStatus.FAIL,
         detail,
-        true);
+        required);
   }
 
   /**

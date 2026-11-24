@@ -24,4 +24,13 @@ public final class BuiltinIssue {
   public boolean isWorkflow() {
     return kind == BuiltinIssueKind.WORKFLOW;
   }
+
+  /**
+   * 是否为提示词包域问题。
+   *
+   * @return true 表示 PROMPT_PACK
+   */
+  public boolean isPromptPack() {
+    return kind == BuiltinIssueKind.PROMPT_PACK;
+  }
 }

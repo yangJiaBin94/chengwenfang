@@ -61,14 +61,24 @@ class OsPythonExecutableResolverTest {
   }
 
   @Test
-  void missingVenvStillPointsAtNativeLayout() {
+  void missingVenvFallsBackToPathCommand() {
+    Path resolved = OsPythonExecutableResolver.resolve(
+        root,
+        "scripts/article-extract",
+        "python",
+        true);
+
+    assertThat(resolved).isEqualTo(Path.of("python"));
+  }
+
+  @Test
+  void foreignWindowsPathWithoutVenvFallsBackToUnixCommand() {
     Path resolved = OsPythonExecutableResolver.resolve(
         root,
         "scripts/article-extract",
         "scripts/article-extract/.venv/Scripts/python.exe",
         false);
 
-    assertThat(resolved.endsWith(Path.of(".venv/bin/python"))).isTrue();
-    assertThat(resolved.toString()).doesNotContain("Scripts");
+    assertThat(resolved).isEqualTo(Path.of("python3"));
   }
 }
