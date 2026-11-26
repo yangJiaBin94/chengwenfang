@@ -1,5 +1,7 @@
 package com.chengwenfang.app.bootstrap;
 
+import com.chengwenfang.identity.facade.OwnerContext;
+import com.chengwenfang.identity.facade.constant.SeedUserIds;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
@@ -32,16 +34,17 @@ public class BuiltinSeedImporter implements ApplicationRunner {
    */
   @Override
   public void run(ApplicationArguments args) {
-    int code = 0;
-    try {
-      // 脚本可通过 chengwenfang.bootstrap.force 覆盖已有内置行
-      seedService.importConfigured(seedService.isForce());
-    } catch (Exception exception) {
-      log.error("基础配置导入失败：{}", exception.getMessage(), exception);
-      code = 1;
-    }
-    int exitCode = code;
-    int springCode = SpringApplication.exit(context, () -> exitCode);
+    int[] code = {0};
+    OwnerContext.runAs(SeedUserIds.ADMIN, () -> {
+      try {
+        // 脚本可通过 chengwenfang.bootstrap.force 覆盖已有内置行
+        seedService.importConfigured(seedService.isForce());
+      } catch (Exception exception) {
+        log.error("基础配置导入失败：{}", exception.getMessage(), exception);
+        code[0] = 1;
+      }
+    });
+    int springCode = SpringApplication.exit(context, () -> code[0]);
     System.exit(springCode);
   }
 }

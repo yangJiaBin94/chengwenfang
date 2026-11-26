@@ -28,6 +28,7 @@ public class JobViewMapper {
     Map<String, Object> input = jsonToMap(job.getInputJson());
     return JobView.builder()
         .id(job.getId())
+        .ownerUserId(job.getOwnerUserId())
         .type(job.getJobType())
         .status(job.getStatus())
         .entityType(job.getEntityType())

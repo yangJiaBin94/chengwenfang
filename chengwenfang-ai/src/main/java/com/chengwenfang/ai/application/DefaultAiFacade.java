@@ -23,6 +23,7 @@ import com.chengwenfang.ai.facade.enums.ModelCallStatus;
 import com.chengwenfang.ai.infrastructure.mapper.AiProviderConfigMapper;
 import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.common.ErrorCodes;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.infra.config.ChengwenfangProperties;
 import com.chengwenfang.infra.support.SecretCipher;
 import java.time.LocalDateTime;
@@ -59,6 +60,8 @@ public class DefaultAiFacade implements AiSettingsFacade, AiImageFacade, AiVisio
   private final AiVisionClient visionClient;
   /** 文本嵌入客户端。 */
   private final AiEmbeddingClient embeddingClient;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
   /** 模型调用审计写入。 */
   private final ModelCallRecorder modelCallRecorder;
 
@@ -202,6 +205,7 @@ public class DefaultAiFacade implements AiSettingsFacade, AiImageFacade, AiVisio
     }
     AiProviderConfigEntity cfg = AiProviderConfigEntity.builder()
         .id(saved.getId())
+        .ownerUserId(saved.getOwnerUserId())
         .kind(saved.getKind())
         .name(StrUtil.blankToDefault(patch.getName(), saved.getName()))
         .model(patch.getModel() != null ? patch.getModel() : saved.getModel())
@@ -293,6 +297,7 @@ public class DefaultAiFacade implements AiSettingsFacade, AiImageFacade, AiVisio
 
   private AiProviderConfigEntity requireKind(AiProviderKind kind) {
     AiProviderConfigEntity cfg = configMapper.selectOne(new LambdaQueryWrapper<AiProviderConfigEntity>()
+        .eq(AiProviderConfigEntity::getOwnerUserId, ownerScope.effectiveOwnerUserId())
         .eq(AiProviderConfigEntity::getKind, kind.getValue())
         .last("LIMIT 1"));
     if (cfg == null) {

@@ -1,5 +1,6 @@
 package com.chengwenfang.knowledge.domain.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.time.LocalDateTime;
@@ -20,6 +21,9 @@ public class KnowledgeAnswerFeedbackEntity {
   /** 主键。 */
   @TableId
   private String id;
+  /** 所属用户 ID。 */
+  @TableField("owner_user_id")
+  private String ownerUserId;
   /** 助手消息 ID。 */
   private String messageId;
   /** 会话 ID。 */

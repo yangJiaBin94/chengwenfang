@@ -16,6 +16,7 @@ import com.chengwenfang.content.infrastructure.mapper.MediaGenerationMapper;
 import com.chengwenfang.content.infrastructure.mapper.WorkOutputMapper;
 import com.chengwenfang.file.facade.FileFacade;
 import com.chengwenfang.file.facade.dto.view.FileView;
+import com.chengwenfang.identity.facade.OwnerScope;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -40,6 +41,7 @@ public class GeneratedImageService {
   private final FileFacade files;
   private final ContentViewMapper views;
   private final ThemeVisibilityGuard visibility;
+  private final OwnerScope ownerScope;
 
   public GeneratedImageService(
       MediaAssetMapper mediaAssetMapper,
@@ -48,7 +50,8 @@ public class GeneratedImageService {
       WorkContentStoreImpl workContents,
       FileFacade files,
       ContentViewMapper views,
-      ThemeVisibilityGuard visibility) {
+      ThemeVisibilityGuard visibility,
+      OwnerScope ownerScope) {
     this.mediaAssetMapper = mediaAssetMapper;
     this.mediaGenerationMapper = mediaGenerationMapper;
     this.workOutputMapper = workOutputMapper;
@@ -56,6 +59,7 @@ public class GeneratedImageService {
     this.files = files;
     this.views = views;
     this.visibility = visibility;
+    this.ownerScope = ownerScope;
   }
 
   /**
@@ -127,6 +131,7 @@ public class GeneratedImageService {
     Map<String, MediaAssetEntity> assetsById = mediaAssetMapper.selectByIds(imageIds).stream()
         .filter(Objects::nonNull)
         .filter(asset -> MediaOrigins.GENERATED.equals(asset.getOrigin()))
+        .filter(this::accessibleMedia)
         .collect(Collectors.toMap(MediaAssetEntity::getId, Function.identity(), (a, b) -> a, HashMap::new));
     List<MediaAssetEntity> ordered = new ArrayList<>();
     for (String imageId : imageIds) {
@@ -136,6 +141,21 @@ public class GeneratedImageService {
       }
     }
     return toGeneratedViews(ordered);
+  }
+
+  /**
+   * 当前调用方是否可访问该媒资（无权限则列表静默跳过）。
+   *
+   * @param asset 媒资
+   * @return 可访问为 true
+   */
+  private boolean accessibleMedia(MediaAssetEntity asset) {
+    try {
+      ownerScope.assertCanAccess(asset.getOwnerUserId());
+      return true;
+    } catch (BusinessException ignored) {
+      return false;
+    }
   }
 
   /**
@@ -151,6 +171,7 @@ public class GeneratedImageService {
     if (asset == null || !MediaOrigins.GENERATED.equals(asset.getOrigin())) {
       throw new BusinessException("image_not_found", "配图不存在", 404);
     }
+    ownerScope.assertCanAccess(asset.getOwnerUserId());
     return views.generatedMediaAssetView(asset, mediaGenerationMapper.selectById(imageId));
   }
 
@@ -191,6 +212,7 @@ public class GeneratedImageService {
     if (asset == null) {
       throw new BusinessException("image_not_found", "配图不存在", 404);
     }
+    ownerScope.assertCanAccess(asset.getOwnerUserId());
     String fileId = asset.getFileId();
     mediaGenerationMapper.deleteById(imageId);
     mediaAssetMapper.deleteById(imageId);
@@ -239,6 +261,7 @@ public class GeneratedImageService {
     }
     MediaAssetEntity asset = MediaAssetEntity.builder()
         .id(imageId)
+        .ownerUserId(ownerScope.effectiveOwnerUserId())
         .workId(output.getWorkId())
         .outputId(outputId)
         .origin(MediaOrigins.GENERATED)

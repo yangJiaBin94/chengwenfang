@@ -19,6 +19,9 @@ public class PromptPackEntity {
   /** 主键 ID。 */
   @TableId("id")
   private String id;
+  /** 所属用户。 */
+  @TableField("owner_user_id")
+  private String ownerUserId;
   /** 提示词包名称。 */
   @TableField("name")
   private String name;

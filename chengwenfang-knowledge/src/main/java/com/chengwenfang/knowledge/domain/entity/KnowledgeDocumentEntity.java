@@ -19,6 +19,9 @@ public class KnowledgeDocumentEntity {
   /** 主键。 */
   @TableId("id")
   private String id;
+  /** 所属用户 ID。 */
+  @TableField("owner_user_id")
+  private String ownerUserId;
   /** 来源种类。 */
   @TableField("source_kind")
   private String sourceKind;

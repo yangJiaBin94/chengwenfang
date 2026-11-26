@@ -111,6 +111,7 @@ class TopicScoreDetailsStoreTest {
         .rubricVersion(2)
         .recommendUse("lead")
         .riskNote("注意时效")
+        .materialKind("paper")
         .originKind("ai_theme_seed")
         .sourceTypes(List.of("official", "community"))
         .signals(List.of("rising"))
@@ -134,13 +135,14 @@ class TopicScoreDetailsStoreTest {
     verify(metricMapper).insert(any(HotnewsTopicScoreMetricEntity.class));
     ArgumentCaptor<HotnewsTopicScoreTagEntity> tagCaptor =
         ArgumentCaptor.forClass(HotnewsTopicScoreTagEntity.class);
-    verify(tagMapper, org.mockito.Mockito.times(3)).insert(tagCaptor.capture());
+    verify(tagMapper, org.mockito.Mockito.times(4)).insert(tagCaptor.capture());
     assertThat(tagCaptor.getAllValues())
         .extracting(HotnewsTopicScoreTagEntity::getTagType)
         .containsExactly(
             HotnewsScoreTagTypes.SOURCE_TYPE,
             HotnewsScoreTagTypes.SOURCE_TYPE,
-            HotnewsScoreTagTypes.SIGNAL);
+            HotnewsScoreTagTypes.SIGNAL,
+            HotnewsScoreTagTypes.MATERIAL_KIND);
     ArgumentCaptor<HotnewsTopicScoreDimensionEntity> dimCaptor =
         ArgumentCaptor.forClass(HotnewsTopicScoreDimensionEntity.class);
     verify(dimensionMapper, org.mockito.Mockito.times(2)).insert(dimCaptor.capture());
@@ -188,6 +190,11 @@ class TopicScoreDetailsStoreTest {
             .tagType(HotnewsScoreTagTypes.SIGNAL)
             .seq(0)
             .tagValue("rising")
+            .build()))
+        .thenReturn(List.of(HotnewsTopicScoreTagEntity.builder()
+            .tagType(HotnewsScoreTagTypes.MATERIAL_KIND)
+            .seq(0)
+            .tagValue("paper")
             .build()));
     when(dimensionMapper.selectList(any()))
         .thenReturn(List.of(HotnewsTopicScoreDimensionEntity.builder()
@@ -216,5 +223,6 @@ class TopicScoreDetailsStoreTest {
     assertThat(read.getDimensions().get(0).getScore()).isEqualTo(8);
     assertThat(read.getRubricSnapshot()).hasSize(1);
     assertThat(read.getOriginKind()).isEqualTo("ai_theme_seed");
+    assertThat(read.getMaterialKind()).isEqualTo("paper");
   }
 }

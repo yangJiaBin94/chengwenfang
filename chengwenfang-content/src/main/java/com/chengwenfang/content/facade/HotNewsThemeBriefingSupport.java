@@ -241,9 +241,10 @@ public final class HotNewsThemeBriefingSupport {
               + " 字，勿粘贴整段主题描述）",
           400);
     }
-    // 启用前必须固化合法评分量表
-    ScoringRubricView rubric = ScoringRubricSupport.readFrom(briefing);
-    ScoringRubricSupport.assertValid(rubric);
+    // 启用前注入打开欲维并固化合法评分量表
+    ScoringRubricView rubric =
+        ScoringRubricSupport.assertValidHotNews(ScoringRubricSupport.readFrom(briefing));
+    ScoringRubricSupport.writeInto(briefing, rubric);
   }
 
   /**
@@ -292,7 +293,7 @@ public final class HotNewsThemeBriefingSupport {
     }
     ScoringRubricView rubric = ScoringRubricSupport.readFrom(briefing);
     if (rubric != null) {
-      ScoringRubricSupport.writeInto(defaults, rubric);
+      ScoringRubricSupport.writeInto(defaults, ScoringRubricSupport.ensureAudienceHook(rubric));
     }
     return defaults;
   }

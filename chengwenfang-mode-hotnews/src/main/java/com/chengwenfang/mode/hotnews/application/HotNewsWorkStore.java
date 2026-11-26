@@ -21,6 +21,7 @@ import com.chengwenfang.mode.hotnews.facade.constant.HotNewsGenerationSettingsKe
 import com.chengwenfang.content.infrastructure.mapper.WorkMapper;
 import com.chengwenfang.content.infrastructure.mapper.WorkOutputMapper;
 import com.chengwenfang.content.infrastructure.mapper.WorkOutputVersionMapper;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.mode.hotnews.application.mode.HotNewsModeDefinition;
 import com.chengwenfang.mode.hotnews.domain.entity.HotNewsArticleEntity;
 import com.chengwenfang.mode.hotnews.domain.entity.HotnewsWorkEntity;
@@ -57,6 +58,7 @@ public class HotNewsWorkStore {
   private final HotNewsCodec codec;
   /** 热点模式定义：扩展行与默认产出。 */
   private final HotNewsModeDefinition hotNewsMode;
+  private final OwnerScope ownerScope;
 
   /**
    * 按作品 id 加载热点文章投影；缺失返回 null。
@@ -73,6 +75,7 @@ public class HotNewsWorkStore {
     if (hot == null || work == null) {
       return null;
     }
+    ownerScope.assertCanAccess(work.getOwnerUserId());
     WorkOutputEntity draft = findOutput(articleId, ChannelCodes.MASTER);
     WorkOutputEntity wechat = findOutput(articleId, ChannelCodes.WECHAT_MP);
     WorkGenerationSettingsEntity settings = settingsMapper.selectById(articleId);
@@ -179,6 +182,7 @@ public class HotNewsWorkStore {
     if (work == null) {
       work = WorkEntity.builder()
           .id(workId)
+          .ownerUserId(ownerScope.effectiveOwnerUserId())
           .modeCode(hotNewsMode.modeCode())
           .themeId(themeId)
           .title(StrUtil.blankToDefault(article.getTitle(), ""))
@@ -556,8 +560,17 @@ public class HotNewsWorkStore {
     if (CollUtil.isEmpty(workIds)) {
       return List.of();
     }
-    List<WorkEntity> works = workMapper.selectList(new LambdaQueryWrapper<WorkEntity>()
-        .in(WorkEntity::getId, workIds));
+    LambdaQueryWrapper<WorkEntity> query = new LambdaQueryWrapper<WorkEntity>()
+        .in(WorkEntity::getId, workIds);
+    // 非管理员按当前用户过滤，避免选题下列出他人作品 id
+    if (!ownerScope.currentUserIsAdmin()) {
+      String ownerId = ownerScope.currentOwnerUserId().orElse(null);
+      if (StrUtil.isBlank(ownerId)) {
+        return List.of();
+      }
+      query.eq(WorkEntity::getOwnerUserId, ownerId);
+    }
+    List<WorkEntity> works = workMapper.selectList(query);
     return works.stream()
         .sorted(Comparator.comparing(
             WorkEntity::getUpdatedAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed())

@@ -5,6 +5,8 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.common.IdsUtil;
+import com.chengwenfang.identity.application.OwnerScopeQueryHelper;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.common.PageQuery;
 import com.chengwenfang.common.PageResult;
 import com.chengwenfang.prompt.domain.WorkflowNodeCatalogUtil;
@@ -59,6 +61,8 @@ public class PromptPackFacadeImpl implements PromptPackFacade {
   private final ContentModeLookupMapper contentModeLookupMapper;
   /** 实体到对外 View 的映射。 */
   private final PromptPackViewMapper viewMapper;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * 列出全部未删除的 提示词包，按 priority 升序。
@@ -68,9 +72,11 @@ public class PromptPackFacadeImpl implements PromptPackFacade {
   @Override
   public List<PromptPackView> listPromptPacks() {
     // 仅查未软删记录，按优先级排序后转为对外视图
-    return promptPackMapper.selectList(new LambdaQueryWrapper<PromptPackEntity>()
-            .isNull(PromptPackEntity::getDeletedAt)
-            .orderByAsc(PromptPackEntity::getPriority))
+    LambdaQueryWrapper<PromptPackEntity> query = new LambdaQueryWrapper<PromptPackEntity>()
+        .isNull(PromptPackEntity::getDeletedAt);
+    OwnerScopeQueryHelper.applyOwnerOrLocked(
+        query, ownerScope, PromptPackEntity::getOwnerUserId, PromptPackEntity::getLocked);
+    return promptPackMapper.selectList(query.orderByAsc(PromptPackEntity::getPriority))
         .stream()
         .map(this::toView)
         .toList();
@@ -90,6 +96,8 @@ public class PromptPackFacadeImpl implements PromptPackFacade {
     // 列表筛选条件（影响 total / items）；count 与 page 分拆 wrapper，避免 last 污染
     LambdaQueryWrapper<PromptPackEntity> filterQuery = new LambdaQueryWrapper<PromptPackEntity>()
         .isNull(PromptPackEntity::getDeletedAt);
+    OwnerScopeQueryHelper.applyOwnerOrLocked(
+        filterQuery, ownerScope, PromptPackEntity::getOwnerUserId, PromptPackEntity::getLocked);
     if (StrUtil.isNotBlank(keyword)) {
       filterQuery.and(wrapper -> wrapper
           .like(PromptPackEntity::getName, keyword)
@@ -157,6 +165,7 @@ public class PromptPackFacadeImpl implements PromptPackFacade {
     // 组装实体：可指定 id，否则生成；创建时 deletedAt 置空
     PromptPackEntity entity = PromptPackEntity.builder()
         .id(StrUtil.isBlank(input.getId()) ? IdsUtil.newId() : input.getId())
+        .ownerUserId(ownerScope.effectiveOwnerUserId())
         .createdAt(now)
         .updatedAt(now)
         .deletedAt(null)
@@ -313,11 +322,14 @@ public class PromptPackFacadeImpl implements PromptPackFacade {
    */
   @Override
   public String resolveNodePrompt(String workflowType, String nodeKey) {
-    // 启用且未删的 提示词包，按 priority 升序参与拼接
-    List<PromptPackEntity> promptPackRows = promptPackMapper.selectList(new LambdaQueryWrapper<PromptPackEntity>()
+    // 启用且未删的 提示词包，按 priority 升序参与拼接（本人或 locked 共享）
+    LambdaQueryWrapper<PromptPackEntity> packQuery = new LambdaQueryWrapper<PromptPackEntity>()
         .isNull(PromptPackEntity::getDeletedAt)
-        .eq(PromptPackEntity::getEnabled, true)
-        .orderByAsc(PromptPackEntity::getPriority));
+        .eq(PromptPackEntity::getEnabled, true);
+    OwnerScopeQueryHelper.applyOwnerOrLocked(
+        packQuery, ownerScope, PromptPackEntity::getOwnerUserId, PromptPackEntity::getLocked);
+    List<PromptPackEntity> promptPackRows = promptPackMapper.selectList(
+        packQuery.orderByAsc(PromptPackEntity::getPriority));
     StringBuilder sb = new StringBuilder();
     for (PromptPackEntity pack : promptPackRows) {
       // 提示词包 声明了 scene 时，必须与当前 workflowType 一致才纳入
@@ -362,9 +374,12 @@ public class PromptPackFacadeImpl implements PromptPackFacade {
       if (StrUtil.isBlank(promptPackId) || !seen.add(promptPackId)) {
         continue;
       }
-      // 只使用当前表中启用且未删的 提示词包
+      // 只使用当前用户可读（本人或 locked）且启用未删的 提示词包
       PromptPackEntity promptPack = promptPackMapper.selectById(promptPackId);
       if (promptPack == null || promptPack.getDeletedAt() != null || Boolean.FALSE.equals(promptPack.getEnabled())) {
+        continue;
+      }
+      if (!canReadPromptPack(promptPack)) {
         continue;
       }
       if (StrUtil.isNotBlank(promptPack.getSystemInstructions())) {
@@ -375,6 +390,23 @@ public class PromptPackFacadeImpl implements PromptPackFacade {
       }
     }
     return sb.toString().trim();
+  }
+
+  /**
+   * 提示词包是否对当前用户可读：管理员 / locked 共享 / 本人。
+   *
+   * @param promptPack 提示词包实体
+   * @return 可读则 true
+   */
+  private boolean canReadPromptPack(PromptPackEntity promptPack) {
+    if (ownerScope.currentUserIsAdmin()) {
+      return true;
+    }
+    if (Boolean.TRUE.equals(promptPack.getLocked())) {
+      return ownerScope.currentOwnerUserId().isPresent();
+    }
+    String me = ownerScope.currentOwnerUserId().orElse(null);
+    return StrUtil.isNotBlank(me) && me.equals(promptPack.getOwnerUserId());
   }
 
   /**
@@ -590,6 +622,7 @@ public class PromptPackFacadeImpl implements PromptPackFacade {
     if (entity == null || entity.getDeletedAt() != null) {
       throw new BusinessException("prompt_pack_not_found", "提示词包不存在", 404);
     }
+    ownerScope.assertCanAccess(entity.getOwnerUserId());
     return entity;
   }
 }

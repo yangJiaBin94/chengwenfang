@@ -3,6 +3,8 @@ package com.chengwenfang.mode.hotnews.application;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.chengwenfang.common.BusinessException;
+import com.chengwenfang.identity.application.OwnerScopeQueryHelper;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.common.ErrorCodes;
 import com.chengwenfang.common.IdsUtil;
 import com.chengwenfang.common.ThemeTitleRelevance;
@@ -79,6 +81,8 @@ public class HotNewsFetchService {
   private final VideoParseRunService videoParseRuns;
   /** 选题协作服务，提供主题相关性画像。 */
   private final HotNewsTopicService topics;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * 主题下是否仍有进行中的任务：Job（含雷达 FormalGraph）、抓取 run、选题调研、成文。
@@ -94,17 +98,21 @@ public class HotNewsFetchService {
     if (jobs.hasActiveJobsForTheme(themeId)) {
       return true;
     }
-    // 抓取运行仍在排队或执行（Job 未必带 themeId 时兜底）
-    Long fetchActive = runMapper.selectCount(new LambdaQueryWrapper<SourceFetchRunEntity>()
+    // 抓取运行仍在排队或执行（Job 未必带 themeId 时兜底）；按 owner 收窄
+    LambdaQueryWrapper<SourceFetchRunEntity> fetchQuery = new LambdaQueryWrapper<SourceFetchRunEntity>()
         .eq(SourceFetchRunEntity::getThemeId, themeId)
         .in(SourceFetchRunEntity::getStatus,
-            JobStatus.PENDING.getValue(), JobStatus.RUNNING.getValue()));
+            JobStatus.PENDING.getValue(), JobStatus.RUNNING.getValue());
+    OwnerScopeQueryHelper.applyOwnerEquals(fetchQuery, ownerScope, SourceFetchRunEntity::getOwnerUserId);
+    Long fetchActive = runMapper.selectCount(fetchQuery);
     if (fetchActive != null && fetchActive > 0) {
       return true;
     }
-    List<String> topicIds = topicMapper.selectList(new LambdaQueryWrapper<TopicClusterEntity>()
-            .eq(TopicClusterEntity::getThemeId, themeId)
-            .select(TopicClusterEntity::getId))
+    LambdaQueryWrapper<TopicClusterEntity> topicQuery = new LambdaQueryWrapper<TopicClusterEntity>()
+        .eq(TopicClusterEntity::getThemeId, themeId)
+        .select(TopicClusterEntity::getId);
+    OwnerScopeQueryHelper.applyOwnerEquals(topicQuery, ownerScope, TopicClusterEntity::getOwnerUserId);
+    List<String> topicIds = topicMapper.selectList(topicQuery)
         .stream()
         .map(TopicClusterEntity::getId)
         .filter(StrUtil::isNotBlank)
@@ -113,10 +121,14 @@ public class HotNewsFetchService {
       return false;
     }
     // 选题研究运行未结束
-    Long researchActive = researchRunMapper.selectCount(new LambdaQueryWrapper<TopicResearchRunEntity>()
-        .in(TopicResearchRunEntity::getTopicId, topicIds)
-        .in(TopicResearchRunEntity::getStatus,
-            JobStatus.PENDING.getValue(), JobStatus.RUNNING.getValue()));
+    LambdaQueryWrapper<TopicResearchRunEntity> researchQuery =
+        new LambdaQueryWrapper<TopicResearchRunEntity>()
+            .in(TopicResearchRunEntity::getTopicId, topicIds)
+            .in(TopicResearchRunEntity::getStatus,
+                JobStatus.PENDING.getValue(), JobStatus.RUNNING.getValue());
+    OwnerScopeQueryHelper.applyOwnerEquals(
+        researchQuery, ownerScope, TopicResearchRunEntity::getOwnerUserId);
+    Long researchActive = researchRunMapper.selectCount(researchQuery);
     if (researchActive != null && researchActive > 0) {
       return true;
     }
@@ -152,6 +164,7 @@ public class HotNewsFetchService {
     // 先落运行壳，状态 pending，供任务与列表关联
     SourceFetchRunEntity run = new SourceFetchRunEntity();
     run.setId(IdsUtil.newId());
+    run.setOwnerUserId(ownerScope.effectiveOwnerUserId());
     run.setThemeId(themeId);
     run.setStatus(JobStatus.PENDING.getValue());
     run.setHours(hours);
@@ -183,10 +196,10 @@ public class HotNewsFetchService {
    * @return 抓取运行视图列表
    */
   public List<HotNewsFetchRunView> listFetchRuns(String themeId) {
-    return runMapper.selectList(new LambdaQueryWrapper<SourceFetchRunEntity>()
-            .eq(themeId != null, SourceFetchRunEntity::getThemeId, themeId)
-            .orderByDesc(SourceFetchRunEntity::getCreatedAt)
-            .last("LIMIT 100"))
+    LambdaQueryWrapper<SourceFetchRunEntity> query = new LambdaQueryWrapper<SourceFetchRunEntity>()
+        .eq(themeId != null, SourceFetchRunEntity::getThemeId, themeId);
+    OwnerScopeQueryHelper.applyOwnerEquals(query, ownerScope, SourceFetchRunEntity::getOwnerUserId);
+    return runMapper.selectList(query.orderByDesc(SourceFetchRunEntity::getCreatedAt).last("LIMIT 100"))
         .stream()
         .map(this::fetchRunView)
         .toList();
@@ -204,6 +217,7 @@ public class HotNewsFetchService {
     if (run == null) {
       throw new BusinessException(ErrorCodes.FETCH_RUN_NOT_FOUND, "抓取运行不存在: " + runId, 404);
     }
+    ownerScope.assertCanAccess(run.getOwnerUserId());
     return fetchRunView(run);
   }
 
@@ -216,8 +230,10 @@ public class HotNewsFetchService {
    */
   public List<HotNewsItemView> listItems(String themeId, int limit) {
     // 限制上限避免一次拉太大
-    return itemMapper.selectList(new LambdaQueryWrapper<SourceItemEntity>()
-            .eq(themeId != null, SourceItemEntity::getThemeId, themeId)
+    LambdaQueryWrapper<SourceItemEntity> itemQuery = new LambdaQueryWrapper<SourceItemEntity>()
+        .eq(themeId != null, SourceItemEntity::getThemeId, themeId);
+    OwnerScopeQueryHelper.applyOwnerEquals(itemQuery, ownerScope, SourceItemEntity::getOwnerUserId);
+    return itemMapper.selectList(itemQuery
             .orderByDesc(SourceItemEntity::getCreatedAt)
             .last("LIMIT " + Math.max(1, Math.min(limit, 200))))
         .stream()
@@ -282,6 +298,7 @@ public class HotNewsFetchService {
     String summary = item.getSummary() == null ? "" : item.getSummary();
     SourceItemEntity entity = new SourceItemEntity();
     entity.setId(IdsUtil.newId());
+    entity.setOwnerUserId(ownerScope.effectiveOwnerUserId());
     entity.setThemeId(themeId);
     entity.setChannelId(channelId);
     entity.setExternalId(externalId);

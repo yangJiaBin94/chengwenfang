@@ -9,6 +9,8 @@ public final class KnowledgeVectorPayloadKeys {
   public static final String CONTENT = "content";
   /** 文档 ID。 */
   public static final String DOCUMENT_ID = "documentId";
+  /** 所属用户 ID。 */
+  public static final String OWNER_USER_ID = "ownerUserId";
   /** 来源类型。 */
   public static final String SOURCE_KIND = "sourceKind";
   /** 来源业务 ID。 */

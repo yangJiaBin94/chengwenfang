@@ -19,6 +19,9 @@ public class ModelCallEntity {
   /** 主键 ID。 */
   @TableId("id")
   private String id;
+  /** 所属用户。 */
+  @TableField("owner_user_id")
+  private String ownerUserId;
   /** 所属任务（Worker 上下文写入；同步调用为空）。 */
   @TableField("job_id")
   private String jobId;

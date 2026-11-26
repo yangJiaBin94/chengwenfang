@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.common.ErrorCodes;
 import com.chengwenfang.common.IdsUtil;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.job.facade.JobFacade;
 import com.chengwenfang.job.facade.constant.JobEntityTypes;
 import com.chengwenfang.job.facade.constant.JobTypes;
@@ -58,6 +59,8 @@ public class HotNewsWorkService {
   private final HotNewsGenerationSettingsService generationSettings;
   /** 正文与壳投影。 */
   private final HotNewsWorkContentService contents;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * @param topicMapper        选题表
@@ -72,6 +75,7 @@ public class HotNewsWorkService {
    * @param views              视图组装
    * @param generationSettings 生成参数协作
    * @param contents           正文与壳投影
+   * @param ownerScope         用户级数据范围
    */
   public HotNewsWorkService(
       TopicClusterMapper topicMapper,
@@ -85,7 +89,8 @@ public class HotNewsWorkService {
       @Lazy HotNewsResearchService research,
       HotNewsArticleViewAssembler views,
       HotNewsGenerationSettingsService generationSettings,
-      HotNewsWorkContentService contents) {
+      HotNewsWorkContentService contents,
+      OwnerScope ownerScope) {
     this.topicMapper = topicMapper;
     this.briefMapper = briefMapper;
     this.jobs = jobs;
@@ -98,6 +103,7 @@ public class HotNewsWorkService {
     this.views = views;
     this.generationSettings = generationSettings;
     this.contents = contents;
+    this.ownerScope = ownerScope;
   }
 
   /**
@@ -161,6 +167,9 @@ public class HotNewsWorkService {
     if (brief == null) {
       throw new BusinessException(ErrorCodes.BRIEF_NOT_FOUND, "选题简报不存在", 404);
     }
+    // 先校验简报与选题归属，避免已有文章分支跳过鉴权
+    ownerScope.assertCanAccess(brief.getOwnerUserId());
+    topics.requireTopic(brief.getTopicId());
     LocalDateTime now = LocalDateTime.now();
     // 同一简报复用最新一篇文章：优先文档 brief 索引，避免壳列停写后漏查
     HotNewsArticleEntity article = contents.findLatestShellArticleByBrief(briefId);
@@ -179,7 +188,6 @@ public class HotNewsWorkService {
       article.setCurrentVersionNo(1);
       article.setStatus(HotNewsArticleStatuses.GENERATING);
       // 默认字数档与配图数，后续可在生成设置里改
-      topics.requireTopic(brief.getTopicId());
       article.setGenerationSettingsJson(codec.writeJson(generationSettings.settingsFromSkeleton(
           skeletonStore.read(brief.getTopicId()))));
       article.setSourceSnapshotJson(briefStore.writeSourcesJson(briefId));
@@ -359,6 +367,7 @@ public class HotNewsWorkService {
     TopicBriefEntity brief = create ? new TopicBriefEntity() : existing.get(0);
     if (create) {
       brief.setId(IdsUtil.newId());
+      brief.setOwnerUserId(ownerScope.effectiveOwnerUserId());
       brief.setTopicId(topic.getId());
       brief.setThemeId(topic.getThemeId());
       brief.setStatus(HotNewsBriefStatuses.DRAFT);

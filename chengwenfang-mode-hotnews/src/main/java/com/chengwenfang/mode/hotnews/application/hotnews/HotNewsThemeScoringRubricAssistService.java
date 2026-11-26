@@ -11,6 +11,7 @@ import com.chengwenfang.mode.hotnews.application.prompt.ThemeScoringRubricPrompt
 import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
 import com.chengwenfang.ai.facade.dto.view.VisionCompleteResult;
 import com.chengwenfang.content.facade.ScoringRubricSupport;
+import com.chengwenfang.content.facade.constant.HotNewsScoringRubricKeys;
 import com.chengwenfang.content.facade.dto.request.HotNewsScoringRubricSuggestRequest;
 import com.chengwenfang.content.facade.dto.view.HotNewsScoringRubricSuggestView;
 import com.chengwenfang.content.facade.dto.view.ScoringRubricDimensionView;
@@ -48,10 +49,13 @@ public class HotNewsThemeScoringRubricAssistService {
     HotNewsScoringRubricSuggestRequest body =
         request == null ? new HotNewsScoringRubricSuggestRequest() : request;
     ScoringRubricView fromAi = tryAi(body);
-    if (fromAi != null && ScoringRubricSupport.isValid(fromAi)) {
-      return HotNewsScoringRubricSuggestView.builder().rubric(fromAi).fromAi(true).build();
+    if (fromAi != null) {
+      ScoringRubricView ensured = ScoringRubricSupport.ensureAudienceHook(fromAi);
+      if (ScoringRubricSupport.isValid(ensured)) {
+        return HotNewsScoringRubricSuggestView.builder().rubric(ensured).fromAi(true).build();
+      }
     }
-    ScoringRubricView fallback = fallbackRubric(body);
+    ScoringRubricView fallback = ScoringRubricSupport.ensureAudienceHook(fallbackRubric(body));
     log.info(
         "热点主题评分量表回退启发式 name={} dims={}",
         body.getName(),
@@ -101,7 +105,8 @@ public class HotNewsThemeScoringRubricAssistService {
       if (parsed.getVersion() == null) {
         parsed.setVersion(1);
       }
-      ScoringRubricView normalized = ScoringRubricSupport.normalize(parsed);
+      ScoringRubricView normalized =
+          ScoringRubricSupport.ensureAudienceHook(ScoringRubricSupport.normalize(parsed));
       if (!ScoringRubricSupport.isValid(normalized)) {
         return null;
       }
@@ -170,27 +175,29 @@ public class HotNewsThemeScoringRubricAssistService {
     String theme = StrUtil.blankToDefault(body.getName(), "本主题");
     List<ScoringRubricDimensionView> dims = List.of(
         ScoringRubricDimensionView.builder()
+            .key(HotNewsScoringRubricKeys.AUDIENCE_HOOK)
+            .label(HotNewsScoringRubricKeys.AUDIENCE_HOOK_LABEL)
+            .description(HotNewsScoringRubricKeys.AUDIENCE_HOOK_DESCRIPTION)
+            .weight(HotNewsScoringRubricKeys.AUDIENCE_HOOK_WEIGHT)
+            .build(),
+        ScoringRubricDimensionView.builder()
             .key("theme_fit")
             .label("主题契合")
             .description("线索是否落在「" + theme + "」的领域与关键词语义内，触碰不做范围则低分。")
             .weight(35)
             .build(),
         ScoringRubricDimensionView.builder()
-            .key("audience_payoff")
-            .label("读者收益")
-            .description("对目标读者是否有可带走的判断、决策或可执行启发。")
-            .weight(35)
-            .build(),
-        ScoringRubricDimensionView.builder()
             .key("angle_potential")
             .label("成文切入")
-            .description("能否写出差异化角度，而不是只能搬运摘要。")
-            .weight(30)
+            .description("能否写成目标读者会点开的差异化角度，而不是论文摘要搬运。")
+            .weight(35)
             .build());
     return ScoringRubricView.builder()
         .version(1)
         .generatedAt(nowIso())
-        .scoreGuidance("高分须同时满足主题契合与读者收益；材料过薄或明显越界应整体压低。")
+        .scoreGuidance(
+            "高分须先有打开欲与可转述钩子，再谈主题契合与成文切入；"
+                + "纯方法论文、窄基准、无大众钩子应整体压低；预印本 alone 不足以支撑主推。")
         .dimensions(dims)
         .build();
   }

@@ -3,6 +3,7 @@ package com.chengwenfang.knowledge.application;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.chengwenfang.ai.facade.AiEmbeddingFacade;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.knowledge.domain.entity.KnowledgeChunkEntity;
 import com.chengwenfang.knowledge.domain.entity.KnowledgeDocumentEntity;
 import com.chengwenfang.knowledge.domain.rule.KnowledgeCitationTitles;
@@ -45,6 +46,8 @@ public class HybridRetriever {
   private final KnowledgeDocumentMapper documentMapper;
   /** 活跃索引版本。 */
   private final KnowledgeIndexVersionService indexVersionService;
+  /** 用户数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * 检索引用片段。
@@ -68,9 +71,11 @@ public class HybridRetriever {
     String embeddingModel = embeddingFacade.embeddingModelName();
     List<String> sourceKindValues = toSourceKindValues(sourceKinds);
     List<String> mediaKindValues = toMediaKindValues(mediaKinds);
+    String ownerFilter = retrievalOwnerUserId();
     KnowledgeVectorFilter vectorFilter = KnowledgeVectorFilter.builder()
         .indexVersion(activeVersion)
         .embeddingModel(StrUtil.blankToDefault(embeddingModel, null))
+        .ownerUserId(StrUtil.blankToDefault(ownerFilter, null))
         .sourceKinds(sourceKindValues.isEmpty() ? null : sourceKindValues)
         .mediaKinds(mediaKindValues.isEmpty() ? null : mediaKindValues)
         .build();
@@ -81,6 +86,7 @@ public class HybridRetriever {
         trimmedQuery,
         activeVersion,
         embeddingModel,
+        ownerFilter,
         joinCsv(sourceKindValues),
         joinCsv(mediaKindValues));
     Map<String, Double> scores = new HashMap<>();
@@ -147,19 +153,21 @@ public class HybridRetriever {
       String query,
       String indexVersion,
       String embeddingModel,
+      String ownerUserId,
       String sourceKindsCsv,
       String mediaKindsCsv) {
     String sources = StrUtil.nullToEmpty(sourceKindsCsv);
     String medias = StrUtil.nullToEmpty(mediaKindsCsv);
+    String owner = StrUtil.nullToEmpty(ownerUserId);
     List<KnowledgeChunkEntity> hits;
     try {
-      hits = chunkMapper.searchFullText(query, indexVersion, sources, medias, CHANNEL_LIMIT);
+      hits = chunkMapper.searchFullText(query, indexVersion, owner, sources, medias, CHANNEL_LIMIT);
     } catch (Exception exception) {
       log.warn("知识库 FULLTEXT 失败，回退 LIKE：{}", exception.getMessage());
       hits = List.of();
     }
     if (CollUtil.isEmpty(hits)) {
-      hits = chunkMapper.searchKeyword(query, indexVersion, sources, medias, CHANNEL_LIMIT);
+      hits = chunkMapper.searchKeyword(query, indexVersion, owner, sources, medias, CHANNEL_LIMIT);
     }
     if (hits == null) {
       return List.of();
@@ -224,7 +232,7 @@ public class HybridRetriever {
   }
 
   /**
-   * 仅保留 active 版本且仍存在于 MySQL 的引用（图检索结果回表校验）。
+   * 仅保留 active 版本、存在于 MySQL、且文档归属当前用户的引用（图检索结果回表校验）。
    *
    * @param citations 原始引用
    * @return 过滤后引用
@@ -240,6 +248,8 @@ public class HybridRetriever {
         .distinct()
         .toList();
     Map<String, KnowledgeChunkEntity> chunkById = loadChunks(chunkIds);
+    Map<String, KnowledgeDocumentEntity> documentById = loadDocuments(chunkById.values());
+    String ownerFilter = retrievalOwnerUserId();
     List<KnowledgeCitationView> retained = new ArrayList<>();
     for (KnowledgeCitationView citation : citations) {
       if (citation == null || StrUtil.isBlank(citation.getChunkId())) {
@@ -248,6 +258,13 @@ public class HybridRetriever {
       KnowledgeChunkEntity chunk = chunkById.get(citation.getChunkId());
       if (chunk == null || !activeVersion.equals(chunk.getIndexVersion())) {
         continue;
+      }
+      // 图检索无 Neo4j owner 属性时，用文档归属做失败关闭
+      if (StrUtil.isNotBlank(ownerFilter)) {
+        KnowledgeDocumentEntity document = documentById.get(chunk.getDocumentId());
+        if (document == null || !ownerFilter.equals(document.getOwnerUserId())) {
+          continue;
+        }
       }
       retained.add(citation);
     }
@@ -371,6 +388,19 @@ public class HybridRetriever {
         .charSpanEnd(hitChunk.getCharSpanEnd())
         .score(score)
         .build();
+  }
+
+  /**
+   * 检索侧所属用户：鉴权开启且非管理员时收窄；管理员/鉴权关闭不过滤。
+   *
+   * @return owner id；空串表示不限
+   */
+  private String retrievalOwnerUserId() {
+    if (ownerScope.currentUserIsAdmin()) {
+      return "";
+    }
+    // 无身份时用不可能命中的占位，避免回落管理员向量
+    return ownerScope.currentOwnerUserId().orElse("__no_owner__");
   }
 
   /**

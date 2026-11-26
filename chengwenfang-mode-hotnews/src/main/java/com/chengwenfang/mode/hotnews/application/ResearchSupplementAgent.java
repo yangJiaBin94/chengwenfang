@@ -17,6 +17,7 @@ import com.chengwenfang.crawler.facade.dto.view.FetchResult;
 import com.chengwenfang.crawler.facade.dto.view.FetchedItemView;
 import com.chengwenfang.crawler.facade.dto.view.SearchHitView;
 import com.chengwenfang.crawler.facade.enums.ChannelType;
+import com.chengwenfang.identity.facade.OwnerContext;
 import com.chengwenfang.mode.hotnews.application.model.ResearchCandidate;
 import com.chengwenfang.mode.hotnews.application.prompt.ResearchSupplementAgentPrompts;
 import com.chengwenfang.mode.hotnews.application.research.ResearchAgentAction;
@@ -241,45 +242,47 @@ public class ResearchSupplementAgent {
     // 专用短生命周期池：避免长耗时联网任务占满 commonPool
     ExecutorService pool = Executors.newFixedThreadPool(2);
     try {
-      CompletableFuture<ChannelSeedResult> channelFuture = CompletableFuture.supplyAsync(() -> {
-        try {
-          Map<String, SearchHitView> channelHits = new LinkedHashMap<>();
-          List<String> channelQueries = new ArrayList<>();
-          StringBuilder channelLog = new StringBuilder();
-          List<String> seedQueries = useTavilyAngles
-              ? ResearchSourcePolicyResolver.buildAngleQueries(seedSubject, policy)
-              : ResearchSourcePolicyResolver.buildSiteScopedQueries(seedSubject, policy);
-          if (!seedQueries.isEmpty()) {
-            channelLog.append(useTavilyAngles ? "preferred angle queries=" : "preferred site queries=")
-                .append(seedQueries.size())
-                .append('\n');
-            for (int index = 0;
-                index < seedQueries.size();
-                index += HotNewsResearchAgentLimits.MAX_QUERIES_PER_ROUND) {
-              int end = Math.min(
-                  index + HotNewsResearchAgentLimits.MAX_QUERIES_PER_ROUND, seedQueries.size());
-              runSearch(
-                  seedQueries.subList(index, end),
-                  searchChannels,
-                  blocked,
-                  channelHits,
-                  channelQueries,
-                  channelLog,
-                  policy);
+      CompletableFuture<ChannelSeedResult> channelFuture = CompletableFuture.supplyAsync(
+          OwnerContext.wrap(() -> {
+            try {
+              Map<String, SearchHitView> channelHits = new LinkedHashMap<>();
+              List<String> channelQueries = new ArrayList<>();
+              StringBuilder channelLog = new StringBuilder();
+              List<String> seedQueries = useTavilyAngles
+                  ? ResearchSourcePolicyResolver.buildAngleQueries(seedSubject, policy)
+                  : ResearchSourcePolicyResolver.buildSiteScopedQueries(seedSubject, policy);
+              if (!seedQueries.isEmpty()) {
+                channelLog.append(useTavilyAngles ? "preferred angle queries=" : "preferred site queries=")
+                    .append(seedQueries.size())
+                    .append('\n');
+                for (int index = 0;
+                    index < seedQueries.size();
+                    index += HotNewsResearchAgentLimits.MAX_QUERIES_PER_ROUND) {
+                  int end = Math.min(
+                      index + HotNewsResearchAgentLimits.MAX_QUERIES_PER_ROUND, seedQueries.size());
+                  runSearch(
+                      seedQueries.subList(index, end),
+                      searchChannels,
+                      blocked,
+                      channelHits,
+                      channelQueries,
+                      channelLog,
+                      policy);
+                }
+              }
+              return new ChannelSeedResult(channelHits, channelQueries, channelLog.toString());
+            } catch (Exception exception) {
+              log.warn("资料补充渠道预搜失败 title={} err={}", title, exception.getMessage());
+              return new ChannelSeedResult(
+                  Map.of(),
+                  List.of(),
+                  "channel seed failed=" + StrUtil.blankToDefault(exception.getMessage(), "unknown") + '\n');
             }
-          }
-          return new ChannelSeedResult(channelHits, channelQueries, channelLog.toString());
-        } catch (Exception exception) {
-          log.warn("资料补充渠道预搜失败 title={} err={}", title, exception.getMessage());
-          return new ChannelSeedResult(
-              Map.of(),
-              List.of(),
-              "channel seed failed=" + StrUtil.blankToDefault(exception.getMessage(), "unknown") + '\n');
-        }
-      }, pool);
+          }),
+          pool);
 
       CompletableFuture<ResearchAiWebSearchCollectResult> aiFuture = CompletableFuture.supplyAsync(
-          () -> {
+          OwnerContext.wrap(() -> {
             try {
               return aiWebSearchCollector.collect(title, summary, blocked, policy);
             } catch (Exception exception) {
@@ -290,7 +293,7 @@ public class ResearchSupplementAgent {
                       + StrUtil.blankToDefault(exception.getMessage(), "unknown"))
                   .build();
             }
-          },
+          }),
           pool);
 
       // 两侧各自降级，互不拖垮；再按配额合并

@@ -19,6 +19,9 @@ public class KnowledgeChatSessionEntity {
   /** 主键。 */
   @TableId("id")
   private String id;
+  /** 所属用户 ID。 */
+  @TableField("owner_user_id")
+  private String ownerUserId;
   /** 会话标题。 */
   @TableField("title")
   private String title;

@@ -5,6 +5,8 @@ import com.chengwenfang.sourcing.application.HotNewsChannelService;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.chengwenfang.common.BusinessException;
+import com.chengwenfang.identity.application.OwnerScopeQueryHelper;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.common.ErrorCodes;
 import com.chengwenfang.common.PageQuery;
 import com.chengwenfang.common.SearchQueryNormalizer;
@@ -75,6 +77,8 @@ public class TopicQueryService {
   private final TopicScoreDetailsStore scoreDetailsStore;
   /** 选题聚合能力。 */
   private final HotNewsTopicAggregateService aggregate;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   public List<HotNewsTopicView> listTopics(String themeId, int limit) {
     // status=null 时重载内默认排除 expired
@@ -115,10 +119,12 @@ public class TopicQueryService {
     // 有最新雷达批次时，默认按写作分取本轮前 N 条（高分在前）
     if (StrUtil.isNotBlank(latestRadarBatchId)) {
       int topLimit = Math.min(capped, TopicMathUtil.DAILY_TOPIC_LIMIT);
-      List<TopicClusterEntity> top = topicMapper.selectList(new LambdaQueryWrapper<TopicClusterEntity>()
+      LambdaQueryWrapper<TopicClusterEntity> topQuery = new LambdaQueryWrapper<TopicClusterEntity>()
           .eq(TopicClusterEntity::getThemeId, themeId)
           .eq(TopicClusterEntity::getRadarBatchId, latestRadarBatchId)
-          .ne(TopicClusterEntity::getStatus, HotNewsTopicStatuses.EXPIRED)
+          .ne(TopicClusterEntity::getStatus, HotNewsTopicStatuses.EXPIRED);
+      OwnerScopeQueryHelper.applyOwnerEquals(topQuery, ownerScope, TopicClusterEntity::getOwnerUserId);
+      List<TopicClusterEntity> top = topicMapper.selectList(topQuery
           .orderByDesc(TopicClusterEntity::getWritingScore)
           .orderByDesc(TopicClusterEntity::getUpdatedAt)
           .orderByAsc(TopicClusterEntity::getTitle)
@@ -143,6 +149,7 @@ public class TopicQueryService {
       // 列表默认不展示已过期选题
       query.ne(TopicClusterEntity::getStatus, HotNewsTopicStatuses.EXPIRED);
     }
+    OwnerScopeQueryHelper.applyOwnerEquals(query, ownerScope, TopicClusterEntity::getOwnerUserId);
     return topicMapper.selectList(query).stream().map(this::topicView).toList();
   }
 
@@ -213,9 +220,11 @@ public class TopicQueryService {
    * @return 已确认 / 写作中 / 已完成选题
    */
   public List<HotNewsTopicView> listConfirmedTopics(String themeId) {
-    return topicMapper.selectList(new LambdaQueryWrapper<TopicClusterEntity>()
-            .eq(StrUtil.isNotBlank(themeId), TopicClusterEntity::getThemeId, themeId)
-            .in(TopicClusterEntity::getStatus, HotNewsTopicStatuses.CONFIRMED_LIFECYCLE)
+    LambdaQueryWrapper<TopicClusterEntity> query = new LambdaQueryWrapper<TopicClusterEntity>()
+        .eq(StrUtil.isNotBlank(themeId), TopicClusterEntity::getThemeId, themeId)
+        .in(TopicClusterEntity::getStatus, HotNewsTopicStatuses.CONFIRMED_LIFECYCLE);
+    OwnerScopeQueryHelper.applyOwnerEquals(query, ownerScope, TopicClusterEntity::getOwnerUserId);
+    return topicMapper.selectList(query
             .orderByDesc(TopicClusterEntity::getConfirmedAt)
             .orderByDesc(TopicClusterEntity::getUpdatedAt)
             .last("LIMIT 500"))
@@ -235,10 +244,12 @@ public class TopicQueryService {
       return Set.of();
     }
     // 先取已选题 ID，再批量拉资料与信源，避免按选题 N+1
-    List<String> topicIds = topicMapper.selectList(new LambdaQueryWrapper<TopicClusterEntity>()
-            .eq(TopicClusterEntity::getThemeId, themeId)
-            .in(TopicClusterEntity::getStatus, HotNewsTopicStatuses.CONFIRMED_LIFECYCLE)
-            .select(TopicClusterEntity::getId))
+    LambdaQueryWrapper<TopicClusterEntity> confirmedQuery = new LambdaQueryWrapper<TopicClusterEntity>()
+        .eq(TopicClusterEntity::getThemeId, themeId)
+        .in(TopicClusterEntity::getStatus, HotNewsTopicStatuses.CONFIRMED_LIFECYCLE)
+        .select(TopicClusterEntity::getId);
+    OwnerScopeQueryHelper.applyOwnerEquals(confirmedQuery, ownerScope, TopicClusterEntity::getOwnerUserId);
+    List<String> topicIds = topicMapper.selectList(confirmedQuery)
         .stream()
         .map(TopicClusterEntity::getId)
         .filter(StrUtil::isNotBlank)
@@ -328,9 +339,11 @@ public class TopicQueryService {
     if (StrUtil.isBlank(themeId)) {
       return new ArrayList<>(byId.values());
     }
-    List<TopicClusterEntity> candidates = topicMapper.selectList(new LambdaQueryWrapper<TopicClusterEntity>()
+    LambdaQueryWrapper<TopicClusterEntity> candidateQuery = new LambdaQueryWrapper<TopicClusterEntity>()
         .eq(TopicClusterEntity::getThemeId, themeId)
-        .ne(TopicClusterEntity::getStatus, HotNewsTopicStatuses.EXPIRED)
+        .ne(TopicClusterEntity::getStatus, HotNewsTopicStatuses.EXPIRED);
+    OwnerScopeQueryHelper.applyOwnerEquals(candidateQuery, ownerScope, TopicClusterEntity::getOwnerUserId);
+    List<TopicClusterEntity> candidates = topicMapper.selectList(candidateQuery
         .orderByDesc(TopicClusterEntity::getWritingScore)
         .orderByDesc(TopicClusterEntity::getUpdatedAt)
         .last("LIMIT 50"));
@@ -539,6 +552,7 @@ public class TopicQueryService {
     if (topic == null) {
       throw new BusinessException(ErrorCodes.TOPIC_NOT_FOUND, "选题不存在", 404);
     }
+    ownerScope.assertCanAccess(topic.getOwnerUserId());
     return topic;
   }
 
@@ -558,6 +572,7 @@ public class TopicQueryService {
     if (topic == null) {
       throw new BusinessException(ErrorCodes.TOPIC_NOT_FOUND, "选题不存在", 404);
     }
+    ownerScope.assertCanAccess(topic.getOwnerUserId());
     return topic;
   }
 

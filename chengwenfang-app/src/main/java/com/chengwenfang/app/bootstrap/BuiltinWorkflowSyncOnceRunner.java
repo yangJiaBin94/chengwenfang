@@ -1,6 +1,8 @@
 package com.chengwenfang.app.bootstrap;
 
 import cn.hutool.core.util.StrUtil;
+import com.chengwenfang.identity.facade.OwnerContext;
+import com.chengwenfang.identity.facade.constant.SeedUserIds;
 import com.chengwenfang.prompt.facade.PromptPackFacade;
 import com.chengwenfang.prompt.facade.WorkflowFacade;
 import com.chengwenfang.prompt.facade.dto.view.PromptPackView;
@@ -41,19 +43,20 @@ public class BuiltinWorkflowSyncOnceRunner implements ApplicationRunner {
    */
   @Override
   public void run(ApplicationArguments args) {
-    int code = 0;
-    try {
-      Map<String, String> idsByName = promptPackIdsByName();
-      workflows.ensureCourseContentBuiltin(idsByName);
-      workflows.ensureHotNewsArticleBuiltin(idsByName);
-      workflows.ensureHotNewsRadarCollectBuiltin(idsByName);
-      log.info("内置工作流节点集同步完成");
-    } catch (Exception exception) {
-      log.error("内置工作流同步失败：{}", exception.getMessage(), exception);
-      code = 1;
-    }
-    int exitCode = code;
-    int springCode = SpringApplication.exit(context, () -> exitCode);
+    int[] code = {0};
+    OwnerContext.runAs(SeedUserIds.ADMIN, () -> {
+      try {
+        Map<String, String> idsByName = promptPackIdsByName();
+        workflows.ensureCourseContentBuiltin(idsByName);
+        workflows.ensureHotNewsArticleBuiltin(idsByName);
+        workflows.ensureHotNewsRadarCollectBuiltin(idsByName);
+        log.info("内置工作流节点集同步完成");
+      } catch (Exception exception) {
+        log.error("内置工作流同步失败：{}", exception.getMessage(), exception);
+        code[0] = 1;
+      }
+    });
+    int springCode = SpringApplication.exit(context, () -> code[0]);
     System.exit(springCode);
   }
 

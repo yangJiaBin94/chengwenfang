@@ -40,6 +40,8 @@ public final class ErrorCodes {
   public static final String BRIEF_NOT_FOUND = "brief_not_found";
   public static final String TOPIC_NOT_FOUND = "topic_not_found";
   public static final String RESEARCH_RUN_NOT_FOUND = "research_run_not_found";
+  /** 调研运行与入参选题不一致。 */
+  public static final String RESEARCH_TOPIC_MISMATCH = "research_topic_mismatch";
   /** 热点抓取运行不存在。 */
   public static final String FETCH_RUN_NOT_FOUND = "fetch_run_not_found";
   public static final String RESEARCH_ITEM_EXISTS = "research_item_exists";
@@ -92,6 +94,15 @@ public final class ErrorCodes {
   public static final String KNOWLEDGE_EXTRACT_EMPTY = "knowledge_extract_empty";
   /** 知识库表格行数超过上限。 */
   public static final String KNOWLEDGE_TABLE_TOO_LARGE = "knowledge_table_too_large";
+
+  /** 未登录或令牌无效。 */
+  public static final String UNAUTHORIZED = "unauthorized";
+  /** 已登录但权限不足。 */
+  public static final String FORBIDDEN = "forbidden";
+  /** 访问他人资源且非管理员。 */
+  public static final String OWNER_MISMATCH = "owner_mismatch";
+  /** 注册用户名冲突。 */
+  public static final String USERNAME_CONFLICT = "username_conflict";
 
   private ErrorCodes() {}
 }

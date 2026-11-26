@@ -14,6 +14,7 @@ import com.chengwenfang.content.infrastructure.mapper.MediaAssetMapper;
 import com.chengwenfang.content.infrastructure.mapper.MediaGenerationMapper;
 import com.chengwenfang.content.infrastructure.mapper.WorkOutputMapper;
 import com.chengwenfang.file.facade.FileFacade;
+import com.chengwenfang.identity.facade.OwnerScope;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,7 @@ class GeneratedImageServiceListImagesTest {
   @Mock FileFacade files;
   @Mock ContentViewMapper views;
   @Mock ThemeVisibilityGuard visibility;
+  @Mock OwnerScope ownerScope;
 
   private GeneratedImageService service;
 
@@ -45,7 +47,8 @@ class GeneratedImageServiceListImagesTest {
         workContents,
         files,
         views,
-        visibility);
+        visibility,
+        ownerScope);
   }
 
   @Test

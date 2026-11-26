@@ -12,6 +12,7 @@ import com.chengwenfang.crawler.facade.PageScreenshotFacade;
 import com.chengwenfang.crawler.facade.dto.request.ArticleContentRequest;
 import com.chengwenfang.crawler.facade.dto.view.ArticleContentResult;
 import com.chengwenfang.crawler.facade.dto.view.PageScreenshotResult;
+import com.chengwenfang.identity.facade.OwnerContext;
 import com.chengwenfang.mode.hotnews.application.model.ResearchCandidate;
 import com.chengwenfang.mode.hotnews.application.prompt.ResearchArticleBriefPrompts;
 import com.chengwenfang.mode.hotnews.domain.ChineseTextNormalizer;
@@ -82,7 +83,7 @@ public class ResearchArticleEnricher {
     try {
       List<CompletableFuture<Void>> futures = new ArrayList<>(articles.size());
       for (ResearchCandidate article : articles) {
-        futures.add(CompletableFuture.runAsync(() -> enrichOne(article), pool));
+        futures.add(CompletableFuture.runAsync(OwnerContext.wrap(() -> enrichOne(article)), pool));
       }
       CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
     } finally {

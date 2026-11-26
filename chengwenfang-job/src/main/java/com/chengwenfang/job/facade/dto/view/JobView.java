@@ -15,6 +15,8 @@ import lombok.NoArgsConstructor;
 public class JobView {
   /** 任务 ID。 */
   private String id;
+  /** 所属用户 ID（隔离与 SSE 内部上下文）。 */
+  private String ownerUserId;
   /** 任务类型。 */
   private String type;
   /** 状态。 */

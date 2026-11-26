@@ -410,21 +410,22 @@ public class KnowledgeController {
   @Operation(summary = "知识库问答（SSE）")
   @PostMapping(path = "/chats/{id}/messages", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
   public SseEmitter askWithSse(@PathVariable String id, @RequestBody KnowledgeChatMessageRequest request) {
+    // 问答在请求线程执行，保留登录态（虚拟线程无 Sa-Token 会话，读文件会误 401）
+    KnowledgeChatAnswerView answer = knowledgeFacade.ask(id, request);
     SseEmitter emitter = new SseEmitter(0L);
-    Thread.startVirtualThread(() -> streamAnswer(id, request, emitter));
+    Thread.startVirtualThread(() -> pushAnswer(id, answer, emitter));
     return emitter;
   }
 
   /**
-   * 执行问答并通过 SSE 推送 citations、answer、done。
+   * 将已算好的问答结果推送到 SSE。
    *
-   * @param sessionId 会话 ID
-   * @param request     提问
-   * @param emitter     SSE 发射器
+   * @param sessionId 会话 ID（仅日志）
+   * @param answer    问答结果
+   * @param emitter   SSE 发射器
    */
-  private void streamAnswer(String sessionId, KnowledgeChatMessageRequest request, SseEmitter emitter) {
+  private void pushAnswer(String sessionId, KnowledgeChatAnswerView answer, SseEmitter emitter) {
     try {
-      KnowledgeChatAnswerView answer = knowledgeFacade.ask(sessionId, request);
       emitter.send(SseEmitter.event()
           .name("citations")
           .data(JSONUtil.toJsonStr(answer.getCitations() == null ? List.of() : answer.getCitations())));

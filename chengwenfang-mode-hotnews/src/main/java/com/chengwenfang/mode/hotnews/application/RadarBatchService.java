@@ -2,6 +2,8 @@ package com.chengwenfang.mode.hotnews.application;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.chengwenfang.common.IdsUtil;
+import com.chengwenfang.identity.application.OwnerScopeQueryHelper;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.job.facade.JobFacade;
 import com.chengwenfang.job.facade.dto.view.JobView;
 import com.chengwenfang.mode.hotnews.domain.ChineseTextNormalizer;
@@ -65,6 +67,8 @@ public class RadarBatchService {
   private final VideoParseRunService videoParseRuns;
   /** 选题评分明细（落库后回写 originKind）。 */
   private final TopicScoreDetailsStore scoreDetailsStore;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * @param radarBatchMapper   雷达批次表
@@ -86,7 +90,8 @@ public class RadarBatchService {
       JobFacade jobs,
       @Lazy HotNewsFacade hotNews,
       VideoParseRunService videoParseRuns,
-      TopicScoreDetailsStore scoreDetailsStore) {
+      TopicScoreDetailsStore scoreDetailsStore,
+      OwnerScope ownerScope) {
     this.radarBatchMapper = radarBatchMapper;
     this.itemMapper = itemMapper;
     this.topicSourceMapper = topicSourceMapper;
@@ -96,6 +101,7 @@ public class RadarBatchService {
     this.hotNews = hotNews;
     this.videoParseRuns = videoParseRuns;
     this.scoreDetailsStore = scoreDetailsStore;
+    this.ownerScope = ownerScope;
   }
 
   /**
@@ -116,6 +122,7 @@ public class RadarBatchService {
     LocalDateTime now = LocalDateTime.now();
     radarBatchMapper.insert(RadarBatchEntity.builder()
         .id(batchId)
+        .ownerUserId(ownerScope.effectiveOwnerUserId())
         .themeId(themeId)
         .jobId(StrUtil.blankToDefault(jobId, null))
         .status(RadarBatchStatuses.RUNNING)
@@ -309,10 +316,12 @@ public class RadarBatchService {
     if (StrUtil.isBlank(themeId) || StrUtil.isBlank(radarBatchId)) {
       return List.of();
     }
-    return topicMapper.selectList(new LambdaQueryWrapper<TopicClusterEntity>()
+    LambdaQueryWrapper<TopicClusterEntity> query = new LambdaQueryWrapper<TopicClusterEntity>()
         .eq(TopicClusterEntity::getThemeId, themeId)
         .eq(TopicClusterEntity::getRadarBatchId, radarBatchId)
-        .ne(TopicClusterEntity::getStatus, HotNewsTopicStatuses.EXPIRED)
+        .ne(TopicClusterEntity::getStatus, HotNewsTopicStatuses.EXPIRED);
+    OwnerScopeQueryHelper.applyOwnerEquals(query, ownerScope, TopicClusterEntity::getOwnerUserId);
+    return topicMapper.selectList(query
         .orderByDesc(TopicClusterEntity::getUpdatedAt)
         .orderByAsc(TopicClusterEntity::getTitle)
         .orderByAsc(TopicClusterEntity::getId));
@@ -328,8 +337,10 @@ public class RadarBatchService {
     if (StrUtil.isBlank(themeId)) {
       return List.of();
     }
-    List<SourceFetchRunEntity> runs = runMapper.selectList(new LambdaQueryWrapper<SourceFetchRunEntity>()
-        .eq(SourceFetchRunEntity::getThemeId, themeId)
+    LambdaQueryWrapper<SourceFetchRunEntity> runQuery = new LambdaQueryWrapper<SourceFetchRunEntity>()
+        .eq(SourceFetchRunEntity::getThemeId, themeId);
+    OwnerScopeQueryHelper.applyOwnerEquals(runQuery, ownerScope, SourceFetchRunEntity::getOwnerUserId);
+    List<SourceFetchRunEntity> runs = runMapper.selectList(runQuery
         .orderByDesc(SourceFetchRunEntity::getCreatedAt)
         .last("LIMIT 100"));
     List<JobView> out = new ArrayList<>();
@@ -430,6 +441,7 @@ public class RadarBatchService {
     entity.setContentIntent(SourceContentIntent.KNOWLEDGE.getValue());
     entity.setVideoRawText(null);
     entity.setContentHash(sha256(entity.getSummary()));
+    entity.setOwnerUserId(ownerScope.effectiveOwnerUserId());
     entity.setCreatedAt(LocalDateTime.now());
     itemMapper.insert(entity);
     if (video) {

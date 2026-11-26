@@ -2,6 +2,7 @@ package com.chengwenfang.mode.hotnews.application.generation.radarcollect;
 
 import cn.hutool.core.util.StrUtil;
 import com.chengwenfang.common.ThemeTitleRelevance;
+import com.chengwenfang.identity.facade.OwnerContext;
 import com.chengwenfang.content.facade.constant.HotNewsTopicFreshness;
 import com.chengwenfang.crawler.facade.MarketingPageFilter;
 import com.chengwenfang.sourcing.facade.SourceVideoTitleFilter;
@@ -176,7 +177,7 @@ public class CandidateFilterRadarNodeHandler implements RadarCollectNodeHandler 
           "素材筛选：AI 营销判定 0 / " + aiTotal + "…");
       List<CompletableFuture<Void>> futures = new ArrayList<>(aiTotal);
       for (RadarCollectCandidate candidate : needAi) {
-        futures.add(CompletableFuture.runAsync(() -> {
+        futures.add(CompletableFuture.runAsync(OwnerContext.wrap(() -> {
           try {
             boolean marketing = aiSupport.isMarketing(
                 promptPackBindings,
@@ -212,7 +213,7 @@ public class CandidateFilterRadarNodeHandler implements RadarCollectNodeHandler 
               }
             }
           }
-        }, filterExecutor));
+        }), filterExecutor));
       }
       CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
     }

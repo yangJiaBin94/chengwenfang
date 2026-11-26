@@ -95,7 +95,7 @@ export function SystemReadyPanel() {
           <span className="section-kicker">System Readiness</span>
           <h2>系统就绪</h2>
           <p>
-            只在本机使用：无登录、无鉴权，不要把 5173 / 8001 暴露到公网。默认档是课程 + 知识库
+            需登录使用；默认种子管理员请改密。不要把 5173 / 8001 裸暴露到公网。默认档是课程 + 知识库
             （MySQL、Redis、Qdrant）。空库启动会自动导入提示词包和三条主工作流。
           </p>
         </div>

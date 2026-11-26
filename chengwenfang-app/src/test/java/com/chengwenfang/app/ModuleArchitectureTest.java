@@ -61,6 +61,20 @@ class ModuleArchitectureTest {
               "com.chengwenfang.app..");
 
   @ArchTest
+  static final ArchRule identityDoesNotDependOnUpperLayers =
+      noClasses()
+          .that().resideInAPackage("com.chengwenfang.identity..")
+          .should().dependOnClassesThat().resideInAnyPackage(
+              "com.chengwenfang.mode..",
+              "com.chengwenfang.content..",
+              "com.chengwenfang.quality..",
+              "com.chengwenfang.publishing..",
+              "com.chengwenfang.sourcing..",
+              "com.chengwenfang.knowledge..",
+              "com.chengwenfang.notification..",
+              "com.chengwenfang.app..");
+
+  @ArchTest
   static final ArchRule jobDoesNotDependOnUpperLayers =
       noClasses()
           .that().resideInAPackage("com.chengwenfang.job..")

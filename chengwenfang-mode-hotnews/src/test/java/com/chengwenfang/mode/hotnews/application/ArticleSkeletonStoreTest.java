@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.chengwenfang.file.facade.FileFacade;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.file.facade.dto.view.StoredFileView;
 import com.chengwenfang.mode.hotnews.domain.entity.HotnewsArticleSkeletonEntity;
 import com.chengwenfang.mode.hotnews.domain.entity.HotnewsArticleSkeletonItemEntity;
@@ -36,6 +37,8 @@ class ArticleSkeletonStoreTest {
   private HotnewsArticleSkeletonItemMapper itemMapper;
   @Mock
   private FileFacade files;
+  @Mock
+  private OwnerScope ownerScope;
 
   private ArticleSkeletonStore store;
   private HotNewsCodec codec;
@@ -43,7 +46,7 @@ class ArticleSkeletonStoreTest {
   @BeforeEach
   void setUp() {
     codec = new HotNewsCodec(new ObjectMapper());
-    store = new ArticleSkeletonStore(skeletonMapper, itemMapper, files, codec);
+    store = new ArticleSkeletonStore(skeletonMapper, itemMapper, files, codec, ownerScope);
   }
 
   @Test

@@ -14,6 +14,7 @@ import com.chengwenfang.crawler.facade.dto.view.ArticleContentResult;
 import com.chengwenfang.file.facade.FileFacade;
 import com.chengwenfang.file.facade.dto.view.FileView;
 import com.chengwenfang.file.facade.dto.view.StoredFileView;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.job.facade.JobFacade;
 import com.chengwenfang.job.facade.constant.JobTypes;
 import com.chengwenfang.job.facade.dto.job.KnowledgeIndexDocumentJobInput;
@@ -110,6 +111,8 @@ public class DefaultKnowledgeFacade implements KnowledgeFacade {
   private final ArticleContentFacade articleContentFacade;
   /** 向量存储（删除文档时清理）。 */
   private final KnowledgeVectorStore vectorStore;
+  /** 用户数据范围。 */
+  private final OwnerScope ownerScope;
 
   /** {@inheritDoc} */
   @Override
@@ -204,6 +207,7 @@ public class DefaultKnowledgeFacade implements KnowledgeFacade {
         .build()
         .normalized();
     LambdaQueryWrapper<KnowledgeDocumentEntity> query = new LambdaQueryWrapper<>();
+    applyDocumentOwnerFilter(query);
     if (safe.getSourceKind() != null) {
       query.eq(KnowledgeDocumentEntity::getSourceKind, safe.getSourceKind().getValue());
     }
@@ -300,10 +304,7 @@ public class DefaultKnowledgeFacade implements KnowledgeFacade {
     if (StrUtil.isBlank(documentId)) {
       throw new BusinessException(ErrorCodes.KNOWLEDGE_DOCUMENT_NOT_FOUND, "文档 ID 不能为空", 400);
     }
-    KnowledgeDocumentEntity document = documentMapper.selectById(documentId);
-    if (document == null) {
-      throw new BusinessException(ErrorCodes.KNOWLEDGE_DOCUMENT_NOT_FOUND, "知识库文档不存在", 404);
-    }
+    KnowledgeDocumentEntity document = requireDocument(documentId);
     // 先收集切块 ID，再清外部存储，最后删 MySQL（对齐对账清理顺序）
     List<KnowledgeChunkEntity> chunks = chunkMapper.selectList(
         new LambdaQueryWrapper<KnowledgeChunkEntity>()
@@ -367,12 +368,7 @@ public class DefaultKnowledgeFacade implements KnowledgeFacade {
   /** {@inheritDoc} */
   @Override
   public JobView enqueueIndexDocument(String documentId) {
-    if (StrUtil.isBlank(documentId)) {
-      throw new BusinessException(ErrorCodes.KNOWLEDGE_DOCUMENT_NOT_FOUND, "文档 ID 不能为空", 400);
-    }
-    if (documentMapper.selectById(documentId) == null) {
-      throw new BusinessException(ErrorCodes.KNOWLEDGE_DOCUMENT_NOT_FOUND, "知识库文档不存在", 404);
-    }
+    requireDocument(documentId);
     KnowledgeIndexDocumentJobInput input = KnowledgeIndexDocumentJobInput.builder()
         .documentId(documentId)
         .build();
@@ -404,14 +400,25 @@ public class DefaultKnowledgeFacade implements KnowledgeFacade {
   /** {@inheritDoc} */
   @Override
   public KnowledgeIndexStatsView stats() {
-    long total = ObjectUtil.defaultIfNull(documentMapper.selectCount(null), 0L);
-    long ready = ObjectUtil.defaultIfNull(documentMapper.selectCount(new LambdaQueryWrapper<KnowledgeDocumentEntity>()
-        .eq(KnowledgeDocumentEntity::getStatus, KnowledgeDocumentStatus.READY.getValue())), 0L);
-    long failed = ObjectUtil.defaultIfNull(documentMapper.selectCount(new LambdaQueryWrapper<KnowledgeDocumentEntity>()
-        .eq(KnowledgeDocumentEntity::getStatus, KnowledgeDocumentStatus.FAILED.getValue())), 0L);
+    LambdaQueryWrapper<KnowledgeDocumentEntity> totalQuery = new LambdaQueryWrapper<>();
+    applyDocumentOwnerFilter(totalQuery);
+    long total = ObjectUtil.defaultIfNull(documentMapper.selectCount(totalQuery), 0L);
+    LambdaQueryWrapper<KnowledgeDocumentEntity> readyQuery = new LambdaQueryWrapper<KnowledgeDocumentEntity>()
+        .eq(KnowledgeDocumentEntity::getStatus, KnowledgeDocumentStatus.READY.getValue());
+    applyDocumentOwnerFilter(readyQuery);
+    long ready = ObjectUtil.defaultIfNull(documentMapper.selectCount(readyQuery), 0L);
+    LambdaQueryWrapper<KnowledgeDocumentEntity> failedQuery = new LambdaQueryWrapper<KnowledgeDocumentEntity>()
+        .eq(KnowledgeDocumentEntity::getStatus, KnowledgeDocumentStatus.FAILED.getValue());
+    applyDocumentOwnerFilter(failedQuery);
+    long failed = ObjectUtil.defaultIfNull(documentMapper.selectCount(failedQuery), 0L);
+    String ownerFilterForStats = "";
+    if (!ownerScope.currentUserIsAdmin()) {
+      // 无身份时用不可能命中的占位，避免统计全库
+      ownerFilterForStats = ownerScope.currentOwnerUserId().orElse("__no_owner__");
+    }
     List<KnowledgeSourceCountView> bySource = new ArrayList<>();
     for (com.chengwenfang.knowledge.domain.model.KnowledgeSourceKindCountRow row
-        : documentMapper.countGroupBySourceKind()) {
+        : documentMapper.countGroupBySourceKind(ownerFilterForStats)) {
       if (row == null) {
         continue;
       }
@@ -438,6 +445,7 @@ public class DefaultKnowledgeFacade implements KnowledgeFacade {
         : StrUtil.blankToDefault(request.getTitle(), KnowledgeRagConstants.DEFAULT_SESSION_TITLE);
     KnowledgeChatSessionEntity session = KnowledgeChatSessionEntity.builder()
         .id(IdsUtil.newId())
+        .ownerUserId(ownerScope.effectiveOwnerUserId())
         .title(title)
         .summary("")
         .memoryEnabled(true)
@@ -459,10 +467,7 @@ public class DefaultKnowledgeFacade implements KnowledgeFacade {
     if (StrUtil.isBlank(nextTitle)) {
       throw new BusinessException(ErrorCodes.INVALID_STATUS, "标题不能为空", 400);
     }
-    KnowledgeChatSessionEntity session = sessionMapper.selectById(sessionId);
-    if (session == null) {
-      throw new BusinessException(ErrorCodes.KNOWLEDGE_SESSION_NOT_FOUND, "知识库会话不存在", 404);
-    }
+    KnowledgeChatSessionEntity session = requireSession(sessionId);
     session.setTitle(StrUtil.maxLength(nextTitle, 64));
     session.setUpdatedAt(LocalDateTime.now());
     sessionMapper.updateById(session);
@@ -476,10 +481,7 @@ public class DefaultKnowledgeFacade implements KnowledgeFacade {
     if (StrUtil.isBlank(sessionId)) {
       throw new BusinessException(ErrorCodes.KNOWLEDGE_SESSION_NOT_FOUND, "会话 ID 不能为空", 400);
     }
-    KnowledgeChatSessionEntity session = sessionMapper.selectById(sessionId);
-    if (session == null) {
-      throw new BusinessException(ErrorCodes.KNOWLEDGE_SESSION_NOT_FOUND, "知识库会话不存在", 404);
-    }
+    requireSession(sessionId);
     messageMapper.delete(new LambdaQueryWrapper<KnowledgeChatMessageEntity>()
         .eq(KnowledgeChatMessageEntity::getSessionId, sessionId));
     retrievalTraceService.deleteBySession(sessionId);
@@ -489,9 +491,12 @@ public class DefaultKnowledgeFacade implements KnowledgeFacade {
   /** {@inheritDoc} */
   @Override
   public List<KnowledgeChatSessionView> listSessions() {
-    return sessionMapper.selectList(new LambdaQueryWrapper<KnowledgeChatSessionEntity>()
+    LambdaQueryWrapper<KnowledgeChatSessionEntity> query =
+        new LambdaQueryWrapper<KnowledgeChatSessionEntity>()
             .orderByDesc(KnowledgeChatSessionEntity::getUpdatedAt)
-            .last("LIMIT 100"))
+            .last("LIMIT 100");
+    applySessionOwnerFilter(query);
+    return sessionMapper.selectList(query)
         .stream()
         .map(KnowledgeViewAssembler::toSessionView)
         .toList();
@@ -533,6 +538,7 @@ public class DefaultKnowledgeFacade implements KnowledgeFacade {
       }
     }
     LambdaQueryWrapper<KnowledgeDocumentEntity> query = new LambdaQueryWrapper<>();
+    applyDocumentOwnerFilter(query);
     if (filter != null) {
       query.eq(KnowledgeDocumentEntity::getSourceKind, filter.getValue());
     }
@@ -629,10 +635,12 @@ public class DefaultKnowledgeFacade implements KnowledgeFacade {
         || StrUtil.isBlank(request.getSourceRefId())) {
       return null;
     }
-    return documentMapper.selectOne(new LambdaQueryWrapper<KnowledgeDocumentEntity>()
+    LambdaQueryWrapper<KnowledgeDocumentEntity> query = new LambdaQueryWrapper<KnowledgeDocumentEntity>()
         .eq(KnowledgeDocumentEntity::getSourceKind, request.getSourceKind().getValue())
         .eq(KnowledgeDocumentEntity::getSourceRefId, request.getSourceRefId())
-        .last("LIMIT 1"));
+        .last("LIMIT 1");
+    applyDocumentOwnerFilter(query);
+    return documentMapper.selectOne(query);
   }
 
   /**
@@ -653,6 +661,7 @@ public class DefaultKnowledgeFacade implements KnowledgeFacade {
     if (existing == null) {
       KnowledgeDocumentEntity created = KnowledgeDocumentEntity.builder()
           .id(IdsUtil.newId())
+          .ownerUserId(ownerScope.effectiveOwnerUserId())
           .sourceKind(request.getSourceKind().getValue())
           .sourceRefId(request.getSourceRefId())
           .mediaKind(ObjectUtil.defaultIfNull(request.getMediaKind(), KnowledgeMediaKind.ARTICLE_MARKDOWN).getValue())
@@ -671,6 +680,7 @@ public class DefaultKnowledgeFacade implements KnowledgeFacade {
       documentMapper.insert(created);
       return created;
     }
+    ownerScope.assertCanAccess(existing.getOwnerUserId());
     boolean contentChanged = contentChanged(existing, request);
     existing.setTitle(StrUtil.blankToDefault(request.getTitle(), existing.getTitle()));
     existing.setThemeId(StrUtil.blankToDefault(request.getThemeId(), existing.getThemeId()));
@@ -854,6 +864,7 @@ public class DefaultKnowledgeFacade implements KnowledgeFacade {
   /** {@inheritDoc} */
   @Override
   public List<KnowledgeRetrievalTraceView> listRetrievalTraces(String sessionId, int limit) {
+    requireSession(sessionId);
     return retrievalTraceService.listBySession(sessionId, limit);
   }
 
@@ -886,6 +897,76 @@ public class DefaultKnowledgeFacade implements KnowledgeFacade {
   public KnowledgeAnswerFeedbackView submitAnswerFeedback(
       String messageId, KnowledgeAnswerFeedbackRequest request) {
     return answerFeedbackService.submit(messageId, request);
+  }
+
+  /**
+   * 加载文档并校验归属。
+   *
+   * @param documentId 文档 id
+   * @return 实体
+   */
+  private KnowledgeDocumentEntity requireDocument(String documentId) {
+    if (StrUtil.isBlank(documentId)) {
+      throw new BusinessException(ErrorCodes.KNOWLEDGE_DOCUMENT_NOT_FOUND, "文档 ID 不能为空", 400);
+    }
+    KnowledgeDocumentEntity document = documentMapper.selectById(documentId);
+    if (document == null) {
+      throw new BusinessException(ErrorCodes.KNOWLEDGE_DOCUMENT_NOT_FOUND, "知识库文档不存在", 404);
+    }
+    ownerScope.assertCanAccess(document.getOwnerUserId());
+    return document;
+  }
+
+  /**
+   * 加载会话并校验归属。
+   *
+   * @param sessionId 会话 id
+   * @return 实体
+   */
+  private KnowledgeChatSessionEntity requireSession(String sessionId) {
+    if (StrUtil.isBlank(sessionId)) {
+      throw new BusinessException(ErrorCodes.KNOWLEDGE_SESSION_NOT_FOUND, "会话 ID 不能为空", 400);
+    }
+    KnowledgeChatSessionEntity session = sessionMapper.selectById(sessionId);
+    if (session == null) {
+      throw new BusinessException(ErrorCodes.KNOWLEDGE_SESSION_NOT_FOUND, "知识库会话不存在", 404);
+    }
+    ownerScope.assertCanAccess(session.getOwnerUserId());
+    return session;
+  }
+
+  /**
+   * 非管理员列表按当前用户过滤文档。
+   *
+   * @param query 文档查询
+   */
+  private void applyDocumentOwnerFilter(LambdaQueryWrapper<KnowledgeDocumentEntity> query) {
+    if (ownerScope.currentUserIsAdmin()) {
+      return;
+    }
+    String ownerId = ownerScope.currentOwnerUserId().orElse(null);
+    if (StrUtil.isBlank(ownerId)) {
+      query.apply("1 = 0");
+      return;
+    }
+    query.eq(KnowledgeDocumentEntity::getOwnerUserId, ownerId);
+  }
+
+  /**
+   * 非管理员列表按当前用户过滤会话。
+   *
+   * @param query 会话查询
+   */
+  private void applySessionOwnerFilter(LambdaQueryWrapper<KnowledgeChatSessionEntity> query) {
+    if (ownerScope.currentUserIsAdmin()) {
+      return;
+    }
+    String ownerId = ownerScope.currentOwnerUserId().orElse(null);
+    if (StrUtil.isBlank(ownerId)) {
+      query.apply("1 = 0");
+      return;
+    }
+    query.eq(KnowledgeChatSessionEntity::getOwnerUserId, ownerId);
   }
 
 }

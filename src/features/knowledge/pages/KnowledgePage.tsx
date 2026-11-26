@@ -40,6 +40,7 @@ import {
   type KnowledgeIndexStats,
   type KnowledgeMemory,
 } from "../api";
+import { openProtectedResource } from "../../../shared/api/http";
 import {
   LIST_PAGE_SIZE_OPTIONS,
   listPageNumbers,
@@ -1438,14 +1439,22 @@ function LibraryPanel({
                 </div>
                 <div className="knowledge-library-item-actions">
                   {document.textFileId ? (
-                    <a
+                    <button
+                      type="button"
                       className="secondary-button"
-                      href={`/api/files/${encodeURIComponent(document.textFileId)}`}
-                      target="_blank"
-                      rel="noreferrer"
+                      onClick={() => {
+                        void openProtectedResource(
+                          `/api/files/${encodeURIComponent(document.textFileId!)}`,
+                        ).catch((error: unknown) => {
+                          showNotice?.(
+                            "打开失败",
+                            error instanceof Error ? error.message : "无法打开解析文本",
+                          );
+                        });
+                      }}
                     >
                       解析文本
-                    </a>
+                    </button>
                   ) : null}
                   <button
                     type="button"

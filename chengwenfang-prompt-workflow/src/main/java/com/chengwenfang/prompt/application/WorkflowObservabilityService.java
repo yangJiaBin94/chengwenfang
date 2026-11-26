@@ -3,6 +3,8 @@ package com.chengwenfang.prompt.application;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.common.ErrorCodes;
+import com.chengwenfang.identity.application.OwnerScopeQueryHelper;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.prompt.domain.entity.WorkflowAlertEntity;
 import com.chengwenfang.prompt.domain.entity.WorkflowNodeRunEntity;
 import com.chengwenfang.prompt.domain.entity.WorkflowRunEntity;
@@ -46,6 +48,8 @@ public class WorkflowObservabilityService {
   private final WorkflowVersionMapper versionMapper;
   /** 共享工具。 */
   private final WorkflowSupport support;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * 汇总某工作流运行指标：次数、成功率、平均/P95 耗时、失败节点排行。
@@ -56,9 +60,10 @@ public class WorkflowObservabilityService {
    */
   public WorkflowMetricsView metricsSummary(String id) {
     support.require(id);
-    List<WorkflowRunEntity> runs = runMapper.selectList(new LambdaQueryWrapper<WorkflowRunEntity>()
-        .eq(WorkflowRunEntity::getWorkflowDefinitionId, id)
-        .orderByDesc(WorkflowRunEntity::getCreatedAt));
+    LambdaQueryWrapper<WorkflowRunEntity> runQuery = new LambdaQueryWrapper<WorkflowRunEntity>()
+        .eq(WorkflowRunEntity::getWorkflowDefinitionId, id);
+    OwnerScopeQueryHelper.applyOwnerEquals(runQuery, ownerScope, WorkflowRunEntity::getOwnerUserId);
+    List<WorkflowRunEntity> runs = runMapper.selectList(runQuery.orderByDesc(WorkflowRunEntity::getCreatedAt));
     int total = runs.size();
     // 成功态按 WorkflowRunStatus.SUCCEEDED 计数
     long succeeded = runs.stream()
@@ -115,8 +120,10 @@ public class WorkflowObservabilityService {
    */
   public List<WorkflowNodeMetricView> metricsNodes(String id) {
     support.require(id);
-    List<String> runIds = runMapper.selectList(new LambdaQueryWrapper<WorkflowRunEntity>()
-            .eq(WorkflowRunEntity::getWorkflowDefinitionId, id))
+    LambdaQueryWrapper<WorkflowRunEntity> nodeRunQuery = new LambdaQueryWrapper<WorkflowRunEntity>()
+        .eq(WorkflowRunEntity::getWorkflowDefinitionId, id);
+    OwnerScopeQueryHelper.applyOwnerEquals(nodeRunQuery, ownerScope, WorkflowRunEntity::getOwnerUserId);
+    List<String> runIds = runMapper.selectList(nodeRunQuery)
         .stream()
         .map(WorkflowRunEntity::getId)
         .toList();
@@ -168,8 +175,10 @@ public class WorkflowObservabilityService {
     support.require(id);
     // 无 versionId 的运行归入 "draft" 桶
     Map<String, List<WorkflowRunEntity>> byVersion = new LinkedHashMap<>();
-    for (WorkflowRunEntity run : runMapper.selectList(new LambdaQueryWrapper<WorkflowRunEntity>()
-        .eq(WorkflowRunEntity::getWorkflowDefinitionId, id))) {
+    LambdaQueryWrapper<WorkflowRunEntity> versionRunQuery = new LambdaQueryWrapper<WorkflowRunEntity>()
+        .eq(WorkflowRunEntity::getWorkflowDefinitionId, id);
+    OwnerScopeQueryHelper.applyOwnerEquals(versionRunQuery, ownerScope, WorkflowRunEntity::getOwnerUserId);
+    for (WorkflowRunEntity run : runMapper.selectList(versionRunQuery)) {
       String versionId = run.getWorkflowVersionId() == null ? "draft" : run.getWorkflowVersionId();
       byVersion.computeIfAbsent(versionId, ignored -> new ArrayList<>()).add(run);
     }
@@ -213,9 +222,10 @@ public class WorkflowObservabilityService {
   public List<WorkflowAlertView> listAlerts(String id) {
     support.require(id);
     // 最新告警排前
-    return alertMapper.selectList(new LambdaQueryWrapper<WorkflowAlertEntity>()
-            .eq(WorkflowAlertEntity::getWorkflowId, id)
-            .orderByDesc(WorkflowAlertEntity::getCreatedAt))
+    LambdaQueryWrapper<WorkflowAlertEntity> alertQuery = new LambdaQueryWrapper<WorkflowAlertEntity>()
+        .eq(WorkflowAlertEntity::getWorkflowId, id);
+    OwnerScopeQueryHelper.applyOwnerEquals(alertQuery, ownerScope, WorkflowAlertEntity::getOwnerUserId);
+    return alertMapper.selectList(alertQuery.orderByDesc(WorkflowAlertEntity::getCreatedAt))
         .stream()
         .map(support::toAlertView)
         .toList();
@@ -236,6 +246,7 @@ public class WorkflowObservabilityService {
     if (alert == null || !workflowId.equals(alert.getWorkflowId())) {
       throw new BusinessException(ErrorCodes.ALERT_NOT_FOUND, "告警不存在：" + alertId, 404);
     }
+    ownerScope.assertCanAccess(alert.getOwnerUserId());
     alert.setStatus(WorkflowAlertStatus.RESOLVED.getValue());
     alert.setResolvedAt(LocalDateTime.now());
     alertMapper.updateById(alert);

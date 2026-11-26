@@ -10,6 +10,7 @@ import com.chengwenfang.ai.facade.constant.ModelCallScenes;
 import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
 import com.chengwenfang.ai.facade.dto.view.VisionCompleteResult;
 import com.chengwenfang.common.IdsUtil;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.infra.config.ChengwenfangProperties;
 import com.chengwenfang.knowledge.domain.entity.KnowledgeMemoryEntity;
 import com.chengwenfang.knowledge.facade.constant.KnowledgeMemoryProvenance;
@@ -43,6 +44,8 @@ public class KnowledgeLongTermMemoryService {
   private final AiEmbeddingFacade embeddingFacade;
   /** 配置。 */
   private final ChengwenfangProperties properties;
+  /** 用户数据范围。 */
+  private final OwnerScope ownerScope;
   /** 短 LLM（晋升抽取）。 */
   private final AiVisionFacade aiVisionFacade;
 
@@ -58,7 +61,7 @@ public class KnowledgeLongTermMemoryService {
       return List.of();
     }
     LocalDateTime now = LocalDateTime.now();
-    List<KnowledgeMemoryEntity> rows = memoryMapper.selectList(
+    LambdaQueryWrapper<KnowledgeMemoryEntity> queryWrapper =
         new LambdaQueryWrapper<KnowledgeMemoryEntity>()
             .eq(KnowledgeMemoryEntity::getScopeKey, DEFAULT_SCOPE)
             .and(wrapper -> wrapper
@@ -70,7 +73,9 @@ public class KnowledgeLongTermMemoryService {
                 .or()
                 .gt(KnowledgeMemoryEntity::getExpiresAt, now))
             .orderByDesc(KnowledgeMemoryEntity::getCreatedAt)
-            .last("LIMIT 200"));
+            .last("LIMIT 200");
+    applyOwnerFilter(queryWrapper);
+    List<KnowledgeMemoryEntity> rows = memoryMapper.selectList(queryWrapper);
     if (CollUtil.isEmpty(rows)) {
       return List.of();
     }
@@ -126,6 +131,7 @@ public class KnowledgeLongTermMemoryService {
     }
     memoryMapper.insert(KnowledgeMemoryEntity.builder()
         .id(IdsUtil.newId())
+        .ownerUserId(ownerScope.effectiveOwnerUserId())
         .scopeKey(DEFAULT_SCOPE)
         .content(trimmed)
         .embeddingJson(vector == null ? null : JSONUtil.toJsonStr(vector))
@@ -203,7 +209,7 @@ public class KnowledgeLongTermMemoryService {
         && properties.getKnowledge().getMemory() != null) {
       threshold = properties.getKnowledge().getMemory().getMergeThreshold();
     }
-    List<KnowledgeMemoryEntity> rows = memoryMapper.selectList(
+    LambdaQueryWrapper<KnowledgeMemoryEntity> queryWrapper =
         new LambdaQueryWrapper<KnowledgeMemoryEntity>()
             .eq(KnowledgeMemoryEntity::getScopeKey, DEFAULT_SCOPE)
             .and(wrapper -> wrapper
@@ -211,7 +217,9 @@ public class KnowledgeLongTermMemoryService {
                 .or()
                 .eq(KnowledgeMemoryEntity::getPaused, false))
             .orderByDesc(KnowledgeMemoryEntity::getCreatedAt)
-            .last("LIMIT 100"));
+            .last("LIMIT 100");
+    applyOwnerFilter(queryWrapper);
+    List<KnowledgeMemoryEntity> rows = memoryMapper.selectList(queryWrapper);
     KnowledgeMemoryEntity best = null;
     double bestScore = -1;
     for (KnowledgeMemoryEntity row : rows) {
@@ -236,10 +244,13 @@ public class KnowledgeLongTermMemoryService {
    */
   public List<KnowledgeMemoryView> listMemories(int limit) {
     int cap = Math.min(Math.max(limit, 1), 200);
-    return memoryMapper.selectList(new LambdaQueryWrapper<KnowledgeMemoryEntity>()
+    LambdaQueryWrapper<KnowledgeMemoryEntity> queryWrapper =
+        new LambdaQueryWrapper<KnowledgeMemoryEntity>()
             .eq(KnowledgeMemoryEntity::getScopeKey, DEFAULT_SCOPE)
             .orderByDesc(KnowledgeMemoryEntity::getCreatedAt)
-            .last("LIMIT " + cap))
+            .last("LIMIT " + cap);
+    applyOwnerFilter(queryWrapper);
+    return memoryMapper.selectList(queryWrapper)
         .stream()
         .map(this::toView)
         .toList();
@@ -255,6 +266,11 @@ public class KnowledgeLongTermMemoryService {
     if (StrUtil.isBlank(memoryId)) {
       return;
     }
+    KnowledgeMemoryEntity row = memoryMapper.selectById(memoryId);
+    if (row == null) {
+      return;
+    }
+    ownerScope.assertCanAccess(row.getOwnerUserId());
     memoryMapper.deleteById(memoryId);
   }
 
@@ -273,8 +289,26 @@ public class KnowledgeLongTermMemoryService {
     if (row == null) {
       return;
     }
+    ownerScope.assertCanAccess(row.getOwnerUserId());
     row.setPaused(paused);
     memoryMapper.updateById(row);
+  }
+
+  /**
+   * 非管理员列表按当前用户过滤记忆。
+   *
+   * @param query 记忆查询
+   */
+  private void applyOwnerFilter(LambdaQueryWrapper<KnowledgeMemoryEntity> query) {
+    if (ownerScope.currentUserIsAdmin()) {
+      return;
+    }
+    String ownerId = ownerScope.currentOwnerUserId().orElse(null);
+    if (StrUtil.isBlank(ownerId)) {
+      query.apply("1 = 0");
+      return;
+    }
+    query.eq(KnowledgeMemoryEntity::getOwnerUserId, ownerId);
   }
 
   /**

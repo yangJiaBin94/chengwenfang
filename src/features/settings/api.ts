@@ -1,5 +1,5 @@
-import type { AiProviderConfig, AiScene, AiSettings, AiSettingsKind } from "./model";
-import { unwrapApiResult } from "../../shared/api/http";
+﻿import type { AiProviderConfig, AiScene, AiSettings, AiSettingsKind } from "./model";
+import { apiFetch, unwrapApiResult } from "../../shared/api/http";
 
 /** 排版主题 CRUD（设置页使用；实现仍在课程内容 API）。 */
 export {
@@ -135,7 +135,7 @@ function toBackendBody(settings: AiSettings) {
 
 /** Perform a real provider request using the current settings form values (not DB). */
 export async function testAiConnection(config: AiProviderConfig, kind: AiSettingsKind) {
-  const response = await fetch(`/api/settings/ai/${kind}/test`, {
+  const response = await apiFetch(`/api/settings/ai/${kind}/test`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -176,7 +176,7 @@ export async function requestImageAi(request: {
   prompt: string;
   size?: string;
 }) {
-  const response = await fetch("/api/ai/image", {
+  const response = await apiFetch("/api/ai/image", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -191,7 +191,7 @@ export async function requestImageAi(request: {
 /** 从数据库加载 AI 设置（含 configured 标记，兼容 App 调用）。 */
 export async function loadAiSettingsFromDatabase(): Promise<AiSettingsBundle> {
   const data = await unwrapApiResult<BackendAiSettings>(
-    await fetch("/api/settings/ai", { cache: "no-store" }),
+    await apiFetch("/api/settings/ai", { cache: "no-store" }),
   );
   const settings = mapSettings(data);
   return {
@@ -208,7 +208,7 @@ export async function loadAiSettingsFromDatabase(): Promise<AiSettingsBundle> {
 /** 保存 AI 设置到数据库。 */
 export async function saveAiSettingsToDatabase(settings: AiSettings): Promise<AiSettingsBundle> {
   const data = await unwrapApiResult<BackendAiSettings>(
-    await fetch("/api/settings/ai", {
+    await apiFetch("/api/settings/ai", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(toBackendBody(settings)),
@@ -270,7 +270,7 @@ async function parsePromptPackResponse(response: Response, _fallback: string): P
 }
 
 export async function listPromptPacks(): Promise<PromptPack[]> {
-  const response = await fetch("/api/settings/prompt-packs");
+  const response = await apiFetch("/api/settings/prompt-packs");
   return unwrapApiResult<PromptPack[]>(response);
 }
 
@@ -295,19 +295,19 @@ export async function pagePromptPacks(
   search.set("pageSize", String(params.pageSize ?? 10));
   const keyword = params.keyword?.trim();
   if (keyword) search.set("keyword", keyword);
-  const response = await fetch(`/api/settings/prompt-packs/page?${search.toString()}`, {
+  const response = await apiFetch(`/api/settings/prompt-packs/page?${search.toString()}`, {
     cache: "no-store",
   });
   return unwrapApiResult<PromptPackPage>(response);
 }
 
 export async function listPromptPackWorkflowNodes(): Promise<PromptPackWorkflowNode[]> {
-  const response = await fetch("/api/settings/prompt-packs/workflow-nodes");
+  const response = await apiFetch("/api/settings/prompt-packs/workflow-nodes");
   return unwrapApiResult<PromptPackWorkflowNode[]>(response);
 }
 
 export async function createPromptPack(data: Partial<PromptPack>): Promise<PromptPack> {
-  const response = await fetch("/api/settings/prompt-packs", {
+  const response = await apiFetch("/api/settings/prompt-packs", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -316,7 +316,7 @@ export async function createPromptPack(data: Partial<PromptPack>): Promise<Promp
 }
 
 export async function updatePromptPack(promptPack : PromptPack): Promise<PromptPack> {
-  const response = await fetch(`/api/settings/prompt-packs/${promptPack.id}`, {
+  const response = await apiFetch(`/api/settings/prompt-packs/${promptPack.id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(promptPack),
@@ -325,7 +325,7 @@ export async function updatePromptPack(promptPack : PromptPack): Promise<PromptP
 }
 
 export async function deletePromptPack(id: string): Promise<void> {
-  const response = await fetch(`/api/settings/prompt-packs/${id}`, { method: "DELETE" });
+  const response = await apiFetch(`/api/settings/prompt-packs/${id}`, { method: "DELETE" });
   if (!response.ok) throw new Error("删除 PromptPack 失败");
 }
 
@@ -391,7 +391,7 @@ function mapWechatSettings(raw: BackendWechatMpSettings | null | undefined): Wec
 /** 从数据库加载公众号配置。 */
 export async function loadWechatMpSettings(): Promise<WechatMpSettings> {
   const data = await unwrapApiResult<BackendWechatMpSettings>(
-    await fetch("/api/settings/wechat-mp", { cache: "no-store" }),
+    await apiFetch("/api/settings/wechat-mp", { cache: "no-store" }),
   );
   return mapWechatSettings(data);
 }
@@ -405,7 +405,7 @@ export async function saveWechatMpSettings(
   settings: Pick<WechatMpSettings, "accountName" | "appId" | "appSecret" | "defaultAuthor">,
 ): Promise<WechatMpSettings> {
   const data = await unwrapApiResult<BackendWechatMpSettings>(
-    await fetch("/api/settings/wechat-mp", {
+    await apiFetch("/api/settings/wechat-mp", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -428,7 +428,7 @@ export async function testWechatMpConnection(
   draft: Pick<WechatMpSettings, "appId" | "appSecret">,
 ): Promise<WechatMpConnectionTest> {
   return unwrapApiResult<WechatMpConnectionTest>(
-    await fetch("/api/settings/wechat-mp/test", {
+    await apiFetch("/api/settings/wechat-mp/test", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -457,7 +457,7 @@ export async function pushWechatMpDraft(body: {
   coverSrc?: string;
 }): Promise<WechatMpDraftPushResult> {
   return unwrapApiResult<WechatMpDraftPushResult>(
-    await fetch("/api/publishing/wechat-mp/draft", {
+    await apiFetch("/api/publishing/wechat-mp/draft", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -503,6 +503,6 @@ export type BuiltinReadyView = {
  * @returns 就绪视图
  */
 export async function fetchBuiltinReady(): Promise<BuiltinReadyView> {
-  const response = await fetch("/api/system/builtin-ready", { cache: "no-store" });
+  const response = await apiFetch("/api/system/builtin-ready", { cache: "no-store" });
   return unwrapApiResult<BuiltinReadyView>(response);
 }

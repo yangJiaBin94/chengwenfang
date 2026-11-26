@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.common.ErrorCodes;
 import com.chengwenfang.common.IdsUtil;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.crawler.facade.enums.ChannelType;
 import com.chengwenfang.mode.hotnews.domain.ChineseTextNormalizer;
 import com.chengwenfang.mode.hotnews.domain.ResearchContentClassifier;
@@ -67,6 +68,8 @@ public class TopicSeedService {
   private final TopicScoreDetailsStore scoreDetailsStore;
   /** 选题查询（视图组装）。 */
   private final TopicQueryService query;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * 落库 AI 主题种子选题（问卷生成素材）；同批次同标题幂等。
@@ -128,6 +131,7 @@ public class TopicSeedService {
         .build();
     TopicClusterEntity cluster = TopicClusterEntity.builder()
         .id(IdsUtil.newId())
+        .ownerUserId(ownerScope.effectiveOwnerUserId())
         .themeId(themeId)
         .title(title)
         .summary(summary)
@@ -204,6 +208,7 @@ public class TopicSeedService {
     String latestRadarBatchId = resolveLatestRadarBatchId(themeId);
     TopicClusterEntity cluster = TopicClusterEntity.builder()
         .id(IdsUtil.newId())
+        .ownerUserId(ownerScope.effectiveOwnerUserId())
         .themeId(themeId)
         .title(title)
         .summary(summary)

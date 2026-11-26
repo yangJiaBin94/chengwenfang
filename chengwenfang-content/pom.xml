@@ -24,6 +24,10 @@
     </dependency>
     <dependency>
       <groupId>com.chengwenfang</groupId>
+      <artifactId>chengwenfang-identity</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.chengwenfang</groupId>
       <artifactId>chengwenfang-prompt-workflow</artifactId>
     </dependency>
     <dependency>

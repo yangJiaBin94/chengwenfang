@@ -13,6 +13,7 @@ import com.chengwenfang.crawler.facade.dto.view.FetchResult;
 import com.chengwenfang.crawler.facade.dto.view.FetchedItemView;
 import com.chengwenfang.crawler.facade.dto.view.UrlReachabilityView;
 import com.chengwenfang.crawler.facade.enums.ChannelType;
+import com.chengwenfang.identity.facade.OwnerContext;
 import com.chengwenfang.mode.hotnews.application.search.TavilySearchConfigAssembler;
 import com.chengwenfang.mode.hotnews.application.search.TavilySearchContext;
 import com.chengwenfang.mode.hotnews.domain.ResearchContentClassifier;
@@ -123,7 +124,7 @@ public class FetchChannelsRadarNodeHandler implements RadarCollectNodeHandler {
     List<CompletableFuture<ChannelFetchOutcome>> futures = new ArrayList<>();
     for (ChannelView channel : channels) {
       futures.add(CompletableFuture.supplyAsync(
-          () -> fetchChannel(session, channel, blockKeys),
+          OwnerContext.wrap(() -> fetchChannel(session, channel, blockKeys)),
           channelFetchExecutor));
     }
 
@@ -354,7 +355,7 @@ public class FetchChannelsRadarNodeHandler implements RadarCollectNodeHandler {
     AtomicInteger done = new AtomicInteger();
     List<CompletableFuture<Void>> futures = new ArrayList<>(pending.size());
     for (RadarCollectCandidate candidate : pending) {
-      futures.add(CompletableFuture.runAsync(() -> {
+      futures.add(CompletableFuture.runAsync(OwnerContext.wrap(() -> {
         UrlReachabilityView probe = articleContent.probeUrlReachability(candidate.getUrl());
         if (probe == null || !probe.isReachable()) {
           String reason = probe == null ? "不可达" : StrUtil.blankToDefault(probe.getReason(), "不可达");
@@ -389,7 +390,7 @@ public class FetchChannelsRadarNodeHandler implements RadarCollectNodeHandler {
             }
           }
         }
-      }, channelFetchExecutor));
+      }), channelFetchExecutor));
     }
     CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
     return unreachable.get();

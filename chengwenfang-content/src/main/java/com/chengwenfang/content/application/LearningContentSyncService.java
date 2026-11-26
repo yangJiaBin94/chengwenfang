@@ -22,6 +22,8 @@ import com.chengwenfang.content.infrastructure.mapper.MediaAssetMapper;
 import com.chengwenfang.content.infrastructure.mapper.WorkOutputMapper;
 import com.chengwenfang.file.facade.FileFacade;
 import com.chengwenfang.file.facade.dto.view.FileView;
+import com.chengwenfang.identity.application.OwnerScopeQueryHelper;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.infra.support.StorageService;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -49,6 +51,7 @@ public class LearningContentSyncService {
   private final ObjectMapper objectMapper;
   private final CourseShellService shell;
   private final ContentEntityUtil support;
+  private final OwnerScope ownerScope;
 
   public LearningContentSyncService(
       CourseStore courseStore,
@@ -61,7 +64,8 @@ public class LearningContentSyncService {
       StorageService storage,
       ObjectMapper objectMapper,
       CourseShellService shell,
-      ContentEntityUtil support) {
+      ContentEntityUtil support,
+      OwnerScope ownerScope) {
     this.courseStore = courseStore;
     this.courseSeriesMapper = courseSeriesMapper;
     this.mediaAssetMapper = mediaAssetMapper;
@@ -73,6 +77,7 @@ public class LearningContentSyncService {
     this.objectMapper = objectMapper;
     this.shell = shell;
     this.support = support;
+    this.ownerScope = ownerScope;
   }
 
   /**
@@ -165,6 +170,7 @@ public class LearningContentSyncService {
         }
         MediaAssetEntity media = MediaAssetEntity.builder()
             .id(IdsUtil.newId())
+            .ownerUserId(ownerScope.effectiveOwnerUserId())
             .workId(courseId)
             .outputId(course.getCurrentWechatDocumentId())
             .origin(MediaOrigins.SYNCED)
@@ -357,10 +363,11 @@ public class LearningContentSyncService {
     String resolvedThemeId = themeId == null || themeId.isBlank()
         ? ContentViewMapper.DEFAULT_THEME_ID
         : themeId;
-    CourseSeriesEntity existing = courseSeriesMapper.selectOne(new LambdaQueryWrapper<CourseSeriesEntity>()
+    LambdaQueryWrapper<CourseSeriesEntity> existingQuery = new LambdaQueryWrapper<CourseSeriesEntity>()
         .eq(CourseSeriesEntity::getThemeId, resolvedThemeId)
-        .eq(CourseSeriesEntity::getName, seriesName)
-        .last("LIMIT 1"));
+        .eq(CourseSeriesEntity::getName, seriesName);
+    OwnerScopeQueryHelper.applyOwnerEquals(existingQuery, ownerScope, CourseSeriesEntity::getOwnerUserId);
+    CourseSeriesEntity existing = courseSeriesMapper.selectOne(existingQuery.last("LIMIT 1"));
     if (existing != null) {
       return existing.getId();
     }
@@ -370,6 +377,7 @@ public class LearningContentSyncService {
     series.setThemeId(resolvedThemeId);
     series.setName(seriesName);
     series.setSortOrder(100);
+    series.setOwnerUserId(ownerScope.effectiveOwnerUserId());
     series.setCreatedAt(now);
     series.setUpdatedAt(now);
     courseSeriesMapper.insert(series);

@@ -55,12 +55,26 @@ class ResearchContentClassifierTest {
     assertThat(ResearchContentClassifier.siteLabel(
         "https://blog.csdn.net/foo/bar")).isEqualTo("CSDN");
     assertThat(ResearchContentClassifier.siteLabel(
+        "https://arxiv.org/abs/1")).isEqualTo("arXiv");
+    assertThat(ResearchContentClassifier.siteLabel(
         "https://example.org/a")).isEqualTo("example.org");
     assertThat(ResearchContentClassifier.siteLabel(""))
         .isEqualTo(ResearchContentClassifier.UNKNOWN_SITE_LABEL);
     assertThat(ResearchContentClassifier.isKnownSite("B站")).isTrue();
     assertThat(ResearchContentClassifier.isKnownSite(
         ResearchContentClassifier.UNKNOWN_SITE_LABEL)).isFalse();
+  }
+
+  @Test
+  void detects_preprint_hosts_and_label_fallback() {
+    assertThat(ResearchContentClassifier.isPreprintOrPaperRepo(
+        "https://www.biorxiv.org/content/10.1101/x", null, null)).isTrue();
+    assertThat(ResearchContentClassifier.isPreprintOrPaperRepo(
+        "https://openreview.net/forum?id=1", null, null)).isTrue();
+    assertThat(ResearchContentClassifier.isPreprintOrPaperRepo(
+        "https://techcrunch.com/a", null, null)).isFalse();
+    assertThat(ResearchContentClassifier.isPreprintOrPaperRepo(
+        "", "SSRN", "working paper")).isTrue();
   }
 
   @Test

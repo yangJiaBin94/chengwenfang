@@ -125,6 +125,10 @@ public class InMemoryKnowledgeVectorStore implements KnowledgeVectorStore {
         && !filter.getDocumentId().equals(point.getDocumentId())) {
       return false;
     }
+    if (StrUtil.isNotBlank(filter.getOwnerUserId())
+        && !filter.getOwnerUserId().equals(point.getOwnerUserId())) {
+      return false;
+    }
     if (!matchesAnyKind(
         point.getSourceKind(), filter.getSourceKinds(), filter.getSourceKind())) {
       return false;

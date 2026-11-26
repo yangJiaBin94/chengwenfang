@@ -19,6 +19,9 @@ public class WorkflowDefinitionEntity {
   /** 主键 ID。 */
   @TableId("id")
   private String id;
+  /** 所属用户。 */
+  @TableField("owner_user_id")
+  private String ownerUserId;
   /** 稳定业务键，如 course-content-generation。 */
   @TableField("workflow_key")
   private String workflowKey;

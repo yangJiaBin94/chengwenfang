@@ -1,5 +1,7 @@
 package com.chengwenfang.app.bootstrap;
 
+import com.chengwenfang.identity.facade.OwnerContext;
+import com.chengwenfang.identity.facade.constant.SeedUserIds;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,24 +39,26 @@ public class EmptyDatabaseSeedRunner implements ApplicationRunner {
       log.info("已关闭空库自动种子（chengwenfang.bootstrap.auto-seed=false）");
       return;
     }
-    try {
-      if (!seedService.needsAutoSeed()) {
-        log.info("内置种子基线已齐，跳过自动种子");
-        return;
-      }
-      log.info("检测到空库或演示主题基线未齐，开始导入内置提示词包、三条主工作流、演示主题和信源沉淀池");
-      seedService.importConfigured(false);
-      if (seedService.isSeedBaselineComplete()) {
-        log.info("空库自动种子完成");
-      } else {
+    OwnerContext.runAs(SeedUserIds.ADMIN, () -> {
+      try {
+        if (!seedService.needsAutoSeed()) {
+          log.info("内置种子基线已齐，跳过自动种子");
+          return;
+        }
+        log.info("检测到空库或演示主题基线未齐，开始导入内置提示词包、三条主工作流、演示主题和信源沉淀池");
+        seedService.importConfigured(false);
+        if (seedService.isSeedBaselineComplete()) {
+          log.info("空库自动种子完成");
+        } else {
+          log.error(
+              "自动种子后演示主题或工作流基线仍未齐，应用继续启动。可稍后执行补种脚本 scripts/bootstrap");
+        }
+      } catch (Exception exception) {
         log.error(
-            "自动种子后演示主题或工作流基线仍未齐，应用继续启动。可稍后执行补种脚本 scripts/bootstrap");
+            "空库自动种子未完成，应用继续启动。可稍后执行补种脚本 scripts/bootstrap。原因：{}",
+            exception.getMessage(),
+            exception);
       }
-    } catch (Exception exception) {
-      log.error(
-          "空库自动种子未完成，应用继续启动。可稍后执行补种脚本 scripts/bootstrap。原因：{}",
-          exception.getMessage(),
-          exception);
-    }
+    });
   }
 }

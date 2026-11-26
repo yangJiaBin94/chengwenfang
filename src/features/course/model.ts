@@ -296,7 +296,7 @@ export const tabs: Array<{ key: TabKey; label: string; icon: typeof FileText }> 
 export const nativePublishingEnabled =
   import.meta.env.VITE_NATIVE_PUBLISHING_ENABLED !== "false";
 
-/** Convert imported relative image paths into API file URLs when possible. */
+/** Convert imported relative image paths into API file URLs when possible（不含 satoken，鉴权在渲染边界追加）。 */
 export function resolveImageSrc(src: string) {
   const normalizedSrc = src.replace(/^\.?\.\//, "").replace(/^\.\//, "");
   if (
@@ -406,12 +406,13 @@ export function prepareMdniceMarkdown(content: string) {
     .trim();
 }
 
-/** Deduplicate image references by their resolved source path. */
+/** Deduplicate image references by path（忽略 query，避免 satoken 造成重复）。 */
 export function uniqueImages(images: SyncedImage[]) {
   const seen = new Set<string>();
   return images.filter((image) => {
-    if (seen.has(image.src)) return false;
-    seen.add(image.src);
+    const key = (image.src || "").split(/[?#]/)[0];
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
     return true;
   });
 }

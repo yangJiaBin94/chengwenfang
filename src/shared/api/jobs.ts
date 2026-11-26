@@ -1,4 +1,4 @@
-import { unwrapApiResult } from "./http";
+﻿import { apiFetch, AUTH_TOKEN_STORAGE_KEY, unwrapApiResult } from "./http";
 
 /** 后台任务快照。 */
 export type JobData = {
@@ -87,14 +87,14 @@ export function isJobFailureEvent(eventType: string) {
 /** 按 ID 读取任务快照。 */
 export async function loadJob(jobId: string) {
   return unwrapApiResult<JobData>(
-    await fetch(`/api/jobs/${encodeURIComponent(jobId)}`, { cache: "no-store" }),
+    await apiFetch(`/api/jobs/${encodeURIComponent(jobId)}`, { cache: "no-store" }),
   );
 }
 
 /** 回放一次执行的全部持久化事件。 */
 export async function loadJobEventHistory(jobId: string) {
   return unwrapApiResult<JobEventData[]>(
-    await fetch(`/api/jobs/${encodeURIComponent(jobId)}/event-history`, {
+    await apiFetch(`/api/jobs/${encodeURIComponent(jobId)}/event-history`, {
       cache: "no-store",
     }),
   );
@@ -103,21 +103,21 @@ export async function loadJobEventHistory(jobId: string) {
 /** 读取节点尝试列表（运行中任务也可能已有节点行）。 */
 export async function loadJobNodes(jobId: string) {
   return unwrapApiResult<WorkflowNodeData[]>(
-    await fetch(`/api/jobs/${encodeURIComponent(jobId)}/nodes`, { cache: "no-store" }),
+    await apiFetch(`/api/jobs/${encodeURIComponent(jobId)}/nodes`, { cache: "no-store" }),
   );
 }
 
 /** 读取任务产出的文章版本列表。 */
 export async function loadJobArticleVersions(jobId: string) {
   return unwrapApiResult<JobArticleVersionData[]>(
-    await fetch(`/api/jobs/${encodeURIComponent(jobId)}/article-versions`),
+    await apiFetch(`/api/jobs/${encodeURIComponent(jobId)}/article-versions`),
   );
 }
 
 /** 重试失败任务（复用已完成节点产物）。 */
 export async function retryFailedJob(jobId: string) {
   return unwrapApiResult<JobData>(
-    await fetch(`/api/jobs/${encodeURIComponent(jobId)}/retry-failed`, {
+    await apiFetch(`/api/jobs/${encodeURIComponent(jobId)}/retry-failed`, {
       method: "POST",
     }),
   );
@@ -129,7 +129,17 @@ export async function waitForBackgroundJob(
   onProgress?: (event: JobEventData) => void,
 ): Promise<JobData> {
   return new Promise<JobData>((resolve, reject) => {
-    const events = new EventSource(`/api/jobs/${encodeURIComponent(jobId)}/events`);
+    // EventSource 不能自定义 Header：用 satoken 查询参数；后端 Sa 拦截器会读该参数
+    let eventsUrl = `/api/jobs/${encodeURIComponent(jobId)}/events`;
+    try {
+      const token = localStorage.getItem(AUTH_TOKEN_STORAGE_KEY);
+      if (token) {
+        eventsUrl += `?satoken=${encodeURIComponent(token)}`;
+      }
+    } catch {
+      // ignore
+    }
+    const events = new EventSource(eventsUrl);
     let settled = false;
 
     function finish(action: () => void) {

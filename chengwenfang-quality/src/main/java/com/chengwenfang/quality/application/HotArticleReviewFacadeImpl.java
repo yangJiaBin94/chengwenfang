@@ -4,6 +4,8 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.common.IdsUtil;
+import com.chengwenfang.identity.application.OwnerScopeQueryHelper;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.content.facade.ContentFacade;
 import com.chengwenfang.content.facade.dto.WorkOutputRef;
 import com.chengwenfang.quality.domain.entity.HotArticleRepairCandidateEntity;
@@ -47,6 +49,8 @@ public class HotArticleReviewFacadeImpl implements HotArticleReviewFacade {
   private final ContentFacade content;
   /** 审稿汇总视图组装。 */
   private final HotArticleAuditViewAssembler auditViewAssembler;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * 注入审稿相关依赖。
@@ -64,13 +68,15 @@ public class HotArticleReviewFacadeImpl implements HotArticleReviewFacade {
       HotAuditResultStore auditResultStore,
       RepairCandidateStore candidateStore,
       ContentFacade content,
-      HotArticleAuditViewAssembler auditViewAssembler) {
+      HotArticleAuditViewAssembler auditViewAssembler,
+      OwnerScope ownerScope) {
     this.runMapper = runMapper;
     this.candidateMapper = candidateMapper;
     this.auditResultStore = auditResultStore;
     this.candidateStore = candidateStore;
     this.content = content;
     this.auditViewAssembler = auditViewAssembler;
+    this.ownerScope = ownerScope;
   }
 
   /**
@@ -90,6 +96,7 @@ public class HotArticleReviewFacadeImpl implements HotArticleReviewFacade {
         input == null ? HotArticleReviewRunCreateRequest.builder().build() : input;
     ArticleAuditRunEntity run = new ArticleAuditRunEntity();
     run.setId(reviewId);
+    run.setOwnerUserId(ownerScope.effectiveOwnerUserId());
     run.setOutputId(resolveOutputId(articleId, fields.getDocumentId()));
     run.setJobId(jobId);
     run.setStatus(ReviewStatus.PENDING.getValue());
@@ -124,6 +131,7 @@ public class HotArticleReviewFacadeImpl implements HotArticleReviewFacade {
     if (run == null) {
       run = new ArticleAuditRunEntity();
       run.setId(reviewId);
+      run.setOwnerUserId(ownerScope.effectiveOwnerUserId());
       run.setJobId(reviewId);
       run.setStatus(ReviewStatus.PENDING.getValue());
       run.setStandardVersion(ArticleAuditDomains.STANDARD_HOT_NEWS_V1);
@@ -131,6 +139,8 @@ public class HotArticleReviewFacadeImpl implements HotArticleReviewFacade {
       run.setCreatedAt(LocalDateTime.now());
       runMapper.insert(run);
       run = runMapper.selectById(reviewId);
+    } else {
+      ownerScope.assertCanAccess(run.getOwnerUserId());
     }
     LocalDateTime now = LocalDateTime.now();
     auditResultStore.write(run, toPersistMap(payload), now);
@@ -159,6 +169,7 @@ public class HotArticleReviewFacadeImpl implements HotArticleReviewFacade {
     } else {
       return auditViewAssembler.noneStub(articleId);
     }
+    OwnerScopeQueryHelper.applyOwnerEquals(query, ownerScope, ArticleAuditRunEntity::getOwnerUserId);
     ArticleAuditRunEntity run = runMapper.selectOne(query
         .orderByDesc(ArticleAuditRunEntity::getCreatedAt)
         .last("LIMIT 1"));
@@ -177,10 +188,7 @@ public class HotArticleReviewFacadeImpl implements HotArticleReviewFacade {
    */
   @Override
   public HotArticleReviewRunView requireRun(String reviewId) {
-    ArticleAuditRunEntity run = runMapper.selectById(reviewId);
-    if (run == null) {
-      throw new BusinessException("review_not_found", "审核记录不存在", 404);
-    }
+    ArticleAuditRunEntity run = requireRunEntity(reviewId);
     return toRunView(run, resolveArticleId(run.getOutputId()));
   }
 
@@ -210,6 +218,7 @@ public class HotArticleReviewFacadeImpl implements HotArticleReviewFacade {
     if (run == null) {
       run = new ArticleAuditRunEntity();
       run.setId(runId);
+      run.setOwnerUserId(ownerScope.effectiveOwnerUserId());
       run.setOutputId(outputId);
       run.setJobId(jobId);
       run.setStatus(ReviewStatus.PENDING.getValue());
@@ -219,6 +228,8 @@ public class HotArticleReviewFacadeImpl implements HotArticleReviewFacade {
       run.setBlockingFailed(false);
       run.setCreatedAt(LocalDateTime.now());
       runMapper.insert(run);
+    } else {
+      ownerScope.assertCanAccess(run.getOwnerUserId());
     }
     HotArticleRepairCandidateEntity candidate = new HotArticleRepairCandidateEntity();
     candidate.setId(IdsUtil.newId());
@@ -289,6 +300,7 @@ public class HotArticleReviewFacadeImpl implements HotArticleReviewFacade {
   public HotArticleReviewDecisionView decide(String reviewId, String status, String comment) {
     ArticleAuditRunEntity run = runMapper.selectById(reviewId);
     if (run != null) {
+      ownerScope.assertCanAccess(run.getOwnerUserId());
       auditResultStore.writeDecision(run, status, comment);
       runMapper.updateById(run);
     }
@@ -324,7 +336,27 @@ public class HotArticleReviewFacadeImpl implements HotArticleReviewFacade {
     if (candidate == null) {
       throw new BusinessException("repair_candidate_not_found", "修复候选不存在", 404);
     }
+    // 候选表无 owner 列：经关联 audit_run 校验归属
+    if (StrUtil.isNotBlank(candidate.getAuditRunId())) {
+      requireRunEntity(candidate.getAuditRunId());
+    }
     return candidate;
+  }
+
+  /**
+   * 按 ID 加载审稿运行并校验归属。
+   *
+   * @param reviewId 审稿运行 ID
+   * @return 运行实体
+   * @throws BusinessException 不存在时 404
+   */
+  private ArticleAuditRunEntity requireRunEntity(String reviewId) {
+    ArticleAuditRunEntity run = runMapper.selectById(reviewId);
+    if (run == null) {
+      throw new BusinessException("review_not_found", "审核记录不存在", 404);
+    }
+    ownerScope.assertCanAccess(run.getOwnerUserId());
+    return run;
   }
 
   /**
@@ -403,7 +435,11 @@ public class HotArticleReviewFacadeImpl implements HotArticleReviewFacade {
    */
   private String resolveOutputId(String articleId, String documentId) {
     if (StrUtil.isNotBlank(documentId)) {
-      return documentId;
+      WorkOutputRef ref = content.findOutputRef(documentId.trim());
+      if (ref == null) {
+        throw new BusinessException("output_not_found", "产出不存在", 404);
+      }
+      return ref.getOutputId();
     }
     if (StrUtil.isNotBlank(articleId) && !ArticleAuditDomains.ARTICLE_UNKNOWN.equals(articleId)) {
       return content.resolvePublishingOutputId(articleId);

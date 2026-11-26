@@ -19,6 +19,9 @@ public class AiProviderConfigEntity {
   /** 主键 ID。 */
   @TableId("id")
   private String id;
+  /** 所属用户 ID。 */
+  @TableField("owner_user_id")
+  private String ownerUserId;
   /** 配置种类：{@code text} 或 {@code image}。 */
   @TableField("kind")
   private String kind;

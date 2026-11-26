@@ -8,6 +8,8 @@ chengwenfang:
   secret-key: ${CHENGWENFANG_SECRET_KEY}
   # 生产禁止采环回（开发为本地 SearXNG 才开）
   crawler-allow-loopback: false
+  auth:
+    register-enabled: ${CHENGWENFANG_AUTH_REGISTER_ENABLED:false}
 
 # 生产关闭 API 文档入口，避免对外暴露调试面
 springdoc:

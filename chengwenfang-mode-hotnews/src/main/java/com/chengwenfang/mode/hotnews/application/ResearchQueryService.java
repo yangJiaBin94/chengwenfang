@@ -49,8 +49,11 @@ public class ResearchQueryService {
   private final HotNewsVideoParseService videoParse;
   /** 资料评分明细。 */
   private final ResearchItemScoreDetailsStore scoreDetailsStore;
+  /** 选题归属校验。 */
+  private final TopicQueryService topics;
 
   public List<HotNewsResearchRunView> listResearchRuns(String topicId) {
+    topics.requireTopic(topicId);
     return researchRunMapper.selectList(new LambdaQueryWrapper<TopicResearchRunEntity>()
             .eq(TopicResearchRunEntity::getTopicId, topicId)
             .orderByDesc(TopicResearchRunEntity::getCreatedAt))
@@ -71,6 +74,7 @@ public class ResearchQueryService {
     if (run == null) {
       throw new BusinessException(ErrorCodes.RESEARCH_RUN_NOT_FOUND, "调研运行不存在: " + runId, 404);
     }
+    topics.requireTopic(run.getTopicId());
     return researchRunView(run);
   }
 
@@ -81,6 +85,7 @@ public class ResearchQueryService {
    * @return 调研条目视图列表
    */
   public List<HotNewsResearchItemView> listResearchItems(String topicId) {
+    topics.requireTopic(topicId);
     // 每次补充会清空后重写，资料池即最新一次结果；同 URL 再兜底去重
     List<TopicResearchItemEntity> items = researchItemMapper.selectList(
         new LambdaQueryWrapper<TopicResearchItemEntity>()
@@ -107,6 +112,7 @@ public class ResearchQueryService {
    */
   public HotNewsResearchItemPageView pageResearchItems(
       String topicId, PageQuery query, String media) {
+    topics.requireTopic(topicId);
     PageQuery normalized = query == null ? new PageQuery().normalized() : query.normalized();
     String keyword = StrUtil.trim(normalized.getKeyword());
     String mediaKey = StrUtil.blankToDefault(media, "all").trim().toLowerCase(Locale.ROOT);
@@ -234,6 +240,7 @@ public class ResearchQueryService {
    * @return 冲突视图列表
    */
   public List<HotNewsResearchConflictView> listResearchConflicts(String topicId) {
+    topics.requireTopic(topicId);
     return researchConflictMapper.selectList(new LambdaQueryWrapper<TopicResearchConflictEntity>()
             .eq(TopicResearchConflictEntity::getTopicId, topicId)
             .orderByDesc(TopicResearchConflictEntity::getCreatedAt))

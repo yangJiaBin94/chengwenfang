@@ -668,31 +668,31 @@
         "version": 1,
         "dimensions": [
           {
-            "key": "heat",
-            "label": "热度",
-            "description": "话题热度与传播面",
+            "key": "audience_hook",
+            "label": "打开欲与可转述钩子",
+            "description": "有无冲突/反差/身份代入或一句可转发结论；纯方法论文、窄基准、无故事钩子必须低分",
+            "weight": 30
+          },
+          {
+            "key": "theme_fit",
+            "label": "主题契合",
+            "description": "是否落在大模型/Agent/开源发布等本主题盯盘范围内",
             "weight": 25
           },
           {
-            "key": "novelty",
-            "label": "新意",
-            "description": "信息增量与差异化",
-            "weight": 25
-          },
-          {
-            "key": "actionability",
-            "label": "可写性",
-            "description": "是否适合写成稿",
+            "key": "angle_potential",
+            "label": "成文切入",
+            "description": "能否写成目标读者会点开的差异化角度，而不是论文摘要搬运",
             "weight": 25
           },
           {
             "key": "credibility",
-            "label": "可信度",
-            "description": "来源可靠与可核实",
-            "weight": 25
+            "label": "来源可信度",
+            "description": "官方博客/产品公告/多源报道优先；单源预印本须另有大众钩子才给高分",
+            "weight": 20
           }
         ],
-        "scoreGuidance": "按四维打分后加权"
+        "scoreGuidance": "高分须先有打开欲与可转述钩子；官方/产品/多源优先，预印本 alone 不足以支撑主推；纯方法论文整体压低"
       },
       "core_intent": {
         "summary": "跟踪大模型、Agent 与开源发布等可写成深度分析的 AI 前沿动态",

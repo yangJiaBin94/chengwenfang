@@ -68,6 +68,7 @@ import {
   tabs,
   wordCountLabels,
 } from "../model";
+import { withAuthQuery } from "../../../shared/api/http";
 import { parent, text } from "../../hotnews/components/hotNewsExecutionHelpers";
 
 export function ActionButton({
@@ -273,7 +274,7 @@ export function MarkdownReader({
         components={{
           /** Render images with public-path resolution and missing-asset feedback. */
           img({ src = "", alt = "" }) {
-            const imageSrc = resolveImageSrc(src);
+            const imageSrc = withAuthQuery(resolveImageSrc(src));
             return (
               <span className="markdown-image-wrap">
                 <img

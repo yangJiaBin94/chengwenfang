@@ -1,5 +1,7 @@
 package com.chengwenfang.app.bootstrap;
 
+import com.chengwenfang.identity.facade.OwnerContext;
+import com.chengwenfang.identity.facade.constant.SeedUserIds;
 import com.chengwenfang.publishing.facade.PublishingFacade;
 import com.chengwenfang.publishing.facade.constant.BuiltinLayoutThemeKeys;
 import com.chengwenfang.publishing.facade.dto.view.LayoutThemeView;
@@ -31,26 +33,28 @@ public class BuiltinLayoutThemeHealthChecker implements ApplicationRunner {
    */
   @Override
   public void run(ApplicationArguments args) {
-    List<LayoutThemeView> themes = publishing.listThemes();
-    boolean found = false;
-    for (LayoutThemeView theme : themes) {
-      if (theme == null) {
-        continue;
+    OwnerContext.runAs(SeedUserIds.ADMIN, () -> {
+      List<LayoutThemeView> themes = publishing.listThemes();
+      boolean found = false;
+      for (LayoutThemeView theme : themes) {
+        if (theme == null) {
+          continue;
+        }
+        if (BuiltinLayoutThemeKeys.MDNICE_ZIYUN_OPTIMA.equals(theme.getKey())
+            || BuiltinLayoutThemeKeys.MDNICE_ZIYUN_OPTIMA_NAME.equals(theme.getName())) {
+          found = true;
+          break;
+        }
       }
-      if (BuiltinLayoutThemeKeys.MDNICE_ZIYUN_OPTIMA.equals(theme.getKey())
-          || BuiltinLayoutThemeKeys.MDNICE_ZIYUN_OPTIMA_NAME.equals(theme.getName())) {
-        found = true;
-        break;
+      if (found) {
+        log.info("排版主题体检通过 key={}", BuiltinLayoutThemeKeys.MDNICE_ZIYUN_OPTIMA);
+        return;
       }
-    }
-    if (found) {
-      log.info("排版主题体检通过 key={}", BuiltinLayoutThemeKeys.MDNICE_ZIYUN_OPTIMA);
-      return;
-    }
-    log.error(
-        "基础配置缺失：缺少排版主题 key={} 或 name={}",
-        BuiltinLayoutThemeKeys.MDNICE_ZIYUN_OPTIMA,
-        BuiltinLayoutThemeKeys.MDNICE_ZIYUN_OPTIMA_NAME);
-    log.error("基础配置未就绪，请执行：{}", BuiltinConfigInspector.BOOTSTRAP_HINT);
+      log.error(
+          "基础配置缺失：缺少排版主题 key={} 或 name={}",
+          BuiltinLayoutThemeKeys.MDNICE_ZIYUN_OPTIMA,
+          BuiltinLayoutThemeKeys.MDNICE_ZIYUN_OPTIMA_NAME);
+      log.error("基础配置未就绪，请执行：{}", BuiltinConfigInspector.BOOTSTRAP_HINT);
+    });
   }
 }

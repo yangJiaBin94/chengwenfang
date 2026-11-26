@@ -1,5 +1,7 @@
 import type { ScoringRubric } from "../../course/api";
 import {
+  AUDIENCE_HOOK_KEY,
+  AUDIENCE_HOOK_MIN_WEIGHT,
   DOMAIN_OPTIONS,
   MAX_RUBRIC_DIMS,
   MAX_SEARCH_QUERIES,
@@ -71,6 +73,9 @@ export function validateRubric(rubric: ScoringRubric | null | undefined): string
   }
   const keys = new Set<string>();
   let weightSum = 0;
+  let hookWeight = 0;
+  let maxOtherWeight = 0;
+  let hasHook = false;
   for (const dim of dims) {
     const key = (dim.key || "").trim().toLowerCase();
     if (!/^[a-z][a-z0-9_]{1,47}$/.test(key)) {
@@ -90,7 +95,23 @@ export function validateRubric(rubric: ScoringRubric | null | undefined): string
     if (!Number.isFinite(weight) || weight <= 0) {
       return `维度「${dim.label}」权重须为正整数。`;
     }
-    weightSum += Math.round(weight);
+    const rounded = Math.round(weight);
+    weightSum += rounded;
+    if (key === AUDIENCE_HOOK_KEY) {
+      hasHook = true;
+      hookWeight = rounded;
+    } else {
+      maxOtherWeight = Math.max(maxOtherWeight, rounded);
+    }
+  }
+  if (!hasHook) {
+    return `须包含固定维度「打开欲与可转述钩子」（${AUDIENCE_HOOK_KEY}）。`;
+  }
+  if (hookWeight < AUDIENCE_HOOK_MIN_WEIGHT) {
+    return `打开欲维度权重须不少于 ${AUDIENCE_HOOK_MIN_WEIGHT}。`;
+  }
+  if (hookWeight < maxOtherWeight) {
+    return "打开欲维度权重须不小于其它任一维度。";
   }
   if (weightSum !== 100) {
     return `维度权重之和须为 100，当前为 ${weightSum}。`;

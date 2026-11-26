@@ -1,6 +1,7 @@
 package com.chengwenfang.mode.hotnews.application.generation.radarcollect;
 
 import cn.hutool.core.util.StrUtil;
+import com.chengwenfang.identity.facade.OwnerContext;
 import com.chengwenfang.mode.hotnews.facade.VideoTranscriptFacade;
 import com.chengwenfang.sourcing.facade.enums.SourceMediaType;
 import com.chengwenfang.infra.config.ChengwenfangProperties;
@@ -12,6 +13,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -108,7 +110,7 @@ public class EnrichSummarizeRadarNodeHandler implements RadarCollectNodeHandler 
         jobId,
         stepKey,
         40,
-        progressMessage(0, articleCount, 0, videoCount));
+        progressMessage(0, articleCount, 0, videoCount, Map.of()));
     log.info(
         "雷达解析开始 article={} video={} articlePool 与 videoPool 隔离",
         articleCount,
@@ -117,18 +119,22 @@ public class EnrichSummarizeRadarNodeHandler implements RadarCollectNodeHandler 
     AtomicInteger done = new AtomicInteger();
     AtomicInteger articleDone = new AtomicInteger();
     AtomicInteger videoDone = new AtomicInteger();
+    // 进行中的视频：进度条展示 url + 时长
+    ConcurrentHashMap<String, String> inflightVideos = new ConcurrentHashMap<>();
     List<CompletableFuture<Void>> futures = new ArrayList<>(total);
     // 文章先提交到文章池，不被视频 ASR 抢槽
     for (RadarCollectCandidate candidate : articles) {
       futures.add(CompletableFuture.runAsync(
-          () -> enrichSafely(candidate, promptPackBindings, false, done, articleDone, videoDone),
+          OwnerContext.wrap(() -> enrichSafely(
+              candidate, promptPackBindings, false, done, articleDone, videoDone, inflightVideos)),
           radarArticleEnrichExecutor));
     }
     // 视频按时长降序入队，线程池 FIFO 先消化长片
     prioritizeLongerVideos(videos);
     for (RadarCollectCandidate candidate : videos) {
       futures.add(CompletableFuture.runAsync(
-          () -> enrichSafely(candidate, promptPackBindings, true, done, articleDone, videoDone),
+          OwnerContext.wrap(() -> enrichSafely(
+              candidate, promptPackBindings, true, done, articleDone, videoDone, inflightVideos)),
           radarVideoEnrichExecutor));
     }
 
@@ -144,7 +150,8 @@ public class EnrichSummarizeRadarNodeHandler implements RadarCollectNodeHandler 
               articleDone.get(),
               articleCount,
               videoDone.get(),
-              videoCount));
+              videoCount,
+              inflightVideos));
       if (StrUtil.isNotBlank(jobId)) {
         try {
           jobs.renewLease(jobId, properties.getWorkerLeaseSeconds());
@@ -332,12 +339,13 @@ public class EnrichSummarizeRadarNodeHandler implements RadarCollectNodeHandler 
   /**
    * 单条安全解析：调用 enrichOne，异常则弃用；并记录分类型耗时。
    *
-   * @param candidate     候选
+   * @param candidate          候选
    * @param promptPackBindings 提示词包绑定
-   * @param video         是否视频
-   * @param done          合计已完成
-   * @param articleDone   文章已完成
-   * @param videoDone     视频已完成
+   * @param video              是否视频
+   * @param done               合计已完成
+   * @param articleDone        文章已完成
+   * @param videoDone          视频已完成
+   * @param inflightVideos     进行中视频文案（url → 展示串）
    */
   private void enrichSafely(
       RadarCollectCandidate candidate,
@@ -345,30 +353,48 @@ public class EnrichSummarizeRadarNodeHandler implements RadarCollectNodeHandler 
       boolean video,
       AtomicInteger done,
       AtomicInteger articleDone,
-      AtomicInteger videoDone) {
+      AtomicInteger videoDone,
+      ConcurrentHashMap<String, String> inflightVideos) {
     String mediaLabel = video ? "视频" : "文章";
+    String url = candidate == null ? "" : StrUtil.nullToEmpty(candidate.getUrl());
+    String title = candidate == null ? "" : StrUtil.nullToEmpty(candidate.getTitle());
+    double durationSec = video ? durationSecondsOrZero(url) : 0d;
+    String inflightKey = null;
     long startedAt = System.currentTimeMillis();
-    log.info(
-        "雷达解析开始 media={} title={} url={}",
-        mediaLabel,
-        candidate.getTitle(),
-        candidate.getUrl());
+    if (video) {
+      inflightKey = StrUtil.blankToDefault(url, title);
+      if (StrUtil.isNotBlank(inflightKey) && inflightVideos != null) {
+        inflightVideos.put(inflightKey, formatInflightVideo(title, url, durationSec));
+      }
+      log.info(
+          "雷达解析开始 media={} title={} url={} durationSec={}",
+          mediaLabel,
+          title,
+          url,
+          formatDurationSec(durationSec));
+    } else {
+      log.info("雷达解析开始 media={} title={} url={}", mediaLabel, title, url);
+    }
     try {
       enrichSupport.enrichOne(candidate, promptPackBindings, video);
       long costMs = System.currentTimeMillis() - startedAt;
       if (candidate.isDiscarded()) {
         log.info(
-            "雷达解析结束 media={} discarded=true costMs={} reason={} title={}",
+            "雷达解析结束 media={} discarded=true costMs={} reason={} title={} url={} durationSec={}",
             mediaLabel,
             costMs,
             candidate.getDiscardReason(),
-            candidate.getTitle());
+            title,
+            url,
+            video ? formatDurationSec(durationSec) : "-");
       } else {
         log.info(
-            "雷达解析结束 media={} discarded=false costMs={} title={}",
+            "雷达解析结束 media={} discarded=false costMs={} title={} url={} durationSec={}",
             mediaLabel,
             costMs,
-            candidate.getTitle());
+            title,
+            url,
+            video ? formatDurationSec(durationSec) : "-");
       }
     } catch (Exception exception) {
       candidate.setDiscarded(true);
@@ -376,12 +402,17 @@ public class EnrichSummarizeRadarNodeHandler implements RadarCollectNodeHandler 
           "解析异常：" + StrUtil.sub(StrUtil.nullToEmpty(exception.getMessage()), 0, 120));
       candidate.setRawText(null);
       log.warn(
-          "雷达并行解析异常 media={} costMs={} title={} err={}",
+          "雷达并行解析异常 media={} costMs={} title={} url={} durationSec={} err={}",
           mediaLabel,
           System.currentTimeMillis() - startedAt,
-          candidate.getTitle(),
+          title,
+          url,
+          video ? formatDurationSec(durationSec) : "-",
           exception.getMessage());
     } finally {
+      if (inflightKey != null && inflightVideos != null) {
+        inflightVideos.remove(inflightKey);
+      }
       done.incrementAndGet();
       if (video) {
         videoDone.incrementAndGet();
@@ -392,22 +423,24 @@ public class EnrichSummarizeRadarNodeHandler implements RadarCollectNodeHandler 
   }
 
   /**
-   * 进行中进度文案：左侧为已解析，右侧为该类待解析总数。
+   * 进行中进度文案：左侧为已解析，右侧为该类待解析总数；附带进行中视频 url/时长。
    *
    * @param articleFinished 文章已解析
    * @param articleTotal    文章总数
    * @param videoFinished   视频已解析
    * @param videoTotal      视频总数
+   * @param inflightVideos  进行中视频展示串
    * @return 文案
    */
   private static String progressMessage(
       int articleFinished,
       int articleTotal,
       int videoFinished,
-      int videoTotal) {
+      int videoTotal,
+      Map<String, String> inflightVideos) {
     int finished = articleFinished + videoFinished;
     int total = articleTotal + videoTotal;
-    return "已解析 "
+    String base = "已解析 "
         + finished
         + "/"
         + total
@@ -420,6 +453,55 @@ public class EnrichSummarizeRadarNodeHandler implements RadarCollectNodeHandler 
         + "/"
         + videoTotal
         + "）";
+    if (inflightVideos == null || inflightVideos.isEmpty()) {
+      return base;
+    }
+    StringBuilder inflight = new StringBuilder();
+    int shown = 0;
+    for (String item : inflightVideos.values()) {
+      if (StrUtil.isBlank(item)) {
+        continue;
+      }
+      if (shown > 0) {
+        inflight.append("；");
+      }
+      inflight.append(item);
+      shown++;
+      if (shown >= 3) {
+        break;
+      }
+    }
+    if (shown == 0) {
+      return base;
+    }
+    return base + "｜进行中：" + inflight;
+  }
+
+  /**
+   * 组装进行中视频短文案。
+   *
+   * @param title       标题
+   * @param url         链接
+   * @param durationSec 时长秒
+   * @return 展示串
+   */
+  private static String formatInflightVideo(String title, String url, double durationSec) {
+    String shortTitle = StrUtil.sub(StrUtil.blankToDefault(title, "无标题"), 0, 40);
+    String shortUrl = StrUtil.sub(StrUtil.blankToDefault(url, "-"), 0, 80);
+    return shortTitle + " " + shortUrl + " " + formatDurationSec(durationSec) + "s";
+  }
+
+  /**
+   * 时长展示：保留一位小数；未知为 0。
+   *
+   * @param durationSec 秒
+   * @return 展示值
+   */
+  private static String formatDurationSec(double durationSec) {
+    if (durationSec <= 0) {
+      return "0";
+    }
+    return String.format(java.util.Locale.ROOT, "%.1f", durationSec);
   }
 
   /**

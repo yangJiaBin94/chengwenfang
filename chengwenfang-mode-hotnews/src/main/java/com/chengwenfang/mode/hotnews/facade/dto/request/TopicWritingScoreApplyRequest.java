@@ -34,4 +34,6 @@ public class TopicWritingScoreApplyRequest {
   private String recommendUse;
   /** 风险提示。 */
   private String riskNote;
+  /** AI 素材形态：paper / product / news / oss / other。 */
+  private String materialKind;
 }

@@ -6,6 +6,7 @@ import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.common.ErrorCodes;
 import com.chengwenfang.common.IdsUtil;
 import com.chengwenfang.content.facade.constant.ChannelCodes;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.infra.support.SecretCipher;
 import com.chengwenfang.publishing.application.model.WechatMpTokenResponse;
 import com.chengwenfang.publishing.application.publish.WechatMpChannelPublisher;
@@ -47,6 +48,8 @@ public class WechatMpFacadeImpl implements WechatMpFacade {
   private final WechatMpChannelPublisher wechatMpChannelPublisher;
   /** AppSecret 加解密。 */
   private final SecretCipher secretCipher;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * 获取公众号配置（不含 AppSecret 明文）。
@@ -150,6 +153,7 @@ public class WechatMpFacadeImpl implements WechatMpFacade {
     List<WechatMpSettingsEntity> rows =
         settingsMapper.selectList(
             new LambdaQueryWrapper<WechatMpSettingsEntity>()
+                .eq(WechatMpSettingsEntity::getOwnerUserId, ownerScope.effectiveOwnerUserId())
                 .eq(WechatMpSettingsEntity::getChannelCode, ChannelCodes.WECHAT_MP)
                 .orderByAsc(WechatMpSettingsEntity::getCreatedAt)
                 .last("LIMIT 1"));
@@ -170,6 +174,7 @@ public class WechatMpFacadeImpl implements WechatMpFacade {
     WechatMpSettingsEntity created =
         WechatMpSettingsEntity.builder()
             .id(IdsUtil.newId())
+            .ownerUserId(ownerScope.effectiveOwnerUserId())
             .channelCode(ChannelCodes.WECHAT_MP)
             .accountName("")
             .appId("")

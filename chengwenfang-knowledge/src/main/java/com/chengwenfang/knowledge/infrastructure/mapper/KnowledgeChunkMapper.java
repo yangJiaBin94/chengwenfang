@@ -26,6 +26,7 @@ public interface KnowledgeChunkMapper extends BaseMapper<KnowledgeChunkEntity> {
       INNER JOIN knowledge_documents d ON d.id = c.document_id
       WHERE c.index_version = #{indexVersion}
         AND MATCH(c.content) AGAINST(#{query} IN NATURAL LANGUAGE MODE)
+        AND (#{ownerUserId} = '' OR d.owner_user_id = #{ownerUserId})
         AND (#{sourceKindsCsv} = '' OR FIND_IN_SET(d.source_kind, #{sourceKindsCsv}))
         AND (#{mediaKindsCsv} = '' OR FIND_IN_SET(d.media_kind, #{mediaKindsCsv}))
       LIMIT #{limit}
@@ -33,6 +34,7 @@ public interface KnowledgeChunkMapper extends BaseMapper<KnowledgeChunkEntity> {
   List<KnowledgeChunkEntity> searchFullText(
       @Param("query") String query,
       @Param("indexVersion") String indexVersion,
+      @Param("ownerUserId") String ownerUserId,
       @Param("sourceKindsCsv") String sourceKindsCsv,
       @Param("mediaKindsCsv") String mediaKindsCsv,
       @Param("limit") int limit);
@@ -52,6 +54,7 @@ public interface KnowledgeChunkMapper extends BaseMapper<KnowledgeChunkEntity> {
       INNER JOIN knowledge_documents d ON d.id = c.document_id
       WHERE c.index_version = #{indexVersion}
         AND c.content LIKE CONCAT('%', #{query}, '%')
+        AND (#{ownerUserId} = '' OR d.owner_user_id = #{ownerUserId})
         AND (#{sourceKindsCsv} = '' OR FIND_IN_SET(d.source_kind, #{sourceKindsCsv}))
         AND (#{mediaKindsCsv} = '' OR FIND_IN_SET(d.media_kind, #{mediaKindsCsv}))
       LIMIT #{limit}
@@ -59,6 +62,7 @@ public interface KnowledgeChunkMapper extends BaseMapper<KnowledgeChunkEntity> {
   List<KnowledgeChunkEntity> searchKeyword(
       @Param("query") String query,
       @Param("indexVersion") String indexVersion,
+      @Param("ownerUserId") String ownerUserId,
       @Param("sourceKindsCsv") String sourceKindsCsv,
       @Param("mediaKindsCsv") String mediaKindsCsv,
       @Param("limit") int limit);

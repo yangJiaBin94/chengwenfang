@@ -3,6 +3,8 @@ package com.chengwenfang.mode.hotnews.application;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.chengwenfang.common.IdsUtil;
+import com.chengwenfang.identity.application.OwnerScopeQueryHelper;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.sourcing.application.QuerySiteBlockSampleStore;
 import com.chengwenfang.sourcing.domain.entity.SourceQuerySiteBlockEntity;
 import com.chengwenfang.sourcing.facade.constant.SearchQueryDiagnoseKeys;
@@ -29,6 +31,8 @@ public class QuerySiteBlockService {
   private final SourceQuerySiteBlockMapper querySiteBlockMapper;
   /** 拉黑样例标题子表。 */
   private final QuerySiteBlockSampleStore sampleStore;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * 列出主题下生效中的搜索词 × 网站拉黑。
@@ -40,10 +44,11 @@ public class QuerySiteBlockService {
     if (StrUtil.isBlank(themeId)) {
       return List.of();
     }
-    return querySiteBlockMapper.selectList(new LambdaQueryWrapper<SourceQuerySiteBlockEntity>()
-            .eq(SourceQuerySiteBlockEntity::getThemeId, themeId)
-            .eq(SourceQuerySiteBlockEntity::getStatus, QuerySiteBlockStatus.ACTIVE.getValue())
-            .orderByDesc(SourceQuerySiteBlockEntity::getUpdatedAt))
+    LambdaQueryWrapper<SourceQuerySiteBlockEntity> query = new LambdaQueryWrapper<SourceQuerySiteBlockEntity>()
+        .eq(SourceQuerySiteBlockEntity::getThemeId, themeId)
+        .eq(SourceQuerySiteBlockEntity::getStatus, QuerySiteBlockStatus.ACTIVE.getValue());
+    OwnerScopeQueryHelper.applyOwnerEquals(query, ownerScope, SourceQuerySiteBlockEntity::getOwnerUserId);
+    return querySiteBlockMapper.selectList(query.orderByDesc(SourceQuerySiteBlockEntity::getUpdatedAt))
         .stream()
         .map(this::toQuerySiteBlockView)
         .toList();
@@ -93,6 +98,7 @@ public class QuerySiteBlockService {
       if (existing == null) {
         SourceQuerySiteBlockEntity created = SourceQuerySiteBlockEntity.builder()
             .id(IdsUtil.newId())
+            .ownerUserId(ownerScope.effectiveOwnerUserId())
             .themeId(themeId)
             .channelType(channelType)
             .searchQuery(searchQuery)
@@ -108,6 +114,7 @@ public class QuerySiteBlockService {
         out.add(toQuerySiteBlockView(created, mergedSamples));
         continue;
       }
+      ownerScope.assertCanAccess(existing.getOwnerUserId());
       int previousHits = existing.getHitCount() == null ? 0 : existing.getHitCount();
       existing.setStatus(QuerySiteBlockStatus.ACTIVE.getValue());
       existing.setHitCount(previousHits + hitDelta);

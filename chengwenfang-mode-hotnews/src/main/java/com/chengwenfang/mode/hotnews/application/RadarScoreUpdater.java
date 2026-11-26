@@ -97,6 +97,7 @@ public class RadarScoreUpdater {
           request.getRubricSnapshot() == null ? List.of() : request.getRubricSnapshot());
       details.setRecommendUse(request.getRecommendUse());
       details.setRiskNote(request.getRiskNote());
+      details.setMaterialKind(request.getMaterialKind());
       if (HotNewsTopicStatuses.DISCOVERED.equals(cluster.getStatus()) && writing >= 60) {
         cluster.setStatus(HotNewsTopicStatuses.CANDIDATE);
       }

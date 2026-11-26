@@ -3,8 +3,12 @@ package com.chengwenfang.content.application;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import cn.hutool.core.util.StrUtil;
 import com.chengwenfang.common.BusinessException;
+import com.chengwenfang.common.ErrorCodes;
 import com.chengwenfang.common.IdsUtil;
+import com.chengwenfang.identity.application.OwnerScopeQueryHelper;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.content.domain.entity.ArticleEntity;
+import com.chengwenfang.content.facade.dto.WorkOutputRef;
 import com.chengwenfang.content.domain.entity.ArticleVersionEntity;
 import com.chengwenfang.content.domain.entity.HumanReviewEntity;
 import com.chengwenfang.content.facade.dto.request.HumanReviewRequest;
@@ -34,6 +38,8 @@ public class HumanReviewService {
   private final WorkContentStoreImpl workContents;
   /** 实体工具：version sole-read。 */
   private final ContentEntityUtil support;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   public HumanReviewService(
       HumanReviewMapper humanReviewMapper,
@@ -42,7 +48,8 @@ public class HumanReviewService {
       ContentViewMapper views,
       ThemeVisibilityGuard visibility,
       WorkContentStoreImpl workContents,
-      ContentEntityUtil support) {
+      ContentEntityUtil support,
+      OwnerScope ownerScope) {
     this.humanReviewMapper = humanReviewMapper;
     this.articleVersions = articleVersions;
     this.shell = shell;
@@ -50,6 +57,7 @@ public class HumanReviewService {
     this.visibility = visibility;
     this.workContents = workContents;
     this.support = support;
+    this.ownerScope = ownerScope;
   }
 
   /**
@@ -66,6 +74,7 @@ public class HumanReviewService {
     if (review == null) {
       throw new BusinessException("human_review_not_found", "人工审核记录不存在", 404);
     }
+    ownerScope.assertCanAccess(review.getOwnerUserId());
     Integer versionNo = null;
     ArticleEntity article = support.findArticleOrNull(articleId);
     if (article != null) {
@@ -100,8 +109,7 @@ public class HumanReviewService {
     ArticleEntity article = support.requireArticle(articleId);
     support.overlayVersionIdentityFromDocuments(article);
     String explicitDocumentId = body == null ? null : body.getDocumentId();
-    String outputId = StrUtil.blankToDefault(
-        explicitDocumentId, resolveDocumentId(articleId, article));
+    String outputId = requireAccessibleOutputId(articleId, explicitDocumentId, article);
     String outputVersionId = null;
     Integer versionNo = null;
     if (article != null) {
@@ -119,6 +127,7 @@ public class HumanReviewService {
     if (review == null) {
       review = new HumanReviewEntity();
       review.setId(IdsUtil.newId());
+      review.setOwnerUserId(ownerScope.effectiveOwnerUserId());
       review.setOutputId(outputId);
       review.setOutputVersionId(outputVersionId);
       review.setCreatedAt(now);
@@ -127,6 +136,7 @@ public class HumanReviewService {
       review.setReviewedAt(now);
       humanReviewMapper.insert(review);
     } else {
+      ownerScope.assertCanAccess(review.getOwnerUserId());
       review.setStatus(status);
       review.setComment(comment);
       review.setReviewedAt(now);
@@ -164,14 +174,15 @@ public class HumanReviewService {
    * @return 最新审核实体；无则 null
    */
   private HumanReviewEntity findLatestReview(String articleId, String documentId) {
-    String outputId = StrUtil.isNotBlank(documentId)
-        ? documentId
-        : resolveDocumentId(articleId, support.findArticleOrNull(articleId));
+    String outputId = requireAccessibleOutputId(
+        articleId, documentId, support.findArticleOrNull(articleId));
     if (StrUtil.isBlank(outputId)) {
       return null;
     }
-    return humanReviewMapper.selectOne(new LambdaQueryWrapper<HumanReviewEntity>()
-        .eq(HumanReviewEntity::getOutputId, outputId)
+    LambdaQueryWrapper<HumanReviewEntity> query = new LambdaQueryWrapper<HumanReviewEntity>()
+        .eq(HumanReviewEntity::getOutputId, outputId);
+    OwnerScopeQueryHelper.applyOwnerEquals(query, ownerScope, HumanReviewEntity::getOwnerUserId);
+    return humanReviewMapper.selectOne(query
         .orderByDesc(HumanReviewEntity::getCreatedAt)
         .last("LIMIT 1"));
   }
@@ -185,14 +196,39 @@ public class HumanReviewService {
   @Transactional
   public void deleteHumanReview(String articleId, String documentId) {
     visibility.assertThemeActiveForArticleId(articleId);
-    String outputId = StrUtil.isNotBlank(documentId)
-        ? documentId
-        : resolveDocumentId(articleId, support.findArticleOrNull(articleId));
+    String outputId = requireAccessibleOutputId(
+        articleId, documentId, support.findArticleOrNull(articleId));
     if (StrUtil.isBlank(outputId)) {
       return;
     }
-    humanReviewMapper.delete(new LambdaQueryWrapper<HumanReviewEntity>()
-        .eq(HumanReviewEntity::getOutputId, outputId));
+    LambdaQueryWrapper<HumanReviewEntity> deleteQuery = new LambdaQueryWrapper<HumanReviewEntity>()
+        .eq(HumanReviewEntity::getOutputId, outputId);
+    OwnerScopeQueryHelper.applyOwnerEquals(deleteQuery, ownerScope, HumanReviewEntity::getOwnerUserId);
+    humanReviewMapper.delete(deleteQuery);
+  }
+
+  /**
+   * 解析并校验可访问的产出 id（显式 documentId 必须属于当前用户）。
+   *
+   * @param articleId  文章 id
+   * @param documentId 显式产出 id；可空
+   * @param article    课程文章实体；热点可为 null
+   * @return 产出 id；无法解析时 null
+   * @throws BusinessException 显式产出不存在或无权访问
+   */
+  private String requireAccessibleOutputId(
+      String articleId, String documentId, ArticleEntity article) {
+    String candidate = StrUtil.isNotBlank(documentId)
+        ? documentId.trim()
+        : resolveDocumentId(articleId, article);
+    if (StrUtil.isBlank(candidate)) {
+      return null;
+    }
+    WorkOutputRef ref = workContents.findOutputRef(candidate);
+    if (ref == null) {
+      throw new BusinessException(ErrorCodes.DOCUMENT_NOT_FOUND, "文档不存在", 404);
+    }
+    return ref.getOutputId();
   }
 
   /**

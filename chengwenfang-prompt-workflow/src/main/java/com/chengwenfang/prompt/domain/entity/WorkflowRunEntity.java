@@ -19,6 +19,9 @@ public class WorkflowRunEntity {
   /** 主键 ID。 */
   @TableId("id")
   private String id;
+  /** 所属用户。 */
+  @TableField("owner_user_id")
+  private String ownerUserId;
   /** 关联后台任务 ID。 */
   @TableField("job_id")
   private String jobId;

@@ -15,6 +15,8 @@ public class KnowledgeVectorUpsert {
   private String chunkId;
   /** 所属文档 ID。 */
   private String documentId;
+  /** 所属用户 ID。 */
+  private String ownerUserId;
   /** 嵌入向量。 */
   private float[] vector;
   /** 来源类型。 */

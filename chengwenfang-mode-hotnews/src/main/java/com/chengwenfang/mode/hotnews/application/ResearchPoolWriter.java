@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.common.ErrorCodes;
 import com.chengwenfang.common.IdsUtil;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.crawler.facade.FetchFacade;
 import com.chengwenfang.crawler.facade.constant.ChannelFetchDefaults;
 import com.chengwenfang.crawler.facade.dto.request.FetchRequest;
@@ -69,6 +70,8 @@ public class ResearchPoolWriter {
   private final ResearchArticleEnricher articleEnricher;
   /** 资料池 → 知识库。 */
   private final HotNewsKnowledgeIngestService knowledgeIngest;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * @param topicMapper              选题簇 Mapper
@@ -84,6 +87,7 @@ public class ResearchPoolWriter {
    * @param query                    调研查询
    * @param articleEnricher          文章摘要 enrich
    * @param knowledgeIngest          知识库登记
+   * @param ownerScope               用户级数据范围
    */
   public ResearchPoolWriter(
       TopicClusterMapper topicMapper,
@@ -98,7 +102,8 @@ public class ResearchPoolWriter {
       ResearchItemScoreDetailsStore scoreDetailsStore,
       ResearchQueryService query,
       ResearchArticleEnricher articleEnricher,
-      HotNewsKnowledgeIngestService knowledgeIngest) {
+      HotNewsKnowledgeIngestService knowledgeIngest,
+      OwnerScope ownerScope) {
     this.topicMapper = topicMapper;
     this.researchRunMapper = researchRunMapper;
     this.researchItemMapper = researchItemMapper;
@@ -112,6 +117,7 @@ public class ResearchPoolWriter {
     this.query = query;
     this.articleEnricher = articleEnricher;
     this.knowledgeIngest = knowledgeIngest;
+    this.ownerScope = ownerScope;
   }
 
   public HotNewsResearchItemView addManualResearchItem(
@@ -271,6 +277,7 @@ public class ResearchPoolWriter {
     TopicResearchRunEntity run = new TopicResearchRunEntity();
     run.setId(IdsUtil.newId());
     run.setTopicId(topicId);
+    run.setOwnerUserId(ownerScope.effectiveOwnerUserId());
     run.setStatus(JobStatus.SUCCEEDED.getValue());
     run.setCreatedAt(now);
     run.setFinishedAt(now);

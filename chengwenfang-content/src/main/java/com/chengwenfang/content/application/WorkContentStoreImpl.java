@@ -24,9 +24,12 @@ import com.chengwenfang.content.infrastructure.mapper.WorkOutputVersionMapper;
 import java.util.regex.Pattern;
 import com.chengwenfang.file.facade.FileFacade;
 import com.chengwenfang.file.facade.dto.view.StoredFileView;
+import com.chengwenfang.identity.facade.OwnerScope;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -49,6 +52,8 @@ public class WorkContentStoreImpl implements WorkContentStore {
   private final ContentThemeMapper contentThemeMapper;
   private final FileFacade files;
   private final ApplicationEventPublisher eventPublisher;
+  /** 用户数据范围。 */
+  private final OwnerScope ownerScope;
 
   @Override
   public String readCurrent(String outputId) {
@@ -227,6 +232,7 @@ public class WorkContentStoreImpl implements WorkContentStore {
     if (work == null) {
       return null;
     }
+    ownerScope.assertCanAccess(work.getOwnerUserId());
     boolean hotNews = ContentModeIds.isHotNews(work.getModeCode(), work.getModeCode());
     String kind = kindFromChannel(output.getChannelCode(), hotNews);
     return new WorkOutputRef(
@@ -257,18 +263,42 @@ public class WorkContentStoreImpl implements WorkContentStore {
     if (output == null || !ChannelCodes.MASTER.equals(output.getChannelCode())) {
       return null;
     }
+    WorkEntity work = workMapper.selectById(output.getWorkId());
+    if (work == null) {
+      return null;
+    }
+    ownerScope.assertCanAccess(work.getOwnerUserId());
     return buildKnowledgeSnapshot(output);
   }
 
   /**
-   * 列出全部有正文的主轨产出快照。
+   * 列出当前用户可见的、有正文的主轨产出快照。
    *
    * @return 快照列表
    */
   public List<WorkOutputKnowledgeSnapshot> listMasterKnowledgeSnapshots() {
-    List<WorkOutputEntity> outputs = outputMapper.selectList(new LambdaQueryWrapper<WorkOutputEntity>()
+    LambdaQueryWrapper<WorkOutputEntity> outputQuery = new LambdaQueryWrapper<WorkOutputEntity>()
         .eq(WorkOutputEntity::getChannelCode, ChannelCodes.MASTER)
-        .gt(WorkOutputEntity::getCurrentVersionNo, 0));
+        .gt(WorkOutputEntity::getCurrentVersionNo, 0);
+    if (!ownerScope.currentUserIsAdmin()) {
+      String ownerId = ownerScope.currentOwnerUserId().orElse(null);
+      if (StrUtil.isBlank(ownerId)) {
+        return List.of();
+      }
+      List<WorkEntity> ownedWorks = workMapper.selectList(
+          new LambdaQueryWrapper<WorkEntity>()
+              .eq(WorkEntity::getOwnerUserId, ownerId)
+              .select(WorkEntity::getId));
+      Set<String> workIds = ownedWorks.stream()
+          .filter(work -> work != null && StrUtil.isNotBlank(work.getId()))
+          .map(WorkEntity::getId)
+          .collect(Collectors.toSet());
+      if (workIds.isEmpty()) {
+        return List.of();
+      }
+      outputQuery.in(WorkOutputEntity::getWorkId, workIds);
+    }
+    List<WorkOutputEntity> outputs = outputMapper.selectList(outputQuery);
     List<WorkOutputKnowledgeSnapshot> snapshots = new ArrayList<>();
     for (WorkOutputEntity output : outputs) {
       WorkOutputKnowledgeSnapshot snapshot = buildKnowledgeSnapshot(output);
@@ -463,6 +493,7 @@ public class WorkContentStoreImpl implements WorkContentStore {
     if (work == null) {
       return null;
     }
+    ownerScope.assertCanAccess(work.getOwnerUserId());
     if (ContentModeIds.isHotNews(work.getModeCode(), work.getModeCode())) {
       return findOutputId(work.getId(), ChannelCodes.WECHAT_MP);
     }

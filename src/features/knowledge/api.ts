@@ -1,4 +1,4 @@
-import { unwrapApiResult } from "../../shared/api/http";
+﻿import { apiFetch, unwrapApiResult } from "../../shared/api/http";
 import type { JobData } from "../../shared/api/jobs";
 
 /** 索引按来源计数。 */
@@ -103,7 +103,7 @@ function normalizeSourceCounts(
 /** 加载知识库索引统计。 */
 export async function loadKnowledgeStats(): Promise<KnowledgeIndexStats> {
   const data = await unwrapApiResult<KnowledgeIndexStats>(
-    await fetch("/api/knowledge/stats", { cache: "no-store" }),
+    await apiFetch("/api/knowledge/stats", { cache: "no-store" }),
   );
   return { ...data, bySource: normalizeSourceCounts(data) };
 }
@@ -117,7 +117,7 @@ export async function reindexKnowledge(
       ? JSON.stringify({ sourceKind: sourceKind.trim() })
       : "{}";
   return unwrapApiResult<JobData>(
-    await fetch("/api/knowledge/reindex", {
+    await apiFetch("/api/knowledge/reindex", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body,
@@ -182,7 +182,7 @@ export async function listKnowledgeDocuments(
   const createdTo = params.createdTo?.trim();
   if (createdTo) search.set("createdTo", createdTo);
   return unwrapApiResult<KnowledgeDocumentPage>(
-    await fetch(`/api/knowledge/documents?${search.toString()}`, {
+    await apiFetch(`/api/knowledge/documents?${search.toString()}`, {
       cache: "no-store",
     }),
   );
@@ -195,7 +195,7 @@ export async function uploadKnowledgeDocument(
   const form = new FormData();
   form.append("file", file);
   return unwrapApiResult<KnowledgeDocument>(
-    await fetch("/api/knowledge/documents/upload", {
+    await apiFetch("/api/knowledge/documents/upload", {
       method: "POST",
       body: form,
     }),
@@ -208,7 +208,7 @@ export async function ingestKnowledgeWebPage(
   title?: string,
 ): Promise<KnowledgeDocument> {
   return unwrapApiResult<KnowledgeDocument>(
-    await fetch("/api/knowledge/documents/ingest-url", {
+    await apiFetch("/api/knowledge/documents/ingest-url", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -224,7 +224,7 @@ export async function deleteKnowledgeDocument(
   documentId: string,
 ): Promise<void> {
   await unwrapApiResult<null>(
-    await fetch(
+    await apiFetch(
       `/api/knowledge/documents/${encodeURIComponent(documentId)}`,
       { method: "DELETE" },
     ),
@@ -236,7 +236,7 @@ export async function reindexKnowledgeDocument(
   documentId: string,
 ): Promise<JobData> {
   return unwrapApiResult<JobData>(
-    await fetch(
+    await apiFetch(
       `/api/knowledge/documents/${encodeURIComponent(documentId)}/reindex`,
       { method: "POST" },
     ),
@@ -246,7 +246,7 @@ export async function reindexKnowledgeDocument(
 /** 列出对话会话。 */
 export async function listSessions(): Promise<KnowledgeChatSession[]> {
   return unwrapApiResult<KnowledgeChatSession[]>(
-    await fetch("/api/knowledge/chats", { cache: "no-store" }),
+    await apiFetch("/api/knowledge/chats", { cache: "no-store" }),
   );
 }
 
@@ -256,7 +256,7 @@ export async function createSession(
 ): Promise<KnowledgeChatSession> {
   const body = title?.trim() ? JSON.stringify({ title: title.trim() }) : "{}";
   return unwrapApiResult<KnowledgeChatSession>(
-    await fetch("/api/knowledge/chats", {
+    await apiFetch("/api/knowledge/chats", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body,
@@ -270,7 +270,7 @@ export async function renameSession(
   title: string,
 ): Promise<KnowledgeChatSession> {
   return unwrapApiResult<KnowledgeChatSession>(
-    await fetch(`/api/knowledge/chats/${encodeURIComponent(sessionId)}`, {
+    await apiFetch(`/api/knowledge/chats/${encodeURIComponent(sessionId)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title }),
@@ -281,7 +281,7 @@ export async function renameSession(
 /** 删除对话会话及其消息。 */
 export async function deleteSession(sessionId: string): Promise<void> {
   await unwrapApiResult<null>(
-    await fetch(`/api/knowledge/chats/${encodeURIComponent(sessionId)}`, {
+    await apiFetch(`/api/knowledge/chats/${encodeURIComponent(sessionId)}`, {
       method: "DELETE",
     }),
   );
@@ -292,7 +292,7 @@ export async function listMessages(
   sessionId: string,
 ): Promise<KnowledgeChatMessage[]> {
   return unwrapApiResult<KnowledgeChatMessage[]>(
-    await fetch(
+    await apiFetch(
       `/api/knowledge/chats/${encodeURIComponent(sessionId)}/messages`,
       { cache: "no-store" },
     ),
@@ -369,7 +369,7 @@ export async function askKnowledgeChat(
   if (options?.sourceKinds?.length) {
     payload.sourceKinds = options.sourceKinds;
   }
-  const response = await fetch(
+  const response = await apiFetch(
     `/api/knowledge/chats/${encodeURIComponent(sessionId)}/messages`,
     {
       method: "POST",
@@ -506,7 +506,7 @@ export async function submitAnswerFeedback(
   note?: string,
 ): Promise<{ goldenCandidateJson?: string | null }> {
   return unwrapApiResult<{ goldenCandidateJson?: string | null }>(
-    await fetch(
+    await apiFetch(
       `/api/knowledge/messages/${encodeURIComponent(messageId)}/feedback`,
       {
         method: "POST",
@@ -520,14 +520,14 @@ export async function submitAnswerFeedback(
 /** 列出长期记忆。 */
 export async function listMemories(): Promise<KnowledgeMemory[]> {
   return unwrapApiResult<KnowledgeMemory[]>(
-    await fetch("/api/knowledge/memories", { cache: "no-store" }),
+    await apiFetch("/api/knowledge/memories", { cache: "no-store" }),
   );
 }
 
 /** 删除长期记忆。 */
 export async function deleteMemory(memoryId: string): Promise<void> {
   await unwrapApiResult<null>(
-    await fetch(`/api/knowledge/memories/${encodeURIComponent(memoryId)}`, {
+    await apiFetch(`/api/knowledge/memories/${encodeURIComponent(memoryId)}`, {
       method: "DELETE",
     }),
   );
@@ -539,7 +539,7 @@ export async function setMemoryPaused(
   paused: boolean,
 ): Promise<void> {
   await unwrapApiResult<null>(
-    await fetch(`/api/knowledge/memories/${encodeURIComponent(memoryId)}`, {
+    await apiFetch(`/api/knowledge/memories/${encodeURIComponent(memoryId)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ paused }),

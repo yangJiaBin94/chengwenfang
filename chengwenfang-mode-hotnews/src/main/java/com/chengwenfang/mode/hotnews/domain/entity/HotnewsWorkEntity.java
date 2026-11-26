@@ -18,6 +18,9 @@ public class HotnewsWorkEntity {
   /** 作品 ID（= works.id = 原 articleId）。 */
   @TableId("work_id")
   private String workId;
+  /** 所属用户。 */
+  @TableField("owner_user_id")
+  private String ownerUserId;
   /** 选题 ID。 */
   @TableField("topic_id")
   private String topicId;

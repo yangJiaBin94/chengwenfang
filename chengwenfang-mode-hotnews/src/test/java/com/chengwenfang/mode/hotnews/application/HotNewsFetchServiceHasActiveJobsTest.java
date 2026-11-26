@@ -6,6 +6,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.job.facade.JobFacade;
 import com.chengwenfang.mode.hotnews.infrastructure.mapper.TopicClusterMapper;
 import com.chengwenfang.mode.hotnews.infrastructure.mapper.TopicResearchRunMapper;
@@ -44,7 +45,8 @@ class HotNewsFetchServiceHasActiveJobsTest {
         workStore,
         jobs,
         mock(VideoParseRunService.class),
-        mock(HotNewsTopicService.class));
+        mock(HotNewsTopicService.class),
+        mock(OwnerScope.class));
   }
 
   @Test

@@ -1,4 +1,4 @@
-import { unwrapApiResult } from "../../shared/api/http";
+﻿import { apiFetch, unwrapApiResult } from "../../shared/api/http";
 import { CUSTOM_AI_TYPE_KEY, isCustomAiNode } from "./model";
 
 export { CUSTOM_AI_TYPE_KEY, isCustomAiNode };
@@ -202,7 +202,7 @@ export async function getWorkflowFeatureAvailability(
   featureKey: WorkflowFeatureKeyValue | string,
 ) {
   return payload<WorkflowFeatureAvailability>(
-    await fetch(
+    await apiFetch(
       `/api/workflows/features/${encodeURIComponent(featureKey)}`,
       { cache: "no-store" },
     ),
@@ -230,31 +230,31 @@ export async function assertWorkflowFeatureAvailable(
 
 export async function listWorkflows() {
   return payload<WorkflowSummary[]>(
-    await fetch("/api/workflows", { cache: "no-store" }),
+    await apiFetch("/api/workflows", { cache: "no-store" }),
   );
 }
 
 export async function listWorkflowNodeTypes() {
   return payload<WorkflowNodeType[]>(
-    await fetch("/api/workflows/node-types", { cache: "no-store" }),
+    await apiFetch("/api/workflows/node-types", { cache: "no-store" }),
   );
 }
 
 export async function loadWorkflow(id: string) {
   return payload<WorkflowDetail>(
-    await fetch(`/api/workflows/${id}`, { cache: "no-store" }),
+    await apiFetch(`/api/workflows/${id}`, { cache: "no-store" }),
   );
 }
 
 export async function loadWorkflowDraft(id: string) {
   return payload<WorkflowDraft>(
-    await fetch(`/api/workflows/${id}/draft`, { cache: "no-store" }),
+    await apiFetch(`/api/workflows/${id}/draft`, { cache: "no-store" }),
   );
 }
 
 export async function saveWorkflowDraft(id: string, draft: WorkflowDraft) {
   return payload<WorkflowDraft>(
-    await fetch(`/api/workflows/${id}/draft`, {
+    await apiFetch(`/api/workflows/${id}/draft`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -270,7 +270,7 @@ export async function validateWorkflow(
   definition: WorkflowDefinitionDataView,
 ) {
   return payload<WorkflowValidation>(
-    await fetch(`/api/workflows/${id}/draft/validate`, {
+    await apiFetch(`/api/workflows/${id}/draft/validate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ definition }),
@@ -279,7 +279,7 @@ export async function validateWorkflow(
 }
 
 export async function resetWorkflowDraft(id: string, draft: WorkflowDraft) {
-  return payload<WorkflowDraft>(await fetch(`/api/workflows/${id}/draft/reset`, {
+  return payload<WorkflowDraft>(await apiFetch(`/api/workflows/${id}/draft/reset`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ revision: draft.revision, definition: draft.definition }),
@@ -288,7 +288,7 @@ export async function resetWorkflowDraft(id: string, draft: WorkflowDraft) {
 
 export async function loadWorkflowDiff(id: string) {
   return payload<Record<string, unknown>>(
-    await fetch(`/api/workflows/${id}/draft/diff`, { cache: "no-store" }),
+    await apiFetch(`/api/workflows/${id}/draft/diff`, { cache: "no-store" }),
   );
 }
 
@@ -298,7 +298,7 @@ export async function publishWorkflow(
   releaseNotes: string,
 ) {
   return payload<WorkflowVersion>(
-    await fetch(`/api/workflows/${id}/publish`, {
+    await apiFetch(`/api/workflows/${id}/publish`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ version, releaseNotes }),
@@ -308,7 +308,7 @@ export async function publishWorkflow(
 
 export async function listWorkflowVersions(id: string) {
   return payload<WorkflowVersion[]>(
-    await fetch(`/api/workflows/${id}/versions`, { cache: "no-store" }),
+    await apiFetch(`/api/workflows/${id}/versions`, { cache: "no-store" }),
   );
 }
 
@@ -317,7 +317,7 @@ export async function restoreWorkflowVersion(
   versionId: string,
 ) {
   return payload<WorkflowDraft>(
-    await fetch(
+    await apiFetch(
       `/api/workflows/${workflowId}/versions/${versionId}/create-draft`,
       { method: "POST" },
     ),
@@ -326,19 +326,19 @@ export async function restoreWorkflowVersion(
 
 export async function listWorkflowRuns(id: string) {
   return payload<WorkflowRun[]>(
-    await fetch(`/api/workflows/${id}/runs`, { cache: "no-store" }),
+    await apiFetch(`/api/workflows/${id}/runs`, { cache: "no-store" }),
   );
 }
 
 export async function loadWorkflowMetrics(id: string) {
   return payload<WorkflowMetrics>(
-    await fetch(`/api/workflows/${id}/metrics/summary`, { cache: "no-store" }),
+    await apiFetch(`/api/workflows/${id}/metrics/summary`, { cache: "no-store" }),
   );
 }
 
 export async function createWorkflow(name: string, description: string) {
   return payload<WorkflowSummary>(
-    await fetch("/api/workflows", {
+    await apiFetch("/api/workflows", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -355,7 +355,7 @@ export async function updateWorkflow(
   data: { name?: string; description?: string; status?: string },
 ) {
   return payload<WorkflowSummary>(
-    await fetch(`/api/workflows/${id}`, {
+    await apiFetch(`/api/workflows/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -369,7 +369,7 @@ export async function loadWorkflowVersionDiff(
   to: string,
 ) {
   return payload<Record<string, unknown>>(
-    await fetch(
+    await apiFetch(
       `/api/workflows/${id}/versions/diff?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
       { cache: "no-store" },
     ),
@@ -378,19 +378,19 @@ export async function loadWorkflowVersionDiff(
 
 export async function loadWorkflowNodeMetrics(id: string) {
   return payload<WorkflowNodeMetric[]>(
-    await fetch(`/api/workflows/${id}/metrics/nodes`, { cache: "no-store" }),
+    await apiFetch(`/api/workflows/${id}/metrics/nodes`, { cache: "no-store" }),
   );
 }
 
 export async function loadWorkflowVersionMetrics(id: string) {
   return payload<WorkflowVersionMetric[]>(
-    await fetch(`/api/workflows/${id}/metrics/versions`, { cache: "no-store" }),
+    await apiFetch(`/api/workflows/${id}/metrics/versions`, { cache: "no-store" }),
   );
 }
 
 export async function listWorkflowAlerts(id: string) {
   return payload<WorkflowAlert[]>(
-    await fetch(`/api/workflows/${id}/alerts`, { cache: "no-store" }),
+    await apiFetch(`/api/workflows/${id}/alerts`, { cache: "no-store" }),
   );
 }
 
@@ -399,7 +399,7 @@ export async function resolveWorkflowAlert(
   alertId: string,
 ) {
   return payload<WorkflowAlert>(
-    await fetch(`/api/workflows/${workflowId}/alerts/${alertId}/resolve`, {
+    await apiFetch(`/api/workflows/${workflowId}/alerts/${alertId}/resolve`, {
       method: "POST",
     }),
   );

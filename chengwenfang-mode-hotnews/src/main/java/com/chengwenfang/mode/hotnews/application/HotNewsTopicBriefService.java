@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.common.ErrorCodes;
 import com.chengwenfang.common.IdsUtil;
+import com.chengwenfang.identity.application.OwnerScopeQueryHelper;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.mode.hotnews.domain.TopicResearchPlanner;
 import com.chengwenfang.mode.hotnews.domain.entity.TopicBriefEntity;
 import com.chengwenfang.mode.hotnews.domain.entity.TopicClusterEntity;
@@ -45,22 +47,27 @@ public class HotNewsTopicBriefService {
   private final BriefStructuredStore briefStore;
   private final HotNewsResearchService research;
   private final HotNewsTopicService topics;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * @param briefMapper 简报 Mapper
    * @param briefStore  简报结构化存储
    * @param research    资料池（@Lazy 破环）
    * @param topics      选题查询（@Lazy 破环）
+   * @param ownerScope  用户级数据范围
    */
   public HotNewsTopicBriefService(
       TopicBriefMapper briefMapper,
       BriefStructuredStore briefStore,
       @Lazy HotNewsResearchService research,
-      @Lazy HotNewsTopicService topics) {
+      @Lazy HotNewsTopicService topics,
+      OwnerScope ownerScope) {
     this.briefMapper = briefMapper;
     this.briefStore = briefStore;
     this.research = research;
     this.topics = topics;
+    this.ownerScope = ownerScope;
   }
 
   /**
@@ -70,9 +77,11 @@ public class HotNewsTopicBriefService {
    * @return 简报视图列表
    */
   public List<HotNewsBriefView> listBriefs(String topicId) {
-    return briefMapper.selectList(new LambdaQueryWrapper<TopicBriefEntity>()
-            .eq(TopicBriefEntity::getTopicId, topicId)
-            .orderByDesc(TopicBriefEntity::getUpdatedAt))
+    LambdaQueryWrapper<TopicBriefEntity> query = new LambdaQueryWrapper<TopicBriefEntity>()
+        .eq(TopicBriefEntity::getTopicId, topicId)
+        .orderByDesc(TopicBriefEntity::getUpdatedAt);
+    OwnerScopeQueryHelper.applyOwnerEquals(query, ownerScope, TopicBriefEntity::getOwnerUserId);
+    return briefMapper.selectList(query)
         .stream()
         .map(this::briefView)
         .toList();
@@ -91,6 +100,7 @@ public class HotNewsTopicBriefService {
     LocalDateTime now = LocalDateTime.now();
     TopicBriefEntity brief = new TopicBriefEntity();
     brief.setId(IdsUtil.newId());
+    brief.setOwnerUserId(ownerScope.effectiveOwnerUserId());
     brief.setTopicId(topicId);
     brief.setThemeId(topic.getThemeId());
     brief.setStatus(HotNewsBriefStatuses.DRAFT);
@@ -121,6 +131,7 @@ public class HotNewsTopicBriefService {
     if (brief == null) {
       throw new BusinessException(ErrorCodes.BRIEF_NOT_FOUND, "选题简报不存在", 404);
     }
+    ownerScope.assertCanAccess(brief.getOwnerUserId());
     LocalDateTime now = LocalDateTime.now();
     brief.setStatus(HotNewsBriefStatuses.CONFIRMED);
     brief.setConfirmedAt(now);

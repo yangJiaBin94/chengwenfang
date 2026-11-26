@@ -4,6 +4,8 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.common.IdsUtil;
+import com.chengwenfang.identity.application.OwnerScopeQueryHelper;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.prompt.domain.WorkflowNodeCatalogUtil;
 import com.chengwenfang.prompt.domain.entity.WorkflowDefinitionEntity;
 import com.chengwenfang.prompt.domain.entity.WorkflowDraftEntity;
@@ -49,6 +51,8 @@ public class WorkflowDefinitionService {
   private final WorkflowDraftService drafts;
   /** 发布与版本。 */
   private final WorkflowVersionService versions;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * 列出全部工作流定义摘要，按更新时间倒序。
@@ -57,8 +61,10 @@ public class WorkflowDefinitionService {
    */
   public List<WorkflowSummaryView> listWorkflows() {
     // 最新更新的定义排前，转为对外摘要
-    return definitionMapper.selectList(new LambdaQueryWrapper<WorkflowDefinitionEntity>()
-            .orderByDesc(WorkflowDefinitionEntity::getUpdatedAt))
+    LambdaQueryWrapper<WorkflowDefinitionEntity> query = new LambdaQueryWrapper<WorkflowDefinitionEntity>()
+        .orderByDesc(WorkflowDefinitionEntity::getUpdatedAt);
+    OwnerScopeQueryHelper.applyOwnerOrSeedAdmin(query, ownerScope, WorkflowDefinitionEntity::getOwnerUserId);
+    return definitionMapper.selectList(query)
         .stream()
         .map(support::toSummary)
         .toList();
@@ -124,6 +130,7 @@ public class WorkflowDefinitionService {
     // 组装定义行：本地 owner、初始 draft 状态、尚未发布
     WorkflowDefinitionEntity def = new WorkflowDefinitionEntity();
     def.setId(IdsUtil.newId());
+    def.setOwnerUserId(ownerScope.effectiveOwnerUserId());
     def.setWorkflowKey(StrUtil.isBlank(input.getKey()) ? "wf-" + IdsUtil.newId() : input.getKey());
     def.setName(StrUtil.isBlank(input.getName()) ? "Untitled workflow" : input.getName());
     def.setDescription(StrUtil.nullToEmpty(input.getDescription()));

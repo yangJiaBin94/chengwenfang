@@ -3,6 +3,8 @@ package com.chengwenfang.sourcing.application;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.chengwenfang.common.BusinessException;
+import com.chengwenfang.identity.application.OwnerScopeQueryHelper;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.common.ErrorCodes;
 import com.chengwenfang.common.IdsUtil;
 import com.chengwenfang.common.PageQuery;
@@ -50,6 +52,8 @@ public class HotNewsChannelService {
   private final ChannelFetchConfigStore configStore;
   /** 网页/RSS 抓取门面，用于探测连通性。 */
   private final FetchFacade fetchFacade;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * 列出主题下的信源频道，按更新时间倒序。
@@ -58,10 +62,11 @@ public class HotNewsChannelService {
    * @return 频道公开视图列表
    */
   public List<HotNewsChannelView> listChannels(String themeId) {
-    return channelMapper.selectList(new LambdaQueryWrapper<SourceChannelEntity>()
-            .eq(themeId != null, SourceChannelEntity::getThemeId, themeId)
-            .isNull(SourceChannelEntity::getDeletedAt)
-            .orderByDesc(SourceChannelEntity::getUpdatedAt))
+    LambdaQueryWrapper<SourceChannelEntity> query = new LambdaQueryWrapper<SourceChannelEntity>()
+        .eq(themeId != null, SourceChannelEntity::getThemeId, themeId)
+        .isNull(SourceChannelEntity::getDeletedAt);
+    OwnerScopeQueryHelper.applyOwnerEquals(query, ownerScope, SourceChannelEntity::getOwnerUserId);
+    return channelMapper.selectList(query.orderByDesc(SourceChannelEntity::getUpdatedAt))
         .stream()
         .map(this::channelView)
         .toList();
@@ -86,6 +91,7 @@ public class HotNewsChannelService {
         .isNull(SourceChannelEntity::getDeletedAt)
         .eq(StrUtil.isNotBlank(type), SourceChannelEntity::getChannelType, type)
         .eq(enabled != null, SourceChannelEntity::getEnabled, enabled);
+    OwnerScopeQueryHelper.applyOwnerEquals(filterQuery, ownerScope, SourceChannelEntity::getOwnerUserId);
     if (StrUtil.isNotBlank(keyword)) {
       filterQuery.and(wrapper -> wrapper
           .like(SourceChannelEntity::getName, keyword)
@@ -113,13 +119,17 @@ public class HotNewsChannelService {
       items = channelMapper.selectList(pageQuery).stream().map(this::channelView).toList();
     }
 
-    long enabledCount = channelMapper.selectCount(new LambdaQueryWrapper<SourceChannelEntity>()
+    LambdaQueryWrapper<SourceChannelEntity> enabledCountQuery = new LambdaQueryWrapper<SourceChannelEntity>()
         .eq(StrUtil.isNotBlank(themeId), SourceChannelEntity::getThemeId, themeId)
         .isNull(SourceChannelEntity::getDeletedAt)
-        .eq(SourceChannelEntity::getEnabled, true));
-    long themeTotal = channelMapper.selectCount(new LambdaQueryWrapper<SourceChannelEntity>()
+        .eq(SourceChannelEntity::getEnabled, true);
+    OwnerScopeQueryHelper.applyOwnerEquals(enabledCountQuery, ownerScope, SourceChannelEntity::getOwnerUserId);
+    long enabledCount = channelMapper.selectCount(enabledCountQuery);
+    LambdaQueryWrapper<SourceChannelEntity> themeTotalQuery = new LambdaQueryWrapper<SourceChannelEntity>()
         .eq(StrUtil.isNotBlank(themeId), SourceChannelEntity::getThemeId, themeId)
-        .isNull(SourceChannelEntity::getDeletedAt));
+        .isNull(SourceChannelEntity::getDeletedAt);
+    OwnerScopeQueryHelper.applyOwnerEquals(themeTotalQuery, ownerScope, SourceChannelEntity::getOwnerUserId);
+    long themeTotal = channelMapper.selectCount(themeTotalQuery);
     long disabledCount = Math.max(0, themeTotal - enabledCount);
 
     return HotNewsChannelPageView.builder()
@@ -143,6 +153,7 @@ public class HotNewsChannelService {
     HotNewsChannelUpsertRequest req = body == null ? new HotNewsChannelUpsertRequest() : body;
     SourceChannelEntity entity = new SourceChannelEntity();
     entity.setId(StrUtil.isBlank(req.getId()) ? IdsUtil.newId() : req.getId());
+    entity.setOwnerUserId(ownerScope.effectiveOwnerUserId());
     entity.setThemeId(StrUtil.blankToDefault(req.getThemeId(), HotNewsFetchKeys.DEFAULT_THEME_ID));
     entity.setName(StrUtil.blankToDefault(req.getName(), DEFAULT_CHANNEL_NAME));
     entity.setChannelType(StrUtil.blankToDefault(req.getType(), ChannelType.RSS.getValue()));
@@ -165,6 +176,9 @@ public class HotNewsChannelService {
       SourceChannelEntity existing = channelMapper.selectById(entity.getId());
       if (existing != null && existing.getDeletedAt() != null) {
         throw new BusinessException(ErrorCodes.CHANNEL_NOT_FOUND, "频道已删除", 404);
+      }
+      if (existing != null) {
+        ownerScope.assertCanAccess(existing.getOwnerUserId());
       }
       ChannelFetchConfig previous = configStore.read(existing);
       ChannelFetchConfig updateConfig = prepareConfigForWrite(
@@ -385,6 +399,7 @@ public class HotNewsChannelService {
     if (channel == null || channel.getDeletedAt() != null) {
       throw new BusinessException(ErrorCodes.CHANNEL_NOT_FOUND, "频道不存在", 404);
     }
+    ownerScope.assertCanAccess(channel.getOwnerUserId());
     return channel;
   }
 

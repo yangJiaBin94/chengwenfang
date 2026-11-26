@@ -21,6 +21,9 @@ public class VideoTranscriptEntity {
   /** 主键。 */
   @TableId("id")
   private String id;
+  /** 所属用户。 */
+  @TableField("owner_user_id")
+  private String ownerUserId;
   /** 信源条目 id（与 researchItemId 二选一）。 */
   @TableField("source_item_id")
   private String sourceItemId;

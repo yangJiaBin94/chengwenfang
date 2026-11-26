@@ -186,6 +186,8 @@ export type TopicScoreDetails = {
   rubricSnapshot?: TopicDimensionScore[];
   recommendUse?: string;
   riskNote?: string;
+  /** AI 素材形态：paper / product / news / oss / other。 */
+  materialKind?: string | null;
   /** 选题来源形态（如 ai_theme_seed）。 */
   originKind?: string | null;
 };

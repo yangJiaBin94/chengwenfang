@@ -64,6 +64,7 @@ public class TopicScoreDetailsStore {
     details.setOriginKind(metric.getOriginKind());
     details.setSourceTypes(readTags(topicId, HotnewsScoreTagTypes.SOURCE_TYPE));
     details.setSignals(readTags(topicId, HotnewsScoreTagTypes.SIGNAL));
+    details.setMaterialKind(firstTag(topicId, HotnewsScoreTagTypes.MATERIAL_KIND));
     details.setDimensions(readDimensions(topicId, HotnewsScoreDimensionSets.CURRENT));
     details.setRubricSnapshot(readDimensions(topicId, HotnewsScoreDimensionSets.RUBRIC_SNAPSHOT));
     return details;
@@ -112,6 +113,9 @@ public class TopicScoreDetailsStore {
     }
     writeTags(topicId, HotnewsScoreTagTypes.SOURCE_TYPE, details.getSourceTypes());
     writeTags(topicId, HotnewsScoreTagTypes.SIGNAL, details.getSignals());
+    if (StrUtil.isNotBlank(details.getMaterialKind())) {
+      writeTags(topicId, HotnewsScoreTagTypes.MATERIAL_KIND, List.of(details.getMaterialKind().trim()));
+    }
     writeDimensions(topicId, HotnewsScoreDimensionSets.CURRENT, details.getDimensions());
     writeDimensions(topicId, HotnewsScoreDimensionSets.RUBRIC_SNAPSHOT, details.getRubricSnapshot());
   }
@@ -146,6 +150,18 @@ public class TopicScoreDetailsStore {
         .map(HotnewsTopicScoreTagEntity::getTagValue)
         .filter(StrUtil::isNotBlank)
         .toList();
+  }
+
+  /**
+   * 读取某类型的第一个标签值。
+   *
+   * @param topicId 选题 id
+   * @param tagType 标签类型
+   * @return 首个非空值；无则 null
+   */
+  private String firstTag(String topicId, String tagType) {
+    List<String> tags = readTags(topicId, tagType);
+    return tags.isEmpty() ? null : tags.get(0);
   }
 
   private void writeTags(String topicId, String tagType, List<String> values) {

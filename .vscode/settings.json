@@ -7,7 +7,7 @@
   "java.autobuild.enabled": true,
   "java.import.maven.enabled": true,
   "java.import.gradle.enabled": false,
-  "java.configuration.maven.userSettings": "${env:USERPROFILE}/.m2/settings.xml",
+  "java.configuration.maven.userSettings": "${workspaceFolder}/.mvn/settings.xml",
   "maven.terminal.customEnv": [
     {
       "environmentVariable": "MAVEN_OPTS",

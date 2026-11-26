@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { Image, Sparkles, Trash2 } from "lucide-react";
+import { withAuthQuery } from "../../../shared/api/http";
 import { EditableMarkdown } from "./courseEditorUi";
 import { imageNameFromSrc } from "../model";
 
@@ -85,14 +86,18 @@ export function TabContentPreviews(props: any) {
         {(images.length ? images : placeholders).map((image, index) => (
           <div className="image-tile" key={`${image.src}-${index}`}>
             {images.length ? (
-              <img className="image-preview" src={image.src} alt={image.alt} />
+              <img
+                className="image-preview"
+                src={withAuthQuery(image.src)}
+                alt={image.alt}
+              />
             ) : (
               <div className="image-art">
                 {index === 0 ? <Sparkles size={28} /> : <Image size={26} />}
               </div>
             )}
             <strong>{imageNameFromSrc(image.src) || image.alt}</strong>
-            <small>{image.src}</small>
+            <small>{image.src.split(/[?#]/)[0]}</small>
             {images.length > 0 && image.src.startsWith("/api/images/") && (
               <button
                 className="image-delete-button"

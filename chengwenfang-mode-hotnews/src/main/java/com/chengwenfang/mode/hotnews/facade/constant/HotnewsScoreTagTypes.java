@@ -10,4 +10,6 @@ public final class HotnewsScoreTagTypes {
   public static final String SOURCE_TYPE = "source_type";
   /** 可读信号（signals）。 */
   public static final String SIGNAL = "signal";
+  /** 素材形态（materialKind：paper/product/news/oss/other）。 */
+  public static final String MATERIAL_KIND = "material_kind";
 }

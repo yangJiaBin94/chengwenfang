@@ -19,6 +19,9 @@ public class WorkflowAlertEntity {
   /** 主键 ID。 */
   @TableId("id")
   private String id;
+  /** 所属用户。 */
+  @TableField("owner_user_id")
+  private String ownerUserId;
   /** 所属工作流。 */
   @TableField("workflow_id")
   private String workflowId;

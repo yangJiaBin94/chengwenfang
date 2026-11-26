@@ -1,4 +1,4 @@
-import { unwrapApiResult } from "../../shared/api/http";
+﻿import { apiFetch, unwrapApiResult } from "../../shared/api/http";
 import {
   loadJob,
   waitForBackgroundJob,
@@ -340,7 +340,7 @@ async function fetchWithRetry(
   let lastError: unknown;
   for (let attempt = 0; attempt < 4; attempt += 1) {
     try {
-      return await fetch(input, init);
+      return await apiFetch(input, init);
     } catch (error) {
       lastError = error;
       if (attempt < 3)
@@ -351,7 +351,7 @@ async function fetchWithRetry(
 }
 
 export function listHotNewsSources(themeId: string) {
-  return fetch(`/api/themes/${encodeURIComponent(themeId)}/hot-news/channels`, {
+  return apiFetch(`/api/themes/${encodeURIComponent(themeId)}/hot-news/channels`, {
     cache: "no-store",
   }).then((r) => read<HotNewsSource[]>(r));
 }
@@ -386,7 +386,7 @@ export function pageHotNewsSources(
   if (params.enabled === true || params.enabled === false) {
     search.set("enabled", String(params.enabled));
   }
-  return fetch(
+  return apiFetch(
     `/api/themes/${encodeURIComponent(themeId)}/hot-news/channels/page?${search.toString()}`,
     { cache: "no-store" },
   ).then((r) => read<HotNewsSourcePage>(r));
@@ -401,7 +401,7 @@ export function createHotNewsSource(
     config?: ChannelFetchConfig;
   },
 ) {
-  return fetch(`/api/themes/${encodeURIComponent(themeId)}/hot-news/channels`, {
+  return apiFetch(`/api/themes/${encodeURIComponent(themeId)}/hot-news/channels`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -425,7 +425,7 @@ export type HotNewsSourceChannelGenerateResult = {
 
 /** 按主题 AI 生成来源：后端校验连通性后仅落库可用项。 */
 export function generateHotNewsSourcesByAi(themeId: string) {
-  return fetch(
+  return apiFetch(
     `/api/themes/${encodeURIComponent(themeId)}/hot-news/channels:generate-ai`,
     { method: "POST" },
   ).then((r) => read<HotNewsSourceChannelGenerateResult>(r));
@@ -441,7 +441,7 @@ export function patchHotNewsSource(
     config?: ChannelFetchConfig;
   },
 ) {
-  return fetch(`/api/hot-news/channels/${encodeURIComponent(id)}`, {
+  return apiFetch(`/api/hot-news/channels/${encodeURIComponent(id)}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -449,19 +449,19 @@ export function patchHotNewsSource(
 }
 
 export function deleteHotNewsSource(id: string) {
-  return fetch(`/api/hot-news/channels/${encodeURIComponent(id)}`, {
+  return apiFetch(`/api/hot-news/channels/${encodeURIComponent(id)}`, {
     method: "DELETE",
   }).then((r) => read<{ id: string; deletedAt: string }>(r));
 }
 
 export function testHotNewsSource(id: string) {
-  return fetch(`/api/hot-news/channels/${encodeURIComponent(id)}/test`, {
+  return apiFetch(`/api/hot-news/channels/${encodeURIComponent(id)}/test`, {
     method: "POST",
   }).then((r) => read<HotNewsSourceTest>(r));
 }
 
 export function startHotNewsFetch(themeId: string, channelIds?: string[]) {
-  return fetch(
+  return apiFetch(
     `/api/themes/${encodeURIComponent(themeId)}/hot-news/fetch-runs`,
     {
       method: "POST",
@@ -476,7 +476,7 @@ export function startHotNewsFetch(themeId: string, channelIds?: string[]) {
 }
 
 export function listHotNewsRuns(themeId: string) {
-  return fetch(
+  return apiFetch(
     `/api/themes/${encodeURIComponent(themeId)}/hot-news/fetch-runs`,
     { cache: "no-store" },
   ).then((r) => read<HotNewsRun[]>(r));
@@ -484,7 +484,7 @@ export function listHotNewsRuns(themeId: string) {
 
 /** 主题下雷达采集 FormalGraph Job 列表（执行记录页）。 */
 export function listHotNewsRadarCollectRuns(themeId: string) {
-  return fetch(
+  return apiFetch(
     `/api/themes/${encodeURIComponent(themeId)}/hot-news/collect-runs`,
     { cache: "no-store" },
   ).then((r) => read<JobData[]>(r));
@@ -494,7 +494,7 @@ export function listHotNewsTopics(themeId: string, status?: string) {
   const params = new URLSearchParams();
   if (status) params.set("status", status);
   const query = params.toString() ? `?${params.toString()}` : "";
-  return fetch(
+  return apiFetch(
     `/api/themes/${encodeURIComponent(themeId)}/hot-news/topics${query}`,
     { cache: "no-store" },
   ).then((r) => read<HotNewsTopic[]>(r));
@@ -538,7 +538,7 @@ export function pageHotNewsTopics(
   if (keyword) search.set("keyword", keyword);
   if (params.filter) search.set("filter", params.filter);
   if (params.sortBy) search.set("sortBy", params.sortBy);
-  return fetch(
+  return apiFetch(
     `/api/themes/${encodeURIComponent(themeId)}/hot-news/topics/page?${search.toString()}`,
     { cache: "no-store" },
   ).then((r) => read<HotNewsTopicPage>(r));
@@ -546,20 +546,20 @@ export function pageHotNewsTopics(
 
 /** 已选题页：全部已确认（含写作中、已完成），不限当日。 */
 export function listHotNewsConfirmedTopics(themeId: string) {
-  return fetch(
+  return apiFetch(
     `/api/themes/${encodeURIComponent(themeId)}/hot-news/confirmed-topics`,
     { cache: "no-store" },
   ).then((r) => read<HotNewsTopic[]>(r));
 }
 
 export function getHotNewsTopic(id: string) {
-  return fetch(`/api/hot-news/topics/${encodeURIComponent(id)}`, {
+  return apiFetch(`/api/hot-news/topics/${encodeURIComponent(id)}`, {
     cache: "no-store",
   }).then((r) => read<HotNewsTopic>(r));
 }
 
 export function updateHotNewsTopicStatus(id: string, status: string) {
-  return fetch(`/api/hot-news/topics/${encodeURIComponent(id)}/status`, {
+  return apiFetch(`/api/hot-news/topics/${encodeURIComponent(id)}/status`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ status }),
@@ -571,14 +571,14 @@ export function createHotNewsManualTopic(
   themeId: string,
   body: { title: string; summary?: string; url?: string },
 ) {
-  return fetch(`/api/themes/${encodeURIComponent(themeId)}/hot-news/topics`, {
+  return apiFetch(`/api/themes/${encodeURIComponent(themeId)}/hot-news/topics`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   }).then((r) => read<HotNewsTopic>(r));
 }
 export function startHotNewsTopicResearch(topicId: string) {
-  return fetch(
+  return apiFetch(
     `/api/hot-news/topics/${encodeURIComponent(topicId)}/research-runs`,
     { method: "POST" },
   ).then((r) => read<JobData>(r));
@@ -631,7 +631,7 @@ export function pageHotNewsResearchItems(
 }
 /** 手动添加资料：后端访问 URL 补全标题/摘要与标签。 */
 export function addHotNewsManualResearchItem(topicId: string, url: string) {
-  return fetch(
+  return apiFetch(
     `/api/hot-news/topics/${encodeURIComponent(topicId)}/research-items`,
     {
       method: "POST",
@@ -645,7 +645,7 @@ export function startHotNewsVideoParse(
   topicId: string,
   body?: { itemIds?: string[]; fromStep?: string },
 ) {
-  return fetch(
+  return apiFetch(
     `/api/hot-news/topics/${encodeURIComponent(topicId)}/research-items/video-parse`,
     {
       method: "POST",
@@ -660,7 +660,7 @@ export function startHotNewsVideoParseItem(
   itemId: string,
   body?: { fromStep?: string },
 ) {
-  return fetch(
+  return apiFetch(
     `/api/hot-news/topics/${encodeURIComponent(topicId)}/research-items/${encodeURIComponent(itemId)}/video-parse`,
     {
       method: "POST",
@@ -714,7 +714,7 @@ export function getHotNewsArticleSkeleton(topicId: string) {
 }
 
 export function buildHotNewsArticleSkeleton(topicId: string) {
-  return fetch(
+  return apiFetch(
     `/api/hot-news/topics/${encodeURIComponent(topicId)}/article-skeleton`,
     { method: "POST" },
   ).then((r) => read<HotNewsArticleSkeleton>(r));
@@ -748,13 +748,13 @@ export function listHotNewsBriefs(id: string) {
 }
 
 export function createHotNewsBrief(id: string) {
-  return fetch(`/api/hot-news/topics/${encodeURIComponent(id)}/briefs`, {
+  return apiFetch(`/api/hot-news/topics/${encodeURIComponent(id)}/briefs`, {
     method: "POST",
   }).then((r) => read<HotNewsBrief>(r));
 }
 
 export function confirmHotNewsBrief(id: string, note?: string) {
-  return fetch(`/api/hot-news/briefs/${encodeURIComponent(id)}/confirm`, {
+  return apiFetch(`/api/hot-news/briefs/${encodeURIComponent(id)}/confirm`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ note: note || null }),
@@ -762,14 +762,14 @@ export function confirmHotNewsBrief(id: string, note?: string) {
 }
 
 export function generateHotNewsArticle(briefId: string) {
-  return fetch(
+  return apiFetch(
     `/api/hot-news/briefs/${encodeURIComponent(briefId)}/generate-article`,
     { method: "POST" },
   ).then((r) => read<JobData>(r));
 }
 
 export function generateHotNewsArticleByTopic(topicId: string) {
-  return fetch(
+  return apiFetch(
     `/api/hot-news/topics/${encodeURIComponent(topicId)}/generate-article`,
     { method: "POST" },
   ).then((r) => read<JobData>(r));
@@ -777,7 +777,7 @@ export function generateHotNewsArticleByTopic(topicId: string) {
 
 /** 确保选题下存在文章壳（不入队生成）。 */
 export function ensureHotNewsArticle(topicId: string) {
-  return fetch(
+  return apiFetch(
     `/api/hot-news/topics/${encodeURIComponent(topicId)}/ensure-article`,
     { method: "POST" },
   ).then((r) => read<HotNewsArticle>(r));
@@ -872,7 +872,7 @@ export function getHotNewsArticle(
   articleId: string,
   documentId?: string | null,
 ) {
-  return fetch(hotArticlesOrDocumentsPath(articleId, documentId, ""), {
+  return apiFetch(hotArticlesOrDocumentsPath(articleId, documentId, ""), {
     cache: "no-store",
   }).then((r) => read<HotNewsArticle>(r));
 }
@@ -888,7 +888,7 @@ export function saveHotNewsArticle(
   },
 ) {
   const { documentId, ...rest } = body;
-  return fetch(hotArticlesOrDocumentsPath(articleId, documentId, ""), {
+  return apiFetch(hotArticlesOrDocumentsPath(articleId, documentId, ""), {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(rest),
@@ -908,7 +908,7 @@ export function saveHotNewsArticleContent(
 ) {
   const { documentId, ...rest } = body;
   const resolved = resolveHotNewsDocumentId(articleId, documentId, contentType);
-  return fetch(hotArticlesOrDocumentsPath(articleId, resolved, "", contentType), {
+  return apiFetch(hotArticlesOrDocumentsPath(articleId, resolved, "", contentType), {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(rest),
@@ -925,7 +925,7 @@ export function updateHotNewsGenerationSettings(
 ) {
   const { documentId, ...rest } = body;
   const resolved = resolveHotNewsDocumentId(articleId, documentId);
-  return fetch(
+  return apiFetch(
     hotArticlesOrDocumentsPath(articleId, resolved, "/generation-settings"),
     {
       method: "PATCH",
@@ -956,7 +956,7 @@ export function critiqueHotNewsDraftOptimize(
   articleId: string,
   body?: { notes?: string | null },
 ) {
-  return fetch(
+  return apiFetch(
     `/api/hot-news/articles/${encodeURIComponent(articleId)}/optimize-critique`,
     {
       method: "POST",
@@ -971,7 +971,7 @@ export function startHotNewsArticleRewrite(
   articleId: string,
   body: { advice?: string | null; instruction?: string | null },
 ) {
-  return fetch(
+  return apiFetch(
     `/api/hot-news/articles/${encodeURIComponent(articleId)}/rewrite`,
     {
       method: "POST",
@@ -992,7 +992,7 @@ export function startHotNewsArticleGeneration(
 ) {
   const { documentId, ...rest } = body;
   const resolved = resolveHotNewsDocumentId(articleId, documentId);
-  return fetch(
+  return apiFetch(
     hotArticlesOrDocumentsPath(articleId, resolved, "/generation-runs"),
     {
       method: "POST",
@@ -1009,7 +1009,7 @@ export function listHotNewsArticleGenerationRuns(
   articleId: string,
   documentId?: string | null,
 ) {
-  return fetch(
+  return apiFetch(
     hotArticlesOrDocumentsPath(articleId, documentId, "/generation-runs"),
     { cache: "no-store" },
   ).then((r) => read<JobData[]>(r));
@@ -1019,7 +1019,7 @@ export function listHotNewsArticleVersions(
   articleId: string,
   documentId?: string | null,
 ) {
-  return fetch(
+  return apiFetch(
     hotArticlesOrDocumentsPath(articleId, documentId, "/versions"),
     { cache: "no-store" },
   ).then((r) => read<HotNewsArticleVersion[]>(r));
@@ -1034,7 +1034,7 @@ export function listHotNewsArticleImages(
     versionNo != null && Number.isFinite(versionNo) && versionNo > 0
       ? `?versionNo=${encodeURIComponent(String(versionNo))}`
       : "";
-  return fetch(`${path}${query}`, { cache: "no-store" }).then((r) =>
+  return apiFetch(`${path}${query}`, { cache: "no-store" }).then((r) =>
     read<HotNewsGeneratedImage[]>(r),
   );
 }
@@ -1043,7 +1043,7 @@ export async function runHotNewsAudit(
   documentId?: string | null,
 ) {
   const resolved = resolveHotNewsDocumentId(articleId, documentId);
-  const job = await fetch(`/api/hot-article-reviews`, {
+  const job = await apiFetch(`/api/hot-article-reviews`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -1057,14 +1057,14 @@ export async function runHotNewsAudit(
 }
 export function getHotNewsAudit(articleId: string, documentId?: string | null) {
   const resolved = resolveHotNewsDocumentId(articleId, documentId);
-  return fetch(
+  return apiFetch(
     `/api/documents/${encodeURIComponent(resolved)}/hot-reviews/latest`,
     { cache: "no-store" },
   ).then((r) => read<HotNewsAudit>(r));
 }
 
 export async function repairHotArticleReview(reviewId: string, issueIds: string[]) {
-  const job = await fetch(`/api/hot-article-reviews/${encodeURIComponent(reviewId)}/repair`, {
+  const job = await apiFetch(`/api/hot-article-reviews/${encodeURIComponent(reviewId)}/repair`, {
     method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify(issueIds),
   }).then((r) => read<JobData>(r));
@@ -1073,7 +1073,7 @@ export async function repairHotArticleReview(reviewId: string, issueIds: string[
 }
 
 export async function repairAllHotArticleReview(reviewId: string) {
-  const job = await fetch(`/api/hot-article-reviews/${encodeURIComponent(reviewId)}/repair-all`, {
+  const job = await apiFetch(`/api/hot-article-reviews/${encodeURIComponent(reviewId)}/repair-all`, {
     method: "POST",
   }).then((r) => read<JobData>(r));
   const completed = await waitForBackgroundJob(job.id);
@@ -1081,18 +1081,18 @@ export async function repairAllHotArticleReview(reviewId: string) {
 }
 
 export function acceptHotArticleRepair(candidateId: string) {
-  return fetch(`/api/hot-article-repairs/${encodeURIComponent(candidateId)}/accept`, {
+  return apiFetch(`/api/hot-article-repairs/${encodeURIComponent(candidateId)}/accept`, {
     method: "POST",
   }).then((r) => read<JobData>(r)).then((job) => waitForBackgroundJob(job.id));
 }
 
 export function rejectHotArticleRepair(candidateId: string) {
-  return fetch(`/api/hot-article-repairs/${encodeURIComponent(candidateId)}/reject`, {
+  return apiFetch(`/api/hot-article-repairs/${encodeURIComponent(candidateId)}/reject`, {
     method: "POST",
   }).then((r) => read<Record<string, unknown>>(r));
 }
 export function submitHotArticleReviewDecision(reviewId: string, status: "approved" | "rejected", comment: string) {
-  return fetch(`/api/hot-article-reviews/${encodeURIComponent(reviewId)}/decision`, {
+  return apiFetch(`/api/hot-article-reviews/${encodeURIComponent(reviewId)}/decision`, {
     method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ status, comment }),
   }).then((r) => read<Record<string, unknown>>(r));
@@ -1104,7 +1104,7 @@ export function submitHotNewsHumanReview(
   documentId?: string | null,
 ) {
   const resolved = resolveHotNewsDocumentId(articleId, documentId);
-  return fetch(
+  return apiFetch(
     hotArticlesOrDocumentsPath(articleId, resolved, "/human-review"),
     {
       method: "PUT",
@@ -1121,7 +1121,7 @@ export function getHotNewsHumanReview(
   articleId: string,
   documentId?: string | null,
 ) {
-  return fetch(
+  return apiFetch(
     hotArticlesOrDocumentsPath(articleId, documentId, "/human-review"),
     { cache: "no-store" },
   ).then((r) => read<HotNewsHumanReview>(r));
@@ -1132,7 +1132,7 @@ export function createHotNewsPublishingSnapshot(
   documentId?: string | null,
 ) {
   const resolved = resolveHotNewsDocumentId(articleId, documentId);
-  return fetch(
+  return apiFetch(
     hotArticlesOrDocumentsPath(articleId, resolved, "/publishing-snapshots"),
     {
       method: "POST",
@@ -1148,7 +1148,7 @@ export function listHotNewsPublishingSnapshots(
   articleId: string,
   documentId?: string | null,
 ) {
-  return fetch(
+  return apiFetch(
     hotArticlesOrDocumentsPath(articleId, documentId, "/publishing-snapshots"),
     { cache: "no-store" },
   ).then((r) => read<HotNewsPublishingSnapshot[]>(r));

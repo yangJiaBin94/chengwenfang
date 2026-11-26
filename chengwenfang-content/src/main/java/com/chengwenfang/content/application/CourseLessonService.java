@@ -4,6 +4,8 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.common.IdsUtil;
+import com.chengwenfang.identity.application.OwnerScopeQueryHelper;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.content.application.mode.CourseModeDefinition;
 import com.chengwenfang.content.domain.entity.ArticleEntity;
 import com.chengwenfang.content.domain.entity.CourseEntity;
@@ -53,6 +55,8 @@ public class CourseLessonService {
   private final ThemeVisibilityGuard visibility;
   /** 课程模式定义：默认产出组合。 */
   private final CourseModeDefinition courseMode;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * 列出指定主题下的课程，按系列 sortOrder 再按 lessonNo 排序。
@@ -69,6 +73,7 @@ public class CourseLessonService {
     if (themeId != null && !themeId.isBlank()) {
       seriesQuery.eq(CourseSeriesEntity::getThemeId, themeId);
     }
+    OwnerScopeQueryHelper.applyOwnerEquals(seriesQuery, ownerScope, CourseSeriesEntity::getOwnerUserId);
     Map<String, CourseSeriesEntity> seriesById = courseSeriesMapper.selectList(seriesQuery).stream()
         .collect(Collectors.toMap(CourseSeriesEntity::getId, Function.identity(), (existing, replacement) -> existing, LinkedHashMap::new));
     List<CourseEntity> courseRows = courseStore.listByThemeId(themeId);
@@ -112,8 +117,10 @@ public class CourseLessonService {
   public CourseView getCourse(String courseId) {
     CourseEntity course = support.requireCourse(courseId);
     visibility.assertThemeActiveForCourse(course);
-    // 全量系列映射，供系列名与排序展示
-    Map<String, CourseSeriesEntity> seriesById = courseSeriesMapper.selectList(null).stream()
+    // 按 owner 加载系列映射，供系列名与排序展示
+    LambdaQueryWrapper<CourseSeriesEntity> seriesQuery = new LambdaQueryWrapper<>();
+    OwnerScopeQueryHelper.applyOwnerEquals(seriesQuery, ownerScope, CourseSeriesEntity::getOwnerUserId);
+    Map<String, CourseSeriesEntity> seriesById = courseSeriesMapper.selectList(seriesQuery).stream()
         .collect(Collectors.toMap(CourseSeriesEntity::getId, Function.identity(), (existing, replacement) -> existing, LinkedHashMap::new));
     // 仅加载当前原稿与公众号文档投影，用于字数等摘要
     Map<String, ArticleEntity> articlesById = new HashMap<>();

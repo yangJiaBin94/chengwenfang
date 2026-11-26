@@ -18,6 +18,7 @@ import com.chengwenfang.content.infrastructure.mapper.CourseLessonMapper;
 import com.chengwenfang.content.infrastructure.mapper.CourseLessonOutcomeMapper;
 import com.chengwenfang.content.infrastructure.mapper.WorkGenerationSettingsMapper;
 import com.chengwenfang.content.infrastructure.mapper.WorkMapper;
+import com.chengwenfang.identity.facade.OwnerScope;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -46,6 +47,8 @@ public class CourseStore {
   private final WorkContentStoreImpl workContents;
   /** 课程模式定义：创建扩展行。 */
   private final CourseModeDefinition courseMode;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * @param workMapper     作品
@@ -54,6 +57,7 @@ public class CourseStore {
    * @param outcomeMapper  学习成果
    * @param workContents   产出正文与指针
    * @param courseMode     课程模式定义
+   * @param ownerScope     所属用户范围
    */
   public CourseStore(
       WorkMapper workMapper,
@@ -61,13 +65,15 @@ public class CourseStore {
       WorkGenerationSettingsMapper settingsMapper,
       CourseLessonOutcomeMapper outcomeMapper,
       WorkContentStoreImpl workContents,
-      CourseModeDefinition courseMode) {
+      CourseModeDefinition courseMode,
+      OwnerScope ownerScope) {
     this.workMapper = workMapper;
     this.lessonMapper = lessonMapper;
     this.settingsMapper = settingsMapper;
     this.outcomeMapper = outcomeMapper;
     this.workContents = workContents;
     this.courseMode = courseMode;
+    this.ownerScope = ownerScope;
   }
 
   /**
@@ -84,6 +90,7 @@ public class CourseStore {
     if (work == null) {
       return null;
     }
+    ownerScope.assertCanAccess(work.getOwnerUserId());
     CourseLessonEntity lesson = lessonMapper.selectById(workId);
     WorkGenerationSettingsEntity settings = settingsMapper.selectById(workId);
     return assemble(work, lesson, settings, true);
@@ -101,6 +108,7 @@ public class CourseStore {
     if (StrUtil.isNotBlank(themeId)) {
       query.eq(WorkEntity::getThemeId, themeId);
     }
+    applyOwnerFilter(query);
     List<WorkEntity> works = workMapper.selectList(query);
     return assembleAll(works, true);
   }
@@ -123,8 +131,9 @@ public class CourseStore {
       return List.of();
     }
     Set<String> workIds = lessons.stream().map(CourseLessonEntity::getWorkId).collect(Collectors.toSet());
-    Map<String, WorkEntity> worksById = workMapper.selectList(new LambdaQueryWrapper<WorkEntity>()
-            .in(WorkEntity::getId, workIds)).stream()
+    LambdaQueryWrapper<WorkEntity> workQuery = new LambdaQueryWrapper<WorkEntity>().in(WorkEntity::getId, workIds);
+    applyOwnerFilter(workQuery);
+    Map<String, WorkEntity> worksById = workMapper.selectList(workQuery).stream()
         .collect(Collectors.toMap(WorkEntity::getId, work -> work, (left, right) -> left, LinkedHashMap::new));
     Map<String, WorkGenerationSettingsEntity> settingsById = settingsMapper.selectList(
             new LambdaQueryWrapper<WorkGenerationSettingsEntity>()
@@ -152,9 +161,11 @@ public class CourseStore {
     if (StrUtil.isBlank(themeId)) {
       return 0L;
     }
-    Long count = workMapper.selectCount(new LambdaQueryWrapper<WorkEntity>()
+    LambdaQueryWrapper<WorkEntity> query = new LambdaQueryWrapper<WorkEntity>()
         .eq(WorkEntity::getModeCode, ContentModeIds.COURSE_SYSTEM_CODE)
-        .eq(WorkEntity::getThemeId, themeId));
+        .eq(WorkEntity::getThemeId, themeId);
+    applyOwnerFilter(query);
+    Long count = workMapper.selectCount(query);
     return count == null ? 0L : count;
   }
 
@@ -189,10 +200,12 @@ public class CourseStore {
     for (String themeId : ids) {
       counts.put(themeId, 0L);
     }
-    List<WorkEntity> works = workMapper.selectList(new LambdaQueryWrapper<WorkEntity>()
+    LambdaQueryWrapper<WorkEntity> query = new LambdaQueryWrapper<WorkEntity>()
         .eq(WorkEntity::getModeCode, ContentModeIds.COURSE_SYSTEM_CODE)
         .in(WorkEntity::getThemeId, ids)
-        .select(WorkEntity::getThemeId));
+        .select(WorkEntity::getThemeId);
+    applyOwnerFilter(query);
+    List<WorkEntity> works = workMapper.selectList(query);
     for (WorkEntity work : works) {
       if (work != null && StrUtil.isNotBlank(work.getThemeId())) {
         counts.merge(work.getThemeId(), 1L, Long::sum);
@@ -228,11 +241,13 @@ public class CourseStore {
     if (workIds.isEmpty()) {
       return counts;
     }
-    List<WorkEntity> works = workMapper.selectList(new LambdaQueryWrapper<WorkEntity>()
+    LambdaQueryWrapper<WorkEntity> workQuery = new LambdaQueryWrapper<WorkEntity>()
         .eq(WorkEntity::getModeCode, ContentModeIds.COURSE_SYSTEM_CODE)
         .in(WorkEntity::getThemeId, ids)
         .in(WorkEntity::getId, workIds)
-        .select(WorkEntity::getThemeId));
+        .select(WorkEntity::getThemeId);
+    applyOwnerFilter(workQuery);
+    List<WorkEntity> works = workMapper.selectList(workQuery);
     for (WorkEntity work : works) {
       if (work != null && StrUtil.isNotBlank(work.getThemeId())) {
         counts.merge(work.getThemeId(), 1L, Long::sum);
@@ -284,6 +299,7 @@ public class CourseStore {
     LocalDateTime now = course.getUpdatedAt() != null ? course.getUpdatedAt() : LocalDateTime.now();
     WorkEntity work = WorkEntity.builder()
         .id(course.getId())
+        .ownerUserId(ownerScope.effectiveOwnerUserId())
         .modeCode(courseMode.modeCode())
         .themeId(course.getThemeId())
         .title(StrUtil.blankToDefault(course.getTitle(), course.getId()))
@@ -331,6 +347,7 @@ public class CourseStore {
     if (work == null) {
       return;
     }
+    ownerScope.assertCanAccess(work.getOwnerUserId());
     work.setThemeId(course.getThemeId());
     work.setTitle(StrUtil.blankToDefault(course.getTitle(), work.getTitle()));
     work.setUpdatedAt(now);
@@ -530,6 +547,23 @@ public class CourseStore {
         .map(CourseLessonOutcomeEntity::getContent)
         .filter(StrUtil::isNotBlank)
         .toList();
+  }
+
+  /**
+   * 非管理员列表按当前用户过滤作品。
+   *
+   * @param query 作品查询
+   */
+  private void applyOwnerFilter(LambdaQueryWrapper<WorkEntity> query) {
+    if (ownerScope.currentUserIsAdmin()) {
+      return;
+    }
+    String ownerId = ownerScope.currentOwnerUserId().orElse(null);
+    if (StrUtil.isBlank(ownerId)) {
+      query.apply("1 = 0");
+      return;
+    }
+    query.eq(WorkEntity::getOwnerUserId, ownerId);
   }
 
   /**

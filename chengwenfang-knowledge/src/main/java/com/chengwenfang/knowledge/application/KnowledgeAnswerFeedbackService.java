@@ -6,14 +6,17 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.common.ErrorCodes;
 import com.chengwenfang.common.IdsUtil;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.knowledge.domain.entity.KnowledgeAnswerFeedbackEntity;
 import com.chengwenfang.knowledge.domain.entity.KnowledgeChatMessageEntity;
+import com.chengwenfang.knowledge.domain.entity.KnowledgeChatSessionEntity;
 import com.chengwenfang.knowledge.facade.dto.request.KnowledgeAnswerFeedbackRequest;
 import com.chengwenfang.knowledge.facade.dto.view.KnowledgeAnswerFeedbackView;
 import com.chengwenfang.knowledge.facade.enums.KnowledgeChatRole;
 import com.chengwenfang.knowledge.facade.enums.KnowledgeFeedbackRating;
 import com.chengwenfang.knowledge.infrastructure.mapper.KnowledgeAnswerFeedbackMapper;
 import com.chengwenfang.knowledge.infrastructure.mapper.KnowledgeChatMessageMapper;
+import com.chengwenfang.knowledge.infrastructure.mapper.KnowledgeChatSessionMapper;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -33,6 +36,10 @@ public class KnowledgeAnswerFeedbackService {
   private final KnowledgeAnswerFeedbackMapper feedbackMapper;
   /** 消息 Mapper。 */
   private final KnowledgeChatMessageMapper messageMapper;
+  /** 会话 Mapper。 */
+  private final KnowledgeChatSessionMapper sessionMapper;
+  /** 用户数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * 提交反馈。
@@ -55,8 +62,15 @@ public class KnowledgeAnswerFeedbackService {
     if (message == null || !KnowledgeChatRole.ASSISTANT.matches(message.getRoleKey())) {
       throw new BusinessException(ErrorCodes.INVALID_STATUS, "助手消息不存在", 404);
     }
+    // 经会话归属校验，避免跨用户对他人回答点赞踩
+    KnowledgeChatSessionEntity session = sessionMapper.selectById(message.getSessionId());
+    if (session == null) {
+      throw new BusinessException(ErrorCodes.KNOWLEDGE_SESSION_NOT_FOUND, "知识库会话不存在", 404);
+    }
+    ownerScope.assertCanAccess(session.getOwnerUserId());
     KnowledgeAnswerFeedbackEntity row = KnowledgeAnswerFeedbackEntity.builder()
         .id(IdsUtil.newId())
+        .ownerUserId(ownerScope.effectiveOwnerUserId())
         .messageId(messageId)
         .sessionId(message.getSessionId())
         .rating(rating.getValue())

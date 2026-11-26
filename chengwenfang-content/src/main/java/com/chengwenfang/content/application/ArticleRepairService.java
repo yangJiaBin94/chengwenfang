@@ -4,6 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.common.IdsUtil;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.content.domain.entity.ArticleEntity;
 import com.chengwenfang.content.domain.entity.MediaAssetEntity;
 import com.chengwenfang.content.domain.entity.RepairRunEntity;
@@ -41,6 +42,8 @@ public class ArticleRepairService {
   private final ThemeVisibilityGuard visibility;
   private final OutputContentSaveService contentSave;
   private final OutputVersionService versions;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * @param mediaAssetMapper    媒资 Mapper
@@ -60,7 +63,8 @@ public class ArticleRepairService {
       ContentEntityUtil support,
       ThemeVisibilityGuard visibility,
       OutputContentSaveService contentSave,
-      OutputVersionService versions) {
+      OutputVersionService versions,
+      OwnerScope ownerScope) {
     this.mediaAssetMapper = mediaAssetMapper;
     this.repairRunMapper = repairRunMapper;
     this.repairRunCodeStore = repairRunCodeStore;
@@ -69,6 +73,7 @@ public class ArticleRepairService {
     this.visibility = visibility;
     this.contentSave = contentSave;
     this.versions = versions;
+    this.ownerScope = ownerScope;
   }
 
   /**
@@ -258,6 +263,7 @@ public class ArticleRepairService {
     // 落 repair_runs 审计行（显式 documentId 优先作为 output_id）
     RepairRunEntity run = new RepairRunEntity();
     run.setId(IdsUtil.newId());
+    run.setOwnerUserId(ownerScope.effectiveOwnerUserId());
     run.setOutputId(resolvedDocumentId);
     run.setJobId(jobId);
     log.info("修复结果已落库 articleId={} outputId={} jobId={}",

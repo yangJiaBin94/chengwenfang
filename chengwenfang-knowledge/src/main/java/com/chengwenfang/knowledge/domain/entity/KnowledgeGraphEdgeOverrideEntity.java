@@ -19,6 +19,9 @@ public class KnowledgeGraphEdgeOverrideEntity {
   /** 主键。 */
   @TableId("id")
   private String id;
+  /** 所属用户 ID。 */
+  @TableField("owner_user_id")
+  private String ownerUserId;
   /** Neo4j 边业务 UID。 */
   @TableField("neo4j_edge_uid")
   private String neo4jEdgeUid;

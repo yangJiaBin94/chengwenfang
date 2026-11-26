@@ -5,7 +5,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.common.IdsUtil;
+import com.chengwenfang.content.facade.ContentFacade;
 import com.chengwenfang.content.facade.constant.OutputFormatCodes;
+import com.chengwenfang.content.facade.dto.WorkOutputRef;
 import com.chengwenfang.file.facade.FileFacade;
 import com.chengwenfang.file.facade.dto.view.StoredFileView;
 import com.chengwenfang.publishing.domain.entity.PublishingSnapshotEntity;
@@ -42,6 +44,8 @@ public class PublishingFacadeImpl implements PublishingFacade {
   private final ObjectMapper objectMapper;
   /** 产出渲染注册表。 */
   private final OutputRendererRegistry outputRenderers;
+  /** 内容门面（快照列表校验产出归属）。 */
+  private final ContentFacade content;
 
   /**
    * 注入主题服务、快照 Mapper、文件门面、ObjectMapper 与渲染注册表。
@@ -51,18 +55,21 @@ public class PublishingFacadeImpl implements PublishingFacade {
    * @param files           文件门面
    * @param objectMapper    JSON 读写
    * @param outputRenderers 产出渲染注册表
+   * @param content         内容门面
    */
   public PublishingFacadeImpl(
       LayoutThemeService layoutThemes,
       PublishingSnapshotMapper snapshotMapper,
       FileFacade files,
       ObjectMapper objectMapper,
-      OutputRendererRegistry outputRenderers) {
+      OutputRendererRegistry outputRenderers,
+      ContentFacade content) {
     this.layoutThemes = layoutThemes;
     this.snapshotMapper = snapshotMapper;
     this.files = files;
     this.objectMapper = objectMapper;
     this.outputRenderers = outputRenderers;
+    this.content = content;
   }
 
   /**
@@ -130,6 +137,12 @@ public class PublishingFacadeImpl implements PublishingFacade {
     if (StrUtil.isBlank(outputId)) {
       throw new BusinessException("output_not_found", "缺少产出 ID，无法创建发布快照", 400);
     }
+    // 断言产出归属，避免 body.documentId 指向他人作品
+    WorkOutputRef outputRef = content.findOutputRef(outputId);
+    if (outputRef == null) {
+      throw new BusinessException("output_not_found", "产出不存在，无法创建发布快照", 404);
+    }
+    outputId = outputRef.getOutputId();
     String themeVersionId = input.getThemeVersionId() == null ? "" : input.getThemeVersionId();
     int versionNo = input.getArticleVersionNo() == null ? 1 : input.getArticleVersionNo();
     // 先渲染拿到 html / 哈希
@@ -177,6 +190,11 @@ public class PublishingFacadeImpl implements PublishingFacade {
   @Override
   public List<PublishingSnapshotView> listSnapshots(String articleId, String documentId) {
     if (StrUtil.isBlank(documentId)) {
+      return List.of();
+    }
+    // 经产出反查作品并断言归属，避免仅凭 outputId 读他人 HTML
+    WorkOutputRef ref = content.findOutputRef(documentId.trim());
+    if (ref == null) {
       return List.of();
     }
     return snapshotMapper.selectList(new LambdaQueryWrapper<PublishingSnapshotEntity>()

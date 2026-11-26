@@ -3,6 +3,7 @@ package com.chengwenfang.content.application;
 import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.common.ErrorCodes;
 import com.chengwenfang.common.IdsUtil;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.content.domain.entity.ContentThemeEntity;
 import com.chengwenfang.content.domain.entity.CourseEntity;
 import com.chengwenfang.content.domain.entity.CourseSeriesEntity;
@@ -45,6 +46,8 @@ public class CurriculumCommitService {
   private final ThemeDefaultsBuilder defaultsBuilder;
   /** 课程壳（建壳）。 */
   private final CourseShellService shell;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * @param themeMapper       主题表
@@ -56,6 +59,7 @@ public class CurriculumCommitService {
    * @param drafts            草案服务
    * @param defaultsBuilder   默认偏好
    * @param shell             课程壳（懒加载避免环）
+   * @param ownerScope        用户级数据范围
    */
   public CurriculumCommitService(
       ContentThemeMapper themeMapper,
@@ -66,7 +70,8 @@ public class CurriculumCommitService {
       ThemeLifecycleService lifecycle,
       CurriculumDraftService drafts,
       ThemeDefaultsBuilder defaultsBuilder,
-      @Lazy CourseShellService shell) {
+      @Lazy CourseShellService shell,
+      OwnerScope ownerScope) {
     this.themeMapper = themeMapper;
     this.profileStore = profileStore;
     this.curriculumStore = curriculumStore;
@@ -76,6 +81,7 @@ public class CurriculumCommitService {
     this.drafts = drafts;
     this.defaultsBuilder = defaultsBuilder;
     this.shell = shell;
+    this.ownerScope = ownerScope;
   }
 
   /**
@@ -106,6 +112,7 @@ public class CurriculumCommitService {
       series.setThemeId(theme.getId());
       series.setName(seriesDraft.getName().trim());
       series.setSortOrder(seriesDraft.getSortOrder());
+      series.setOwnerUserId(ownerScope.effectiveOwnerUserId());
       series.setCreatedAt(now);
       series.setUpdatedAt(now);
       courseSeriesMapper.insert(series);

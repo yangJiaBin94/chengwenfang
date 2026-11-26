@@ -1,5 +1,7 @@
+import { withAuthQueryInHtml } from "../../shared/api/http";
+
 /**
- * 为 srcDoc iframe 注入 base，使 /api/images 等相对路径按当前站点解析。
+ * 为 srcDoc iframe 注入 base，并使 /api/images|/api/files 带上 satoken。
  *
  * @param html 渲染后的正文 HTML 片段或文档
  * @param origin 站点 origin，默认取 window.location.origin
@@ -8,7 +10,7 @@ export function withPublishingPreviewBase(
   html: string,
   origin: string = typeof window !== "undefined" ? window.location.origin : "",
 ): string {
-  const body = String(html || "").trim() || "<p></p>";
+  const body = withAuthQueryInHtml(String(html || "").trim() || "<p></p>");
   const base = String(origin || "").replace(/\/$/, "");
   if (!base) {
     return body;

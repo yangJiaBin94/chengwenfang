@@ -21,6 +21,9 @@ public class JobEntity {
   /** 主键 ID。 */
   @TableId("id")
   private String id;
+  /** 所属用户 ID。 */
+  @TableField("owner_user_id")
+  private String ownerUserId;
   /** 任务类型，见 {@link JobTypes}。 */
   @TableField("job_type")
   private String jobType;

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.chengwenfang.common.BusinessException;
+import com.chengwenfang.content.facade.constant.HotNewsScoringRubricKeys;
 import com.chengwenfang.content.facade.dto.view.ScoringRubricDimensionView;
 import com.chengwenfang.content.facade.dto.view.ScoringRubricView;
 import java.util.LinkedHashMap;
@@ -49,6 +50,43 @@ class ScoringRubricSupportTest {
     assertThat(loaded).isNotNull();
     assertThat(loaded.getDimensions()).hasSize(3);
     assertThat(loaded.getDimensions().get(0).getKey()).isEqualTo("theme_fit");
+  }
+
+  @Test
+  void ensureAudienceHook_injectsFixedDimWithLargestWeight() {
+    ScoringRubricView ensured = ScoringRubricSupport.ensureAudienceHook(sampleRubric());
+    assertThat(ensured.getDimensions().get(0).getKey())
+        .isEqualTo(HotNewsScoringRubricKeys.AUDIENCE_HOOK);
+    int hookWeight = ensured.getDimensions().get(0).getWeight();
+    assertThat(hookWeight).isGreaterThanOrEqualTo(HotNewsScoringRubricKeys.AUDIENCE_HOOK_WEIGHT);
+    int sum = 0;
+    for (ScoringRubricDimensionView dim : ensured.getDimensions()) {
+      sum += dim.getWeight();
+      if (!HotNewsScoringRubricKeys.AUDIENCE_HOOK.equals(dim.getKey())) {
+        assertThat(dim.getWeight()).isLessThanOrEqualTo(hookWeight);
+      }
+    }
+    assertThat(sum).isEqualTo(100);
+    ScoringRubricSupport.assertValid(ensured);
+  }
+
+  @Test
+  void ensureAudienceHook_dropsLowestWhenFull() {
+    ScoringRubricView full = ScoringRubricView.builder()
+        .version(1)
+        .dimensions(List.of(
+            dim("dim_a", "A", "a", 20),
+            dim("dim_b", "B", "b", 20),
+            dim("dim_c", "C", "c", 15),
+            dim("dim_d", "D", "d", 15),
+            dim("dim_e", "E", "e", 15),
+            dim("dim_f", "F", "f", 15)))
+        .build();
+    ScoringRubricView ensured = ScoringRubricSupport.ensureAudienceHook(full);
+    assertThat(ensured.getDimensions()).hasSizeLessThanOrEqualTo(6);
+    assertThat(ensured.getDimensions().get(0).getKey())
+        .isEqualTo(HotNewsScoringRubricKeys.AUDIENCE_HOOK);
+    ScoringRubricSupport.assertValid(ensured);
   }
 
   private static ScoringRubricView sampleRubric() {

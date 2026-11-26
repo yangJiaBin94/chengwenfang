@@ -7,6 +7,8 @@ import com.chengwenfang.common.IdsUtil;
 import com.chengwenfang.common.ThemeTitleRelevance;
 import com.chengwenfang.crawler.facade.MarketingPageFilter;
 import com.chengwenfang.crawler.facade.PublishTimeUtil;
+import com.chengwenfang.identity.application.OwnerScopeQueryHelper;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.mode.hotnews.domain.ChineseTextNormalizer;
 import com.chengwenfang.mode.hotnews.domain.TopicMathUtil;
 import com.chengwenfang.mode.hotnews.domain.TopicScoreDetails;
@@ -50,6 +52,8 @@ public class HotNewsTopicAggregateService {
   private final SourceItemMapper itemMapper;
   private final TopicScoreDetailsStore scoreDetailsStore;
   private final HotNewsTopicService topics;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * @param topicMapper         选题簇 Mapper
@@ -57,18 +61,21 @@ public class HotNewsTopicAggregateService {
    * @param itemMapper          信源条目 Mapper
    * @param scoreDetailsStore   评分明细存储
    * @param topics              选题查询（@Lazy 破环）；用于主题相关性画像
+   * @param ownerScope          用户级数据范围
    */
   public HotNewsTopicAggregateService(
       TopicClusterMapper topicMapper,
       TopicSourceMapper topicSourceMapper,
       SourceItemMapper itemMapper,
       TopicScoreDetailsStore scoreDetailsStore,
-      @Lazy HotNewsTopicService topics) {
+      @Lazy HotNewsTopicService topics,
+      OwnerScope ownerScope) {
     this.topicMapper = topicMapper;
     this.topicSourceMapper = topicSourceMapper;
     this.itemMapper = itemMapper;
     this.scoreDetailsStore = scoreDetailsStore;
     this.topics = topics;
+    this.ownerScope = ownerScope;
   }
 
   /**
@@ -80,15 +87,18 @@ public class HotNewsTopicAggregateService {
   public int aggregateTopics(String themeId) {
     // 只看近 7 日条目与近期仍活跃的选题
     LocalDateTime cutoff = LocalDateTime.now().minus(7, ChronoUnit.DAYS);
-    List<SourceItemEntity> items = itemMapper.selectList(new LambdaQueryWrapper<SourceItemEntity>()
+    LambdaQueryWrapper<SourceItemEntity> itemQuery = new LambdaQueryWrapper<SourceItemEntity>()
         .eq(SourceItemEntity::getThemeId, themeId)
-        .ge(SourceItemEntity::getCreatedAt, cutoff)
+        .ge(SourceItemEntity::getCreatedAt, cutoff);
+    OwnerScopeQueryHelper.applyOwnerEquals(itemQuery, ownerScope, SourceItemEntity::getOwnerUserId);
+    List<SourceItemEntity> items = itemMapper.selectList(itemQuery
         .orderByDesc(SourceItemEntity::getPublishedAt)
         .orderByDesc(SourceItemEntity::getCreatedAt));
-    List<TopicClusterEntity> clusters = new ArrayList<>(topicMapper.selectList(
-        new LambdaQueryWrapper<TopicClusterEntity>()
-            .eq(TopicClusterEntity::getThemeId, themeId)
-            .ge(TopicClusterEntity::getLastSeenAt, cutoff)));
+    LambdaQueryWrapper<TopicClusterEntity> clusterQuery = new LambdaQueryWrapper<TopicClusterEntity>()
+        .eq(TopicClusterEntity::getThemeId, themeId)
+        .ge(TopicClusterEntity::getLastSeenAt, cutoff);
+    OwnerScopeQueryHelper.applyOwnerEquals(clusterQuery, ownerScope, TopicClusterEntity::getOwnerUserId);
+    List<TopicClusterEntity> clusters = new ArrayList<>(topicMapper.selectList(clusterQuery));
 
     // 标题相似则并入已有选题，否则新建聚类（跳过厂商官网/产品页；发布年龄与有无日期不硬拒）
     for (SourceItemEntity item : items) {
@@ -132,6 +142,7 @@ public class HotNewsTopicAggregateService {
         match.setWritingScore(0);
         match.setConfidenceScore(0);
         match.setScoreReason("");
+        match.setOwnerUserId(ownerScope.effectiveOwnerUserId());
         match.setFirstSeenAt(seenAt == null ? now : seenAt);
         match.setLastSeenAt(seenAt == null ? now : seenAt);
         match.setCreatedAt(now);
@@ -465,6 +476,9 @@ public class HotNewsTopicAggregateService {
       mergedDetails.setRubricSnapshot(previousDetails.getRubricSnapshot());
       mergedDetails.setRecommendUse(previousDetails.getRecommendUse());
       mergedDetails.setRiskNote(previousDetails.getRiskNote());
+      if (StrUtil.isNotBlank(previousDetails.getMaterialKind())) {
+        mergedDetails.setMaterialKind(previousDetails.getMaterialKind());
+      }
       if (StrUtil.isNotBlank(previousDetails.getOriginKind())) {
         mergedDetails.setOriginKind(previousDetails.getOriginKind());
       }

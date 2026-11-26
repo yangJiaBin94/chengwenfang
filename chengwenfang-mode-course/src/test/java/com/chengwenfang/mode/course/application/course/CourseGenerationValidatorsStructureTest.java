@@ -17,6 +17,7 @@ class CourseGenerationValidatorsStructureTest {
           new KnowledgeRulesEngine(),
           new HotArticleReviewEngine(),
           null,
+          null,
           null));
 
   @Test

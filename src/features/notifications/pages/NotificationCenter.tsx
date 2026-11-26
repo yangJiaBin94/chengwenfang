@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   ArrowRight,
@@ -21,7 +21,7 @@ import {
   withDocumentIdQuery,
 } from "../../hotnews/api";
 import { loadJob } from "../../../shared/api/jobs";
-import { unwrapApiResult } from "../../../shared/api/http";
+import { apiFetch, unwrapApiResult } from "../../../shared/api/http";
 import { formatNotificationRelativeTime } from "../../../shared/format/time";
 import { usePolling } from "../../../shared/hooks/usePolling";
 import {
@@ -154,7 +154,7 @@ async function resolveThemePathKeyForCourse(
     return fromMeta;
   }
   try {
-    const response = await fetch(`/api/courses/${encodeURIComponent(courseId)}`, {
+    const response = await apiFetch(`/api/courses/${encodeURIComponent(courseId)}`, {
       cache: "no-store",
     });
     const course = await unwrapApiResult<{ themeId?: string | null }>(response);

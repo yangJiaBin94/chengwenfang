@@ -213,14 +213,7 @@ public final class TopicMathUtil {
   static List<String> inferSourceTypes(List<SourceEvidence> sources) {
     Set<String> types = new LinkedHashSet<>();
     for (SourceEvidence source : sources) {
-      String host = hostOf(source.url());
-      if (host.contains(InferredSourceKind.GITHUB.getValue())) {
-        types.add(InferredSourceKind.GITHUB.getValue());
-      } else if (host.contains(InferredSourceKind.ARXIV.getValue())) {
-        types.add(InferredSourceKind.ARXIV.getValue());
-      } else {
-        types.add(InferredSourceKind.WEB.getValue());
-      }
+      types.add(InferredSourceKind.fromHost(hostOf(source.url())).getValue());
     }
     return new ArrayList<>(types);
   }

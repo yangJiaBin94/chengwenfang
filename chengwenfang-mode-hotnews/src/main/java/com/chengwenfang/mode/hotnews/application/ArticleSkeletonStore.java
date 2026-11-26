@@ -5,6 +5,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.chengwenfang.common.IdsUtil;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.file.facade.FileFacade;
 import com.chengwenfang.file.facade.dto.view.StoredFileView;
 import com.chengwenfang.mode.hotnews.domain.entity.HotnewsArticleSkeletonEntity;
@@ -35,6 +36,8 @@ public class ArticleSkeletonStore {
   private final HotnewsArticleSkeletonItemMapper itemMapper;
   private final FileFacade files;
   private final HotNewsCodec codec;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * 读取骨架视图；无行返回 null。
@@ -47,6 +50,9 @@ public class ArticleSkeletonStore {
       return null;
     }
     HotnewsArticleSkeletonEntity row = skeletonMapper.selectById(topicId);
+    if (row != null) {
+      ownerScope.assertCanAccess(row.getOwnerUserId());
+    }
     if (row == null) {
       return null;
     }
@@ -147,6 +153,7 @@ public class ArticleSkeletonStore {
     LocalDateTime now = LocalDateTime.now();
     HotnewsArticleSkeletonEntity row = HotnewsArticleSkeletonEntity.builder()
         .topicId(topicId)
+        .ownerUserId(ownerScope.effectiveOwnerUserId())
         .rawFileId(stored.getId())
         .workingTitle(skeleton.getWorkingTitle())
         .scope(skeleton.getScope())

@@ -12,6 +12,7 @@ import com.chengwenfang.content.infrastructure.mapper.ContentThemeMapper;
 import com.chengwenfang.content.infrastructure.mapper.MediaAssetMapper;
 import com.chengwenfang.content.infrastructure.mapper.WorkMapper;
 import com.chengwenfang.content.infrastructure.mapper.WorkOutputMapper;
+import com.chengwenfang.identity.facade.OwnerScope;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -19,7 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
- * 已软删主题的下游展示闸门：路线、课程与文章读/写均据此拦截。
+ * 已软删主题的下游展示闸门：路线、课程与文章读/写均据此拦截；并校验作品归属。
  */
 @Component
 @RequiredArgsConstructor
@@ -29,6 +30,7 @@ public class ThemeVisibilityGuard {
   private final WorkMapper workMapper;
   private final WorkOutputMapper workOutputMapper;
   private final MediaAssetMapper mediaAssetMapper;
+  private final OwnerScope ownerScope;
 
   /**
    * 主题已软删时抛 404。
@@ -81,6 +83,7 @@ public class ThemeVisibilityGuard {
     }
     WorkEntity work = workMapper.selectById(courseId);
     if (work != null) {
+      ownerScope.assertCanAccess(work.getOwnerUserId());
       assertThemeActiveById(work.getThemeId());
     }
   }
@@ -101,6 +104,7 @@ public class ThemeVisibilityGuard {
     }
     WorkEntity work = workMapper.selectById(articleId);
     if (work != null) {
+      ownerScope.assertCanAccess(work.getOwnerUserId());
       assertThemeActiveById(work.getThemeId());
     }
   }

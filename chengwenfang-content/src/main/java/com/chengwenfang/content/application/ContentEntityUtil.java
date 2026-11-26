@@ -9,13 +9,16 @@ import com.chengwenfang.content.domain.entity.ArticleEntity;
 import com.chengwenfang.content.domain.entity.CourseEntity;
 import com.chengwenfang.content.domain.entity.CourseOutputSourceEntity;
 import com.chengwenfang.content.domain.entity.MediaAssetEntity;
+import com.chengwenfang.content.domain.entity.WorkEntity;
 import com.chengwenfang.content.domain.entity.WorkOutputEntity;
 import com.chengwenfang.content.facade.constant.ChannelCodes;
 import com.chengwenfang.content.facade.dto.view.CourseMediaView;
 import com.chengwenfang.content.facade.enums.ArticleKind;
 import com.chengwenfang.content.infrastructure.mapper.CourseOutputSourceMapper;
 import com.chengwenfang.content.infrastructure.mapper.MediaAssetMapper;
+import com.chengwenfang.content.infrastructure.mapper.WorkMapper;
 import com.chengwenfang.content.infrastructure.mapper.WorkOutputMapper;
+import com.chengwenfang.identity.facade.OwnerScope;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.HexFormat;
@@ -29,28 +32,36 @@ import org.springframework.stereotype.Service;
 @Service
 public class ContentEntityUtil {
   private final CourseStore courseStore;
+  private final WorkMapper workMapper;
   private final WorkOutputMapper workOutputMapper;
   private final CourseOutputSourceMapper courseOutputSourceMapper;
   private final MediaAssetMapper mediaAssetMapper;
+  private final OwnerScope ownerScope;
   private final JacksonJsonSupport json;
 
   /**
    * @param courseStore              课程作品存储
+   * @param workMapper               作品表
    * @param workOutputMapper         作品产出
    * @param courseOutputSourceMapper 课程同步来源
    * @param mediaAssetMapper         媒体资产
+   * @param ownerScope               所属用户范围
    * @param objectMapper             JSON
    */
   public ContentEntityUtil(
       CourseStore courseStore,
+      WorkMapper workMapper,
       WorkOutputMapper workOutputMapper,
       CourseOutputSourceMapper courseOutputSourceMapper,
       MediaAssetMapper mediaAssetMapper,
+      OwnerScope ownerScope,
       ObjectMapper objectMapper) {
     this.courseStore = courseStore;
+    this.workMapper = workMapper;
     this.workOutputMapper = workOutputMapper;
     this.courseOutputSourceMapper = courseOutputSourceMapper;
     this.mediaAssetMapper = mediaAssetMapper;
+    this.ownerScope = ownerScope;
     this.json = new JacksonJsonSupport(objectMapper);
   }
 
@@ -81,6 +92,14 @@ public class ContentEntityUtil {
     ArticleEntity article = findArticleOrNull(articleId);
     if (article == null) {
       throw new BusinessException(ErrorCodes.ARTICLE_NOT_FOUND, "文章不存在", 404);
+    }
+    // 产出挂在 works 上：校验作品归属，避免仅靠调用方守卫
+    if (StrUtil.isNotBlank(article.getCourseId())) {
+      WorkEntity work = workMapper.selectById(article.getCourseId());
+      if (work == null) {
+        throw new BusinessException(ErrorCodes.ARTICLE_NOT_FOUND, "文章不存在", 404);
+      }
+      ownerScope.assertCanAccess(work.getOwnerUserId());
     }
     return article;
   }
@@ -174,6 +193,7 @@ public class ContentEntityUtil {
     if (media == null) {
       throw new BusinessException("media_not_found", "媒资不存在", 404);
     }
+    ownerScope.assertCanAccess(media.getOwnerUserId());
     return media;
   }
 

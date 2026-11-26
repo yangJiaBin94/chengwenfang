@@ -1,4 +1,4 @@
-// @ts-nocheck
+﻿// @ts-nocheck
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   loadAiSettingsFromDatabase,
@@ -37,7 +37,7 @@ import type {
 import { requestContentGeneration } from "../../features/course/api";
 import { requestCourseContentGeneration } from "../../features/course/api";
 import { setCoursePublished } from "../../features/course/api";
-import { unwrapApiResult } from "../../shared/api/http";
+import { apiFetch, unwrapApiResult } from "../../shared/api/http";
 import {
   loadJob,
   loadJobArticleVersions,
@@ -393,7 +393,7 @@ export function useChengwenfangPart6(s: Record<string, any>) {
       "ai_self_study_zero";
     try {
       const course = await unwrapApiResult<{ themeId?: string | null }>(
-        await fetch(`/api/courses/${encodeURIComponent(job.entityId)}`, {
+        await apiFetch(`/api/courses/${encodeURIComponent(job.entityId)}`, {
           cache: "no-store",
         }),
       );

@@ -12,6 +12,10 @@ export const DOMAIN_OPTIONS = [
 export const MIN_RUBRIC_DIMS = 3;
 /** 评分维度数量上限。 */
 export const MAX_RUBRIC_DIMS = 6;
+/** 热点固定「打开欲」维度键（与后端 HotNewsScoringRubricKeys 对齐）。 */
+export const AUDIENCE_HOOK_KEY = "audience_hook";
+/** 打开欲维度最低权重。 */
+export const AUDIENCE_HOOK_MIN_WEIGHT = 30;
 /** 单条搜索词最大字符数；与后端 SearchQueryNormalizer 对齐。 */
 export const MAX_SEARCH_QUERY_CHARS = 64;
 /** 单次配置最多保留的搜索词条数。 */

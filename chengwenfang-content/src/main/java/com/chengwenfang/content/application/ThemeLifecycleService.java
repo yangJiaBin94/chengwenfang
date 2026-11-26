@@ -27,6 +27,8 @@ import com.chengwenfang.content.infrastructure.assembler.CourseViewAssembler;
 import com.chengwenfang.content.infrastructure.mapper.ContentModeMapper;
 import com.chengwenfang.content.infrastructure.mapper.ContentThemeMapper;
 import com.chengwenfang.content.infrastructure.mapper.CourseSeriesMapper;
+import com.chengwenfang.identity.application.OwnerScopeQueryHelper;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.job.facade.JobFacade;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -75,6 +77,8 @@ public class ThemeLifecycleService {
   private final ContentThemeViewAssembler themeViews;
   /** 主题可见性守卫。 */
   private final ThemeVisibilityGuard visibility;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * 列出模式（DB）；课程体系主题来自 content_themes。
@@ -91,7 +95,7 @@ public class ThemeLifecycleService {
     }
     List<String> modeCodes = modes.stream().map(ContentModeEntity::getCode).toList();
     // 一次查出全部可见主题，再按模式分组组装（计数批量）
-    List<ContentThemeEntity> visible = themeMapper.selectList(new LambdaQueryWrapper<ContentThemeEntity>()
+    LambdaQueryWrapper<ContentThemeEntity> visibleQuery = new LambdaQueryWrapper<ContentThemeEntity>()
         .in(ContentThemeEntity::getModeCode, modeCodes)
         .isNull(ContentThemeEntity::getDeletedAt)
         .in(ContentThemeEntity::getStatus,
@@ -99,7 +103,9 @@ public class ThemeLifecycleService {
             ContentThemeStatus.READY_FOR_REVIEW.getValue(),
             ContentThemeStatus.ENABLED.getValue())
         .orderByAsc(ContentThemeEntity::getSortOrder)
-        .orderByAsc(ContentThemeEntity::getCreatedAt));
+        .orderByAsc(ContentThemeEntity::getCreatedAt);
+    applyOwnerFilter(visibleQuery);
+    List<ContentThemeEntity> visible = themeMapper.selectList(visibleQuery);
     return themeViews.toModeViews(modes, visible);
   }
 
@@ -131,6 +137,7 @@ public class ThemeLifecycleService {
     } else {
       query.isNull(ContentThemeEntity::getDeletedAt);
     }
+    applyOwnerFilter(query);
     return themeMapper.selectList(query).stream().map(theme -> toThemeView(theme, mode)).toList();
   }
 
@@ -184,6 +191,7 @@ public class ThemeLifecycleService {
     briefing.put("naming", naming);
     ContentThemeEntity theme = ContentThemeEntity.builder()
         .id(themeId)
+        .ownerUserId(ownerScope.effectiveOwnerUserId())
         .modeCode(mode.getCode())
         .code(normalizedCode)
         .name(name)
@@ -240,6 +248,7 @@ public class ThemeLifecycleService {
 
     ContentThemeEntity theme = ContentThemeEntity.builder()
         .id("theme-" + IdsUtil.newId().replace("-", "").substring(0, 16))
+        .ownerUserId(ownerScope.effectiveOwnerUserId())
         .modeCode(mode.getCode())
         .code(code)
         .name(name)
@@ -348,9 +357,11 @@ public class ThemeLifecycleService {
    */
   public ThemeRouteView getRoute(String themeId) {
     ContentThemeEntity theme = requireActiveTheme(themeId);
-    List<CourseSeriesEntity> seriesList = courseSeriesMapper.selectList(new LambdaQueryWrapper<CourseSeriesEntity>()
-        .eq(CourseSeriesEntity::getThemeId, theme.getId())
-        .orderByAsc(CourseSeriesEntity::getSortOrder));
+    LambdaQueryWrapper<CourseSeriesEntity> routeSeriesQuery = new LambdaQueryWrapper<CourseSeriesEntity>()
+        .eq(CourseSeriesEntity::getThemeId, theme.getId());
+    OwnerScopeQueryHelper.applyOwnerEquals(routeSeriesQuery, ownerScope, CourseSeriesEntity::getOwnerUserId);
+    List<CourseSeriesEntity> seriesList = courseSeriesMapper.selectList(
+        routeSeriesQuery.orderByAsc(CourseSeriesEntity::getSortOrder));
     Map<String, CourseSeriesEntity> seriesById = seriesList.stream()
         .collect(Collectors.toMap(CourseSeriesEntity::getId, Function.identity(), (a, b) -> a, LinkedHashMap::new));
     List<ThemeRouteSeriesView> blocks = new ArrayList<>();
@@ -403,9 +414,10 @@ public class ThemeLifecycleService {
    */
   public List<CourseSeriesView> listSeries(String themeId) {
     ContentThemeEntity theme = requireActiveTheme(themeId);
-    List<CourseSeriesEntity> seriesRows = courseSeriesMapper.selectList(new LambdaQueryWrapper<CourseSeriesEntity>()
-        .eq(CourseSeriesEntity::getThemeId, theme.getId())
-        .orderByAsc(CourseSeriesEntity::getSortOrder));
+    LambdaQueryWrapper<CourseSeriesEntity> seriesQuery = new LambdaQueryWrapper<CourseSeriesEntity>()
+        .eq(CourseSeriesEntity::getThemeId, theme.getId());
+    OwnerScopeQueryHelper.applyOwnerEquals(seriesQuery, ownerScope, CourseSeriesEntity::getOwnerUserId);
+    List<CourseSeriesEntity> seriesRows = courseSeriesMapper.selectList(seriesQuery.orderByAsc(CourseSeriesEntity::getSortOrder));
     List<CourseSeriesView> result = new ArrayList<>();
     for (CourseSeriesEntity s : seriesRows) {
       long count = courseStore.countBySeriesId(s.getId());
@@ -460,26 +472,50 @@ public class ThemeLifecycleService {
     }
     ContentThemeEntity byId = themeMapper.selectById(themeId);
     if (byId != null) {
+      ownerScope.assertCanAccess(byId.getOwnerUserId());
       return byId;
     }
     // code 或 slug（下划线/连字符）
     String code = themeId.replace('-', '_');
-    ContentThemeEntity byCode = themeMapper.selectOne(new LambdaQueryWrapper<ContentThemeEntity>()
+    LambdaQueryWrapper<ContentThemeEntity> byCodeQuery = new LambdaQueryWrapper<ContentThemeEntity>()
         .eq(ContentThemeEntity::getCode, code)
-        .last("LIMIT 1"));
+        .last("LIMIT 1");
+    applyOwnerFilter(byCodeQuery);
+    ContentThemeEntity byCode = themeMapper.selectOne(byCodeQuery);
     if (byCode != null) {
+      ownerScope.assertCanAccess(byCode.getOwnerUserId());
       return byCode;
     }
     String hyphenCode = themeId.replace('_', '-');
-    List<ContentThemeEntity> all = themeMapper.selectList(null);
-    for (ContentThemeEntity t : all) {
-      if (themeId.equals(t.getCode()) || themeId.equals(t.getId())
-          || hyphenCode.equals(t.getCode().replace('_', '-'))
-          || code.equals(t.getCode())) {
-        return t;
+    LambdaQueryWrapper<ContentThemeEntity> allQuery = new LambdaQueryWrapper<>();
+    applyOwnerFilter(allQuery);
+    List<ContentThemeEntity> all = themeMapper.selectList(allQuery);
+    for (ContentThemeEntity theme : all) {
+      if (themeId.equals(theme.getCode()) || themeId.equals(theme.getId())
+          || hyphenCode.equals(theme.getCode().replace('_', '-'))
+          || code.equals(theme.getCode())) {
+        ownerScope.assertCanAccess(theme.getOwnerUserId());
+        return theme;
       }
     }
     throw new BusinessException(ErrorCodes.THEME_NOT_FOUND, "主题不存在: " + themeId, 404);
+  }
+
+  /**
+   * 非管理员列表按当前用户过滤。
+   *
+   * @param query 主题查询
+   */
+  private void applyOwnerFilter(LambdaQueryWrapper<ContentThemeEntity> query) {
+    if (ownerScope.currentUserIsAdmin()) {
+      return;
+    }
+    String ownerId = ownerScope.currentOwnerUserId().orElse(null);
+    if (StrUtil.isBlank(ownerId)) {
+      query.apply("1 = 0");
+      return;
+    }
+    query.eq(ContentThemeEntity::getOwnerUserId, ownerId);
   }
 
   /**

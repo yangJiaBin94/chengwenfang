@@ -18,6 +18,9 @@ import lombok.NoArgsConstructor;
 public class HotnewsArticleSkeletonEntity {
   @TableId("topic_id")
   private String topicId;
+  /** 所属用户。 */
+  @TableField("owner_user_id")
+  private String ownerUserId;
   @TableField("raw_file_id")
   private String rawFileId;
   @TableField("working_title")

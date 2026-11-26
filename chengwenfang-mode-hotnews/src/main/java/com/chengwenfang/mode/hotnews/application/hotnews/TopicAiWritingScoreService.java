@@ -13,20 +13,26 @@ import com.chengwenfang.ai.facade.dto.view.VisionCompleteResult;
 import com.chengwenfang.content.facade.ContentFacade;
 import com.chengwenfang.content.facade.HotNewsThemeBriefingSupport;
 import com.chengwenfang.content.facade.ScoringRubricSupport;
+import com.chengwenfang.content.facade.constant.HotNewsScoringRubricKeys;
 import com.chengwenfang.content.facade.dto.view.ContentThemeView;
 import com.chengwenfang.content.facade.dto.view.ScoringRubricDimensionView;
 import com.chengwenfang.content.facade.dto.view.ScoringRubricView;
+import com.chengwenfang.identity.facade.OwnerContext;
+import com.chengwenfang.mode.hotnews.domain.ResearchContentClassifier;
 import com.chengwenfang.mode.hotnews.domain.TopicDimensionScore;
 import com.chengwenfang.mode.hotnews.facade.HotNewsFacade;
 import com.chengwenfang.mode.hotnews.facade.dto.request.TopicWritingScoreApplyRequest;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsTopicSourceView;
 import com.chengwenfang.mode.hotnews.facade.dto.view.HotNewsTopicView;
+import com.chengwenfang.mode.hotnews.facade.enums.TopicMaterialKind;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
@@ -104,7 +110,7 @@ public class TopicAiWritingScoreService {
     AtomicInteger done = new AtomicInteger();
     List<CompletableFuture<Void>> futures = new ArrayList<>(total);
     for (HotNewsTopicView topic : topics) {
-      futures.add(CompletableFuture.runAsync(() -> {
+      futures.add(CompletableFuture.runAsync(OwnerContext.wrap(() -> {
         try {
           if (topic != null && StrUtil.isNotBlank(topic.getId())) {
             TopicWritingScoreApplyRequest scored = scoreOne(rubric, themeContext, topic);
@@ -115,7 +121,7 @@ public class TopicAiWritingScoreService {
         } finally {
           notifyProgress(onProgress, done.incrementAndGet(), total);
         }
-      }, scoreExecutor));
+      }), scoreExecutor));
     }
     CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
     int written = hotNews.applyWritingScores(new ArrayList<>(applies));
@@ -158,14 +164,17 @@ public class TopicAiWritingScoreService {
   private TopicWritingScoreApplyRequest scoreOne(
       ScoringRubricView rubric, String themeContext, HotNewsTopicView topic) {
     List<TopicDimensionScore> snapshot = snapshotDims(rubric);
+    List<HotNewsTopicSourceView> sources = listTopicSourcesSafe(topic == null ? null : topic.getId());
     try {
       VisionCompleteResult result = ai.complete(VisionCompleteRequest.builder()
           .systemPrompt(TopicWritingScorePrompts.SYSTEM_PROMPT)
-          .prompt(buildUserPrompt(rubric, themeContext, topic))
+          .prompt(buildUserPrompt(rubric, themeContext, topic, sources))
           .scene(ModelCallScenes.HOT_NEWS_TOPIC_WRITING_SCORE)
           .timeoutSeconds(90)
           .build());
-      return parseAndBuild(rubric, snapshot, topic.getId(), result == null ? null : result.getText());
+      TopicWritingScoreApplyRequest scored =
+          parseAndBuild(rubric, snapshot, topic.getId(), result == null ? null : result.getText());
+      return applyLeadGate(scored, sources);
     } catch (Exception exception) {
       log.warn(
           "选题 AI 写作评分失败 topicId={} err={}",
@@ -219,6 +228,7 @@ public class TopicAiWritingScoreService {
     }
     String recommendUse = normalizeRecommendUse(json.getStr("recommendUse"));
     String riskNote = StrUtil.trim(StrUtil.nullToEmpty(json.getStr("riskNote")));
+    String materialKind = TopicMaterialKind.from(json.getStr("materialKind")).getValue();
     return TopicWritingScoreApplyRequest.builder()
         .topicId(topicId)
         .writingScore(writingScore)
@@ -228,6 +238,7 @@ public class TopicAiWritingScoreService {
         .rubricSnapshot(snapshot)
         .recommendUse(recommendUse)
         .riskNote(riskNote)
+        .materialKind(materialKind)
         .build();
   }
 
@@ -255,11 +266,15 @@ public class TopicAiWritingScoreService {
         .rubricSnapshot(snapshot)
         .recommendUse("skip")
         .riskNote("")
+        .materialKind(TopicMaterialKind.OTHER.getValue())
         .build();
   }
 
   private String buildUserPrompt(
-      ScoringRubricView rubric, String themeContext, HotNewsTopicView topic) {
+      ScoringRubricView rubric,
+      String themeContext,
+      HotNewsTopicView topic,
+      List<HotNewsTopicSourceView> sources) {
     StringBuilder dims = new StringBuilder();
     for (ScoringRubricDimensionView dim : rubric.getDimensions()) {
       dims.append("- key=")
@@ -272,7 +287,6 @@ public class TopicAiWritingScoreService {
           .append(dim.getDescription())
           .append('\n');
     }
-    List<HotNewsTopicSourceView> sources = listTopicSourcesSafe(topic == null ? null : topic.getId());
     LocalDateTime publishFrom = topic == null ? null : topic.getPublishFrom();
     LocalDateTime publishTo = topic == null ? null : topic.getPublishTo();
     return """
@@ -301,6 +315,124 @@ public class TopicAiWritingScoreService {
         StrUtil.blankToDefault(topic.getSummary(), ""),
         topic.getSourceCount() == null ? "0" : String.valueOf(topic.getSourceCount()),
         TopicWritingScoreTimeFacts.formatSourceLines(sources, 12));
+  }
+
+  /**
+   * lead 硬门槛：打开欲不足，或单源且（AI 标论文 / 域名命中预印本库）不得主推。
+   *
+   * @param scored  原始写回请求
+   * @param sources 选题来源
+   * @return 可能降级 recommendUse 后的请求
+   */
+  static TopicWritingScoreApplyRequest applyLeadGate(
+      TopicWritingScoreApplyRequest scored, List<HotNewsTopicSourceView> sources) {
+    if (scored == null || !"lead".equals(scored.getRecommendUse())) {
+      return scored;
+    }
+    int hookScore = audienceHookScore(scored.getDimensions());
+    if (hookScore < HotNewsScoringRubricKeys.AUDIENCE_HOOK_LEAD_MIN_SCORE) {
+      scored.setRecommendUse("watch");
+      scored.setRiskNote(appendRisk(
+          scored.getRiskNote(),
+          "打开欲不足（" + hookScore + "/10），不得 lead"));
+      return scored;
+    }
+    if (isSingleAcademicPaperSource(scored.getMaterialKind(), sources)) {
+      scored.setRecommendUse("watch");
+      scored.setRiskNote(appendRisk(scored.getRiskNote(), "单源论文/预印本，不得 lead"));
+    }
+    return scored;
+  }
+
+  private static int audienceHookScore(List<TopicDimensionScore> dimensions) {
+    if (CollUtil.isEmpty(dimensions)) {
+      return 0;
+    }
+    for (TopicDimensionScore dim : dimensions) {
+      if (dim != null && HotNewsScoringRubricKeys.AUDIENCE_HOOK.equals(dim.getKey())) {
+        return dim.getScore() == null ? 0 : dim.getScore();
+      }
+    }
+    return 0;
+  }
+
+  /**
+   * 独立来源不足（0 或 1，按主机去重），且 AI 判为论文或命中预印本/论文库。
+   *
+   * <p>来源拉取失败得到空列表时：若 AI 已标 paper，fail-closed 拦截 lead。
+   *
+   * @param materialKind AI 素材形态
+   * @param sources      来源列表；可空
+   * @return true 命中单源论文门槛
+   */
+  static boolean isSingleAcademicPaperSource(
+      String materialKind, List<HotNewsTopicSourceView> sources) {
+    int independentCount = independentSourceCount(sources);
+    boolean paper = TopicMaterialKind.from(materialKind).isAcademicPaper();
+    // 0 源或 1 个独立主机 + 论文 → 拦；多独立来源放行
+    if (independentCount <= 1 && paper) {
+      return true;
+    }
+    if (independentCount != 1) {
+      return false;
+    }
+    if (CollUtil.isEmpty(sources)) {
+      return false;
+    }
+    for (HotNewsTopicSourceView source : sources) {
+      if (source == null) {
+        continue;
+      }
+      if (ResearchContentClassifier.isPreprintOrPaperRepo(
+          source.getUrl(), source.getSiteLabel(), source.getSourceName())) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * 按主机去重统计独立来源数；无主机时回退 URL/站点名。
+   *
+   * @param sources 来源列表；可空
+   * @return 独立来源数；空列表为 0
+   */
+  static int independentSourceCount(List<HotNewsTopicSourceView> sources) {
+    if (CollUtil.isEmpty(sources)) {
+      return 0;
+    }
+    Set<String> keys = new LinkedHashSet<>();
+    int blankIndex = 0;
+    for (HotNewsTopicSourceView source : sources) {
+      if (source == null) {
+        continue;
+      }
+      String host = ResearchContentClassifier.hostOf(source.getUrl());
+      if (StrUtil.isNotBlank(host)) {
+        keys.add("h:" + host);
+        continue;
+      }
+      String fallback = StrUtil.firstNonBlank(
+          StrUtil.trim(source.getUrl()),
+          StrUtil.trim(source.getSiteLabel()),
+          StrUtil.trim(source.getSourceName()));
+      if (StrUtil.isNotBlank(fallback)) {
+        keys.add("u:" + fallback.toLowerCase(Locale.ROOT));
+      } else {
+        keys.add("blank:" + blankIndex++);
+      }
+    }
+    return keys.size();
+  }
+
+  private static String appendRisk(String existing, String note) {
+    if (StrUtil.isBlank(existing)) {
+      return note;
+    }
+    if (existing.contains(note)) {
+      return existing;
+    }
+    return existing + "；" + note;
   }
 
   /**
@@ -340,9 +472,11 @@ public class TopicAiWritingScoreService {
       Map<String, Object> briefing = readJsonMap(theme.getBriefingJson());
       ScoringRubricView fromBriefing = ScoringRubricSupport.readFrom(briefing);
       if (fromBriefing != null) {
-        return fromBriefing;
+        return ScoringRubricSupport.ensureAudienceHook(fromBriefing);
       }
-      return ScoringRubricSupport.readFrom(readJsonMap(theme.getDefaultsJson()));
+      ScoringRubricView fromDefaults =
+          ScoringRubricSupport.readFrom(readJsonMap(theme.getDefaultsJson()));
+      return fromDefaults == null ? null : ScoringRubricSupport.ensureAudienceHook(fromDefaults);
     } catch (Exception exception) {
       log.warn("读取主题评分量表失败 themeId={} err={}", themeId, exception.getMessage());
       return null;

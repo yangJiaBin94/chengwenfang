@@ -4,6 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.chengwenfang.common.IdsUtil;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.knowledge.domain.entity.KnowledgeRetrievalTraceEntity;
 import com.chengwenfang.knowledge.facade.dto.KnowledgeRetrievalTracePayload;
 import com.chengwenfang.knowledge.facade.dto.view.KnowledgeRetrievalTraceView;
@@ -23,6 +24,8 @@ public class KnowledgeRetrievalTraceService {
 
   /** Mapper。 */
   private final KnowledgeRetrievalTraceMapper traceMapper;
+  /** 用户数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * 写入一条轨迹。
@@ -57,6 +60,7 @@ public class KnowledgeRetrievalTraceService {
         .build();
     KnowledgeRetrievalTraceEntity row = KnowledgeRetrievalTraceEntity.builder()
         .id(IdsUtil.newId())
+        .ownerUserId(ownerScope.effectiveOwnerUserId())
         .sessionId(sessionId)
         .roundNo(roundNo)
         .modeKey(modeKey)

@@ -4,6 +4,7 @@ import cn.hutool.core.convert.Convert;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.json.JSONUtil;
 import com.chengwenfang.common.ApiResult;
+import com.chengwenfang.identity.facade.OwnerContext;
 import com.chengwenfang.infra.config.ChengwenfangProperties;
 import com.chengwenfang.job.facade.dto.view.JobEventView;
 import com.chengwenfang.job.facade.JobFacade;
@@ -151,10 +152,14 @@ public class JobsController {
       @PathVariable String jobId,
       @RequestHeader(value = "Last-Event-ID", required = false) String lastEventId,
       @RequestParam(value = "after", required = false) Long after) {
+    // 请求线程先校验归属（虚拟线程无 Sa-Token 会话）
+    JobView authorized = jobFacade.get(jobId);
     // after 优先；否则解析 Last-Event-ID，缺省从 0 开始
     long cursor = after != null ? after : Convert.toLong(lastEventId, 0L);
     SseEmitter emitter = new SseEmitter(0L);
-    Thread.startVirtualThread(() -> stream(jobId, cursor, emitter));
+    // owner 空白时 OwnerContext 回退种子管理员（旧任务快照）
+    Thread.startVirtualThread(
+        () -> OwnerContext.runAs(authorized.getOwnerUserId(), () -> stream(jobId, cursor, emitter)));
     return emitter;
   }
 

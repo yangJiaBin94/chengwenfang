@@ -1,6 +1,8 @@
 package com.chengwenfang.prompt.application;
 
 import cn.hutool.core.util.StrUtil;
+import com.chengwenfang.identity.facade.OwnerContext;
+import com.chengwenfang.identity.facade.constant.SeedUserIds;
 import com.chengwenfang.prompt.facade.PromptPackFacade;
 import com.chengwenfang.prompt.facade.WorkflowFacade;
 import com.chengwenfang.prompt.facade.dto.view.PromptPackView;
@@ -37,15 +39,18 @@ public class BuiltinWorkflowGraphSyncRunner implements ApplicationRunner {
    */
   @Override
   public void run(ApplicationArguments args) {
-    Map<String, String> idsByName = promptPackIdsByName();
-    try {
-      workflows.ensureCourseContentBuiltin(idsByName);
-      workflows.ensureHotNewsArticleBuiltin(idsByName);
-      workflows.ensureHotNewsRadarCollectBuiltin(idsByName);
-      log.info("内置工作流节点集已按规范核对（缺节点则已覆盖发布）");
-    } catch (Exception exception) {
-      log.error("内置工作流节点同步失败：{}", exception.getMessage(), exception);
-    }
+    // 启动线程无登录态，以种子管理员身份做平台内置图核对
+    OwnerContext.runAs(SeedUserIds.ADMIN, () -> {
+      try {
+        Map<String, String> idsByName = promptPackIdsByName();
+        workflows.ensureCourseContentBuiltin(idsByName);
+        workflows.ensureHotNewsArticleBuiltin(idsByName);
+        workflows.ensureHotNewsRadarCollectBuiltin(idsByName);
+        log.info("内置工作流节点集已按规范核对（缺节点则已覆盖发布）");
+      } catch (Exception exception) {
+        log.error("内置工作流节点同步失败：{}", exception.getMessage(), exception);
+      }
+    });
   }
 
   /**

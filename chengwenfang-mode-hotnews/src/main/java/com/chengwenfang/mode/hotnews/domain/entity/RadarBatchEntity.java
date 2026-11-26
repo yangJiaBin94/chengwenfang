@@ -19,6 +19,9 @@ public class RadarBatchEntity {
   /** 批次主键。 */
   @TableId("id")
   private String id;
+  /** 所属用户。 */
+  @TableField("owner_user_id")
+  private String ownerUserId;
   /** 内容主题 ID。 */
   @TableField("theme_id")
   private String themeId;

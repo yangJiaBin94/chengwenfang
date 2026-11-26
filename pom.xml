@@ -49,6 +49,7 @@
     <module>chengwenfang-publishing</module>
     <module>chengwenfang-mode-course</module>
     <module>chengwenfang-knowledge</module>
+    <module>chengwenfang-identity</module>
     <module>chengwenfang-app</module>
   </modules>
 
@@ -73,6 +74,7 @@
     <testcontainers.version>1.21.4</testcontainers.version>
     <awaitility.version>4.2.2</awaitility.version>
     <opencc4j.version>1.14.0</opencc4j.version>
+    <sa-token.version>1.39.0</sa-token.version>
   </properties>
 
   <dependencyManagement>
@@ -158,6 +160,21 @@
         <groupId>com.chengwenfang</groupId>
         <artifactId>chengwenfang-knowledge</artifactId>
         <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.chengwenfang</groupId>
+        <artifactId>chengwenfang-identity</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>cn.dev33</groupId>
+        <artifactId>sa-token-spring-boot3-starter</artifactId>
+        <version>${sa-token.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>cn.dev33</groupId>
+        <artifactId>sa-token-redis-jackson</artifactId>
+        <version>${sa-token.version}</version>
       </dependency>
       <dependency>
         <groupId>com.baomidou</groupId>

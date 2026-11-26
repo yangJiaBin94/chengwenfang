@@ -60,6 +60,10 @@ public class TopicScoreDetails {
   /** 风险提示（可空）。 */
   private String riskNote;
   /**
+   * AI 素材形态：paper / product / news / oss / other。
+   */
+  private String materialKind;
+  /**
    * 选题来源形态（如 {@code ai_theme_seed}）；普通渠道聚合可空。
    */
   private String originKind;

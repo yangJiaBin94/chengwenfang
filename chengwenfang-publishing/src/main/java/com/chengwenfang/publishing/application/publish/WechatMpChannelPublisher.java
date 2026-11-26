@@ -7,6 +7,7 @@ import com.chengwenfang.common.ErrorCodes;
 import com.chengwenfang.common.IdsUtil;
 import com.chengwenfang.content.facade.constant.ChannelCodes;
 import com.chengwenfang.content.facade.constant.OutputFormatCodes;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.infra.support.SecretCipher;
 import com.chengwenfang.publishing.application.OutputRendererRegistry;
 import com.chengwenfang.publishing.application.model.WechatMpAccessToken;
@@ -71,6 +72,8 @@ public class WechatMpChannelPublisher implements ChannelPublisher {
   private final OutputRendererRegistry outputRenderers;
   /** AppSecret 加解密。 */
   private final SecretCipher secretCipher;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
   /** 进程内 token 缓存（按 AppID）。 */
   private final Map<String, WechatMpAccessToken> tokenCache = new ConcurrentHashMap<>();
 
@@ -323,6 +326,7 @@ public class WechatMpChannelPublisher implements ChannelPublisher {
       articleDraftMapper.insert(
           WechatMpArticleDraftEntity.builder()
               .id(IdsUtil.newId())
+              .ownerUserId(ownerScope.effectiveOwnerUserId())
               .outputId(outputId)
               .accountId(accountId)
               .externalId(mediaId)
@@ -347,6 +351,7 @@ public class WechatMpChannelPublisher implements ChannelPublisher {
     List<WechatMpSettingsEntity> rows =
         settingsMapper.selectList(
             new LambdaQueryWrapper<WechatMpSettingsEntity>()
+                .eq(WechatMpSettingsEntity::getOwnerUserId, ownerScope.effectiveOwnerUserId())
                 .eq(WechatMpSettingsEntity::getChannelCode, ChannelCodes.WECHAT_MP)
                 .orderByAsc(WechatMpSettingsEntity::getCreatedAt)
                 .last("LIMIT 1"));

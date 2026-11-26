@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.chengwenfang.common.BusinessException;
+import com.chengwenfang.content.facade.constant.HotNewsScoringRubricKeys;
 import com.chengwenfang.content.facade.dto.view.ScoringRubricDimensionView;
 import com.chengwenfang.content.facade.dto.view.ScoringRubricView;
 import java.util.LinkedHashMap;
@@ -36,8 +37,11 @@ class HotNewsThemeBriefingSupportRubricTest {
             .build());
     HotNewsThemeBriefingSupport.assertReadyToCommit(briefing);
     Map<String, Object> defaults = HotNewsThemeBriefingSupport.buildDefaults(briefing);
-    assertThat(ScoringRubricSupport.readFrom(defaults)).isNotNull();
-    assertThat(ScoringRubricSupport.readFrom(defaults).getDimensions()).hasSize(3);
+    ScoringRubricView saved = ScoringRubricSupport.readFrom(defaults);
+    assertThat(saved).isNotNull();
+    assertThat(saved.getDimensions().get(0).getKey()).isEqualTo(HotNewsScoringRubricKeys.AUDIENCE_HOOK);
+    assertThat(saved.getDimensions().get(0).getWeight())
+        .isGreaterThanOrEqualTo(HotNewsScoringRubricKeys.AUDIENCE_HOOK_WEIGHT);
   }
 
   private static Map<String, Object> baseBriefing() {

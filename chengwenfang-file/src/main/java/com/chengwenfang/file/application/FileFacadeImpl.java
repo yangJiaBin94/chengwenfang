@@ -26,6 +26,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.common.IdsUtil;
+import com.chengwenfang.identity.application.OwnerScopeQueryHelper;
+import com.chengwenfang.identity.facade.OwnerScope;
 
 /**
  * {@link FileFacade} 默认实现：按 storage_type 路由到 {@link StorageProvider}，并维护 stored_files 元数据。
@@ -39,6 +41,8 @@ public class FileFacadeImpl implements FileFacade {
   private final Map<StorageType, StorageProvider> providers;
   /** 实体到对外文件视图的映射。 */
   private final StoredFileViewMapper viewMapper;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * 注入 Mapper、全部 StorageProvider，并按 type 建索引。
@@ -46,12 +50,15 @@ public class FileFacadeImpl implements FileFacade {
    * @param storedFileMapper 元数据 Mapper
    * @param providers        Spring 注入的全部存储实现
    * @param viewMapper       视图映射器
+   * @param ownerScope       所属用户范围
    */
   public FileFacadeImpl(
       StoredFileMapper storedFileMapper,
       List<StorageProvider> providers,
-      StoredFileViewMapper viewMapper) {
+      StoredFileViewMapper viewMapper,
+      OwnerScope ownerScope) {
     this.storedFileMapper = storedFileMapper;
+    this.ownerScope = ownerScope;
     // 同 type 多个实现时保留先注册者，顺序稳定用 LinkedHashMap
     this.providers = providers.stream()
         .collect(Collectors.toMap(StorageProvider::type, Function.identity(), (existing, replacement) -> existing, LinkedHashMap::new));
@@ -91,9 +98,16 @@ public class FileFacadeImpl implements FileFacade {
     List<StoredFileEntity> rows = storedFileMapper.selectByIds(ids);
     Map<String, FileView> result = new LinkedHashMap<>();
     for (StoredFileEntity row : rows) {
-      if (row != null && StrUtil.isNotBlank(row.getId())) {
-        result.put(row.getId(), view(row));
+      if (row == null || StrUtil.isBlank(row.getId())) {
+        continue;
       }
+      try {
+        // 批量元数据：无权限的 id 静默跳过，避免 IDOR 拼图
+        ownerScope.assertCanAccess(row.getOwnerUserId());
+      } catch (BusinessException ignored) {
+        continue;
+      }
+      result.put(row.getId(), view(row));
     }
     return result;
   }
@@ -146,6 +160,7 @@ public class FileFacadeImpl implements FileFacade {
     StoredFileEntity existing = findByTypeAndKey(StorageType.LOCAL, key);
     LocalDateTime now = LocalDateTime.now();
     if (existing != null) {
+      ownerScope.assertCanAccess(existing.getOwnerUserId());
       // 已登记：刷新文件名/类型/大小/哈希
       existing.setFileName(fileName == null || fileName.isBlank() ? existing.getFileName() : fileName);
       if (contentType != null && !contentType.isBlank()) {
@@ -171,6 +186,7 @@ public class FileFacadeImpl implements FileFacade {
     Path path = local.resolveLocalPath(key);
     StoredFileEntity entity = new StoredFileEntity();
     entity.setId(IdsUtil.newId());
+    entity.setOwnerUserId(ownerScope.effectiveOwnerUserId());
     entity.setStorageType(StorageType.LOCAL.name());
     entity.setBucketOrRoot(null);
     entity.setObjectKey(key);
@@ -210,6 +226,7 @@ public class FileFacadeImpl implements FileFacade {
     LocalDateTime now = LocalDateTime.now();
     StoredFileEntity existing = findByTypeAndKey(StorageType.LOCAL, key);
     if (existing != null) {
+      ownerScope.assertCanAccess(existing.getOwnerUserId());
       existing.setFileName(fileName == null || fileName.isBlank() ? existing.getFileName() : fileName);
       existing.setContentType(contentType);
       existing.setSizeBytes((long) bytes.length);
@@ -220,6 +237,7 @@ public class FileFacadeImpl implements FileFacade {
     }
     StoredFileEntity entity = new StoredFileEntity();
     entity.setId(IdsUtil.newId());
+    entity.setOwnerUserId(ownerScope.effectiveOwnerUserId());
     entity.setStorageType(StorageType.LOCAL.name());
     entity.setObjectKey(key);
     entity.setFileName(fileName == null || fileName.isBlank() ? fileNameOf(key) : fileName);
@@ -291,6 +309,7 @@ public class FileFacadeImpl implements FileFacade {
     if (file == null) {
       throw new BusinessException("file_not_found", "文件不存在", 404);
     }
+    ownerScope.assertCanAccess(file.getOwnerUserId());
     return file;
   }
 
@@ -331,10 +350,11 @@ public class FileFacadeImpl implements FileFacade {
    * @return 匹配行；不存在则为 null
    */
   private StoredFileEntity findByTypeAndKey(StorageType type, String objectKey) {
-    return storedFileMapper.selectOne(new LambdaQueryWrapper<StoredFileEntity>()
+    LambdaQueryWrapper<StoredFileEntity> query = new LambdaQueryWrapper<StoredFileEntity>()
         .eq(StoredFileEntity::getStorageType, type.name())
-        .eq(StoredFileEntity::getObjectKey, objectKey)
-        .last("LIMIT 1"));
+        .eq(StoredFileEntity::getObjectKey, objectKey);
+    OwnerScopeQueryHelper.applyOwnerEquals(query, ownerScope, StoredFileEntity::getOwnerUserId);
+    return storedFileMapper.selectOne(query.last("LIMIT 1"));
   }
 
   /**

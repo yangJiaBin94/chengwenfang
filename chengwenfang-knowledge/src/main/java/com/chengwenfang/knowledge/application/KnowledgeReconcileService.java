@@ -3,6 +3,7 @@ package com.chengwenfang.knowledge.application;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.job.facade.JobFacade;
 import com.chengwenfang.job.facade.constant.JobTypes;
 import com.chengwenfang.job.facade.dto.job.KnowledgeIndexDocumentJobInput;
@@ -41,6 +42,8 @@ public class KnowledgeReconcileService {
   private final KnowledgeGraphStore graphStore;
   /** 任务门面。 */
   private final JobFacade jobFacade;
+  /** 用户数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * 执行一轮对账（默认落库）。
@@ -89,9 +92,11 @@ public class KnowledgeReconcileService {
     }
 
     // READY 但无切块 → 入队重建（不在此同步狂打 embed）
-    List<KnowledgeDocumentEntity> readyDocs = documentMapper.selectList(
+    LambdaQueryWrapper<KnowledgeDocumentEntity> readyQuery =
         new LambdaQueryWrapper<KnowledgeDocumentEntity>()
-            .eq(KnowledgeDocumentEntity::getStatus, KnowledgeDocumentStatus.READY.getValue()));
+            .eq(KnowledgeDocumentEntity::getStatus, KnowledgeDocumentStatus.READY.getValue());
+    applyDocumentOwnerFilter(readyQuery);
+    List<KnowledgeDocumentEntity> readyDocs = documentMapper.selectList(readyQuery);
     List<String> enqueued = new ArrayList<>();
     for (KnowledgeDocumentEntity document : readyDocs) {
       Long count = chunkMapper.selectCount(
@@ -124,5 +129,22 @@ public class KnowledgeReconcileService {
         .reindexEnqueued(reindexEnqueued)
         .enqueuedDocumentIds(enqueued)
         .build();
+  }
+
+  /**
+   * 非管理员按当前用户过滤文档；无身份时失败关闭（0 行）。
+   *
+   * @param query 文档查询
+   */
+  private void applyDocumentOwnerFilter(LambdaQueryWrapper<KnowledgeDocumentEntity> query) {
+    if (ownerScope.currentUserIsAdmin()) {
+      return;
+    }
+    String ownerId = ownerScope.currentOwnerUserId().orElse(null);
+    if (StrUtil.isBlank(ownerId)) {
+      query.apply("1 = 0");
+      return;
+    }
+    query.eq(KnowledgeDocumentEntity::getOwnerUserId, ownerId);
   }
 }

@@ -1,6 +1,7 @@
 package com.chengwenfang.mode.hotnews.domain;
 
 import cn.hutool.core.util.StrUtil;
+import com.chengwenfang.mode.hotnews.facade.constant.PreprintSourceHosts;
 import java.net.URI;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -69,6 +70,15 @@ public final class ResearchContentClassifier {
     SITE_LABELS.put("x.com", "X");
     SITE_LABELS.put("twitter.com", "X");
     SITE_LABELS.put("github.com", "GitHub");
+    SITE_LABELS.put("arxiv.org", "arXiv");
+    SITE_LABELS.put("biorxiv.org", "bioRxiv");
+    SITE_LABELS.put("medrxiv.org", "medRxiv");
+    SITE_LABELS.put("chemrxiv.org", "ChemRxiv");
+    SITE_LABELS.put("psyarxiv.com", "PsyArXiv");
+    SITE_LABELS.put("socarxiv.org", "SocArXiv");
+    SITE_LABELS.put("ssrn.com", "SSRN");
+    SITE_LABELS.put("openreview.net", "OpenReview");
+    SITE_LABELS.put("aclanthology.org", "ACL Anthology");
     SITE_LABELS.put("medium.com", "Medium");
     SITE_LABELS.put("sspai.com", "少数派");
     SITE_LABELS.put("36kr.com", "36氪");
@@ -194,6 +204,22 @@ public final class ResearchContentClassifier {
   }
 
   /**
+   * 是否为预印本 / 论文库来源（按 URL 主机；与渠道配置无关）。
+   *
+   * @param url        链接；可空
+   * @param siteLabel  站点展示名；可空，URL 不可用时兜底
+   * @param sourceName 来源名；可空，URL 不可用时兜底
+   * @return true 命中预印本或论文库
+   */
+  public static boolean isPreprintOrPaperRepo(String url, String siteLabel, String sourceName) {
+    String host = hostOf(url);
+    if (PreprintSourceHosts.hostMatches(host)) {
+      return true;
+    }
+    return PreprintSourceHosts.labelMatches(siteLabel, sourceName);
+  }
+
+  /**
    * 标题是否需要译成中文。
    * <p>含日文假名/韩文 → 译；否则汉字占比过低（英文等）→ 译。
    */
@@ -236,7 +262,13 @@ public final class ResearchContentClassifier {
     return (han * 1.0 / letters) < 0.25;
   }
 
-  private static String hostOf(String url) {
+  /**
+   * 解析 URL 主机名（小写）；失败返回空串。
+   *
+   * @param url 链接；可空
+   * @return 主机名；无法解析则为空
+   */
+  public static String hostOf(String url) {
     if (url == null || url.isBlank()) {
       return "";
     }

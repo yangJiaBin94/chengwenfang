@@ -12,6 +12,7 @@ import com.chengwenfang.content.facade.dto.ModeWorkNavInfo;
 import com.chengwenfang.content.facade.dto.WorkExtensionPayload;
 import com.chengwenfang.content.facade.spi.ModeDefinition;
 import com.chengwenfang.content.infrastructure.mapper.WorkMapper;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.mode.hotnews.domain.entity.HotnewsWorkEntity;
 import com.chengwenfang.mode.hotnews.domain.entity.HotnewsWorkSourceEntity;
 import com.chengwenfang.mode.hotnews.facade.constant.HotNewsArticleStatuses;
@@ -49,6 +50,8 @@ public class HotNewsModeDefinition implements ModeDefinition {
   private final HotnewsWorkSourceMapper sourceMapper;
   /** 产出指针。 */
   private final WorkContentStoreImpl workContents;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * {@inheritDoc}
@@ -83,6 +86,7 @@ public class HotNewsModeDefinition implements ModeDefinition {
     if (existing == null) {
       hotnewsWorkMapper.insert(HotnewsWorkEntity.builder()
           .workId(payload.getWorkId())
+          .ownerUserId(ownerScope.effectiveOwnerUserId())
           .topicId(hotNews.getTopicId())
           .briefId(hotNews.getBriefId())
           .status(status)

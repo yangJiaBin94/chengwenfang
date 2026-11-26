@@ -14,6 +14,8 @@ import lombok.NoArgsConstructor;
 public class KnowledgeVectorFilter {
   /** 限定文档 ID。 */
   private String documentId;
+  /** 限定所属用户；空表示不限（仅管理员全库检索）。 */
+  private String ownerUserId;
   /** 限定来源类型（单值；与 {@link #sourceKinds} 并存时优先列表）。 */
   private String sourceKind;
   /** 限定来源类型列表（多选 OR）。 */

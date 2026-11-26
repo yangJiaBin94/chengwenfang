@@ -19,6 +19,9 @@ public class NotificationEntity {
   /** 主键 ID。 */
   @TableId("id")
   private String id;
+  /** 所属用户。 */
+  @TableField("owner_user_id")
+  private String ownerUserId;
   /** 通知类型（原 type）。 */
   @TableField("notification_type")
   private String notificationType;

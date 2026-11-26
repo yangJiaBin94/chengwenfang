@@ -9,13 +9,32 @@ import {
 afterEach(() => vi.restoreAllMocks());
 
 describe("withPublishingPreviewBase", () => {
-  it("wraps fragments with base href for relative image urls", () => {
+  it("wraps fragments with base href and injects satoken for relative image urls", () => {
+    vi.stubGlobal("localStorage", {
+      getItem: () => "test-token",
+      setItem: () => undefined,
+      removeItem: () => undefined,
+    });
     const html = withPublishingPreviewBase(
       '<section><img src="/api/images/a"></section>',
       "http://localhost:5173",
     );
     expect(html).toContain('<base href="http://localhost:5173/">');
-    expect(html).toContain('src="/api/images/a"');
+    expect(html).toContain('src="/api/images/a?satoken=test-token"');
+  });
+
+  it("injects satoken for same-origin absolute image urls", () => {
+    vi.stubGlobal("localStorage", {
+      getItem: () => "tok",
+      setItem: () => undefined,
+      removeItem: () => undefined,
+    });
+    const origin = window.location.origin;
+    const html = withPublishingPreviewBase(
+      `<img src="${origin}/api/images/b">`,
+      origin,
+    );
+    expect(html).toContain(`src="${origin}/api/images/b?satoken=tok"`);
   });
 
   it("injects base into existing html documents", () => {

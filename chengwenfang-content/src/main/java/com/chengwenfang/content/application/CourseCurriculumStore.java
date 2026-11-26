@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.chengwenfang.common.IdsUtil;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.content.domain.entity.CourseCurriculumDraftLessonEntity;
 import com.chengwenfang.content.domain.entity.CourseCurriculumDraftOutcomeEntity;
 import com.chengwenfang.content.domain.entity.CourseCurriculumDraftSeriesEntity;
@@ -30,16 +31,20 @@ public class CourseCurriculumStore {
   private final CourseCurriculumDraftSeriesMapper seriesMapper;
   private final CourseCurriculumDraftLessonMapper lessonMapper;
   private final CourseCurriculumDraftOutcomeMapper outcomeMapper;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   public CourseCurriculumStore(
       CourseCurriculumMapper curriculumMapper,
       CourseCurriculumDraftSeriesMapper seriesMapper,
       CourseCurriculumDraftLessonMapper lessonMapper,
-      CourseCurriculumDraftOutcomeMapper outcomeMapper) {
+      CourseCurriculumDraftOutcomeMapper outcomeMapper,
+      OwnerScope ownerScope) {
     this.curriculumMapper = curriculumMapper;
     this.seriesMapper = seriesMapper;
     this.lessonMapper = lessonMapper;
     this.outcomeMapper = outcomeMapper;
+    this.ownerScope = ownerScope;
   }
 
   /**
@@ -50,6 +55,9 @@ public class CourseCurriculumStore {
    */
   public CurriculumDraftView loadDraft(String themeId) {
     CourseCurriculumEntity header = curriculumMapper.selectById(themeId);
+    if (header != null) {
+      ownerScope.assertCanAccess(header.getOwnerUserId());
+    }
     if (header == null || header.getDraftSchemaVersion() == null) {
       return emptyDraft();
     }
@@ -192,6 +200,7 @@ public class CourseCurriculumStore {
     }
     curriculumMapper.insert(CourseCurriculumEntity.builder()
         .themeId(themeId)
+        .ownerUserId(ownerScope.effectiveOwnerUserId())
         .updatedAt(updatedAt)
         .build());
   }

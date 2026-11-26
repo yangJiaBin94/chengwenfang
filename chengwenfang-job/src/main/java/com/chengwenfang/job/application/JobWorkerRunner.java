@@ -1,5 +1,6 @@
 package com.chengwenfang.job.application;
 
+import com.chengwenfang.identity.facade.OwnerContext;
 import com.chengwenfang.infra.config.ChengwenfangProperties;
 import com.chengwenfang.job.domain.entity.JobEntity;
 import com.chengwenfang.infra.support.JobExecutionScope;
@@ -205,6 +206,18 @@ public class JobWorkerRunner {
    * @param typedSlot 本任务占用的分类型信号量
    */
   private void runJob(JobEntity job, JobExecutionContext context, Semaphore typedSlot) {
+    // 按任务快照恢复所属用户，供 AI 配置等用户级资源解析
+    OwnerContext.runAs(job.getOwnerUserId(), () -> runJobWithOwner(job, context, typedSlot));
+  }
+
+  /**
+   * 在已绑定 OwnerContext 的前提下执行任务。
+   *
+   * @param job       已认领任务
+   * @param context   执行上下文
+   * @param typedSlot 分类型信号量
+   */
+  private void runJobWithOwner(JobEntity job, JobExecutionContext context, Semaphore typedSlot) {
     long startedAtMs = System.currentTimeMillis();
     String outcome = "failed";
     // 绑定当前任务，供 AI model_calls.job_id 等跨层写入

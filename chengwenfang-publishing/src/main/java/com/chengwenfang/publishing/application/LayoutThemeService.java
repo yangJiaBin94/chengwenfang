@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.common.ErrorCodes;
 import com.chengwenfang.common.IdsUtil;
+import com.chengwenfang.identity.facade.OwnerScope;
+import com.chengwenfang.identity.facade.constant.SeedUserIds;
 import com.chengwenfang.publishing.facade.constant.LayoutThemeKeys;
 import com.chengwenfang.publishing.facade.dto.request.LayoutThemeSaveRequest;
 import com.chengwenfang.publishing.facade.dto.view.LayoutThemeView;
@@ -31,16 +33,20 @@ public class LayoutThemeService {
   private final ObjectMapper objectMapper;
   /** DB 不可用时的内存兜底（description/config/status）。 */
   private final ConcurrentHashMap<String, Map<String, Object>> extras = new ConcurrentHashMap<>();
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * 注入 JDBC 与 ObjectMapper。
    *
    * @param jdbc         主题表 JDBC
    * @param objectMapper JSON 读写
+   * @param ownerScope   用户级数据范围
    */
-  public LayoutThemeService(JdbcTemplate jdbc, ObjectMapper objectMapper) {
+  public LayoutThemeService(JdbcTemplate jdbc, ObjectMapper objectMapper, OwnerScope ownerScope) {
     this.jdbc = jdbc;
     this.objectMapper = objectMapper;
+    this.ownerScope = ownerScope;
   }
 
   /**
@@ -76,9 +82,10 @@ public class LayoutThemeService {
     putExtra(id, description, config, 1);
     try {
       jdbc.update(
-          "INSERT INTO layout_themes (id, theme_key, name, theme_type, status, current_version_id, created_at, updated_at) "
-              + "VALUES (?,?,?,?,?,?,UTC_TIMESTAMP(3),UTC_TIMESTAMP(3))",
-          id, key, name, LayoutThemeKeys.TYPE_CUSTOM, LayoutThemeKeys.DB_ACTIVE, versionId);
+          "INSERT INTO layout_themes (id, owner_user_id, theme_key, name, theme_type, status, current_version_id, created_at, updated_at) "
+              + "VALUES (?,?,?,?,?,?,?,UTC_TIMESTAMP(3),UTC_TIMESTAMP(3))",
+          id, ownerScope.effectiveOwnerUserId(), key, name, LayoutThemeKeys.TYPE_CUSTOM,
+          LayoutThemeKeys.DB_ACTIVE, versionId);
       String configJson = writeJson(config);
       jdbc.update(
           "INSERT INTO layout_theme_versions (id, layout_theme_id, version_no, schema_version, config_json, content_hash, created_at) "
@@ -300,9 +307,9 @@ public class LayoutThemeService {
         return;
       }
       jdbc.update(
-          "INSERT INTO layout_themes (id, theme_key, name, theme_type, status, current_version_id, created_at, updated_at) "
-              + "VALUES (?,?,?,?,?,?,UTC_TIMESTAMP(3),UTC_TIMESTAMP(3))",
-          id, LayoutThemeKeys.DEFAULT_KEY, "Default", LayoutThemeKeys.TYPE_SYSTEM,
+          "INSERT INTO layout_themes (id, owner_user_id, theme_key, name, theme_type, status, current_version_id, created_at, updated_at) "
+              + "VALUES (?,?,?,?,?,?,?,UTC_TIMESTAMP(3),UTC_TIMESTAMP(3))",
+          id, SeedUserIds.ADMIN, LayoutThemeKeys.DEFAULT_KEY, "Default", LayoutThemeKeys.TYPE_SYSTEM,
           LayoutThemeKeys.DB_ACTIVE, versionId);
       jdbc.update(
           "INSERT INTO layout_theme_versions (id, layout_theme_id, version_no, schema_version, config_json, content_hash, created_at) "
@@ -323,12 +330,24 @@ public class LayoutThemeService {
    */
   private List<LayoutThemeView> queryThemes() {
     try {
+      String ownerClause = "";
+      Object[] queryArgs = new Object[] {};
+      if (!ownerScope.currentUserIsAdmin()) {
+        String ownerId = ownerScope.currentOwnerUserId().orElse(null);
+        if (StrUtil.isBlank(ownerId)) {
+          return List.of();
+        }
+        // 本人主题 + 种子管理员系统主题
+        ownerClause = " WHERE t.owner_user_id IN (?, ?) ";
+        queryArgs = new Object[] {ownerId, SeedUserIds.ADMIN};
+      }
       List<LayoutThemeView> rows = jdbc.query(
           "SELECT t.id, t.theme_key, t.name, t.theme_type, t.status, t.current_version_id, t.updated_at, "
               + "(SELECT MAX(v.version_no) FROM layout_theme_versions v WHERE v.layout_theme_id = t.id) AS version_no, "
               + "(SELECT v2.config_json FROM layout_theme_versions v2 WHERE v2.id = t.current_version_id) AS config_json "
-              + "FROM layout_themes t ORDER BY t.updated_at DESC",
-          (rs, rowNum) -> mapThemeRow(rs, extras.getOrDefault(rs.getString("id"), Map.of())));
+              + "FROM layout_themes t" + ownerClause + " ORDER BY t.updated_at DESC",
+          (rs, rowNum) -> mapThemeRow(rs, extras.getOrDefault(rs.getString("id"), Map.of())),
+          queryArgs);
       if (!rows.isEmpty()) {
         return rows;
       }
@@ -356,6 +375,18 @@ public class LayoutThemeService {
       return null;
     }
     try {
+      List<Map<String, Object>> rawRows = jdbc.queryForList(
+          "SELECT t.owner_user_id FROM layout_themes t WHERE t.id = ? LIMIT 1", id);
+      if (rawRows.isEmpty()) {
+        return null;
+      }
+      Object ownerValue = rawRows.get(0).get("owner_user_id");
+      String resourceOwner = ownerValue == null ? null : String.valueOf(ownerValue);
+      // 种子管理员名下的系统主题全员可读
+      if (!ownerScope.currentUserIsAdmin()
+          && !SeedUserIds.ADMIN.equals(resourceOwner)) {
+        ownerScope.assertCanAccess(resourceOwner);
+      }
       List<LayoutThemeView> rows = jdbc.query(
           "SELECT t.id, t.theme_key, t.name, t.theme_type, t.status, t.current_version_id, t.updated_at, "
               + "(SELECT MAX(v.version_no) FROM layout_theme_versions v WHERE v.layout_theme_id = t.id) AS version_no, "
@@ -366,6 +397,8 @@ public class LayoutThemeService {
       if (!rows.isEmpty()) {
         return rows.get(0);
       }
+    } catch (BusinessException exception) {
+      throw exception;
     } catch (Exception ignored) {
       // fall through
     }

@@ -1,9 +1,12 @@
 package com.chengwenfang.prompt.application;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import cn.hutool.core.util.StrUtil;
 import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.common.ErrorCodes;
 import com.chengwenfang.common.IdsUtil;
+import com.chengwenfang.identity.facade.OwnerScope;
+import com.chengwenfang.identity.facade.constant.SeedUserIds;
 import com.chengwenfang.prompt.domain.entity.WorkflowAlertEntity;
 import com.chengwenfang.prompt.domain.entity.WorkflowDefinitionEntity;
 import com.chengwenfang.prompt.domain.entity.WorkflowDraftEntity;
@@ -48,6 +51,8 @@ public class WorkflowSupport {
   private final WorkflowViewAssembler viewAssembler;
   /** 图校验。 */
   private final WorkflowGraphValidator graphValidator;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   public WorkflowDefinitionEntity require(String id) {
     WorkflowDefinitionEntity def = definitionMapper.selectById(id);
@@ -55,6 +60,30 @@ public class WorkflowSupport {
     if (def == null) {
       throw new BusinessException(ErrorCodes.WORKFLOW_NOT_FOUND, "工作流不存在：" + id, 404);
     }
+    ownerScope.assertCanAccess(def.getOwnerUserId());
+    return def;
+  }
+
+  /**
+   * 加载可读工作流：本人或种子管理员平台种子；写操作仍用 {@link #require}。
+   *
+   * @param id 工作流定义主键
+   * @return 定义实体
+   * @throws BusinessException 不存在或无权读
+   */
+  public WorkflowDefinitionEntity requireReadable(String id) {
+    WorkflowDefinitionEntity def = definitionMapper.selectById(id);
+    if (def == null) {
+      throw new BusinessException(ErrorCodes.WORKFLOW_NOT_FOUND, "工作流不存在：" + id, 404);
+    }
+    String ownerId = StrUtil.blankToDefault(def.getOwnerUserId(), SeedUserIds.ADMIN);
+    if (SeedUserIds.ADMIN.equals(ownerId)) {
+      if (ownerScope.currentOwnerUserId().isEmpty()) {
+        throw new BusinessException(ErrorCodes.UNAUTHORIZED, "请先登录", 401);
+      }
+      return def;
+    }
+    ownerScope.assertCanAccess(ownerId);
     return def;
   }
 
@@ -90,6 +119,7 @@ public class WorkflowSupport {
     // 仅组装实体，由调用方决定 insert 还是 update
     WorkflowDraftEntity draft = new WorkflowDraftEntity();
     draft.setId(IdsUtil.newId());
+    draft.setOwnerUserId(ownerScope.effectiveOwnerUserId());
     draft.setWorkflowId(workflowId);
     draft.setBaseVersionId(baseVersionId);
     draft.setRevision(revision);

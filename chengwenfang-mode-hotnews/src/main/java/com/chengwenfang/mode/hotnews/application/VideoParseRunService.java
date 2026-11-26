@@ -5,6 +5,8 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.chengwenfang.common.IdsUtil;
+import com.chengwenfang.identity.application.OwnerScopeQueryHelper;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.file.facade.FileFacade;
 import com.chengwenfang.file.facade.dto.view.FileView;
 import com.chengwenfang.file.facade.dto.view.StoredFileView;
@@ -44,14 +46,19 @@ public class VideoParseRunService {
   private final VideoTranscriptMapper transcriptMapper;
   /** 原文文件读写。 */
   private final FileFacade files;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * @param transcriptMapper 结果表 Mapper
    * @param files            文件门面
+   * @param ownerScope       用户级数据范围
    */
-  public VideoParseRunService(VideoTranscriptMapper transcriptMapper, FileFacade files) {
+  public VideoParseRunService(
+      VideoTranscriptMapper transcriptMapper, FileFacade files, OwnerScope ownerScope) {
     this.transcriptMapper = transcriptMapper;
     this.files = files;
+    this.ownerScope = ownerScope;
   }
 
   /**
@@ -291,6 +298,7 @@ public class VideoParseRunService {
           .updatedAt(now)
           .build();
       applyOwner(created, ownerType, ownerId);
+      created.setOwnerUserId(ownerScope.effectiveOwnerUserId());
       created.setTextFileId(writeRawText(id, rawText));
       transcriptMapper.insert(created);
       return;
@@ -479,22 +487,23 @@ public class VideoParseRunService {
     if (aliases.isEmpty()) {
       return List.of();
     }
-    List<VideoTranscriptEntity> rows = transcriptMapper.selectList(
-        new LambdaQueryWrapper<VideoTranscriptEntity>()
-            .isNotNull(VideoTranscriptEntity::getFrameFileIds)
-            .ne(VideoTranscriptEntity::getFrameFileIds, "")
-            .ne(VideoTranscriptEntity::getFrameFileIds, "[]")
-            .and(wrapper -> {
-              boolean first = true;
-              for (String alias : aliases) {
-                if (first) {
-                  wrapper.apply("LOWER(TRIM(TRAILING '/' FROM url)) = {0}", alias);
-                  first = false;
-                } else {
-                  wrapper.or().apply("LOWER(TRIM(TRAILING '/' FROM url)) = {0}", alias);
-                }
-              }
-            })
+    LambdaQueryWrapper<VideoTranscriptEntity> frameQuery = new LambdaQueryWrapper<VideoTranscriptEntity>()
+        .isNotNull(VideoTranscriptEntity::getFrameFileIds)
+        .ne(VideoTranscriptEntity::getFrameFileIds, "")
+        .ne(VideoTranscriptEntity::getFrameFileIds, "[]")
+        .and(wrapper -> {
+          boolean first = true;
+          for (String alias : aliases) {
+            if (first) {
+              wrapper.apply("LOWER(TRIM(TRAILING '/' FROM url)) = {0}", alias);
+              first = false;
+            } else {
+              wrapper.or().apply("LOWER(TRIM(TRAILING '/' FROM url)) = {0}", alias);
+            }
+          }
+        });
+    OwnerScopeQueryHelper.applyOwnerEquals(frameQuery, ownerScope, VideoTranscriptEntity::getOwnerUserId);
+    List<VideoTranscriptEntity> rows = transcriptMapper.selectList(frameQuery
             .orderByDesc(VideoTranscriptEntity::getUpdatedAt)
             .last("LIMIT 5"));
     for (VideoTranscriptEntity row : rows) {
@@ -626,6 +635,7 @@ public class VideoParseRunService {
     } else {
       return null;
     }
+    OwnerScopeQueryHelper.applyOwnerEquals(query, ownerScope, VideoTranscriptEntity::getOwnerUserId);
     return transcriptMapper.selectOne(query.last("LIMIT 1"));
   }
 
@@ -652,6 +662,7 @@ public class VideoParseRunService {
     } else {
       return out;
     }
+    OwnerScopeQueryHelper.applyOwnerEquals(query, ownerScope, VideoTranscriptEntity::getOwnerUserId);
     List<VideoTranscriptEntity> rows = transcriptMapper.selectList(query);
     for (VideoTranscriptEntity row : rows) {
       if (row == null) {

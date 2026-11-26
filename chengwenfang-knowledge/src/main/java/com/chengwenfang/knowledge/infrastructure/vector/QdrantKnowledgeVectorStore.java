@@ -239,6 +239,7 @@ public class QdrantKnowledgeVectorStore implements KnowledgeVectorStore, Disposa
   private static Metadata buildMetadata(KnowledgeVectorUpsert item) {
     Metadata metadata = new Metadata();
     putString(metadata, KnowledgeVectorPayloadKeys.DOCUMENT_ID, item.getDocumentId());
+    putString(metadata, KnowledgeVectorPayloadKeys.OWNER_USER_ID, item.getOwnerUserId());
     putString(metadata, KnowledgeVectorPayloadKeys.SOURCE_KIND, item.getSourceKind());
     putString(metadata, KnowledgeVectorPayloadKeys.SOURCE_REF_ID, item.getSourceRefId());
     putString(metadata, KnowledgeVectorPayloadKeys.MEDIA_KIND, item.getMediaKind());
@@ -280,6 +281,8 @@ public class QdrantKnowledgeVectorStore implements KnowledgeVectorStore, Disposa
     }
     Filter combined = null;
     combined = mergeEqualFilter(combined, KnowledgeVectorPayloadKeys.DOCUMENT_ID, filter.getDocumentId());
+    combined = mergeEqualFilter(
+        combined, KnowledgeVectorPayloadKeys.OWNER_USER_ID, filter.getOwnerUserId());
     combined = mergeAnyEqualFilter(
         combined,
         KnowledgeVectorPayloadKeys.SOURCE_KIND,

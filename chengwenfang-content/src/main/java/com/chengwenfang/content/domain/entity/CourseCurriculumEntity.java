@@ -20,6 +20,9 @@ public class CourseCurriculumEntity {
   /** 主题 ID（主键）。 */
   @TableId(value = "theme_id", type = IdType.INPUT)
   private String themeId;
+  /** 所属用户。 */
+  @TableField("owner_user_id")
+  private String ownerUserId;
   /** 已提交的路线叙事。 */
   @TableField("route_narrative")
   private String routeNarrative;

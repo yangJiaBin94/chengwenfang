@@ -10,6 +10,7 @@ import com.chengwenfang.ai.facade.enums.ModelCallStatus;
 import com.chengwenfang.ai.infrastructure.mapper.AiProviderConfigMapper;
 import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.common.ErrorCodes;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.infra.config.ChengwenfangProperties;
 import com.chengwenfang.infra.support.SecretCipher;
 import dev.langchain4j.data.embedding.Embedding;
@@ -39,6 +40,8 @@ public class AiEmbeddingClient {
   private final SecretCipher secretCipher;
   /** 模型调用审计写入。 */
   private final ModelCallRecorder modelCallRecorder;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * 使用库中 embedding 配置嵌入多条文本。
@@ -141,6 +144,7 @@ public class AiEmbeddingClient {
    */
   AiProviderConfigEntity requireKind(AiProviderKind kind) {
     AiProviderConfigEntity cfg = configMapper.selectOne(new LambdaQueryWrapper<AiProviderConfigEntity>()
+        .eq(AiProviderConfigEntity::getOwnerUserId, ownerScope.effectiveOwnerUserId())
         .eq(AiProviderConfigEntity::getKind, kind.getValue())
         .last("LIMIT 1"));
     if (cfg == null) {

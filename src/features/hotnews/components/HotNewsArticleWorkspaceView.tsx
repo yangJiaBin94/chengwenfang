@@ -61,6 +61,7 @@ import {
 } from "../model";
 import { PublishingWorkspace } from "../../publishing/components/PublishingWorkspace";
 import { loadJobEventHistory } from "../../../shared/api/jobs";
+import { withAuthQuery } from "../../../shared/api/http";
 import { formatLocaleDateTime } from "../../../shared/format/time";
 import { usePolling } from "../../../shared/hooks/usePolling";
 import {
@@ -359,7 +360,7 @@ export function HotNewsArticleWorkspaceView(props: Record<string, any>) {
                 <div className="image-tile" key={item.id}>
                   <img
                     className="image-preview"
-                    src={item.publicUrl}
+                    src={withAuthQuery(item.publicUrl || "")}
                     alt={
                       item.kind === "cover"
                         ? "热点文章封面"

@@ -5,6 +5,8 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.common.IdsUtil;
+import com.chengwenfang.identity.application.OwnerScopeQueryHelper;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.job.facade.constant.JobTypes;
 import com.chengwenfang.job.facade.enums.JobStatus;
 import com.chengwenfang.notification.domain.entity.NotificationEntity;
@@ -37,6 +39,8 @@ public class NotificationFacadeImpl implements NotificationFacade {
   private final NotificationMapper notificationMapper;
   /** 实体 → 对外视图映射。 */
   private final NotificationViewMapper viewMapper;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * 列出未读通知（最多 100 条，按创建时间倒序）。
@@ -46,8 +50,10 @@ public class NotificationFacadeImpl implements NotificationFacade {
   @Override
   public List<NotificationView> listUnread() {
     // 仅拉 unread，限制条数避免一次加载过多
-    return notificationMapper.selectList(new LambdaQueryWrapper<NotificationEntity>()
-            .eq(NotificationEntity::getStatus, NotificationStatus.UNREAD.getValue())
+    LambdaQueryWrapper<NotificationEntity> unreadQuery = new LambdaQueryWrapper<NotificationEntity>()
+        .eq(NotificationEntity::getStatus, NotificationStatus.UNREAD.getValue());
+    OwnerScopeQueryHelper.applyOwnerEquals(unreadQuery, ownerScope, NotificationEntity::getOwnerUserId);
+    return notificationMapper.selectList(unreadQuery
             .orderByDesc(NotificationEntity::getCreatedAt)
             .last("LIMIT 100"))
         .stream()
@@ -69,6 +75,7 @@ public class NotificationFacadeImpl implements NotificationFacade {
     LambdaQueryWrapper<NotificationEntity> query = new LambdaQueryWrapper<NotificationEntity>()
         .orderByDesc(NotificationEntity::getCreatedAt)
         .last("LIMIT " + capped);
+    OwnerScopeQueryHelper.applyOwnerEquals(query, ownerScope, NotificationEntity::getOwnerUserId);
     // status=all 或空：不按状态过滤
     if (StrUtil.isNotBlank(status) && !"all".equalsIgnoreCase(status)) {
       query.eq(NotificationEntity::getStatus, status);
@@ -89,7 +96,9 @@ public class NotificationFacadeImpl implements NotificationFacade {
   @Override
   public NotificationSummaryView summary() {
     // 取最新一条仅用于展示时间戳
-    NotificationEntity latest = notificationMapper.selectOne(new LambdaQueryWrapper<NotificationEntity>()
+    LambdaQueryWrapper<NotificationEntity> latestQuery = new LambdaQueryWrapper<NotificationEntity>();
+    OwnerScopeQueryHelper.applyOwnerEquals(latestQuery, ownerScope, NotificationEntity::getOwnerUserId);
+    NotificationEntity latest = notificationMapper.selectOne(latestQuery
         .orderByDesc(NotificationEntity::getCreatedAt)
         .last("LIMIT 1"));
     return NotificationSummaryView.builder()
@@ -128,6 +137,7 @@ public class NotificationFacadeImpl implements NotificationFacade {
     if (entity == null) {
       throw new BusinessException("notification_not_found", "通知不存在", 404);
     }
+    ownerScope.assertCanAccess(entity.getOwnerUserId());
     LocalDateTime now = LocalDateTime.now();
     entity.setStatus(read
         ? NotificationStatus.READ.getValue()
@@ -146,8 +156,10 @@ public class NotificationFacadeImpl implements NotificationFacade {
   @Override
   @Transactional
   public NotificationSummaryView readAll() {
-    List<NotificationEntity> unread = notificationMapper.selectList(new LambdaQueryWrapper<NotificationEntity>()
-        .eq(NotificationEntity::getStatus, NotificationStatus.UNREAD.getValue()));
+    LambdaQueryWrapper<NotificationEntity> readAllQuery = new LambdaQueryWrapper<NotificationEntity>()
+        .eq(NotificationEntity::getStatus, NotificationStatus.UNREAD.getValue());
+    OwnerScopeQueryHelper.applyOwnerEquals(readAllQuery, ownerScope, NotificationEntity::getOwnerUserId);
+    List<NotificationEntity> unread = notificationMapper.selectList(readAllQuery);
     LocalDateTime now = LocalDateTime.now();
     // 逐条更新；体量通常不大
     for (NotificationEntity entity : unread) {
@@ -182,9 +194,10 @@ public class NotificationFacadeImpl implements NotificationFacade {
       Map<String, Object> metadata) {
     // 同 job+status 去重，避免终态事件重复投递
     String dedupeKey = StrUtil.nullToEmpty(jobType) + ":" + StrUtil.nullToEmpty(jobId) + ":" + StrUtil.nullToEmpty(status);
-    NotificationEntity existing = notificationMapper.selectOne(new LambdaQueryWrapper<NotificationEntity>()
-        .eq(NotificationEntity::getDedupeKey, dedupeKey)
-        .last("LIMIT 1"));
+    LambdaQueryWrapper<NotificationEntity> dedupeQuery = new LambdaQueryWrapper<NotificationEntity>()
+        .eq(NotificationEntity::getDedupeKey, dedupeKey);
+    OwnerScopeQueryHelper.applyOwnerEquals(dedupeQuery, ownerScope, NotificationEntity::getOwnerUserId);
+    NotificationEntity existing = notificationMapper.selectOne(dedupeQuery.last("LIMIT 1"));
     if (existing != null) {
       return viewMapper.toView(existing);
     }
@@ -196,6 +209,7 @@ public class NotificationFacadeImpl implements NotificationFacade {
     LocalDateTime now = LocalDateTime.now();
     NotificationEntity entity = NotificationEntity.builder()
         .id(IdsUtil.newId())
+        .ownerUserId(ownerScope.effectiveOwnerUserId())
         .notificationType(type)
         .level(succeeded
             ? NotificationLevel.SUCCESS.getValue()
@@ -342,8 +356,10 @@ public class NotificationFacadeImpl implements NotificationFacade {
    * @return 未读数量
    */
   private long unreadCount() {
-    return notificationMapper.selectCount(new LambdaQueryWrapper<NotificationEntity>()
-        .eq(NotificationEntity::getStatus, NotificationStatus.UNREAD.getValue()));
+    LambdaQueryWrapper<NotificationEntity> countQuery = new LambdaQueryWrapper<NotificationEntity>()
+        .eq(NotificationEntity::getStatus, NotificationStatus.UNREAD.getValue());
+    OwnerScopeQueryHelper.applyOwnerEquals(countQuery, ownerScope, NotificationEntity::getOwnerUserId);
+    return notificationMapper.selectCount(countQuery);
   }
 
   /**

@@ -4,6 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import cn.hutool.core.util.StrUtil;
 import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.common.ErrorCodes;
+import com.chengwenfang.identity.application.OwnerScopeQueryHelper;
+import com.chengwenfang.identity.facade.OwnerScope;
+import com.chengwenfang.identity.facade.constant.SeedUserIds;
 import com.chengwenfang.prompt.domain.entity.PromptPackEntity;
 import com.chengwenfang.prompt.domain.entity.WorkflowDefinitionEntity;
 import com.chengwenfang.prompt.domain.entity.WorkflowVersionEntity;
@@ -44,6 +47,8 @@ public class WorkflowResolveService {
   private final PromptPackMapper promptPackMapper;
   /** 共享工具。 */
   private final WorkflowSupport support;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * 汇总已发布版本上的 提示词包绑定，供入队 promptPackSnapshot。
@@ -52,8 +57,8 @@ public class WorkflowResolveService {
     if (workflowId == null || workflowId.isBlank()) {
       return List.of();
     }
-    WorkflowDefinitionEntity def = definitionMapper.selectById(workflowId);
-    if (def == null || def.getPublishedVersionId() == null || def.getPublishedVersionId().isBlank()) {
+    WorkflowDefinitionEntity def = support.requireReadable(workflowId);
+    if (def.getPublishedVersionId() == null || def.getPublishedVersionId().isBlank()) {
       return List.of();
     }
     List<WorkflowVersionPromptPackBindingEntity> bindings = bindingMapper.selectList(
@@ -100,39 +105,32 @@ public class WorkflowResolveService {
     WorkflowFeatureBinding binding = WorkflowFeatureBinding.fromScene(normalized);
     // 课程场景优先固定 key，避免多条同 scene 时选错
     if (CourseWorkflowKeys.SCENE.equals(normalized)) {
-      WorkflowDefinitionEntity preferred = definitionMapper.selectOne(new LambdaQueryWrapper<WorkflowDefinitionEntity>()
-          .eq(WorkflowDefinitionEntity::getWorkflowKey, CourseWorkflowKeys.DEFINITION_KEY)
-          .isNotNull(WorkflowDefinitionEntity::getPublishedVersionId)
-          .last("LIMIT 1"));
+      WorkflowDefinitionEntity preferred = findPublishedByKey(CourseWorkflowKeys.DEFINITION_KEY);
       if (preferred != null) {
         support.assertDefinitionRunnable(preferred, binding);
         return support.toSummary(preferred);
       }
     }
     if (HotNewsWorkflowKeys.SCENE.equals(normalized)) {
-      WorkflowDefinitionEntity preferred = definitionMapper.selectOne(new LambdaQueryWrapper<WorkflowDefinitionEntity>()
-          .eq(WorkflowDefinitionEntity::getWorkflowKey, HotNewsWorkflowKeys.DEFINITION_KEY)
-          .isNotNull(WorkflowDefinitionEntity::getPublishedVersionId)
-          .last("LIMIT 1"));
+      WorkflowDefinitionEntity preferred = findPublishedByKey(HotNewsWorkflowKeys.DEFINITION_KEY);
       if (preferred != null) {
         support.assertDefinitionRunnable(preferred, binding);
         return support.toSummary(preferred);
       }
     }
     if (HotNewsRadarCollectWorkflowKeys.SCENE.equals(normalized)) {
-      WorkflowDefinitionEntity preferred = definitionMapper.selectOne(new LambdaQueryWrapper<WorkflowDefinitionEntity>()
-          .eq(WorkflowDefinitionEntity::getWorkflowKey, HotNewsRadarCollectWorkflowKeys.DEFINITION_KEY)
-          .isNotNull(WorkflowDefinitionEntity::getPublishedVersionId)
-          .last("LIMIT 1"));
+      WorkflowDefinitionEntity preferred = findPublishedByKey(HotNewsRadarCollectWorkflowKeys.DEFINITION_KEY);
       if (preferred != null) {
         support.assertDefinitionRunnable(preferred, binding);
         return support.toSummary(preferred);
       }
     }
-    // 其它场景：取同 scene 下最近更新的已发布定义
-    WorkflowDefinitionEntity match = definitionMapper.selectOne(new LambdaQueryWrapper<WorkflowDefinitionEntity>()
+    // 其它场景：本人或种子管理员下最近更新的已发布定义
+    LambdaQueryWrapper<WorkflowDefinitionEntity> sceneQuery = new LambdaQueryWrapper<WorkflowDefinitionEntity>()
         .eq(WorkflowDefinitionEntity::getScene, normalized)
-        .isNotNull(WorkflowDefinitionEntity::getPublishedVersionId)
+        .isNotNull(WorkflowDefinitionEntity::getPublishedVersionId);
+    OwnerScopeQueryHelper.applyOwnerOrSeedAdmin(sceneQuery, ownerScope, WorkflowDefinitionEntity::getOwnerUserId);
+    WorkflowDefinitionEntity match = definitionMapper.selectOne(sceneQuery
         .orderByDesc(WorkflowDefinitionEntity::getUpdatedAt)
         .last("LIMIT 1"));
     if (match == null) {
@@ -143,6 +141,31 @@ public class WorkflowResolveService {
     }
     support.assertDefinitionRunnable(match, binding);
     return support.toSummary(match);
+  }
+
+  /**
+   * 按 workflow_key 取已发布定义：优先当前用户，否则种子管理员平台种子。
+   *
+   * @param key 定义 key
+   * @return 已发布定义；无则 null
+   */
+  private WorkflowDefinitionEntity findPublishedByKey(String key) {
+    String ownerId = ownerScope.currentOwnerUserId().orElse(null);
+    if (StrUtil.isNotBlank(ownerId)) {
+      WorkflowDefinitionEntity mine = definitionMapper.selectOne(new LambdaQueryWrapper<WorkflowDefinitionEntity>()
+          .eq(WorkflowDefinitionEntity::getWorkflowKey, key)
+          .eq(WorkflowDefinitionEntity::getOwnerUserId, ownerId)
+          .isNotNull(WorkflowDefinitionEntity::getPublishedVersionId)
+          .last("LIMIT 1"));
+      if (mine != null) {
+        return mine;
+      }
+    }
+    return definitionMapper.selectOne(new LambdaQueryWrapper<WorkflowDefinitionEntity>()
+        .eq(WorkflowDefinitionEntity::getWorkflowKey, key)
+        .eq(WorkflowDefinitionEntity::getOwnerUserId, SeedUserIds.ADMIN)
+        .isNotNull(WorkflowDefinitionEntity::getPublishedVersionId)
+        .last("LIMIT 1"));
   }
 
   /**
@@ -201,7 +224,7 @@ public class WorkflowResolveService {
    * @throws BusinessException 未发布或快照缺失
    */
   public WorkflowDefinitionDataView loadPublishedSnapshot(String workflowId) {
-    WorkflowDefinitionEntity def = support.require(workflowId);
+    WorkflowDefinitionEntity def = support.requireReadable(workflowId);
     // 定义上必须已挂 publishedVersionId
     if (def.getPublishedVersionId() == null || def.getPublishedVersionId().isBlank()) {
       throw new BusinessException(

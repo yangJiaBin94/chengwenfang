@@ -2,12 +2,17 @@ package com.chengwenfang.knowledge.application;
 
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.chengwenfang.common.BusinessException;
+import com.chengwenfang.common.ErrorCodes;
 import com.chengwenfang.common.IdsUtil;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.knowledge.domain.entity.KnowledgeChunkEntity;
+import com.chengwenfang.knowledge.domain.entity.KnowledgeDocumentEntity;
 import com.chengwenfang.knowledge.domain.entity.KnowledgeGraphEdgeOverrideEntity;
 import com.chengwenfang.knowledge.facade.constant.KnowledgeGraphConstants;
 import com.chengwenfang.knowledge.facade.spi.KnowledgeGraphStore;
 import com.chengwenfang.knowledge.infrastructure.mapper.KnowledgeChunkMapper;
+import com.chengwenfang.knowledge.infrastructure.mapper.KnowledgeDocumentMapper;
 import com.chengwenfang.knowledge.infrastructure.mapper.KnowledgeGraphEdgeOverrideMapper;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
@@ -27,8 +32,12 @@ public class KnowledgeGraphEdgeCorrectionService {
   private final KnowledgeGraphStore graphStore;
   /** 切块。 */
   private final KnowledgeChunkMapper chunkMapper;
+  /** 文档。 */
+  private final KnowledgeDocumentMapper documentMapper;
   /** 索引流水线（重建提及边；内含旁路回放）。 */
   private final KnowledgeIndexPipeline indexPipeline;
+  /** 用户数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * 登记或更新边覆盖，并同步 Neo4j {@code r.enabled}。
@@ -46,20 +55,37 @@ public class KnowledgeGraphEdgeCorrectionService {
       Double confidence,
       String note,
       Boolean enabled) {
-    if (StrUtil.isBlank(edgeUid)) {
-      return;
+    if (StrUtil.isBlank(edgeUid) || StrUtil.isBlank(sourceChunkId)) {
+      throw new BusinessException(ErrorCodes.INVALID_STATUS, "edgeUid 与 sourceChunkId 不能为空", 400);
     }
+    // 边 UID 必须对应来源切块，防止改他人 Neo4j 边
+    String expectedEdgeUid = KnowledgeGraphConstants.mentionsEdgeUid(sourceChunkId);
+    if (!expectedEdgeUid.equals(edgeUid)) {
+      throw new BusinessException(ErrorCodes.INVALID_STATUS, "edgeUid 与 sourceChunkId 不匹配", 400);
+    }
+    KnowledgeChunkEntity chunk = chunkMapper.selectById(sourceChunkId);
+    if (chunk == null || StrUtil.isBlank(chunk.getDocumentId())) {
+      throw new BusinessException(ErrorCodes.INVALID_STATUS, "来源切块不存在", 404);
+    }
+    KnowledgeDocumentEntity document = documentMapper.selectById(chunk.getDocumentId());
+    if (document == null) {
+      throw new BusinessException(ErrorCodes.KNOWLEDGE_DOCUMENT_NOT_FOUND, "知识库文档不存在", 404);
+    }
+    ownerScope.assertCanAccess(document.getOwnerUserId());
     boolean enable = enabled != null
         ? enabled
         : confidence == null || confidence >= KnowledgeGraphConstants.LOW_CONFIDENCE;
+    String ownerUserId = ownerScope.effectiveOwnerUserId();
     KnowledgeGraphEdgeOverrideEntity existing = overrideMapper.selectOne(
         new LambdaQueryWrapper<KnowledgeGraphEdgeOverrideEntity>()
+            .eq(KnowledgeGraphEdgeOverrideEntity::getOwnerUserId, ownerUserId)
             .eq(KnowledgeGraphEdgeOverrideEntity::getNeo4jEdgeUid, edgeUid)
             .last("LIMIT 1"));
     LocalDateTime now = LocalDateTime.now();
     if (existing == null) {
       overrideMapper.insert(KnowledgeGraphEdgeOverrideEntity.builder()
           .id(IdsUtil.newId())
+          .ownerUserId(ownerUserId)
           .neo4jEdgeUid(edgeUid)
           .sourceChunkId(sourceChunkId)
           .enabled(enable)
@@ -75,7 +101,7 @@ public class KnowledgeGraphEdgeCorrectionService {
       existing.setUpdatedAt(now);
       overrideMapper.updateById(existing);
     }
-    // 旁路表与图检索属性同步，避免只改 MySQL 无效
+    // 旁路表与图检索属性同步（边已绑定本人切块，可安全写 Neo4j）
     graphStore.setEdgeEnabled(edgeUid, enable);
   }
 

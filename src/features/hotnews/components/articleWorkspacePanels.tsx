@@ -21,6 +21,7 @@ import type {
   HotNewsOptimizeCritique,
   HotNewsPublishingSnapshot,
 } from "../api";
+import { withAuthQuery } from "../../../shared/api/http";
 import { withPublishingPreviewBase } from "../../publishing/model";
 
 export { SkeletonModal };
@@ -403,7 +404,7 @@ export function ContentPanel({
                     return (
                       <span className="markdown-image-wrap">
                         <img
-                          src={src}
+                          src={withAuthQuery(src)}
                           alt={alt}
                           loading="lazy"
                           onError={(event) => {
@@ -620,7 +621,30 @@ export function VersionModal({
           </button>
         </div>
         <div className="version-preview-content">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              img({ src = "", alt = "" }) {
+                return (
+                  <span className="markdown-image-wrap">
+                    <img
+                      src={withAuthQuery(src)}
+                      alt={alt}
+                      loading="lazy"
+                      onError={(event) => {
+                        event.currentTarget
+                          .closest(".markdown-image-wrap")
+                          ?.classList.add("missing-image");
+                      }}
+                    />
+                    {alt ? (
+                      <span className="markdown-image-caption">{alt}</span>
+                    ) : null}
+                  </span>
+                );
+              },
+            }}
+          >
             {tab === "draft"
               ? version.draftContent || "该版本没有热点原稿。"
               : version.content}

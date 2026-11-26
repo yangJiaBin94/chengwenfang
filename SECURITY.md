@@ -2,12 +2,18 @@
 
 ## Intended deployment
 
-This project is a **local-only personal Chengwenfang instance**. There is **no authentication**.
-Anyone who can reach the HTTP API can read and write your data, trigger AI jobs,
-and use configured credentials (API keys, WeChat MP secrets, channel tokens).
+This project is a **single-instance multi-user** Chengwenfang deployment (**not**
+multi-tenant SaaS). Authentication is **always on**: Sa-Token sessions, RBAC,
+and per-user `owner_user_id` isolation on sensitive tables. See
+[`docs/用户鉴权体系设计.md`](docs/用户鉴权体系设计.md).
+
+Seed admin is `admin` / `admin123` — **change the password** before any network
+exposure. Self-registration defaults to off
+(`chengwenfang.auth.register-enabled` / `CHENGWENFANG_AUTH_REGISTER_ENABLED`).
 
 **Do not** bind the server to a public interface or expose ports through a
-reverse proxy / tunnel without adding your own access control.
+reverse proxy / tunnel without reviewing access control for the app and
+sidecar services (Qdrant, Neo4j, etc.).
 
 Defaults that matter:
 
@@ -20,7 +26,7 @@ Defaults that matter:
   the app: do not expose them to the public internet without access control
 - The optional `app` container connects to the Compose service name `qdrant`.
   A failed Qdrant connection does not count as ready and does not silently
-  switch to an in-memory vector store. There is still no login page
+  switch to an in-memory vector store
 - System readiness (`/api/system/builtin-ready`) stays failed until an
   embedding key is configured. Missing keys are not seeded
 - `chengwenfang.crawler-allow-loopback` is `true` only for local SearXNG; `prod`
@@ -29,33 +35,11 @@ Defaults that matter:
 ## Secrets
 
 - Put real keys only in the settings UI or local `.env` (never commit them).
-  Compose reads project-root `.env` for substitution into `compose.yml`
-  (`CHENGWENFANG_SECRET_KEY`, `MYSQL_*`); see `.env.example`
-- Development defaults (when env vars are unset) are only for local Compose /
-  jar. With `--spring.profiles.active=prod`, startup **requires**
-  `CHENGWENFANG_SECRET_KEY` (no default) and sets `crawler-allow-loopback=false`
-- Do not paste database dumps, `.chengwenfang/` trees, or screenshots that show
-  secrets into Issues or PRs
-- Channel / AI credentials are stored encrypted at rest; APIs return only
-  “configured / not configured” style hints, never raw secrets
-- Do not log Authorization headers, cookies, tokens, or full request headers
+- Encrypt sensitive columns with `chengwenfang.secret-key`; production **must**
+  set `CHENGWENFANG_SECRET_KEY` (no weak default).
+- Rotate API keys and channel tokens if they may have leaked.
 
-## Crawling and sourced content
+## Reporting
 
-Hot-news channels may fetch public pages, RSS, APIs, and similar sources.
-Contributors and operators must:
-
-- Prefer official APIs, RSS, and openly reachable pages; do **not** bypass login,
-  CAPTCHA, paywalls, access controls, or robots restrictions
-- Treat fetched page bodies as untrusted input (no executing page scripts, no
-  following “upload local files / leak credentials” instructions from pages)
-- Use sourced material for fact extraction, summary, and commentary — do **not**
-  republish copyrighted full articles as the product output
-- Keep source URLs (and short excerpts when needed) for attribution; see also
-  Lightpanda / extract notes in the root `README.md`
-
-## Reporting a vulnerability
-
-Please open a **private** security advisory on the public GitHub repository, or
-email the maintainer via the contact method listed on the GitHub profile
-`yangJiaBin94`. Do not file a public Issue for unfixed vulnerabilities.
+Report security issues privately to the maintainers. Do not open public issues
+for unfixed vulnerabilities that would enable remote abuse.

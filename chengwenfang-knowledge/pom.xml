@@ -24,6 +24,10 @@
     </dependency>
     <dependency>
       <groupId>com.chengwenfang</groupId>
+      <artifactId>chengwenfang-identity</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.chengwenfang</groupId>
       <artifactId>chengwenfang-job</artifactId>
     </dependency>
     <dependency>

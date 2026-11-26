@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
  */
 class ThemeVisibilityGuardTest {
   private final ThemeVisibilityGuard guard =
-      new ThemeVisibilityGuard(null, null, null, null, null);
+      new ThemeVisibilityGuard(null, null, null, null, null, null);
 
   @Test
   void assertThemeActive_rejectsDeletedTheme() {

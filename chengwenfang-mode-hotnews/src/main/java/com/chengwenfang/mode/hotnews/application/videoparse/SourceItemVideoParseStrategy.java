@@ -10,6 +10,8 @@ import com.chengwenfang.common.IdsUtil;
 import com.chengwenfang.common.ThemeTitleRelevance;
 import com.chengwenfang.crawler.facade.MarketingPageFilter;
 import com.chengwenfang.crawler.facade.PublishTimeUtil;
+import com.chengwenfang.identity.application.OwnerScopeQueryHelper;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.mode.hotnews.application.HotNewsCodec;
 import com.chengwenfang.mode.hotnews.application.HotNewsTopicService;
 import com.chengwenfang.mode.hotnews.application.SourceVideoContentAssistService;
@@ -58,6 +60,8 @@ public class SourceItemVideoParseStrategy implements VideoParseOwnerStrategy<Sou
   private final VideoParseRunService videoParseRuns;
   /** 选题协作（主题相关性、簇摘要）。 */
   private final HotNewsTopicService topics;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * @param itemMapper               信源 Mapper
@@ -67,6 +71,7 @@ public class SourceItemVideoParseStrategy implements VideoParseOwnerStrategy<Sou
    * @param sourceVideoContentAssist 事实速览与意图
    * @param videoParseRuns           解析状态共享表
    * @param topics                   选题协作
+   * @param ownerScope               用户级数据范围
    */
   public SourceItemVideoParseStrategy(
       SourceItemMapper itemMapper,
@@ -75,7 +80,8 @@ public class SourceItemVideoParseStrategy implements VideoParseOwnerStrategy<Sou
       VideoTranscriptService videoTranscriptService,
       SourceVideoContentAssistService sourceVideoContentAssist,
       VideoParseRunService videoParseRuns,
-      @Lazy HotNewsTopicService topics) {
+      @Lazy HotNewsTopicService topics,
+      OwnerScope ownerScope) {
     this.itemMapper = itemMapper;
     this.topicMapper = topicMapper;
     this.topicSourceMapper = topicSourceMapper;
@@ -83,6 +89,7 @@ public class SourceItemVideoParseStrategy implements VideoParseOwnerStrategy<Sou
     this.sourceVideoContentAssist = sourceVideoContentAssist;
     this.videoParseRuns = videoParseRuns;
     this.topics = topics;
+    this.ownerScope = ownerScope;
   }
 
   @Override
@@ -284,10 +291,11 @@ public class SourceItemVideoParseStrategy implements VideoParseOwnerStrategy<Sou
     // 近 7 日活跃簇作合并目标；发布年龄不再硬拒
     LocalDateTime cutoff = LocalDateTime.now().minus(7, ChronoUnit.DAYS);
     LocalDateTime published = PublishTimeUtil.resolvePublishedAt(item.getPublishedAt(), item.getUrl());
-    List<TopicClusterEntity> clusters = topicMapper.selectList(
-        new LambdaQueryWrapper<TopicClusterEntity>()
-            .eq(TopicClusterEntity::getThemeId, themeId)
-            .ge(TopicClusterEntity::getLastSeenAt, cutoff));
+    LambdaQueryWrapper<TopicClusterEntity> clusterQuery = new LambdaQueryWrapper<TopicClusterEntity>()
+        .eq(TopicClusterEntity::getThemeId, themeId)
+        .ge(TopicClusterEntity::getLastSeenAt, cutoff);
+    OwnerScopeQueryHelper.applyOwnerEquals(clusterQuery, ownerScope, TopicClusterEntity::getOwnerUserId);
+    List<TopicClusterEntity> clusters = topicMapper.selectList(clusterQuery);
     TopicClusterEntity match = clusters.stream()
         .filter(cluster -> TopicMathUtil.similar(cluster.getTitle(), item.getTitle()))
         .findFirst()
@@ -307,6 +315,7 @@ public class SourceItemVideoParseStrategy implements VideoParseOwnerStrategy<Sou
       match.setWritingScore(0);
       match.setConfidenceScore(0);
       match.setScoreReason("");
+      match.setOwnerUserId(ownerScope.effectiveOwnerUserId());
       match.setFirstSeenAt(seenAt == null ? now : seenAt);
       match.setLastSeenAt(seenAt == null ? now : seenAt);
       match.setCreatedAt(now);

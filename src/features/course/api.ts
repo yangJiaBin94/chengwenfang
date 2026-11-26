@@ -1,4 +1,4 @@
-import { unwrapApiResult } from "../../shared/api/http";
+﻿import { apiFetch, unwrapApiResult } from "../../shared/api/http";
 import {
   loadJob,
   loadJobArticleVersions,
@@ -270,38 +270,38 @@ async function readPayload<T>(response: Response) {
 
 /** Load the built-in and user-created native publishing themes. */
 export async function listLayoutThemes() {
-  return readPayload<LayoutThemeData[]>(await fetch("/api/layout/themes", { cache: "no-store" }));
+  return readPayload<LayoutThemeData[]>(await apiFetch("/api/layout/themes", { cache: "no-store" }));
 }
 
 /** Create a user-owned theme from a validated configuration. */
 export async function createLayoutTheme(body: { name: string; description: string; config: Record<string, unknown> }) {
-  return readPayload<LayoutThemeData>(await fetch("/api/layout/themes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }));
+  return readPayload<LayoutThemeData>(await apiFetch("/api/layout/themes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }));
 }
 
 /** Update a user-owned theme; the server creates an immutable theme version. */
 export async function updateLayoutTheme(id: string, body: { name: string; description: string; config: Record<string, unknown> }) {
-  return readPayload<LayoutThemeData>(await fetch(`/api/layout/themes/${encodeURIComponent(id)}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }));
+  return readPayload<LayoutThemeData>(await apiFetch(`/api/layout/themes/${encodeURIComponent(id)}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }));
 }
 
 /** Clone a system theme into an editable user theme. */
 export async function cloneLayoutTheme(id: string) {
-  return readPayload<LayoutThemeData>(await fetch(`/api/layout/themes/${encodeURIComponent(id)}/clone`, { method: "POST" }));
+  return readPayload<LayoutThemeData>(await apiFetch(`/api/layout/themes/${encodeURIComponent(id)}/clone`, { method: "POST" }));
 }
 
 /** Enable or disable a custom theme. */
 export async function setLayoutThemeStatus(id: string, status: "enabled" | "disabled") {
-  return readPayload<LayoutThemeData>(await fetch(`/api/layout/themes/${encodeURIComponent(id)}/status`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) }));
+  return readPayload<LayoutThemeData>(await apiFetch(`/api/layout/themes/${encodeURIComponent(id)}/status`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) }));
 }
 
 /** Delete an unused custom theme. */
 export async function deleteLayoutTheme(id: string) {
-  const response = await fetch(`/api/layout/themes/${encodeURIComponent(id)}`, { method: "DELETE" });
+  const response = await apiFetch(`/api/layout/themes/${encodeURIComponent(id)}`, { method: "DELETE" });
   if (!response.ok) await readPayload<never>(response);
 }
 
 /** Render Markdown into the same sanitized HTML used for preview and copying. */
 export async function renderPublishingMarkdown(markdown: string, themeVersionId?: string) {
-  return readPayload<PublishingRenderData>(await fetch("/api/publishing/render", {
+  return readPayload<PublishingRenderData>(await apiFetch("/api/publishing/render", {
     method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ markdown, themeVersionId: themeVersionId || null }),
   }));
@@ -310,7 +310,7 @@ export async function renderPublishingMarkdown(markdown: string, themeVersionId?
 /** Load layout settings without creating an article version. */
 export async function loadArticleLayout(articleId: string, documentId?: string | null) {
   return readPayload<ArticleLayoutData>(
-    await fetch(articlesOrDocumentsPath(articleId, documentId, "/layout"), {
+    await apiFetch(articlesOrDocumentsPath(articleId, documentId, "/layout"), {
       cache: "no-store",
     }),
   );
@@ -328,7 +328,7 @@ export async function saveArticleLayout(
 ) {
   const { documentId, ...rest } = body;
   return readPayload<ArticleLayoutData>(
-    await fetch(articlesOrDocumentsPath(articleId, documentId, "/layout"), {
+    await apiFetch(articlesOrDocumentsPath(articleId, documentId, "/layout"), {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       // 仅在调用方显式给出 documentId 时写入
@@ -353,7 +353,7 @@ export async function createPublishingSnapshot(
 ) {
   const { documentId, ...rest } = body;
   return readPayload<PublishingSnapshotData>(
-    await fetch(articlesOrDocumentsPath(articleId, documentId, "/publishing-snapshots"), {
+    await apiFetch(articlesOrDocumentsPath(articleId, documentId, "/publishing-snapshots"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       // 仅在调用方显式给出 documentId 时写入；否则交给后端按 articleId 解析
@@ -370,18 +370,18 @@ export async function loadChengwenfangData<T>(themeId?: string) {
   const path = themeId
     ? `/api/themes/${encodeURIComponent(themeId)}/courses`
     : "/api/courses";
-  return readPayload<T>(await fetch(path, { cache: "no-store" }));
+  return readPayload<T>(await apiFetch(path, { cache: "no-store" }));
 }
 
 /** Load fixed content modes and their selectable themes. */
 export async function listContentModes() {
-  return readPayload<ContentModeData[]>(await fetch("/api/modes", { cache: "no-store" }));
+  return readPayload<ContentModeData[]>(await apiFetch("/api/modes", { cache: "no-store" }));
 }
 
 /** Load current draft and article content for one course. */
 export async function loadCourseContent(courseId: string, themeId?: string) {
   const theme = themeId || "theme-ai-self-study-zero";
-  const response = await fetch(
+  const response = await apiFetch(
     `/api/themes/${encodeURIComponent(theme)}/courses/${encodeURIComponent(courseId)}/content`,
     { cache: "no-store" },
   );
@@ -393,7 +393,7 @@ export async function createThemeDraft(
   modeId: string,
   body?: { name?: string; description?: string; code?: string },
 ) {
-  const response = await fetch(`/api/modes/${encodeURIComponent(modeId)}/themes/drafts`, {
+  const response = await apiFetch(`/api/modes/${encodeURIComponent(modeId)}/themes/drafts`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body || {}),
@@ -404,7 +404,7 @@ export async function createThemeDraft(
 /** Theme detail. */
 export async function getContentTheme(themeId: string) {
   return readPayload<ContentThemeData>(
-    await fetch(`/api/themes/${encodeURIComponent(themeId)}`, { cache: "no-store" }),
+    await apiFetch(`/api/themes/${encodeURIComponent(themeId)}`, { cache: "no-store" }),
   );
 }
 
@@ -418,7 +418,7 @@ export async function patchThemeBriefing(
     code?: string;
   },
 ) {
-  const response = await fetch(`/api/themes/${encodeURIComponent(themeId)}/briefing`, {
+  const response = await apiFetch(`/api/themes/${encodeURIComponent(themeId)}/briefing`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -428,7 +428,7 @@ export async function patchThemeBriefing(
 
 /** Enqueue curriculum generation job. */
 export async function generateThemeCurriculum(themeId: string) {
-  const response = await fetch(
+  const response = await apiFetch(
     `/api/themes/${encodeURIComponent(themeId)}/curriculum:generate`,
     { method: "POST" },
   );
@@ -438,7 +438,7 @@ export async function generateThemeCurriculum(themeId: string) {
 /** Poll curriculum generation job. */
 export async function loadThemeCurriculumJob(themeId: string) {
   return readPayload<JobData | null>(
-    await fetch(`/api/themes/${encodeURIComponent(themeId)}/curriculum-job`, {
+    await apiFetch(`/api/themes/${encodeURIComponent(themeId)}/curriculum-job`, {
       cache: "no-store",
     }),
   );
@@ -447,7 +447,7 @@ export async function loadThemeCurriculumJob(themeId: string) {
 /** Load curriculum draft. */
 export async function getCurriculumDraft(themeId: string) {
   return readPayload<CurriculumDraftData>(
-    await fetch(`/api/themes/${encodeURIComponent(themeId)}/curriculum-draft`, {
+    await apiFetch(`/api/themes/${encodeURIComponent(themeId)}/curriculum-draft`, {
       cache: "no-store",
     }),
   );
@@ -455,7 +455,7 @@ export async function getCurriculumDraft(themeId: string) {
 
 /** Save edited curriculum draft. */
 export async function saveCurriculumDraft(themeId: string, draft: CurriculumDraftData) {
-  const response = await fetch(
+  const response = await apiFetch(
     `/api/themes/${encodeURIComponent(themeId)}/curriculum-draft`,
     {
       method: "PUT",
@@ -468,7 +468,7 @@ export async function saveCurriculumDraft(themeId: string, draft: CurriculumDraf
 
 /** Commit curriculum shells. */
 export async function commitThemeCurriculum(themeId: string) {
-  const response = await fetch(
+  const response = await apiFetch(
     `/api/themes/${encodeURIComponent(themeId)}/curriculum:commit`,
     { method: "POST" },
   );
@@ -477,7 +477,7 @@ export async function commitThemeCurriculum(themeId: string) {
 
 /** Confirm a hot-news theme questionnaire and seed initial search channels. */
 export async function commitHotNewsTheme(themeId: string) {
-  const response = await fetch(
+  const response = await apiFetch(
     `/api/themes/${encodeURIComponent(themeId)}/hot-news:commit`,
     { method: "POST" },
   );
@@ -498,7 +498,7 @@ export async function saveHotNewsThemeConfig(
     description?: string;
   },
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `/api/themes/${encodeURIComponent(themeId)}/hot-news:save-config`,
     {
       method: "POST",
@@ -524,7 +524,7 @@ export async function suggestHotNewsSearchQueries(body: {
   materialWants?: string[];
   materialAvoids?: string[];
 }) {
-  const response = await fetch("/api/themes/hot-news:suggest-search-queries", {
+  const response = await apiFetch("/api/themes/hot-news:suggest-search-queries", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -555,7 +555,7 @@ export async function suggestHotNewsCoreIntent(body: {
   description?: string;
   domainLabel?: string;
 }) {
-  const response = await fetch("/api/themes/hot-news:suggest-core-intent", {
+  const response = await apiFetch("/api/themes/hot-news:suggest-core-intent", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -583,7 +583,7 @@ export async function suggestHotNewsCollectStrategy(body: {
   materialWants?: string[];
   materialAvoids?: string[];
 }) {
-  const response = await fetch("/api/themes/hot-news:suggest-collect-strategy", {
+  const response = await apiFetch("/api/themes/hot-news:suggest-collect-strategy", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -621,7 +621,7 @@ export async function suggestHotNewsGithubQuery(body: {
   domainLabel?: string;
   searchQueries?: string[];
 }) {
-  const response = await fetch("/api/themes/hot-news:suggest-github-query", {
+  const response = await apiFetch("/api/themes/hot-news:suggest-github-query", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -645,7 +645,7 @@ export async function suggestHotNewsScoringRubric(body: {
   outOfScope?: string;
   contentStance?: string;
 }) {
-  const response = await fetch("/api/themes/hot-news:suggest-scoring-rubric", {
+  const response = await apiFetch("/api/themes/hot-news:suggest-scoring-rubric", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -667,7 +667,7 @@ export async function patchContentTheme(
   themeId: string,
   body: { name?: string; description?: string; status?: string; sortOrder?: number },
 ) {
-  const response = await fetch(`/api/themes/${encodeURIComponent(themeId)}`, {
+  const response = await apiFetch(`/api/themes/${encodeURIComponent(themeId)}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -677,7 +677,7 @@ export async function patchContentTheme(
 
 /** Soft-delete a theme. Courses and articles stay in the database. */
 export async function deleteContentTheme(themeId: string) {
-  const response = await fetch(`/api/themes/${encodeURIComponent(themeId)}`, {
+  const response = await apiFetch(`/api/themes/${encodeURIComponent(themeId)}`, {
     method: "DELETE",
   });
   return readPayload<null>(response);
@@ -687,7 +687,7 @@ export async function deleteContentTheme(themeId: string) {
 export async function listContentThemes(modeId: string, includeDeleted = false) {
   const query = includeDeleted ? "?includeDeleted=true" : "";
   return readPayload<ContentThemeData[]>(
-    await fetch(`/api/modes/${encodeURIComponent(modeId)}/themes${query}`, {
+    await apiFetch(`/api/modes/${encodeURIComponent(modeId)}/themes${query}`, {
       cache: "no-store",
     }),
   );
@@ -695,7 +695,7 @@ export async function listContentThemes(modeId: string, includeDeleted = false) 
 
 /** Restore a soft-deleted theme (status becomes disabled). */
 export async function restoreContentTheme(themeId: string) {
-  const response = await fetch(`/api/themes/${encodeURIComponent(themeId)}/restore`, {
+  const response = await apiFetch(`/api/themes/${encodeURIComponent(themeId)}/restore`, {
     method: "POST",
   });
   return readPayload<ContentThemeData>(response);
@@ -757,7 +757,7 @@ export function parseHotNewsThemeGithubQuery(
 
 /** Import learning-content paths into MySQL stored_files / course_media. */
 export async function syncLearningContent() {
-  const response = await fetch("/api/migrations/sync-learning-content", { method: "POST" });
+  const response = await apiFetch("/api/migrations/sync-learning-content", { method: "POST" });
   return readPayload<{ ok: boolean; courses: number; media: number }>(response);
 }
 
@@ -769,7 +769,7 @@ export async function saveArticleContent(
   reason = "手动编辑",
   documentId?: string | null,
 ) {
-  const response = await fetch(articlesOrDocumentsPath(articleId, documentId, ""), {
+  const response = await apiFetch(articlesOrDocumentsPath(articleId, documentId, ""), {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ content, source, reason }),
@@ -782,7 +782,7 @@ export async function loadArticleVersions(
   articleId: string,
   documentId?: string | null,
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     articlesOrDocumentsPath(articleId, documentId, "/versions"),
     { cache: "no-store" },
   );
@@ -800,7 +800,7 @@ export async function restoreArticleVersion(
   versionId: string,
   documentId?: string | null,
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     articlesOrDocumentsPath(
       articleId,
       documentId,
@@ -845,7 +845,7 @@ function articlesOrDocumentsPath(
 
 /** Run and persist a fresh deterministic audit. */
 export async function runArticleAudit(articleId: string, documentId?: string | null) {
-  const response = await fetch(articlesOrDocumentsPath(articleId, documentId, "/audit"), {
+  const response = await apiFetch(articlesOrDocumentsPath(articleId, documentId, "/audit"), {
     method: "POST",
   });
   return normalizeAuditReport(articleId, await readPayload<AuditReportData>(response));
@@ -853,7 +853,7 @@ export async function runArticleAudit(articleId: string, documentId?: string | n
 
 /** Repair deterministic image metadata and return the fresh audit report. */
 export async function repairArticleMetadata(articleId: string, documentId?: string | null) {
-  const response = await fetch(
+  const response = await apiFetch(
     articlesOrDocumentsPath(articleId, documentId, "/repair-metadata"),
     { method: "POST" },
   );
@@ -862,7 +862,7 @@ export async function repairArticleMetadata(articleId: string, documentId?: stri
 
 /** Load the human decision for the current article version; stale decisions return null. */
 export async function loadHumanReview(articleId: string, documentId?: string | null) {
-  const response = await fetch(
+  const response = await apiFetch(
     articlesOrDocumentsPath(articleId, documentId, "/human-review"),
     { cache: "no-store" },
   );
@@ -877,7 +877,7 @@ export async function saveHumanReview(
   comment: string,
   documentId?: string | null,
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     articlesOrDocumentsPath(articleId, documentId, "/human-review"),
     {
       method: "PUT",
@@ -895,7 +895,7 @@ export async function saveHumanReview(
 
 /** Withdraw the current version's human decision without touching older review history. */
 export async function resetHumanReview(articleId: string, documentId?: string | null) {
-  const response = await fetch(
+  const response = await apiFetch(
     articlesOrDocumentsPath(articleId, documentId, "/human-review"),
     { method: "DELETE" },
   );
@@ -920,7 +920,7 @@ export async function migrateLegacyHumanReviews(courses: Array<{ id: string }>) 
     }
   }
   if (!entries.length) return 0;
-  const response = await fetch("/api/migrations/human-reviews", {
+  const response = await apiFetch("/api/migrations/human-reviews", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ entries })
@@ -936,7 +936,7 @@ export async function repairArticle(
   onProgress?: (event: JobEventData) => void,
   documentId?: string | null,
 ) {
-  const response = await fetch(articlesOrDocumentsPath(articleId, documentId, "/repair"), {
+  const response = await apiFetch(articlesOrDocumentsPath(articleId, documentId, "/repair"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     // 仅在调用方显式给出 documentId 时写入
@@ -946,7 +946,7 @@ export async function repairArticle(
   window.localStorage.setItem(`chengwenfang-active-repair:${articleId}`, job.id);
   await waitForBackgroundJob(job.id, onProgress);
   const result = await readPayload<RepairResponseData>(
-    await fetch(`/api/jobs/${encodeURIComponent(job.id)}/result`, { cache: "no-store" })
+    await apiFetch(`/api/jobs/${encodeURIComponent(job.id)}/result`, { cache: "no-store" })
   );
   window.localStorage.removeItem(`chengwenfang-active-repair:${articleId}`);
   return result;
@@ -963,7 +963,7 @@ export async function resumeArticleRepair(
   if (!jobId) return null;
   try {
     const job = await readPayload<JobData>(
-      await fetch(`/api/jobs/${encodeURIComponent(jobId)}`, { cache: "no-store" })
+      await apiFetch(`/api/jobs/${encodeURIComponent(jobId)}`, { cache: "no-store" })
     );
     if (job.type !== "article_repair") {
       window.localStorage.removeItem(key);
@@ -971,7 +971,7 @@ export async function resumeArticleRepair(
     }
     if (job.status === "succeeded") {
       const result = await readPayload<RepairResponseData>(
-        await fetch(`/api/jobs/${encodeURIComponent(jobId)}/result`, { cache: "no-store" })
+        await apiFetch(`/api/jobs/${encodeURIComponent(jobId)}/result`, { cache: "no-store" })
       );
       window.localStorage.removeItem(key);
       return result;
@@ -983,7 +983,7 @@ export async function resumeArticleRepair(
     onStarted?.();
     await waitForBackgroundJob(jobId, onProgress);
     const result = await readPayload<RepairResponseData>(
-      await fetch(`/api/jobs/${encodeURIComponent(jobId)}/result`, { cache: "no-store" })
+      await apiFetch(`/api/jobs/${encodeURIComponent(jobId)}/result`, { cache: "no-store" })
     );
     window.localStorage.removeItem(key);
     return result;
@@ -1006,7 +1006,7 @@ export async function requestImageGeneration(
   onProgress?: (event: JobEventData) => void
 ) {
   const { documentId, ...rest } = request;
-  const response = await fetch(
+  const response = await apiFetch(
     articlesOrDocumentsPath(articleId, documentId, "/images"),
     {
       method: "POST",
@@ -1034,7 +1034,7 @@ export async function requestImageGeneration(
 
 /** Delete one generated image and all persisted article references. */
 export async function deleteGeneratedImage(imageId: string) {
-  const response = await fetch(`/api/images/${encodeURIComponent(imageId)}`, {
+  const response = await apiFetch(`/api/images/${encodeURIComponent(imageId)}`, {
     method: "DELETE"
   });
   if (response.status === 204) return;
@@ -1047,7 +1047,7 @@ export async function requestContentGeneration(
   onProgress: (event: { progress: number; message: string }) => void,
   documentId?: string | null,
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `/api/articles/${encodeURIComponent(articleId)}/generation/${kind}`,
     {
       method: "POST",
@@ -1069,7 +1069,7 @@ export async function requestCourseContentGeneration(
   onProgress: (event: JobEventData) => void,
   onQueued?: (job: JobData) => void,
 ) {
-  const response = await fetch(`/api/courses/${encodeURIComponent(courseId)}/generate-content`, {
+  const response = await apiFetch(`/api/courses/${encodeURIComponent(courseId)}/generate-content`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(settings),
@@ -1083,7 +1083,7 @@ export async function requestCourseContentGeneration(
 
 export async function loadCourseGenerationSettings(courseId: string) {
   return readPayload<CourseGenerationSettingsData>(
-    await fetch(`/api/courses/${encodeURIComponent(courseId)}/generation-settings`, { cache: "no-store" }),
+    await apiFetch(`/api/courses/${encodeURIComponent(courseId)}/generation-settings`, { cache: "no-store" }),
   );
 }
 
@@ -1092,7 +1092,7 @@ export async function saveCourseGenerationSettings(
   settings: Pick<CourseGenerationSettingsData, "wordCountOption" | "imageCountOption">,
 ) {
   return readPayload<CourseGenerationSettingsData>(
-    await fetch(`/api/courses/${encodeURIComponent(courseId)}/generation-settings`, {
+    await apiFetch(`/api/courses/${encodeURIComponent(courseId)}/generation-settings`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(settings),
@@ -1104,12 +1104,12 @@ export async function saveCourseGenerationSettings(
 export async function listCourseGenerationJobs(courseId?: string) {
   const query = courseId ? `?course_id=${encodeURIComponent(courseId)}` : "";
   return readPayload<JobData[]>(
-    await fetch(`/api/course-generation-jobs${query}`, { cache: "no-store" }),
+    await apiFetch(`/api/course-generation-jobs${query}`, { cache: "no-store" }),
   );
 }
 
 export async function setCoursePublished(courseId: string, published: boolean) {
-  const response = await fetch(`/api/courses/${encodeURIComponent(courseId)}/lifecycle`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ published }) });
+  const response = await apiFetch(`/api/courses/${encodeURIComponent(courseId)}/lifecycle`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ published }) });
   return readPayload<{ courseId: string; published: boolean }>(response);
 }
 

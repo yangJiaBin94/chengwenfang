@@ -54,8 +54,11 @@ public class TopicBriefSourceService {
   private final HotNewsTopicBriefService briefs;
   /** 中文提炼能力。 */
   private final HotNewsTopicEditorialService editorial;
+  /** 选题归属校验。 */
+  private final TopicQueryService topics;
 
   public List<HotNewsTopicSourceView> listTopicSources(String topicId) {
+    topics.requireTopic(topicId);
     // 按关联创建顺序展开来源
     List<TopicSourceEntity> links = topicSourceMapper.selectList(new LambdaQueryWrapper<TopicSourceEntity>()
         .eq(TopicSourceEntity::getTopicId, topicId)

@@ -20,6 +20,8 @@ import {
   listHotNewsRuns,
 } from "../api";
 import {
+  AUDIENCE_HOOK_KEY,
+  AUDIENCE_HOOK_MIN_WEIGHT,
   MAX_RUBRIC_DIMS,
   MAX_SEARCH_QUERIES,
   MAX_SEARCH_QUERY_CHARS,
@@ -388,7 +390,19 @@ export function useHotNewsThemeWizard({
       if (!dims[index]) {
         return current;
       }
-      dims[index] = { ...dims[index], ...patch };
+      const currentDim = dims[index];
+      const nextPatch = { ...patch };
+      // 固定打开欲维：禁止改 key，权重不得低于下限
+      if ((currentDim.key || "").trim().toLowerCase() === AUDIENCE_HOOK_KEY) {
+        delete nextPatch.key;
+        if (nextPatch.weight != null) {
+          const weight = Number(nextPatch.weight);
+          nextPatch.weight = Number.isFinite(weight)
+            ? Math.max(AUDIENCE_HOOK_MIN_WEIGHT, Math.round(weight))
+            : AUDIENCE_HOOK_MIN_WEIGHT;
+        }
+      }
+      dims[index] = { ...currentDim, ...nextPatch };
       return {
         ...current,
         scoring_rubric: {
@@ -401,9 +415,13 @@ export function useHotNewsThemeWizard({
     });
   }
 
-  /** 删除一维。 */
+  /** 删除一维（固定打开欲维不可删）。 */
   function removeRubricDimension(index: number) {
     setBriefing((current) => {
+      const target = current.scoring_rubric?.dimensions?.[index];
+      if ((target?.key || "").trim().toLowerCase() === AUDIENCE_HOOK_KEY) {
+        return current;
+      }
       const dims = (current.scoring_rubric?.dimensions || []).filter(
         (_item, dimIndex) => dimIndex !== index,
       );

@@ -21,6 +21,9 @@ public class ArticleAuditRunEntity {
   /** 主键（可与任务 ID 相同）。 */
   @TableId("id")
   private String id;
+  /** 所属用户。 */
+  @TableField("owner_user_id")
+  private String ownerUserId;
   /** 产出 ID（原 document_id）。 */
   @TableField("output_id")
   private String outputId;

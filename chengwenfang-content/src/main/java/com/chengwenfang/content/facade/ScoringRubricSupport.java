@@ -5,9 +5,11 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.common.ErrorCodes;
+import com.chengwenfang.content.facade.constant.HotNewsScoringRubricKeys;
 import com.chengwenfang.content.facade.dto.view.ScoringRubricDimensionView;
 import com.chengwenfang.content.facade.dto.view.ScoringRubricView;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -194,6 +196,129 @@ public final class ScoringRubricSupport {
       sum += clamped * (weight / 100.0);
     }
     return (int) Math.round(10.0 * sum);
+  }
+
+  /**
+   * 热点量表强制注入「打开欲」维：权重 {@link HotNewsScoringRubricKeys#AUDIENCE_HOOK_WEIGHT}，
+   * 且不小于其它任一维；满 6 维时淘汰权重最小的非固定维。
+   *
+   * @param rubric 原始量表；可空
+   * @return 注入后的规范化副本；输入空则 null
+   */
+  public static ScoringRubricView ensureAudienceHook(ScoringRubricView rubric) {
+    ScoringRubricView normalized = normalize(rubric);
+    if (normalized == null || CollUtil.isEmpty(normalized.getDimensions())) {
+      return normalized;
+    }
+    List<ScoringRubricDimensionView> others = new ArrayList<>();
+    for (ScoringRubricDimensionView dim : normalized.getDimensions()) {
+      if (HotNewsScoringRubricKeys.AUDIENCE_HOOK.equals(dim.getKey())) {
+        continue;
+      }
+      others.add(copyDim(dim));
+    }
+    // 满维时腾出位置给固定钩子维
+    while (others.size() >= MAX_DIMENSIONS) {
+      others.sort(Comparator.comparingInt(dim -> dim.getWeight() == null ? 0 : dim.getWeight()));
+      others.remove(0);
+    }
+    // 其它维均不超过钩子权重时，钩子至少要让剩余权重可分配
+    int hookWeight = HotNewsScoringRubricKeys.AUDIENCE_HOOK_WEIGHT;
+    if (!others.isEmpty()) {
+      int minFeasibleHook = (WEIGHT_SUM + others.size()) / (others.size() + 1);
+      hookWeight = Math.max(hookWeight, minFeasibleHook);
+    }
+    int remaining = WEIGHT_SUM - hookWeight;
+    redistributeWeights(others, remaining, hookWeight);
+    List<ScoringRubricDimensionView> dims = new ArrayList<>();
+    dims.add(ScoringRubricDimensionView.builder()
+        .key(HotNewsScoringRubricKeys.AUDIENCE_HOOK)
+        .label(HotNewsScoringRubricKeys.AUDIENCE_HOOK_LABEL)
+        .description(HotNewsScoringRubricKeys.AUDIENCE_HOOK_DESCRIPTION)
+        .weight(hookWeight)
+        .build());
+    dims.addAll(others);
+    return ScoringRubricView.builder()
+        .version(normalized.getVersion())
+        .generatedAt(normalized.getGeneratedAt())
+        .scoreGuidance(normalized.getScoreGuidance())
+        .dimensions(dims)
+        .build();
+  }
+
+  /**
+   * 将维度权重按比例缩放到合计 {@code targetSum}，单维不超过 {@code maxWeight}。
+   *
+   * @param dims      待调整维度（就地改 weight）
+   * @param targetSum 目标权重合计
+   * @param maxWeight 单维上限
+   */
+  private static void redistributeWeights(
+      List<ScoringRubricDimensionView> dims, int targetSum, int maxWeight) {
+    if (dims.isEmpty() || targetSum <= 0) {
+      return;
+    }
+    int rawSum = 0;
+    for (ScoringRubricDimensionView dim : dims) {
+      int weight = dim.getWeight() == null ? 1 : Math.max(1, dim.getWeight());
+      dim.setWeight(weight);
+      rawSum += weight;
+    }
+    int allocated = 0;
+    for (int index = 0; index < dims.size(); index++) {
+      ScoringRubricDimensionView dim = dims.get(index);
+      int weight;
+      if (index == dims.size() - 1) {
+        weight = Math.max(1, targetSum - allocated);
+      } else {
+        weight = Math.max(1, (int) Math.round(dim.getWeight() * (targetSum * 1.0 / rawSum)));
+        allocated += weight;
+      }
+      dim.setWeight(Math.min(maxWeight, weight));
+    }
+    // 舍入与上限裁剪后的差额回填
+    int sum = dims.stream().mapToInt(ScoringRubricDimensionView::getWeight).sum();
+    int leftover = targetSum - sum;
+    int guard = 0;
+    while (leftover != 0 && guard++ < 200) {
+      boolean moved = false;
+      for (ScoringRubricDimensionView dim : dims) {
+        if (leftover == 0) {
+          break;
+        }
+        int next = dim.getWeight() + (leftover > 0 ? 1 : -1);
+        if (next < 1 || next > maxWeight) {
+          continue;
+        }
+        dim.setWeight(next);
+        leftover += leftover > 0 ? -1 : 1;
+        moved = true;
+      }
+      if (!moved) {
+        break;
+      }
+    }
+  }
+
+  private static ScoringRubricDimensionView copyDim(ScoringRubricDimensionView dim) {
+    return ScoringRubricDimensionView.builder()
+        .key(dim.getKey())
+        .label(dim.getLabel())
+        .description(dim.getDescription())
+        .weight(dim.getWeight())
+        .build();
+  }
+
+  /**
+   * 热点量表：先注入打开欲维，再校验合法性。
+   *
+   * @param rubric 量表
+   * @return 注入后的合法量表
+   */
+  public static ScoringRubricView assertValidHotNews(ScoringRubricView rubric) {
+    ScoringRubricView ensured = ensureAudienceHook(rubric);
+    assertValid(ensured);
+    return ensured;
   }
 
   /**

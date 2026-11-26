@@ -1,7 +1,11 @@
 package com.chengwenfang.app.adapter.web.common;
 
+import cn.dev33.satoken.exception.NotLoginException;
+import cn.dev33.satoken.exception.NotPermissionException;
+import cn.dev33.satoken.exception.NotRoleException;
 import com.chengwenfang.common.ApiResult;
 import com.chengwenfang.common.BusinessException;
+import com.chengwenfang.common.ErrorCodes;
 import com.chengwenfang.common.TraceIdsUtil;
 import java.io.IOException;
 import java.util.stream.Collectors;
@@ -37,6 +41,32 @@ public class GlobalExceptionHandler {
         ex.getHttpStatus(),
         ex.getMessage());
     return ResponseEntity.status(ex.getHttpStatus()).body(ApiResult.fail(ex.getCode(), ex.getMessage()));
+  }
+
+  /**
+   * Sa-Token 未登录。
+   *
+   * @param ex 未登录异常
+   * @return 401
+   */
+  @ExceptionHandler(NotLoginException.class)
+  public ResponseEntity<ApiResult<Void>> handleNotLogin(NotLoginException ex) {
+    log.warn("未登录 traceId={} msg={}", MDC.get(TraceIdsUtil.MDC_KEY), ex.getMessage());
+    return ResponseEntity.status(401)
+        .body(ApiResult.fail(ErrorCodes.UNAUTHORIZED, "请先登录"));
+  }
+
+  /**
+   * Sa-Token 角色或权限不足。
+   *
+   * @param ex 鉴权异常
+   * @return 403
+   */
+  @ExceptionHandler({NotPermissionException.class, NotRoleException.class})
+  public ResponseEntity<ApiResult<Void>> handleSaForbidden(RuntimeException ex) {
+    log.warn("权限不足 traceId={} msg={}", MDC.get(TraceIdsUtil.MDC_KEY), ex.getMessage());
+    return ResponseEntity.status(403)
+        .body(ApiResult.fail(ErrorCodes.FORBIDDEN, "权限不足"));
   }
 
   /**

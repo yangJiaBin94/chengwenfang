@@ -19,6 +19,9 @@ public class SourceItemEntity {
   /** 主键 ID。 */
   @TableId("id")
   private String id;
+  /** 所属用户。 */
+  @TableField("owner_user_id")
+  private String ownerUserId;
   /** 主题 ID。 */
   @TableField("theme_id")
   private String themeId;

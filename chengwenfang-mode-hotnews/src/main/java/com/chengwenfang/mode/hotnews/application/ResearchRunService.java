@@ -3,6 +3,7 @@ package com.chengwenfang.mode.hotnews.application;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.chengwenfang.common.BusinessException;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.common.ErrorCodes;
 import com.chengwenfang.common.IdsUtil;
 import com.chengwenfang.crawler.facade.FetchFacade;
@@ -84,6 +85,8 @@ public class ResearchRunService {
   private final ResearchArticleEnricher articleEnricher;
   /** 资料池 → 知识库。 */
   private final HotNewsKnowledgeIngestService knowledgeIngest;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * @param researchRunMapper             调研运行 Mapper
@@ -117,7 +120,8 @@ public class ResearchRunService {
       ResearchSupplementAgent researchSupplementAgent,
       ResearchSourcePolicyResolver researchSourcePolicyResolver,
       ResearchArticleEnricher articleEnricher,
-      HotNewsKnowledgeIngestService knowledgeIngest) {
+      HotNewsKnowledgeIngestService knowledgeIngest,
+      OwnerScope ownerScope) {
     this.researchRunMapper = researchRunMapper;
     this.briefMapper = briefMapper;
     this.jobs = jobs;
@@ -133,6 +137,7 @@ public class ResearchRunService {
     this.researchSourcePolicyResolver = researchSourcePolicyResolver;
     this.articleEnricher = articleEnricher;
     this.knowledgeIngest = knowledgeIngest;
+    this.ownerScope = ownerScope;
   }
 
   /**
@@ -167,6 +172,7 @@ public class ResearchRunService {
     // 先落 pending run，再入队 Job，使互斥对 video-parse 立即可见
     TopicResearchRunEntity run = new TopicResearchRunEntity();
     run.setId(IdsUtil.newId());
+    run.setOwnerUserId(ownerScope.effectiveOwnerUserId());
     run.setTopicId(topicId);
     run.setStatus(JobStatus.PENDING.getValue());
     run.setCreatedAt(LocalDateTime.now());
@@ -243,8 +249,12 @@ public class ResearchRunService {
     if (run == null) {
       throw new BusinessException(ErrorCodes.RESEARCH_RUN_NOT_FOUND, "调研运行不存在", 404);
     }
-    // 允许调用方覆盖 topicId；未传则用运行记录
-    String resolvedTopicId = StrUtil.isBlank(topicId) ? run.getTopicId() : topicId;
+    ownerScope.assertCanAccess(run.getOwnerUserId());
+    // 绑死 run ↔ topic：入参仅可与运行记录一致，禁止覆盖到其他选题
+    if (StrUtil.isNotBlank(topicId) && !topicId.equals(run.getTopicId())) {
+      throw new BusinessException(ErrorCodes.RESEARCH_TOPIC_MISMATCH, "调研运行与选题不匹配", 400);
+    }
+    String resolvedTopicId = run.getTopicId();
     TopicClusterEntity topic = topics.requireTopic(resolvedTopicId);
     LocalDateTime now = LocalDateTime.now();
     run.setStatus(JobStatus.RUNNING.getValue());

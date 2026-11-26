@@ -4,6 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.chengwenfang.file.facade.FileFacade;
 import com.chengwenfang.file.facade.dto.view.FileView;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.knowledge.application.ingest.KnowledgeUploadMediaResolver;
 import com.chengwenfang.knowledge.domain.entity.KnowledgeDocumentEntity;
 import com.chengwenfang.knowledge.domain.model.KnowledgeIngestDraft;
@@ -28,6 +29,8 @@ public class ManualUploadSourceConnector implements KnowledgeSourceConnector {
   private final KnowledgeDocumentMapper documentMapper;
   /** 文件门面。 */
   private final FileFacade fileFacade;
+  /** 用户数据范围。 */
+  private final OwnerScope ownerScope;
 
   /** {@inheritDoc} */
   @Override
@@ -41,11 +44,12 @@ public class ManualUploadSourceConnector implements KnowledgeSourceConnector {
     if (StrUtil.isBlank(sourceRefId)) {
       return null;
     }
-    KnowledgeDocumentEntity document = documentMapper.selectOne(
-        new LambdaQueryWrapper<KnowledgeDocumentEntity>()
-            .eq(KnowledgeDocumentEntity::getSourceKind, KnowledgeSourceKind.MANUAL_UPLOAD.getValue())
-            .eq(KnowledgeDocumentEntity::getSourceRefId, sourceRefId)
-            .last("LIMIT 1"));
+    LambdaQueryWrapper<KnowledgeDocumentEntity> query = new LambdaQueryWrapper<KnowledgeDocumentEntity>()
+        .eq(KnowledgeDocumentEntity::getSourceKind, KnowledgeSourceKind.MANUAL_UPLOAD.getValue())
+        .eq(KnowledgeDocumentEntity::getSourceRefId, sourceRefId)
+        .last("LIMIT 1");
+    applyDocumentOwnerFilter(query);
+    KnowledgeDocumentEntity document = documentMapper.selectOne(query);
     if (document == null) {
       return loadFromFileOnly(sourceRefId);
     }
@@ -55,10 +59,11 @@ public class ManualUploadSourceConnector implements KnowledgeSourceConnector {
   /** {@inheritDoc} */
   @Override
   public List<String> listForReindex() {
-    List<KnowledgeDocumentEntity> rows = documentMapper.selectList(
-        new LambdaQueryWrapper<KnowledgeDocumentEntity>()
-            .eq(KnowledgeDocumentEntity::getSourceKind, KnowledgeSourceKind.MANUAL_UPLOAD.getValue())
-            .select(KnowledgeDocumentEntity::getSourceRefId));
+    LambdaQueryWrapper<KnowledgeDocumentEntity> query = new LambdaQueryWrapper<KnowledgeDocumentEntity>()
+        .eq(KnowledgeDocumentEntity::getSourceKind, KnowledgeSourceKind.MANUAL_UPLOAD.getValue())
+        .select(KnowledgeDocumentEntity::getSourceRefId);
+    applyDocumentOwnerFilter(query);
+    List<KnowledgeDocumentEntity> rows = documentMapper.selectList(query);
     List<String> sourceRefIds = new ArrayList<>();
     for (KnowledgeDocumentEntity row : rows) {
       if (row != null && StrUtil.isNotBlank(row.getSourceRefId())) {
@@ -66,6 +71,23 @@ public class ManualUploadSourceConnector implements KnowledgeSourceConnector {
       }
     }
     return sourceRefIds;
+  }
+
+  /**
+   * 非管理员按当前用户过滤文档；无身份时失败关闭（0 行）。
+   *
+   * @param query 文档查询
+   */
+  private void applyDocumentOwnerFilter(LambdaQueryWrapper<KnowledgeDocumentEntity> query) {
+    if (ownerScope.currentUserIsAdmin()) {
+      return;
+    }
+    String ownerId = ownerScope.currentOwnerUserId().orElse(null);
+    if (StrUtil.isBlank(ownerId)) {
+      query.apply("1 = 0");
+      return;
+    }
+    query.eq(KnowledgeDocumentEntity::getOwnerUserId, ownerId);
   }
 
   private KnowledgeIngestDraft toDraft(KnowledgeDocumentEntity document) {

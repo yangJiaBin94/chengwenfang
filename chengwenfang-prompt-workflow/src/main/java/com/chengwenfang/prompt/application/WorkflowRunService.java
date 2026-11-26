@@ -8,6 +8,8 @@ import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.common.ErrorCodes;
 import com.chengwenfang.common.IdsUtil;
 import com.chengwenfang.file.facade.FileFacade;
+import com.chengwenfang.identity.application.OwnerScopeQueryHelper;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.file.facade.dto.view.StoredFileView;
 import com.chengwenfang.prompt.domain.entity.WorkflowAlertEntity;
 import com.chengwenfang.prompt.domain.entity.WorkflowArtifactEntity;
@@ -66,6 +68,8 @@ public class WorkflowRunService {
   private final WorkflowSupport support;
   /** 产物正文存文件。 */
   private final FileFacade files;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * 列出某工作流的运行记录，按创建时间倒序。
@@ -77,9 +81,10 @@ public class WorkflowRunService {
   public List<WorkflowRunView> listRuns(String id) {
     support.require(id);
     // 最近运行排前
-    return runMapper.selectList(new LambdaQueryWrapper<WorkflowRunEntity>()
-            .eq(WorkflowRunEntity::getWorkflowDefinitionId, id)
-            .orderByDesc(WorkflowRunEntity::getCreatedAt))
+    LambdaQueryWrapper<WorkflowRunEntity> query = new LambdaQueryWrapper<WorkflowRunEntity>()
+        .eq(WorkflowRunEntity::getWorkflowDefinitionId, id);
+    OwnerScopeQueryHelper.applyOwnerEquals(query, ownerScope, WorkflowRunEntity::getOwnerUserId);
+    return runMapper.selectList(query.orderByDesc(WorkflowRunEntity::getCreatedAt))
         .stream()
         .map(support::toRunView)
         .toList();
@@ -104,11 +109,13 @@ public class WorkflowRunService {
         .eq(WorkflowRunEntity::getJobId, jobId)
         .last("LIMIT 1"));
     if (existing != null) {
+      ownerScope.assertCanAccess(existing.getOwnerUserId());
       return support.toRunView(existing);
     }
     LocalDateTime now = LocalDateTime.now();
     WorkflowRunEntity run = new WorkflowRunEntity();
     run.setId(IdsUtil.newId());
+    run.setOwnerUserId(ownerScope.effectiveOwnerUserId());
     run.setJobId(jobId);
     run.setWorkflowName(def.getName() == null ? def.getWorkflowKey() : def.getName());
     run.setThreadId(null);
@@ -141,6 +148,7 @@ public class WorkflowRunService {
     if (run == null) {
       return;
     }
+    ownerScope.assertCanAccess(run.getOwnerUserId());
     // 已终态则不再改写，避免覆盖
     if (run.getFinishedAt() != null) {
       return;
@@ -171,6 +179,7 @@ public class WorkflowRunService {
     if (run == null || run.getFinishedAt() != null) {
       return;
     }
+    ownerScope.assertCanAccess(run.getOwnerUserId());
     LocalDateTime now = LocalDateTime.now();
     // 非终态且非 running 时推进到 running
     if (!WorkflowRunStatus.RUNNING.getValue().equals(run.getStatus())
@@ -200,6 +209,7 @@ public class WorkflowRunService {
     if (run == null) {
       return null;
     }
+    ownerScope.assertCanAccess(run.getOwnerUserId());
     LocalDateTime now = LocalDateTime.now();
     if (!WorkflowRunStatus.RUNNING.getValue().equals(run.getStatus())) {
       run.setStatus(WorkflowRunStatus.RUNNING.getValue());
@@ -241,6 +251,7 @@ public class WorkflowRunService {
     if (run == null) {
       return List.of();
     }
+    ownerScope.assertCanAccess(run.getOwnerUserId());
     return nodeRunMapper.selectList(new LambdaQueryWrapper<WorkflowNodeRunEntity>()
             .eq(WorkflowNodeRunEntity::getWorkflowRunId, run.getId())
             .orderByAsc(WorkflowNodeRunEntity::getSequenceNo)
@@ -447,6 +458,7 @@ public class WorkflowRunService {
     // 固定 metric/severity，便于列表过滤失败类告警
     WorkflowAlertEntity alert = new WorkflowAlertEntity();
     alert.setId(IdsUtil.newId());
+    alert.setOwnerUserId(ownerScope.effectiveOwnerUserId());
     alert.setWorkflowId(workflowId);
     alert.setRunId(runId);
     alert.setMetric(WorkflowAlertMetric.RUN_FAILED.getValue());

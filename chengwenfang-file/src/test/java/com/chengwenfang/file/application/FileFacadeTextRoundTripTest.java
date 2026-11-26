@@ -7,6 +7,8 @@ import com.chengwenfang.file.facade.StorageProvider;
 import com.chengwenfang.file.facade.dto.view.StoredFileView;
 import com.chengwenfang.file.facade.enums.StorageType;
 import com.chengwenfang.file.infrastructure.mapper.StoredFileMapper;
+import com.chengwenfang.identity.facade.OwnerScope;
+import com.chengwenfang.identity.facade.constant.SeedUserIds;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -48,7 +50,10 @@ class FileFacadeTextRoundTripTest {
       return 1;
     });
 
-    files = new FileFacadeImpl(mapper, List.of(new TempDirStorageProvider(tempDir)), new StoredFileViewMapper());
+    OwnerScope ownerScope = Mockito.mock(OwnerScope.class);
+    Mockito.when(ownerScope.effectiveOwnerUserId()).thenReturn(SeedUserIds.ADMIN);
+    files = new FileFacadeImpl(
+        mapper, List.of(new TempDirStorageProvider(tempDir)), new StoredFileViewMapper(), ownerScope);
   }
 
   /**

@@ -21,6 +21,9 @@ public class RepairRunEntity {
   /** 主键。 */
   @TableId("id")
   private String id;
+  /** 所属用户。 */
+  @TableField("owner_user_id")
+  private String ownerUserId;
   /** 产出 ID。 */
   @TableField("output_id")
   private String outputId;

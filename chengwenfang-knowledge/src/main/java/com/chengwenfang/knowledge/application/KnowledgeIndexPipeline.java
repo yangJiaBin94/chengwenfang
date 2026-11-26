@@ -11,6 +11,7 @@ import com.chengwenfang.common.ErrorCodes;
 import com.chengwenfang.common.IdsUtil;
 import com.chengwenfang.file.facade.FileFacade;
 import com.chengwenfang.file.facade.dto.view.StoredFileView;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.knowledge.domain.entity.KnowledgeChunkEntity;
 import com.chengwenfang.knowledge.domain.entity.KnowledgeDocumentEntity;
 import com.chengwenfang.knowledge.domain.model.KnowledgeChunkParams;
@@ -77,6 +78,8 @@ public class KnowledgeIndexPipeline {
   private final KnowledgeDocumentStatusWriter documentStatusWriter;
   /** 图边旁路按 chunkIndex 回放。 */
   private final KnowledgeGraphEdgeOverrideReplay edgeOverrideReplay;
+  /** 用户数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * 对指定文档执行索引（默认写 active；全量蓝绿窗口内改写 writing，避免切流回退）。
@@ -116,6 +119,7 @@ public class KnowledgeIndexPipeline {
           "知识库文档不存在",
           404);
     }
+    ownerScope.assertCanAccess(document.getOwnerUserId());
     String writeVersion = StrUtil.blankToDefault(indexVersion, indexVersionService.activeVersion());
     String activeVersion = indexVersionService.activeVersion();
     boolean blueGreenWrite = !StrUtil.equals(writeVersion, activeVersion);
@@ -219,6 +223,7 @@ public class KnowledgeIndexPipeline {
         upserts.add(KnowledgeVectorUpsert.builder()
             .chunkId(chunkId)
             .documentId(documentId)
+            .ownerUserId(document.getOwnerUserId())
             .vector(vectors.get(index))
             .sourceKind(document.getSourceKind())
             .sourceRefId(document.getSourceRefId())

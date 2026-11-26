@@ -4,6 +4,7 @@ import cn.hutool.core.convert.Convert;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.chengwenfang.common.IdsUtil;
+import com.chengwenfang.identity.facade.constant.SeedUserIds;
 import com.chengwenfang.prompt.application.graphseed.CourseWorkflowGraphSeed;
 import com.chengwenfang.prompt.application.graphseed.HotNewsWorkflowGraphSeed;
 import com.chengwenfang.prompt.application.graphseed.RadarCollectWorkflowGraphSeed;
@@ -87,14 +88,17 @@ public class BuiltinWorkflowDefinitionService {
    */
   @Transactional
   public void ensureBuiltin(String key, String name, String scene) {
+    // 平台种子挂种子管理员；按 (owner, key) 查，避免撞上普通用户同 key 行
     WorkflowDefinitionEntity existing = definitionMapper.selectOne(new LambdaQueryWrapper<WorkflowDefinitionEntity>()
         .eq(WorkflowDefinitionEntity::getWorkflowKey, key)
+        .eq(WorkflowDefinitionEntity::getOwnerUserId, SeedUserIds.ADMIN)
         .last("LIMIT 1"));
     if (existing != null) {
       // 已有定义但缺草稿时补一行，避免编辑器打不开
       if (support.findDraft(existing.getId()) == null) {
         LocalDateTime now = LocalDateTime.now();
-        draftMapper.insert(support.newDraftEntity(existing.getId(), WorkflowSupport.emptyDefinition(existing), 1, null, now));
+        // 种子草稿归属与定义一致，避免登录态下写成当前用户
+        draftMapper.insert(seedDraft(existing.getId(), WorkflowSupport.emptyDefinition(existing), now));
       }
       if (StrUtil.isNotBlank(name) && !name.equals(existing.getName())) {
         existing.setName(name);
@@ -112,11 +116,26 @@ public class BuiltinWorkflowDefinitionService {
     def.setScene(scene);
     def.setStatus(WorkflowDefinitionStatus.ACTIVE.getValue());
     def.setOwner(WorkflowOwnerKeys.SYSTEM);
+    def.setOwnerUserId(SeedUserIds.ADMIN);
     def.setPublishedVersionId(null);
     def.setCreatedAt(now);
     def.setUpdatedAt(now);
     definitionMapper.insert(def);
-    draftMapper.insert(support.newDraftEntity(def.getId(), WorkflowSupport.emptyDefinition(def), 1, null, now));
+    draftMapper.insert(seedDraft(def.getId(), WorkflowSupport.emptyDefinition(def), now));
+  }
+
+  /**
+   * 组装种子管理员归属的内置草稿行。
+   *
+   * @param workflowId 定义 id
+   * @param definition 图定义
+   * @param now        时间戳
+   * @return 草稿实体
+   */
+  private WorkflowDraftEntity seedDraft(String workflowId, Map<String, Object> definition, LocalDateTime now) {
+    WorkflowDraftEntity draft = support.newDraftEntity(workflowId, definition, 1, null, now);
+    draft.setOwnerUserId(SeedUserIds.ADMIN);
+    return draft;
   }
 
   /**
@@ -130,9 +149,7 @@ public class BuiltinWorkflowDefinitionService {
     String name = CourseWorkflowKeys.DISPLAY_NAME;
     String scene = CourseWorkflowKeys.SCENE;
     ensureBuiltin(key, name, scene);
-    WorkflowDefinitionEntity def = definitionMapper.selectOne(new LambdaQueryWrapper<WorkflowDefinitionEntity>()
-        .eq(WorkflowDefinitionEntity::getWorkflowKey, key)
-        .last("LIMIT 1"));
+    WorkflowDefinitionEntity def = findSeedBuiltin(key);
     if (def == null) {
       return;
     }
@@ -266,9 +283,7 @@ public class BuiltinWorkflowDefinitionService {
     String name = HotNewsWorkflowKeys.DISPLAY_NAME;
     String scene = HotNewsWorkflowKeys.SCENE;
     ensureBuiltin(key, name, scene);
-    WorkflowDefinitionEntity def = definitionMapper.selectOne(new LambdaQueryWrapper<WorkflowDefinitionEntity>()
-        .eq(WorkflowDefinitionEntity::getWorkflowKey, key)
-        .last("LIMIT 1"));
+    WorkflowDefinitionEntity def = findSeedBuiltin(key);
     if (def == null) {
       return;
     }
@@ -298,9 +313,7 @@ public class BuiltinWorkflowDefinitionService {
     String name = HotNewsRadarCollectWorkflowKeys.DISPLAY_NAME;
     String scene = HotNewsRadarCollectWorkflowKeys.SCENE;
     ensureBuiltin(key, name, scene);
-    WorkflowDefinitionEntity def = definitionMapper.selectOne(new LambdaQueryWrapper<WorkflowDefinitionEntity>()
-        .eq(WorkflowDefinitionEntity::getWorkflowKey, key)
-        .last("LIMIT 1"));
+    WorkflowDefinitionEntity def = findSeedBuiltin(key);
     if (def == null) {
       return;
     }
@@ -460,5 +473,18 @@ public class BuiltinWorkflowDefinitionService {
       typeKeyRaw = map.get(WorkflowGraphMapKeys.TYPE);
     }
     return typeKeyRaw == null ? "" : String.valueOf(typeKeyRaw);
+  }
+
+  /**
+   * 按 key 读取种子管理员名下的内置工作流定义。
+   *
+   * @param key workflow_key
+   * @return 定义；无则 null
+   */
+  private WorkflowDefinitionEntity findSeedBuiltin(String key) {
+    return definitionMapper.selectOne(new LambdaQueryWrapper<WorkflowDefinitionEntity>()
+        .eq(WorkflowDefinitionEntity::getWorkflowKey, key)
+        .eq(WorkflowDefinitionEntity::getOwnerUserId, SeedUserIds.ADMIN)
+        .last("LIMIT 1"));
   }
 }

@@ -16,6 +16,7 @@ import com.chengwenfang.job.facade.enums.JobStatus;
 import com.chengwenfang.job.facade.dto.view.JobTerminalEvent;
 import com.chengwenfang.job.facade.constant.JobEntityTypes;
 import com.chengwenfang.job.facade.constant.JobTypes;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.job.infrastructure.mapper.JobEventMapper;
 import com.chengwenfang.job.infrastructure.mapper.JobMapper;
 import java.time.LocalDateTime;
@@ -51,6 +52,8 @@ public class JobFacadeImpl implements JobFacade {
   private final JobViewMapper viewMapper;
   /** 租约回收等指标。 */
   private final JobMetrics metrics;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * 返回系统支持的任务类型集合。
@@ -83,6 +86,7 @@ public class JobFacadeImpl implements JobFacade {
     // 落库 pending 任务，并追加 queued 事件供 SSE 首包
     JobEntity job = JobEntity.builder()
         .id(IdsUtil.newId())
+        .ownerUserId(ownerScope.effectiveOwnerUserId())
         .jobType(type)
         .status(JobStatus.PENDING.getValue())
         .entityType(entityType)
@@ -153,9 +157,11 @@ public class JobFacadeImpl implements JobFacade {
       return false;
     }
     // 按 theme_id 列查询，替代原 input_json LIKE
-    Long count = jobMapper.selectCount(new LambdaQueryWrapper<JobEntity>()
+    LambdaQueryWrapper<JobEntity> query = new LambdaQueryWrapper<JobEntity>()
         .eq(JobEntity::getThemeId, themeId)
-        .in(JobEntity::getStatus, JobStatus.PENDING.getValue(), JobStatus.RUNNING.getValue()));
+        .in(JobEntity::getStatus, JobStatus.PENDING.getValue(), JobStatus.RUNNING.getValue());
+    applyOwnerFilter(query);
+    Long count = jobMapper.selectCount(query);
     return count != null && count > 0;
   }
 
@@ -171,10 +177,12 @@ public class JobFacadeImpl implements JobFacade {
     if (StrUtil.isBlank(type) || StrUtil.isBlank(entityId)) {
       return false;
     }
-    Long count = jobMapper.selectCount(new LambdaQueryWrapper<JobEntity>()
+    LambdaQueryWrapper<JobEntity> query = new LambdaQueryWrapper<JobEntity>()
         .eq(JobEntity::getJobType, type)
         .eq(JobEntity::getEntityId, entityId)
-        .in(JobEntity::getStatus, JobStatus.PENDING.getValue(), JobStatus.RUNNING.getValue()));
+        .in(JobEntity::getStatus, JobStatus.PENDING.getValue(), JobStatus.RUNNING.getValue());
+    applyOwnerFilter(query);
+    Long count = jobMapper.selectCount(query);
     return count != null && count > 0;
   }
 
@@ -190,11 +198,13 @@ public class JobFacadeImpl implements JobFacade {
     if (StrUtil.isBlank(themeId) || StrUtil.isBlank(jobType)) {
       return null;
     }
-    JobEntity entity = jobMapper.selectOne(new LambdaQueryWrapper<JobEntity>()
+    LambdaQueryWrapper<JobEntity> query = new LambdaQueryWrapper<JobEntity>()
         .eq(JobEntity::getThemeId, themeId)
         .eq(JobEntity::getJobType, jobType)
         .orderByDesc(JobEntity::getCreatedAt)
-        .last("LIMIT 1"));
+        .last("LIMIT 1");
+    applyOwnerFilter(query);
+    JobEntity entity = jobMapper.selectOne(query);
     return entity == null ? null : viewMapper.toView(entity);
   }
 
@@ -216,10 +226,12 @@ public class JobFacadeImpl implements JobFacade {
       return latestByTheme;
     }
     // 按创建时间降序，内存取每个 theme 第一条
-    List<JobEntity> rows = jobMapper.selectList(new LambdaQueryWrapper<JobEntity>()
+    LambdaQueryWrapper<JobEntity> query = new LambdaQueryWrapper<JobEntity>()
         .in(JobEntity::getThemeId, ids)
         .eq(JobEntity::getJobType, jobType)
-        .orderByDesc(JobEntity::getCreatedAt));
+        .orderByDesc(JobEntity::getCreatedAt);
+    applyOwnerFilter(query);
+    List<JobEntity> rows = jobMapper.selectList(query);
     for (JobEntity row : rows) {
       if (row == null || StrUtil.isBlank(row.getThemeId())) {
         continue;
@@ -291,13 +303,29 @@ public class JobFacadeImpl implements JobFacade {
   public List<JobView> listByType(String type, int limit) {
     // 夹紧分页上限，防止一次扫出过多行
     int capped = Math.max(1, Math.min(limit <= 0 ? 50 : limit, 200));
-    return jobMapper.selectList(new LambdaQueryWrapper<JobEntity>()
-            .eq(JobEntity::getJobType, type)
-            .orderByDesc(JobEntity::getCreatedAt)
-            .last("LIMIT " + capped))
-        .stream()
-        .map(viewMapper::toView)
-        .toList();
+    LambdaQueryWrapper<JobEntity> query = new LambdaQueryWrapper<JobEntity>()
+        .eq(JobEntity::getJobType, type)
+        .orderByDesc(JobEntity::getCreatedAt)
+        .last("LIMIT " + capped);
+    applyOwnerFilter(query);
+    return jobMapper.selectList(query).stream().map(viewMapper::toView).toList();
+  }
+
+  /**
+   * 非管理员列表查询按当前用户过滤；鉴权关闭或 Worker 无会话时不过滤。
+   *
+   * @param query 任务查询
+   */
+  private void applyOwnerFilter(LambdaQueryWrapper<JobEntity> query) {
+    if (ownerScope.currentUserIsAdmin()) {
+      return;
+    }
+    String ownerId = ownerScope.currentOwnerUserId().orElse(null);
+    if (StrUtil.isBlank(ownerId)) {
+      query.apply("1 = 0");
+      return;
+    }
+    query.eq(JobEntity::getOwnerUserId, ownerId);
   }
 
   /**
@@ -631,6 +659,8 @@ public class JobFacadeImpl implements JobFacade {
     if (job == null) {
       throw new BusinessException(ErrorCodes.JOB_NOT_FOUND, "任务不存在：" + jobId, 404);
     }
+    // Worker 认领路径不经此方法；用户查询时校验归属
+    ownerScope.assertCanAccess(job.getOwnerUserId());
     return job;
   }
 

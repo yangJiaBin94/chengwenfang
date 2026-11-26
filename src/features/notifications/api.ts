@@ -1,4 +1,4 @@
-import { unwrapApiResult } from "../../shared/api/http";
+﻿import { apiFetch, unwrapApiResult } from "../../shared/api/http";
 
 export type NotificationData = {
   id: string;
@@ -39,7 +39,7 @@ export async function listNotifications(status: "all" | "unread") {
     nextCursor: string | null;
     unreadCount: number;
   }>(
-    await fetch(`/api/notifications?status=${status}&limit=30`, {
+    await apiFetch(`/api/notifications?status=${status}&limit=30`, {
       cache: "no-store",
     }),
   );
@@ -47,13 +47,13 @@ export async function listNotifications(status: "all" | "unread") {
 
 export async function loadNotificationSummary() {
   return payload<NotificationSummary>(
-    await fetch("/api/notifications/summary", { cache: "no-store" }),
+    await apiFetch("/api/notifications/summary", { cache: "no-store" }),
   );
 }
 
 export async function setNotificationRead(id: string, read: boolean) {
   return payload<NotificationData>(
-    await fetch(`/api/notifications/${encodeURIComponent(id)}`, {
+    await apiFetch(`/api/notifications/${encodeURIComponent(id)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ read }),
@@ -63,6 +63,6 @@ export async function setNotificationRead(id: string, read: boolean) {
 
 export async function readAllNotifications() {
   return payload<NotificationSummary>(
-    await fetch("/api/notifications/read-all", { method: "POST" }),
+    await apiFetch("/api/notifications/read-all", { method: "POST" }),
   );
 }

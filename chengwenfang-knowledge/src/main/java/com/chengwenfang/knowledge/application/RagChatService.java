@@ -9,6 +9,7 @@ import com.chengwenfang.ai.facade.dto.request.VisionCompleteRequest;
 import com.chengwenfang.ai.facade.dto.view.VisionCompleteResult;
 import com.chengwenfang.common.BusinessException;
 import com.chengwenfang.common.ErrorCodes;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.infra.config.ChengwenfangProperties;
 import com.chengwenfang.knowledge.domain.entity.KnowledgeChatMessageEntity;
 import com.chengwenfang.knowledge.domain.entity.KnowledgeChatSessionEntity;
@@ -81,6 +82,8 @@ public class RagChatService {
   private final RagFaithfulnessGate faithfulnessGate;
   /** 助手落库与轨迹。 */
   private final RagAnswerPersistService answerPersistService;
+  /** 用户数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * 同步问答（LLM / 检索在事务外；用户消息与助手落库为短事务）。
@@ -95,6 +98,7 @@ public class RagChatService {
     if (session == null) {
       throw new BusinessException(ErrorCodes.KNOWLEDGE_SESSION_NOT_FOUND, "知识库会话不存在", 404);
     }
+    ownerScope.assertCanAccess(session.getOwnerUserId());
     String question = request == null ? "" : StrUtil.nullToEmpty(request.getContent()).trim();
     if (StrUtil.isBlank(question)) {
       throw new BusinessException(ErrorCodes.INVALID_STATUS, "问题不能为空", 400);
@@ -556,6 +560,11 @@ public class RagChatService {
    * @return 消息视图列表
    */
   public List<KnowledgeChatMessageView> listMessages(String sessionId) {
+    KnowledgeChatSessionEntity session = sessionMapper.selectById(sessionId);
+    if (session == null) {
+      throw new BusinessException(ErrorCodes.KNOWLEDGE_SESSION_NOT_FOUND, "知识库会话不存在", 404);
+    }
+    ownerScope.assertCanAccess(session.getOwnerUserId());
     List<KnowledgeChatMessageEntity> rows = messageMapper.selectList(
         new LambdaQueryWrapper<KnowledgeChatMessageEntity>()
             .eq(KnowledgeChatMessageEntity::getSessionId, sessionId)

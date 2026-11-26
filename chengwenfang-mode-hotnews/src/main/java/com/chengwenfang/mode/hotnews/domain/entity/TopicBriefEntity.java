@@ -19,6 +19,9 @@ public class TopicBriefEntity {
   /** 主键 ID。 */
   @TableId("id")
   private String id;
+  /** 所属用户。 */
+  @TableField("owner_user_id")
+  private String ownerUserId;
   /** 选题/话题 ID。 */
   @TableField("topic_id")
   private String topicId;

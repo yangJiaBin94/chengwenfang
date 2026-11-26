@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.chengwenfang.common.IdsUtil;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.quality.domain.engine.CourseAuditEngine;
 import com.chengwenfang.quality.domain.engine.KnowledgeRulesEngine;
 import com.chengwenfang.quality.domain.engine.HotArticleReviewEngine;
@@ -45,6 +46,8 @@ public class AuditFacadeImpl implements AuditFacade {
   private final ArticleAuditRunMapper auditRunMapper;
   /** 课程汇总列/issues 存储。 */
   private final CourseAuditSummaryStore courseSummaryStore;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * 注入规则引擎与统一审核表依赖。
@@ -60,12 +63,14 @@ public class AuditFacadeImpl implements AuditFacade {
       KnowledgeRulesEngine knowledgeRules,
       HotArticleReviewEngine hotArticleReview,
       ArticleAuditRunMapper auditRunMapper,
-      CourseAuditSummaryStore courseSummaryStore) {
+      CourseAuditSummaryStore courseSummaryStore,
+      OwnerScope ownerScope) {
     this.courseAudit = courseAudit;
     this.knowledgeRules = knowledgeRules;
     this.hotArticleReview = hotArticleReview;
     this.auditRunMapper = auditRunMapper;
     this.courseSummaryStore = courseSummaryStore;
+    this.ownerScope = ownerScope;
   }
 
   /**
@@ -232,6 +237,7 @@ public class AuditFacadeImpl implements AuditFacade {
 
     ArticleAuditRunEntity run = new ArticleAuditRunEntity();
     run.setId(runId);
+    run.setOwnerUserId(ownerScope.effectiveOwnerUserId());
     run.setOutputId(StrUtil.blankToDefault(documentId, articleId));
     run.setStatus(runStatus.getValue());
     run.setMode(ArticleAuditDomains.MODE_DETERMINISTIC);

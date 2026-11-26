@@ -5,6 +5,7 @@ import com.chengwenfang.ai.domain.entity.ModelCallEntity;
 import com.chengwenfang.ai.facade.enums.ModelCallStatus;
 import com.chengwenfang.ai.infrastructure.mapper.ModelCallMapper;
 import com.chengwenfang.common.IdsUtil;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.infra.support.JobExecutionScope;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,8 @@ public class ModelCallRecorder {
 
   /** 模型调用审计表写入。 */
   private final ModelCallMapper modelCallMapper;
+  /** 用户级数据范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * 写入一条 model_calls 审计记录（不含 prompt / 密钥 / 完整模型输出正文）。
@@ -41,6 +44,7 @@ public class ModelCallRecorder {
       String errorCode) {
     ModelCallEntity call = new ModelCallEntity();
     call.setId(IdsUtil.newId());
+    call.setOwnerUserId(ownerScope.effectiveOwnerUserId());
     // Worker 线程绑定的任务 ID；同步调用为空
     call.setJobId(JobExecutionScope.currentJobId());
     call.setScene(scene);
