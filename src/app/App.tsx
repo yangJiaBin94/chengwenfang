@@ -231,11 +231,17 @@ export function App() {
           <header className="topbar">
             <div>
               <div className="eyebrow">
-                {loadState === "ready" ? "Content Studio" : "Chengwenfang Demo"}
+                {loadState !== "ready"
+                  ? "Chengwenfang Demo"
+                  : activeNav === "settings"
+                    ? "Settings"
+                    : "Content Studio"}
               </div>
               <h1>
-                {activeNav === "dashboard" || activeNav === "settings"
+                {activeNav === "dashboard"
                   ? "内容生产台"
+                  : activeNav === "settings"
+                    ? "设置"
                   : activeNav === "knowledge"
                     ? "知识库"
                   : activeNav === "hot-news"

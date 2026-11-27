@@ -206,12 +206,21 @@ export type UserPageResult = {
  *
  * @param page 页码，从 1 开始
  * @param pageSize 每页条数
+ * @param keyword 昵称关键字，可空
  */
-export async function listUsersPage(page: number, pageSize: number): Promise<UserPageResult> {
+export async function listUsersPage(
+  page: number,
+  pageSize: number,
+  keyword = "",
+): Promise<UserPageResult> {
   const params = new URLSearchParams({
     page: String(page),
     pageSize: String(pageSize),
   });
+  const trimmed = keyword.trim();
+  if (trimmed) {
+    params.set("keyword", trimmed);
+  }
   const response = await fetch(`/api/users?${params.toString()}`, {
     headers: withAuthHeaders(),
   });

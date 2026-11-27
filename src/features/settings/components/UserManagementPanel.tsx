@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { Check, ChevronDown, ChevronLeft, ChevronRight, Copy, Plus, X } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, Copy, KeyRound, Plus, Search, X } from "lucide-react";
 import {
   canManageUsers,
   createUser,
@@ -44,6 +44,8 @@ export function UserManagementPanel() {
   const pageSizeRef = useRef<HTMLDivElement | null>(null);
   const [loading, setLoading] = useState(false);
   const [listError, setListError] = useState("");
+  const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
 
   const [createOpen, setCreateOpen] = useState(false);
   const [username, setUsername] = useState("");
@@ -61,11 +63,11 @@ export function UserManagementPanel() {
 
   const listPageCount = Math.max(1, Math.ceil(total / pageSize));
 
-  async function reload(page = listPage, size = pageSize) {
+  async function reload(page = listPage, size = pageSize, keyword = debouncedQuery) {
     setListError("");
     setLoading(true);
     try {
-      const result = await listUsersPage(page, size);
+      const result = await listUsersPage(page, size, keyword);
       setUsers(result.items ?? []);
       setTotal(Number(result.total) || 0);
       setListPage(Number(result.page) || page);
@@ -77,12 +79,20 @@ export function UserManagementPanel() {
   }
 
   useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedQuery(query.trim());
+      setListPage(1);
+    }, 280);
+    return () => window.clearTimeout(timer);
+  }, [query]);
+
+  useEffect(() => {
     if (!manageUsers) {
       return;
     }
-    void reload(listPage, pageSize);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅随页码/页大小变化拉取
-  }, [manageUsers, listPage, pageSize]);
+    void reload(listPage, pageSize, debouncedQuery);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 随页码/页大小/昵称搜索拉取
+  }, [manageUsers, listPage, pageSize, debouncedQuery]);
 
   useEffect(() => {
     if (!pageSizeOpen) {
@@ -132,7 +142,7 @@ export function UserManagementPanel() {
       });
       closeCreateModal();
       setListPage(1);
-      await reload(1, pageSize);
+      await reload(1, pageSize, debouncedQuery);
     } catch (caught) {
       setCreateError(caught instanceof Error ? caught.message : "创建失败");
     } finally {
@@ -227,9 +237,25 @@ export function UserManagementPanel() {
       <section className="user-mgmt-card user-mgmt-list" aria-label="用户列表">
         <div className="user-mgmt-list-head">
           <h3>用户列表</h3>
-          <button type="button" className="ghost-button" onClick={() => void reload()} disabled={loading}>
-            {loading ? "刷新中…" : "刷新"}
-          </button>
+          <label className="user-mgmt-search-box">
+            <Search size={15} />
+            <input
+              aria-label="按昵称搜索"
+              placeholder="按昵称搜索"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+            {query ? (
+              <button
+                type="button"
+                className="user-mgmt-search-clear"
+                aria-label="清除昵称搜索"
+                onClick={() => setQuery("")}
+              >
+                <X size={14} />
+              </button>
+            ) : null}
+          </label>
         </div>
         {listError ? <p className="user-mgmt-error">{listError}</p> : null}
         <div
@@ -240,7 +266,7 @@ export function UserManagementPanel() {
             <div className="user-mgmt-table-head">
               <span>头像</span>
               <span>用户名</span>
-              <span>显示名</span>
+              <span>昵称</span>
               <span>角色</span>
               <span>状态</span>
               <span>最近登录</span>
@@ -414,30 +440,42 @@ export function UserManagementPanel() {
             aria-labelledby="user-mgmt-reset-title"
             onClick={(event) => event.stopPropagation()}
           >
-            <header className="modal-header">
-              <h3 id="user-mgmt-reset-title">重置密码</h3>
-              <button type="button" className="ghost-button" aria-label="关闭" onClick={closeResetModal}>
-                <X size={16} />
-              </button>
-            </header>
+            <button
+              type="button"
+              className="user-mgmt-reset-close"
+              aria-label="关闭"
+              onClick={closeResetModal}
+            >
+              <X size={16} />
+            </button>
+            <div className="user-mgmt-reset-icon" aria-hidden="true">
+              <KeyRound size={22} />
+            </div>
+            <h3 id="user-mgmt-reset-title">重置密码成功</h3>
             {resetError ? <p className="user-mgmt-error">{resetError}</p> : null}
             {resetResult ? (
               <div className="user-mgmt-reset-body">
-                <p>
-                  用户 <strong>{resetResult.username}</strong> 的新密码（仅展示一次）：
+                <p className="user-mgmt-reset-lead">
+                  用户 <strong>{resetResult.username}</strong> 的新密码已生成
                 </p>
-                <div className="user-mgmt-reset-password-row">
+                <div className="user-mgmt-reset-password-card">
+                  <span className="user-mgmt-reset-password-label">新密码</span>
                   <code>{resetResult.password}</code>
-                  <button type="button" className="secondary-button" onClick={() => void onCopyPassword()}>
-                    <Copy size={14} />
-                    {copied ? "已复制" : "复制"}
+                  <button
+                    type="button"
+                    className={`user-mgmt-reset-copy${copied ? " is-copied" : ""}`}
+                    onClick={() => void onCopyPassword()}
+                  >
+                    {copied ? <Check size={15} /> : <Copy size={15} />}
+                    {copied ? "已复制" : "复制密码"}
                   </button>
                 </div>
+                <p className="user-mgmt-reset-tip">请立即复制并妥善保管，关闭后将无法再次查看。</p>
               </div>
             ) : null}
-            <div className="modal-actions">
+            <div className="user-mgmt-reset-actions">
               <button type="button" className="primary-button" onClick={closeResetModal}>
-                关闭
+                我已保存，关闭
               </button>
             </div>
           </section>
@@ -484,7 +522,7 @@ export function UserManagementPanel() {
                 />
               </label>
               <label>
-                显示名
+                昵称
                 <input
                   value={displayName}
                   onChange={(event) => setDisplayName(event.target.value)}

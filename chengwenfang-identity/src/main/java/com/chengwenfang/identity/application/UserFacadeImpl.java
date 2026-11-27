@@ -52,9 +52,14 @@ public class UserFacadeImpl implements UserFacade {
     requireUserManage();
     PageQuery normalized = query == null ? new PageQuery().normalized() : query.normalized();
     Page<UserEntity> mpPage = new Page<>(normalized.getPage(), normalized.getPageSize());
-    Page<UserEntity> fetched = userMapper.selectPage(
-        mpPage,
-        new LambdaQueryWrapper<UserEntity>().orderByAsc(UserEntity::getCreatedAt));
+    LambdaQueryWrapper<UserEntity> wrapper = new LambdaQueryWrapper<UserEntity>()
+        .orderByAsc(UserEntity::getCreatedAt);
+    // 按昵称（display_name）模糊搜索
+    String keyword = StrUtil.trim(normalized.getKeyword());
+    if (StrUtil.isNotBlank(keyword)) {
+      wrapper.like(UserEntity::getDisplayName, keyword);
+    }
+    Page<UserEntity> fetched = userMapper.selectPage(mpPage, wrapper);
     List<UserEntity> records = fetched.getRecords();
     List<UserListItemView> items = new ArrayList<>();
     if (records != null) {

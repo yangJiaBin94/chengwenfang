@@ -36,14 +36,16 @@ public class UserController {
    *
    * @param page     页码，从 1 开始
    * @param pageSize 每页条数
+   * @param keyword  昵称关键字，可空
    * @return 分页结果
    */
   @GetMapping
   @Operation(summary = "用户分页列表")
   public ApiResult<PageResult<UserListItemView>> pageUsers(
       @RequestParam(defaultValue = "1") int page,
-      @RequestParam(defaultValue = "10") int pageSize) {
-    PageQuery query = PageQuery.builder().page(page).pageSize(pageSize).build();
+      @RequestParam(defaultValue = "10") int pageSize,
+      @RequestParam(required = false) String keyword) {
+    PageQuery query = PageQuery.builder().page(page).pageSize(pageSize).keyword(keyword).build();
     return ApiResult.ok(userFacade.pageUsers(query));
   }
 
