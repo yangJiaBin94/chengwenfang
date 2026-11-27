@@ -65,7 +65,6 @@ export const defaultAiSettings: AiSettings = {
 /** Selectable upstream protocols for vision completion requests. */
 export const textProtocolOptions = [
   { value: "openai-chat", label: "OpenAI Chat Completions" },
-  { value: "openai-responses", label: "OpenAI Responses API" }
 ] as const;
 
 /** Image generation uses the dedicated OpenAI image protocol. */

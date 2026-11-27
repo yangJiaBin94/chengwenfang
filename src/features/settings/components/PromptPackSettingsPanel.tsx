@@ -610,6 +610,8 @@ export function ProviderCard({
 }) {
   const webSearchSupported =
     kind === "vision" ? supportsVisionWebSearch(config) : false;
+  const hasApiKey =
+    !!config.apiKeyConfigured || !!config.apiKey?.trim();
   return (
     <article className={`provider-panel provider-${kind}`}>
       <div className="provider-panel-head">
@@ -618,18 +620,49 @@ export function ProviderCard({
           <h3>{title}</h3>
           <p>{description}</p>
           {kind === "vision" ? (
-            <p
-              className={`provider-capability${webSearchSupported ? " is-ready" : ""}`}
-              title={
-                webSearchSupported
-                  ? "当前端点支持服务端联网搜索（雷达 AI 联网搜选题等）"
-                  : "需配置 DeepSeek 请求 URL，并已保存或填写 API Key"
-              }
-            >
-              联网搜索：{webSearchSupported ? "已支持" : "不支持"}
-              {!webSearchSupported
-                ? "（DeepSeek 端点 + API Key）"
-                : "（DeepSeek Web Search）"}
+            hasApiKey ? (
+              <p
+                className={`provider-capability${webSearchSupported ? " is-ready" : ""}`}
+                title={
+                  webSearchSupported
+                    ? "当前端点支持服务端联网搜索（雷达 AI 联网搜选题等）"
+                    : "需配置 DeepSeek 请求 URL，并已保存或填写 API Key"
+                }
+              >
+                联网搜索：{webSearchSupported ? "已支持" : "不支持"}
+                {!webSearchSupported
+                  ? "（DeepSeek 端点 + API Key）"
+                  : "（DeepSeek Web Search）"}
+              </p>
+            ) : (
+              <p className="provider-recommend">
+                推荐：DeepSeek flash（可联网搜索）·{" "}
+                <a
+                  href="https://platform.deepseek.com/"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  官方开通
+                </a>
+              </p>
+            )
+          ) : kind === "image" && !hasApiKey ? (
+            <p className="provider-recommend">
+              推荐：AIHub（gpt-image-2）·{" "}
+              <a href="https://aihub.top/" target="_blank" rel="noreferrer">
+                官方开通
+              </a>
+            </p>
+          ) : kind === "embedding" && !hasApiKey ? (
+            <p className="provider-recommend">
+              推荐：智谱 embedding-3 ·{" "}
+              <a
+                href="https://open.bigmodel.cn/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                官方开通
+              </a>
             </p>
           ) : null}
         </div>
@@ -666,10 +699,10 @@ export function ProviderCard({
             onChange={(event) => onChange("model", event.target.value)}
             placeholder={
               kind === "vision"
-                ? "例如：gpt-4o（写作补全与看图）"
+                ? "例如：deepseek-flash"
                 : kind === "embedding"
-                  ? "例如：text-embedding-3-small"
-                  : "例如：gpt-image-2 / flux / 自定义模型名"
+                  ? "例如：embedding-3"
+                  : "例如：gpt-image-2"
             }
           />
         </label>
@@ -693,7 +726,13 @@ export function ProviderCard({
           <input
             value={config.baseUrl}
             onChange={(event) => onChange("baseUrl", event.target.value)}
-            placeholder="例如：https://api.openai.com/v1"
+            placeholder={
+              kind === "vision"
+                ? "例如：https://api.deepseek.com"
+                : kind === "embedding"
+                  ? "例如：https://open.bigmodel.cn/api/paas/v4"
+                  : "例如：https://aihub.dog"
+            }
           />
         </label>
         <label className="config-field-wide api-key-field">

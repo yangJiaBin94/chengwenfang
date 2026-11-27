@@ -181,6 +181,13 @@ export function AiSettingsPage({
     }));
   }
 
+  /** 根据当前草稿判定多模态是否支持联网搜索，并生成展示文案。 */
+  function visionWebSearchLabel(config: AiProviderConfig): string {
+    return supportsVisionWebSearch(config)
+      ? "联网搜索：已支持（DeepSeek）"
+      : "联网搜索：不支持（需 DeepSeek 端点 + API Key）";
+  }
+
   /** Perform a real connection test for the selected provider card. */
   async function test(kind: AiSettingsKind) {
     // Tests use draft form values and perform a real upstream request.
@@ -191,11 +198,15 @@ export function AiSettingsPage({
     }));
     try {
       const result = await testAiConnection(draft[kind], kind);
+      const message =
+        kind === "vision"
+          ? `${result.message} · ${visionWebSearchLabel(draft.vision)}`
+          : result.message;
       setTestState((current) => ({
         ...current,
         [kind]: {
           status: "success",
-          message: result.message,
+          message,
           imagePreview: result.imagePreview,
         },
       }));
@@ -220,7 +231,7 @@ export function AiSettingsPage({
     try {
       const savedAt = await onSave(draft);
       setSaveMessage(
-        `已持久化到本地数据库 · ${new Intl.DateTimeFormat("zh-CN", { dateStyle: "short", timeStyle: "medium" }).format(new Date(savedAt))}`,
+        `已持久化到本地数据库 · ${new Intl.DateTimeFormat("zh-CN", { dateStyle: "short", timeStyle: "medium" }).format(new Date(savedAt))} · ${visionWebSearchLabel(draft.vision)}`,
       );
     } catch (error) {
       setSaveMessage(error instanceof Error ? error.message : "配置保存失败");
@@ -388,7 +399,7 @@ export function AiSettingsPage({
                   ? "课程插图、公众号封面和配套视觉资产"
                   : activeKind === "embedding"
                     ? "知识库分块向量化与语义检索，需配置 OpenAI 兼容 Embeddings 模型"
-                    : "课程/热点写作补全、审核修复，以及视频关键帧与网页截图理解"
+                    : "课程/热点写作补全、审核修复、看图理解；部分供应商还可能支持联网搜索"
               }
               config={draft[activeKind]}
               protocols={

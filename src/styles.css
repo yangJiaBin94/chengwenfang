@@ -4689,7 +4689,6 @@ p {
 
 .provider-panel-head p {
   margin: 0;
-  max-width: 52ch;
   color: var(--muted);
   font-size: 13px;
   line-height: 1.45;
@@ -4710,6 +4709,29 @@ p {
 .provider-capability.is-ready {
   background: #e5f0e3;
   color: #35603a;
+}
+
+.provider-panel-head .provider-recommend {
+  margin-top: 8px !important;
+  max-width: none;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #4a5a48;
+  white-space: nowrap;
+}
+
+.provider-recommend code {
+  font-size: 11px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: #eef2ea;
+}
+
+.provider-recommend a {
+  color: var(--green-dark);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .provider-test-btn {
