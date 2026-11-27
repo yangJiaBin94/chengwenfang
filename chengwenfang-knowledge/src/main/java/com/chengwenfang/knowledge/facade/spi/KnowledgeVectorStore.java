@@ -63,6 +63,14 @@ public interface KnowledgeVectorStore {
   void deleteByChunkIds(List<String> chunkIds);
 
   /**
+   * 删除指定索引版本 + 所属用户下的向量点（蓝绿切流后 GC 旧版）。
+   *
+   * @param indexVersion 索引版本
+   * @param ownerUserId  所属用户；空则拒绝（避免误删全库）
+   */
+  void deleteByIndexVersionAndOwner(String indexVersion, String ownerUserId);
+
+  /**
    * 是否为降级实现（如内存库）。
    *
    * @return 降级则为 true

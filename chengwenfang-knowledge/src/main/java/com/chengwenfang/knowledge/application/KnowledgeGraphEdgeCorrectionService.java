@@ -75,7 +75,7 @@ public class KnowledgeGraphEdgeCorrectionService {
     boolean enable = enabled != null
         ? enabled
         : confidence == null || confidence >= KnowledgeGraphConstants.LOW_CONFIDENCE;
-    String ownerUserId = ownerScope.effectiveOwnerUserId();
+    String ownerUserId = ownerScope.requireOwnerUserIdForWrite().get();
     KnowledgeGraphEdgeOverrideEntity existing = overrideMapper.selectOne(
         new LambdaQueryWrapper<KnowledgeGraphEdgeOverrideEntity>()
             .eq(KnowledgeGraphEdgeOverrideEntity::getOwnerUserId, ownerUserId)

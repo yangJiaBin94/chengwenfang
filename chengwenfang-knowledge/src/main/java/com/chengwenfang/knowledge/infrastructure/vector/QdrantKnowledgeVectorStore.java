@@ -129,6 +129,40 @@ public class QdrantKnowledgeVectorStore implements KnowledgeVectorStore, Disposa
 
   /** {@inheritDoc} */
   @Override
+  public void deleteByIndexVersionAndOwner(String indexVersion, String ownerUserId) {
+    if (StrUtil.isBlank(indexVersion) || StrUtil.isBlank(ownerUserId)) {
+      return;
+    }
+    try {
+      Boolean exists =
+          qdrantClient.collectionExistsAsync(collectionName).get(10, TimeUnit.SECONDS);
+      if (!Boolean.TRUE.equals(exists)) {
+        return;
+      }
+    } catch (Exception exception) {
+      log.warn("检查 Qdrant 集合是否存在失败，跳过按版本删除：{}", exception.getMessage());
+      return;
+    }
+    Filter filter = Filter.and(
+        MetadataFilterBuilder.metadataKey(KnowledgeVectorPayloadKeys.INDEX_VERSION)
+            .isEqualTo(indexVersion),
+        MetadataFilterBuilder.metadataKey(KnowledgeVectorPayloadKeys.OWNER_USER_ID)
+            .isEqualTo(ownerUserId));
+    try {
+      embeddingStore.removeAll(filter);
+    } catch (RuntimeException exception) {
+      if (StrUtil.containsIgnoreCase(exception.getMessage(), "doesn't exist")
+          || StrUtil.containsIgnoreCase(exception.getMessage(), "NOT_FOUND")) {
+        log.info(
+            "Qdrant 集合不存在，跳过按版本删除 version={} owner={}", indexVersion, ownerUserId);
+        return;
+      }
+      throw exception;
+    }
+  }
+
+  /** {@inheritDoc} */
+  @Override
   public void deleteByChunkIds(List<String> chunkIds) {
     if (CollUtil.isEmpty(chunkIds)) {
       return;

@@ -12,6 +12,7 @@ import { KnowledgePage } from "../features/knowledge/pages/KnowledgePage";
 import { AppSidebar } from "./AppSidebar";
 import { useChengwenfangApp } from "./chengwenfang/useChengwenfangApp";
 import { retryFailedJob } from "../shared/api/jobs";
+import { UserAvatarMenu } from "../features/auth/UserAvatarMenu";
 
 export function App() {
   const bag = useChengwenfangApp();
@@ -275,6 +276,7 @@ export function App() {
                   );
                 }}
               />
+              <UserAvatarMenu navigate={navigate} />
             </div>
           </header>
 

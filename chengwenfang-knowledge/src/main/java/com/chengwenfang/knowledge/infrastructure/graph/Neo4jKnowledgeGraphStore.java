@@ -2,6 +2,7 @@ package com.chengwenfang.knowledge.infrastructure.graph;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.infra.config.ChengwenfangProperties;
 import com.chengwenfang.knowledge.application.KnowledgeIndexVersionService;
 import com.chengwenfang.knowledge.facade.constant.KnowledgeGraphConstants;
@@ -34,16 +35,22 @@ public class Neo4jKnowledgeGraphStore implements KnowledgeGraphStore {
   private final Driver driver;
   /** 活跃版本。 */
   private final KnowledgeIndexVersionService indexVersionService;
+  /** 所属用户范围。 */
+  private final OwnerScope ownerScope;
 
   /**
    * 按配置建立 Driver。
    *
-   * @param properties           全局配置
-   * @param indexVersionService  版本服务
+   * @param properties          全局配置
+   * @param indexVersionService 版本服务
+   * @param ownerScope          所属用户
    */
   public Neo4jKnowledgeGraphStore(
-      ChengwenfangProperties properties, KnowledgeIndexVersionService indexVersionService) {
+      ChengwenfangProperties properties,
+      KnowledgeIndexVersionService indexVersionService,
+      OwnerScope ownerScope) {
     this.indexVersionService = indexVersionService;
+    this.ownerScope = ownerScope;
     ChengwenfangProperties.Neo4jSettings settings = properties.getNeo4j();
     this.driver = GraphDatabase.driver(
         settings.getUri(),
@@ -79,16 +86,18 @@ public class Neo4jKnowledgeGraphStore implements KnowledgeGraphStore {
       return List.of();
     }
     String version = indexVersionService.activeVersion();
+    String ownerFilter = retrievalOwnerUserId();
     String cypher = """
         MATCH (c:Concept)-[r:MENTIONS|RELATED_TO]->(n)
         WHERE c.indexVersion = $version AND coalesce(r.enabled, true) = true
+          AND ($ownerUserId = '' OR c.ownerUserId = $ownerUserId)
           AND (c.name CONTAINS $q OR n.name CONTAINS $q)
         RETURN coalesce(r.sourceChunkId, c.sourceChunkId) AS chunkId,
                coalesce(c.name, '') AS title,
                coalesce(r.snippet, n.name, '') AS snippet
         LIMIT $limit
         """;
-    return runCitationQuery(cypher, query.trim(), version, topK);
+    return runCitationQuery(cypher, query.trim(), version, ownerFilter, topK);
   }
 
   /**
@@ -100,29 +109,16 @@ public class Neo4jKnowledgeGraphStore implements KnowledgeGraphStore {
       return List.of();
     }
     String version = indexVersionService.activeVersion();
+    String ownerFilter = retrievalOwnerUserId();
     String cypher = """
         MATCH (com:Community)
         WHERE com.indexVersion = $version
+          AND ($ownerUserId = '' OR com.ownerUserId = $ownerUserId)
           AND (com.summary CONTAINS $q OR com.name CONTAINS $q)
         RETURN com.id AS chunkId, com.name AS title, com.summary AS snippet
         LIMIT $limit
         """;
-    return runCitationQuery(cypher, query.trim(), version, topK);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public void deleteEdgesBySourceChunkId(String sourceChunkId) {
-    if (StrUtil.isBlank(sourceChunkId) || !available()) {
-      return;
-    }
-    try (Session session = driver.session()) {
-      session.run(
-          "MATCH ()-[r]->() WHERE r.sourceChunkId = $chunkId DELETE r",
-          Values.parameters("chunkId", sourceChunkId));
-    }
+    return runCitationQuery(cypher, query.trim(), version, ownerFilter, topK);
   }
 
   /**
@@ -161,6 +157,7 @@ public class Neo4jKnowledgeGraphStore implements KnowledgeGraphStore {
       String headingPath,
       String snippet,
       String indexVersion,
+      String ownerUserId,
       double confidence) {
     if (StrUtil.isBlank(chunkId) || !available()) {
       return;
@@ -171,17 +168,19 @@ public class Neo4jKnowledgeGraphStore implements KnowledgeGraphStore {
     }
     boolean enabled = confidence >= KnowledgeGraphConstants.LOW_CONFIDENCE;
     String edgeUid = KnowledgeGraphConstants.mentionsEdgeUid(chunkId);
+    String owner = StrUtil.nullToEmpty(ownerUserId);
     // 按切块合并，避免同 headingPath 多块互相覆盖 sourceChunkId
     String cypher = """
         MERGE (c:Concept {sourceChunkId: $chunkId, indexVersion: $version})
-        SET c.name = $name
-        MERGE (w:Work {name: $title, indexVersion: $version})
+        SET c.name = $name, c.ownerUserId = $ownerUserId
+        MERGE (w:Work {name: $title, indexVersion: $version, ownerUserId: $ownerUserId})
         MERGE (c)-[r:MENTIONS {uid: $edgeUid}]->(w)
         SET r.sourceChunkId = $chunkId,
             r.confidence = $confidence,
             r.enabled = $enabled,
             r.snippet = $snippet,
-            r.indexVersion = $version
+            r.indexVersion = $version,
+            r.ownerUserId = $ownerUserId
         """;
     try (Session session = driver.session()) {
       session.run(
@@ -191,6 +190,7 @@ public class Neo4jKnowledgeGraphStore implements KnowledgeGraphStore {
               "title", StrUtil.blankToDefault(documentTitle, conceptName),
               "chunkId", chunkId,
               "version", StrUtil.blankToDefault(indexVersion, "v1"),
+              "ownerUserId", owner,
               "edgeUid", edgeUid,
               "confidence", confidence,
               "enabled", enabled,
@@ -204,19 +204,24 @@ public class Neo4jKnowledgeGraphStore implements KnowledgeGraphStore {
   /**
    * 执行返回引用的 Cypher。
    *
-   * @param cypher  语句
-   * @param query   查询词
-   * @param version 版本
-   * @param topK    上限
+   * @param cypher       语句
+   * @param query        查询词
+   * @param version      版本
+   * @param ownerUserId  所属用户过滤；空串不过滤
+   * @param topK         上限
    * @return 引用列表
    */
   private List<KnowledgeCitationView> runCitationQuery(
-      String cypher, String query, String version, int topK) {
+      String cypher, String query, String version, String ownerUserId, int topK) {
     List<KnowledgeCitationView> citations = new ArrayList<>();
     try (Session session = driver.session()) {
       Result result = session.run(
           cypher,
-          Values.parameters(Map.of("q", query, "version", version, "limit", topK)));
+          Values.parameters(Map.of(
+              "q", query,
+              "version", version,
+              "ownerUserId", StrUtil.nullToEmpty(ownerUserId),
+              "limit", topK)));
       while (result.hasNext()) {
         Record record = result.next();
         citations.add(KnowledgeCitationView.builder()
@@ -248,24 +253,46 @@ public class Neo4jKnowledgeGraphStore implements KnowledgeGraphStore {
 
   /** {@inheritDoc} */
   @Override
-  public void deleteByIndexVersion(String indexVersion) {
-    if (StrUtil.isBlank(indexVersion) || !available()) {
+  public void deleteByIndexVersion(String indexVersion, String ownerUserId) {
+    if (StrUtil.isBlank(indexVersion) || StrUtil.isBlank(ownerUserId) || !available()) {
       return;
     }
     try (Session session = driver.session()) {
       session.run(
-          "MATCH ()-[r]->() WHERE r.indexVersion = $version DELETE r",
-          Values.parameters("version", indexVersion));
+          """
+              MATCH ()-[r]->()
+              WHERE r.indexVersion = $version AND r.ownerUserId = $ownerUserId
+              DELETE r
+              """,
+          Values.parameters("version", indexVersion, "ownerUserId", ownerUserId));
       session.run(
           """
               MATCH (n)
-              WHERE n.indexVersion = $version AND (n:Concept OR n:Work OR n:Community)
+              WHERE n.indexVersion = $version
+                AND n.ownerUserId = $ownerUserId
+                AND (n:Concept OR n:Work OR n:Community)
               DETACH DELETE n
               """,
-          Values.parameters("version", indexVersion));
+          Values.parameters("version", indexVersion, "ownerUserId", ownerUserId));
     } catch (Exception exception) {
-      log.warn("Neo4j 按版本 GC 失败 version={} err={}", indexVersion, exception.getMessage());
+      log.warn(
+          "Neo4j 按版本 GC 失败 version={} owner={} err={}",
+          indexVersion,
+          ownerUserId,
+          exception.getMessage());
     }
+  }
+
+  /**
+   * 检索侧所属用户：管理员空串不过滤；无身份用不可命中占位。
+   *
+   * @return owner 过滤值
+   */
+  private String retrievalOwnerUserId() {
+    if (ownerScope.currentUserIsAdmin()) {
+      return "";
+    }
+    return ownerScope.currentOwnerUserId().orElse("__no_owner__");
   }
 
   /**

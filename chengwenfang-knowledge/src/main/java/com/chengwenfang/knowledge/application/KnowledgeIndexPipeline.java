@@ -219,6 +219,7 @@ public class KnowledgeIndexPipeline {
             piece.getHeadingPath(),
             piece.getContent(),
             writeVersion,
+            document.getOwnerUserId(),
             KnowledgeGraphConstants.DEFAULT_MENTION_CONFIDENCE));
         upserts.add(KnowledgeVectorUpsert.builder()
             .chunkId(chunkId)
@@ -432,6 +433,7 @@ public class KnowledgeIndexPipeline {
               mention.headingPath(),
               mention.snippet(),
               mention.indexVersion(),
+              mention.ownerUserId(),
               mention.confidence());
         }
         if (CollUtil.isNotEmpty(oldChunkIds)) {
@@ -454,6 +456,7 @@ public class KnowledgeIndexPipeline {
    * @param headingPath    标题路径
    * @param snippet        摘要
    * @param indexVersion   索引版本
+   * @param ownerUserId    所属用户
    * @param confidence     置信度
    */
   private record GraphMentionDraft(
@@ -462,6 +465,7 @@ public class KnowledgeIndexPipeline {
       String headingPath,
       String snippet,
       String indexVersion,
+      String ownerUserId,
       double confidence) {}
 
   /**

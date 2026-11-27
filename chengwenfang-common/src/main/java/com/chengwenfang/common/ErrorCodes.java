@@ -103,6 +103,16 @@ public final class ErrorCodes {
   public static final String OWNER_MISMATCH = "owner_mismatch";
   /** 注册用户名冲突。 */
   public static final String USERNAME_CONFLICT = "username_conflict";
+  /** 用户不存在。 */
+  public static final String USER_NOT_FOUND = "user_not_found";
+  /** 禁止对当前登录账号执行该操作。 */
+  public static final String USER_SELF_ACTION_FORBIDDEN = "user_self_action_forbidden";
+  /** 头像上传不合法（类型/大小）。 */
+  public static final String AVATAR_UPLOAD_REJECTED = "avatar_upload_rejected";
+  /** 角色编码非法。 */
+  public static final String INVALID_ROLE = "invalid_role";
+  /** 当前密码不正确。 */
+  public static final String CURRENT_PASSWORD_INVALID = "current_password_invalid";
 
   private ErrorCodes() {}
 }

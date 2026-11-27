@@ -1,5 +1,5 @@
-import { FormEvent, useState } from "react";
-import { login } from "./api";
+import { FormEvent, useEffect, useState } from "react";
+import { AUTH_LOGIN_NOTICE_KEY, login } from "./api";
 
 type Props = {
   /** 登录成功回调。 */
@@ -15,7 +15,20 @@ export function LoginPage({ onSuccess, registerEnabled = false }: Props) {
   const [username, setUsername] = useState("admin");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+
+  useEffect(() => {
+    try {
+      const flash = sessionStorage.getItem(AUTH_LOGIN_NOTICE_KEY);
+      if (flash) {
+        sessionStorage.removeItem(AUTH_LOGIN_NOTICE_KEY);
+        setNotice(flash);
+      }
+    } catch {
+      // 忽略无 sessionStorage 环境
+    }
+  }, []);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -45,6 +58,7 @@ export function LoginPage({ onSuccess, registerEnabled = false }: Props) {
         <form className="login-page__panel" onSubmit={onSubmit}>
           <div className="login-page__panel-head">
             <h1>登录</h1>
+            {notice ? <p className="login-page__notice">{notice}</p> : null}
             {registerEnabled ? <p>当前已开放自助注册。</p> : null}
           </div>
 

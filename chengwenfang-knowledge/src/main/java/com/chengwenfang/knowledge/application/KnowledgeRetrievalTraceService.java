@@ -60,7 +60,7 @@ public class KnowledgeRetrievalTraceService {
         .build();
     KnowledgeRetrievalTraceEntity row = KnowledgeRetrievalTraceEntity.builder()
         .id(IdsUtil.newId())
-        .ownerUserId(ownerScope.effectiveOwnerUserId())
+        .ownerUserId(ownerScope.requireOwnerUserIdForWrite().get())
         .sessionId(sessionId)
         .roundNo(roundNo)
         .modeKey(modeKey)

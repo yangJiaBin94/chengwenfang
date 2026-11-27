@@ -1,6 +1,7 @@
 package com.chengwenfang.knowledge.application;
 
 import cn.hutool.core.util.StrUtil;
+import com.chengwenfang.identity.facade.OwnerScope;
 import com.chengwenfang.knowledge.domain.entity.KnowledgeIndexStateEntity;
 import com.chengwenfang.knowledge.infrastructure.mapper.KnowledgeIndexStateMapper;
 import java.time.LocalDateTime;
@@ -11,14 +12,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 知识库索引活跃 / 写入版本读写（蓝绿读指针与重建窗）。
+ * 知识库索引活跃 / 写入版本读写（每用户蓝绿读指针与重建窗）。
  */
 @Service
 @RequiredArgsConstructor
 public class KnowledgeIndexVersionService {
 
-  /** 单例行 ID。 */
-  private static final int SINGLETON_ID = 1;
   /** 默认版本。 */
   public static final String DEFAULT_VERSION = "v1";
   /** 解析 {@code vN} 数字后缀。 */
@@ -26,14 +25,16 @@ public class KnowledgeIndexVersionService {
 
   /** 状态表 Mapper。 */
   private final KnowledgeIndexStateMapper indexStateMapper;
+  /** 所属用户范围。 */
+  private final OwnerScope ownerScope;
 
   /**
-   * 当前读路径活跃版本。
+   * 当前读路径活跃版本（当前登录 / OwnerContext 用户）。
    *
    * @return 版本号
    */
   public String activeVersion() {
-    KnowledgeIndexStateEntity row = indexStateMapper.selectById(SINGLETON_ID);
+    KnowledgeIndexStateEntity row = loadOrNull(resolveOwnerId());
     if (row == null || StrUtil.isBlank(row.getActiveVersion())) {
       return DEFAULT_VERSION;
     }
@@ -46,7 +47,7 @@ public class KnowledgeIndexVersionService {
    * @return writing 版本或 null
    */
   public String writingVersion() {
-    KnowledgeIndexStateEntity row = indexStateMapper.selectById(SINGLETON_ID);
+    KnowledgeIndexStateEntity row = loadOrNull(resolveOwnerId());
     if (row == null || StrUtil.isBlank(row.getWritingVersion())) {
       return null;
     }
@@ -67,17 +68,6 @@ public class KnowledgeIndexVersionService {
       return "v" + (number + 1);
     }
     return base + "_next";
-  }
-
-  /**
-   * 分配全量重建写入版本（基于当前 active，不落库）。
-   *
-   * @return 写入版本
-   * @deprecated 请用 {@link #beginNextWritingVersion()}，避免首包窗口
-   */
-  @Deprecated
-  public String allocateNextVersion() {
-    return nextVersionOf(activeVersion());
   }
 
   /**
@@ -106,11 +96,12 @@ public class KnowledgeIndexVersionService {
     if (StrUtil.isBlank(version)) {
       throw new IllegalArgumentException("索引版本不能为空");
     }
+    String ownerId = resolveOwnerId();
     String next = version.trim();
-    KnowledgeIndexStateEntity row = indexStateMapper.selectById(SINGLETON_ID);
+    KnowledgeIndexStateEntity row = loadOrNull(ownerId);
     if (row == null) {
       indexStateMapper.insert(KnowledgeIndexStateEntity.builder()
-          .id(SINGLETON_ID)
+          .ownerUserId(ownerId)
           .activeVersion(next)
           .writingVersion(null)
           .updatedAt(LocalDateTime.now())
@@ -124,16 +115,36 @@ public class KnowledgeIndexVersionService {
   }
 
   /**
+   * 解析当前必须存在的所属用户（登录或 OwnerContext）。
+   *
+   * @return 用户 ID
+   */
+  public String resolveOwnerId() {
+    return ownerScope.requireOwnerUserIdForWrite().get();
+  }
+
+  /**
+   * 按所属用户加载状态行。
+   *
+   * @param ownerId 用户 ID
+   * @return 行或 null
+   */
+  private KnowledgeIndexStateEntity loadOrNull(String ownerId) {
+    return indexStateMapper.selectById(ownerId);
+  }
+
+  /**
    * 写入或更新 writing_version。
    *
    * @param writing 写入版本
    */
   private void upsertWritingVersion(String writing) {
+    String ownerId = resolveOwnerId();
     LocalDateTime now = LocalDateTime.now();
-    KnowledgeIndexStateEntity row = indexStateMapper.selectById(SINGLETON_ID);
+    KnowledgeIndexStateEntity row = loadOrNull(ownerId);
     if (row == null) {
       indexStateMapper.insert(KnowledgeIndexStateEntity.builder()
-          .id(SINGLETON_ID)
+          .ownerUserId(ownerId)
           .activeVersion(DEFAULT_VERSION)
           .writingVersion(writing)
           .updatedAt(now)

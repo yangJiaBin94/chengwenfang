@@ -3,6 +3,7 @@ package com.chengwenfang.knowledge.infrastructure.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.chengwenfang.knowledge.domain.entity.KnowledgeChunkEntity;
 import java.util.List;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -68,18 +69,56 @@ public interface KnowledgeChunkMapper extends BaseMapper<KnowledgeChunkEntity> {
       @Param("limit") int limit);
 
   /**
-   * 指定索引版本下出现过切块的文档 ID（去重）。
+   * 指定索引版本 + 所属用户下出现过切块的文档 ID（去重）。
    *
    * @param indexVersion 索引版本
+   * @param ownerUserId  所属用户
    * @return 文档 ID 列表
    */
   @Select("""
-      SELECT DISTINCT document_id FROM knowledge_chunks
-      WHERE index_version = #{indexVersion}
-        AND document_id IS NOT NULL
-        AND document_id != ''
+      SELECT DISTINCT c.document_id
+      FROM knowledge_chunks c
+      INNER JOIN knowledge_documents d ON d.id = c.document_id
+      WHERE c.index_version = #{indexVersion}
+        AND d.owner_user_id = #{ownerUserId}
+        AND c.document_id IS NOT NULL
+        AND c.document_id != ''
       """)
-  List<String> selectDistinctDocumentIdsByIndexVersion(@Param("indexVersion") String indexVersion);
+  List<String> selectDistinctDocumentIdsByIndexVersionAndOwner(
+      @Param("indexVersion") String indexVersion, @Param("ownerUserId") String ownerUserId);
+
+  /**
+   * 统计指定版本 + 所属用户下的切块数。
+   *
+   * @param indexVersion 索引版本
+   * @param ownerUserId  所属用户
+   * @return 切块数
+   */
+  @Select("""
+      SELECT COUNT(1)
+      FROM knowledge_chunks c
+      INNER JOIN knowledge_documents d ON d.id = c.document_id
+      WHERE c.index_version = #{indexVersion}
+        AND d.owner_user_id = #{ownerUserId}
+      """)
+  Long countByIndexVersionAndOwner(
+      @Param("indexVersion") String indexVersion, @Param("ownerUserId") String ownerUserId);
+
+  /**
+   * 删除指定版本 + 所属用户下的切块（蓝绿切流后 GC）。
+   *
+   * @param indexVersion 索引版本
+   * @param ownerUserId  所属用户
+   * @return 删除行数
+   */
+  @Delete("""
+      DELETE c FROM knowledge_chunks c
+      INNER JOIN knowledge_documents d ON d.id = c.document_id
+      WHERE c.index_version = #{indexVersion}
+        AND d.owner_user_id = #{ownerUserId}
+      """)
+  int deleteByIndexVersionAndOwner(
+      @Param("indexVersion") String indexVersion, @Param("ownerUserId") String ownerUserId);
 
   /**
    * 所属文档已不存在的孤儿切块。

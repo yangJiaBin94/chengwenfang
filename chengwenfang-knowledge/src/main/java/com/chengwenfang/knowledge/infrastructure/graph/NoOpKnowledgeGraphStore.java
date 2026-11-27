@@ -51,14 +51,6 @@ public class NoOpKnowledgeGraphStore implements KnowledgeGraphStore {
    * {@inheritDoc}
    */
   @Override
-  public void deleteEdgesBySourceChunkId(String sourceChunkId) {
-    // no-op
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
   public void deleteByDocumentId(String documentId, List<String> chunkIds) {
     // no-op
   }
@@ -73,6 +65,7 @@ public class NoOpKnowledgeGraphStore implements KnowledgeGraphStore {
       String headingPath,
       String snippet,
       String indexVersion,
+      String ownerUserId,
       double confidence) {
     // no-op
   }
@@ -85,7 +78,7 @@ public class NoOpKnowledgeGraphStore implements KnowledgeGraphStore {
 
   /** {@inheritDoc} */
   @Override
-  public void deleteByIndexVersion(String indexVersion) {
+  public void deleteByIndexVersion(String indexVersion, String ownerUserId) {
     // no-op
   }
 }

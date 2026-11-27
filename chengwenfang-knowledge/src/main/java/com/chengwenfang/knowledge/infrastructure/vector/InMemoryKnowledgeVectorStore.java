@@ -72,6 +72,19 @@ public class InMemoryKnowledgeVectorStore implements KnowledgeVectorStore {
 
   /** {@inheritDoc} */
   @Override
+  public void deleteByIndexVersionAndOwner(String indexVersion, String ownerUserId) {
+    if (StrUtil.isBlank(indexVersion) || StrUtil.isBlank(ownerUserId)) {
+      return;
+    }
+    points.entrySet().removeIf(entry -> {
+      KnowledgeVectorUpsert point = entry.getValue();
+      return indexVersion.equals(point.getIndexVersion())
+          && ownerUserId.equals(point.getOwnerUserId());
+    });
+  }
+
+  /** {@inheritDoc} */
+  @Override
   public List<KnowledgeVectorHit> search(float[] queryVector, int limit, KnowledgeVectorFilter filter) {
     if (queryVector == null || queryVector.length == 0 || limit <= 0) {
       return List.of();

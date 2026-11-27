@@ -1117,14 +1117,19 @@ export function submitHotNewsHumanReview(
     },
   ).then((r) => read<HotNewsHumanReview>(r));
 }
-export function getHotNewsHumanReview(
+export async function getHotNewsHumanReview(
   articleId: string,
   documentId?: string | null,
-) {
-  return apiFetch(
+): Promise<HotNewsHumanReview | null> {
+  const response = await apiFetch(
     hotArticlesOrDocumentsPath(articleId, documentId, "/human-review"),
     { cache: "no-store" },
-  ).then((r) => read<HotNewsHumanReview>(r));
+  );
+  // 尚无人工审核时后端 404；与课程 loadHumanReview 一致按空处理
+  if (response.status === 404) {
+    return null;
+  }
+  return read<HotNewsHumanReview>(response);
 }
 export function createHotNewsPublishingSnapshot(
   articleId: string,

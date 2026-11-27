@@ -251,7 +251,7 @@ export function useChengwenfangPart0() {
   const [aiSettingsUpdatedAt, setAiSettingsUpdatedAt] = useState("");
   const [wechatConfigured, setWechatConfigured] = useState(false);
   const [settingsSectionHint, setSettingsSectionHint] = useState<
-    "ai" | "promptPacks" | "layoutThemes" | "wechatMp" | "system" | null
+    "ai" | "promptPacks" | "layoutThemes" | "wechatMp" | "system" | "users" | null
   >(null);
   const [homePromptPackCount, setHomePromptPackCount] = useState(0);
   const [homeSelectedTopics, setHomeSelectedTopics] = useState(0);

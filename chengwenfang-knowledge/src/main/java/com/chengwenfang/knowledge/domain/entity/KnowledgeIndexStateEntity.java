@@ -9,16 +9,16 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/** 知识库索引活跃版本（表 {@code knowledge_index_state}）。 */
+/** 知识库索引活跃版本（表 {@code knowledge_index_state}，每用户一行）。 */
 @TableName("knowledge_index_state")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class KnowledgeIndexStateEntity {
-  /** 单例主键，固定为 1。 */
-  @TableId("id")
-  private Integer id;
+  /** 所属用户 ID（主键）。 */
+  @TableId("owner_user_id")
+  private String ownerUserId;
   /** 当前读路径版本。 */
   @TableField("active_version")
   private String activeVersion;

@@ -131,7 +131,7 @@ public class KnowledgeLongTermMemoryService {
     }
     memoryMapper.insert(KnowledgeMemoryEntity.builder()
         .id(IdsUtil.newId())
-        .ownerUserId(ownerScope.effectiveOwnerUserId())
+        .ownerUserId(ownerScope.requireOwnerUserIdForWrite().get())
         .scopeKey(DEFAULT_SCOPE)
         .content(trimmed)
         .embeddingJson(vector == null ? null : JSONUtil.toJsonStr(vector))

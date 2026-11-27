@@ -45,13 +45,6 @@ public interface KnowledgeGraphStore {
   List<KnowledgeCitationView> searchGlobal(String query, int topK);
 
   /**
-   * 按来源切块增量删除边（纠错后重建前调用）。
-   *
-   * @param sourceChunkId 切块 ID
-   */
-  void deleteEdgesBySourceChunkId(String sourceChunkId);
-
-  /**
    * 按文档删除图中与该文档切块相关的边/节点痕迹。
    *
    * @param documentId 文档 ID
@@ -62,12 +55,13 @@ public interface KnowledgeGraphStore {
   /**
    * 为切块写入/刷新概念提及边（低置信默认 disabled）。
    *
-   * @param chunkId      切块 ID
+   * @param chunkId       切块 ID
    * @param documentTitle 文档标题
-   * @param headingPath  标题路径
-   * @param snippet      片段摘要
-   * @param indexVersion 索引版本
-   * @param confidence   置信度
+   * @param headingPath   标题路径
+   * @param snippet       片段摘要
+   * @param indexVersion  索引版本
+   * @param ownerUserId   所属用户
+   * @param confidence    置信度
    */
   void upsertChunkMentions(
       String chunkId,
@@ -75,6 +69,7 @@ public interface KnowledgeGraphStore {
       String headingPath,
       String snippet,
       String indexVersion,
+      String ownerUserId,
       double confidence);
 
   /**
@@ -86,9 +81,10 @@ public interface KnowledgeGraphStore {
   void setEdgeEnabled(String edgeUid, boolean enabled);
 
   /**
-   * 删除指定索引版本下的边与相关概念/作品节点（蓝绿切流后 GC 旧版）。
+   * 删除指定索引版本 + 所属用户下的边与相关概念/作品节点（蓝绿切流后 GC 旧版）。
    *
    * @param indexVersion 索引版本
+   * @param ownerUserId  所属用户；空则拒绝
    */
-  void deleteByIndexVersion(String indexVersion);
+  void deleteByIndexVersion(String indexVersion, String ownerUserId);
 }

@@ -15,7 +15,7 @@
 
 本机上的个人内容生产工具。用它写课程、改公众号文、把热点分步写成稿；知识库能带着引用回答，证据不够就拒答。数据留在你自己的机器上。
 
-**仅限本机**：默认绑定 `127.0.0.1`，没有登录、没有鉴权。谁能打开这个地址，谁就能读写你的稿和密钥。请不要对公网暴露。二次开发前先读 [SECURITY.md](SECURITY.md)。Lightpanda 是可选的 AGPL 边车，不是默认档的一部分。
+**仅限本机**：默认绑定 `127.0.0.1`。鉴权始终开启（Sa-Token + RBAC + 用户级数据隔离）。种子管理员账号 **`admin` / `admin123`**，首次登录后请立刻改密。请不要对公网暴露；二次开发前先读 [SECURITY.md](SECURITY.md)。Lightpanda 是可选的 AGPL 边车，不是默认档的一部分。
 
 [一键开始](#一键开始课程--知识库) · [体验手册](docs/体验手册.md) · [文档](docs/README.md) · [贡献](CONTRIBUTING.md) · [安全](SECURITY.md)
 
@@ -27,7 +27,7 @@
 
 **开发者。** 这是一个 Java 21 模块化单体加 React。业务按 COLA 分层：门面、编排、领域规则分开。提示词包绑在工作流图的节点上，生成走已发布的图，而不是把提示词散落在页面里。架构和 CI 细节在文末可展开区，以及 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
-**二次开发。** 可以加模式、工作流节点、渠道和排版主题。HTTP / SSE 以 [contracts/api-sse-contract.md](contracts/api-sse-contract.md) 为准。它没有账号体系，不能直接当成 SaaS 或公网服务；要对外提供，必须自己加访问控制，见 [SECURITY.md](SECURITY.md)。仓库里的 `.cursor/skills` 是给贡献者的 Agent Skill，不是产品里的「提示词包」。
+**二次开发。** 可以加模式、工作流节点、渠道和排版主题。HTTP / SSE 以 [contracts/api-sse-contract.md](contracts/api-sse-contract.md) 为准。已有单实例多用户登录与 `owner_user_id` 隔离，**不是**多租户 SaaS；对公网暴露前仍须自审边界，见 [SECURITY.md](SECURITY.md) 与 [用户鉴权体系设计](docs/用户鉴权体系设计.md)。仓库里的 `.cursor/skills` 是给贡献者的 Agent Skill，不是产品里的「提示词包」。
 
 ---
 
@@ -52,9 +52,17 @@ chmod +x scripts/start.sh
 ./scripts/start.sh
 ```
 
-脚本会拉起 MySQL、Redis、Qdrant，编译并启动后端（8001）和前端（5173）。空库自动导入提示词包与三条主工作流。Python 解释器按操作系统选择各 CLI 目录下的 venv，不用改 `application.yml`。
+脚本会拉起 MySQL、Redis、Qdrant，编译并启动后端（8001）和前端（5173）。空库自动导入提示词包与三条主工作流，并种子管理员账号。Python 解释器按操作系统选择各 CLI 目录下的 venv，不用改 `application.yml`。
 
-打开 **http://127.0.0.1:5173** → **设置**，填写多模态（生成）、图像、嵌入三类 Key 并测试连接。然后打开 **设置 → 系统就绪**。嵌入 Key 没配、或 Qdrant 只是内存库，这里都不会显示通过。
+打开 **http://127.0.0.1:5173**，用种子账号登录：
+
+| 用户名 | 密码 |
+|--------|------|
+| `admin` | `admin123` |
+
+登录后点右上角头像可改显示名、头像与密码（**务必改密**）。管理员可在 **设置 → 用户管理** 创建其他用户。
+
+然后打开 **设置**，填写多模态（生成）、图像、嵌入三类 Key 并测试连接；再打开 **设置 → 系统就绪**。嵌入 Key 没配、或 Qdrant 只是内存库，这里都不会显示通过。
 
 接着按 [体验手册](docs/体验手册.md) 走课程成文或知识库问答。
 
@@ -103,7 +111,7 @@ npm install && npm run dev:frontend
 | 热点资讯 | 雷达、来源、选题资料池、分步成文（加装档更完整） |
 | 知识库 | 上传 / 网页 / 作品入库；切块索引；带引用的问答，证据不够则拒答 |
 | 工作流 | 三条主工作流图，节点上绑定提示词包 |
-| 设置 | AI Key、提示词包、排版主题、系统就绪 |
+| 设置 | AI Key、提示词包、排版主题、系统就绪；管理员另有用户管理（右上角头像可改本人资料/密码） |
 
 <details>
 <summary>更多界面</summary>

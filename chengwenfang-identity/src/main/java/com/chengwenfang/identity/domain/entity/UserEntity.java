@@ -28,6 +28,9 @@ public class UserEntity {
   /** 展示名。 */
   @TableField("display_name")
   private String displayName;
+  /** 头像文件 ID（stored_files.id），可空。 */
+  @TableField("avatar_file_id")
+  private String avatarFileId;
   /** 是否启用。 */
   @TableField("enabled")
   private Boolean enabled;
@@ -37,4 +40,13 @@ public class UserEntity {
   /** 更新时间。 */
   @TableField("updated_at")
   private LocalDateTime updatedAt;
+  /** 最近登录时间，可空。 */
+  @TableField("last_login_at")
+  private LocalDateTime lastLoginAt;
+  /** 最近登录 IP，可空。 */
+  @TableField("last_login_ip")
+  private String lastLoginIp;
+  /** 最近登录属地（市级），可空。 */
+  @TableField("last_login_region")
+  private String lastLoginRegion;
 }

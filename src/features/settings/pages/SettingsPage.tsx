@@ -62,7 +62,9 @@ import {
   PromptPackSettingsPanel,
   ProviderCard,
 } from "../components/PromptPackSettingsPanel";
-
+import { UserManagementPanel } from "../components/UserManagementPanel";
+import { canManageUsers } from "../../auth/api";
+import { useAuthUser } from "../../auth/AuthUserContext";
 
 export function AiSettingsPage({
   settings,
@@ -73,14 +75,40 @@ export function AiSettingsPage({
   settings: AiSettings;
   updatedAt: string;
   onSave: (settings: AiSettings) => Promise<string>;
-  initialSection?: "ai" | "promptPacks" | "layoutThemes" | "wechatMp" | "system" | null;
+  initialSection?:
+    | "ai"
+    | "promptPacks"
+    | "layoutThemes"
+    | "wechatMp"
+    | "system"
+    | "users"
+    | null;
 }) {
+  const authUser = useAuthUser();
+  const manageUsers = canManageUsers(authUser);
+  const resolveSection = (
+    section: typeof initialSection,
+  ): "ai" | "promptPacks" | "layoutThemes" | "wechatMp" | "system" | "users" => {
+    if (!section) {
+      return "ai";
+    }
+    // 无用户管理权限时深链 users 回落到 AI 配置
+    if (section === "users" && !canManageUsers(authUser)) {
+      return "ai";
+    }
+    return section;
+  };
   const [settingsSection, setSettingsSection] = useState<
-    "ai" | "promptPacks" | "layoutThemes" | "wechatMp" | "system"
-  >(initialSection || "ai");
+    "ai" | "promptPacks" | "layoutThemes" | "wechatMp" | "system" | "users"
+  >(resolveSection(initialSection));
   useEffect(() => {
-    if (initialSection) setSettingsSection(initialSection);
-  }, [initialSection]);
+    if (initialSection) setSettingsSection(resolveSection(initialSection));
+  }, [initialSection, manageUsers]);
+  useEffect(() => {
+    if (!manageUsers && settingsSection === "users") {
+      setSettingsSection("ai");
+    }
+  }, [manageUsers, settingsSection]);
   const [draft, setDraft] = useState(settings);
   const [activeKind, setActiveKind] = useState<AiSettingsKind>("vision");
   const [testState, setTestState] = useState<
@@ -234,6 +262,14 @@ export function AiSettingsPage({
         >
           系统就绪
         </button>
+        {manageUsers ? (
+          <button
+            className={settingsSection === "users" ? "active" : ""}
+            onClick={() => setSettingsSection("users")}
+          >
+            用户管理
+          </button>
+        ) : null}
       </nav>
       {settingsSection === "layoutThemes" && <LayoutThemeTransfer />}
       {settingsSection === "layoutThemes" ? (
@@ -244,6 +280,8 @@ export function AiSettingsPage({
         <WechatMpSettingsPanel />
       ) : settingsSection === "system" ? (
         <SystemReadyPanel />
+      ) : settingsSection === "users" ? (
+        <UserManagementPanel />
       ) : (
         <>
           <div className="settings-hero">

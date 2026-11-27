@@ -24,6 +24,9 @@ public class CurrentUserView {
   /** 展示名。 */
   @Schema(description = "展示名")
   private String displayName;
+  /** 头像下载 URL，无头像时为 null。 */
+  @Schema(description = "头像 URL")
+  private String avatarUrl;
   /** 角色编码列表。 */
   @Builder.Default
   @Schema(description = "角色编码")

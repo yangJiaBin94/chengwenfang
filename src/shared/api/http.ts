@@ -10,6 +10,23 @@ const OK = "ok";
 /** 与 `features/auth/api` 共用的本地令牌键。 */
 export const AUTH_TOKEN_STORAGE_KEY = "chengwenfang.auth.token";
 
+/** 会话失效事件：401 清令牌后由 {@link invalidateAuthSession} 派发，AuthGate 监听并回登录页。 */
+export const AUTH_SESSION_EXPIRED_EVENT = "chengwenfang:auth-session-expired";
+
+/**
+ * 清除本地令牌并通知门禁回到登录页，避免清 token 后页面仍继续裸打受保护 API。
+ */
+export function invalidateAuthSession(): void {
+  try {
+    localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
+  } catch {
+    // 忽略无 localStorage 环境
+  }
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(AUTH_SESSION_EXPIRED_EVENT));
+  }
+}
+
 /**
  * 合并 Authorization Bearer（若本地有令牌）。
  *
@@ -158,11 +175,7 @@ export async function apiFetch(input: RequestInfo | URL, init: RequestInit = {})
   }
   const response = await fetch(input, { ...init, headers });
   if (response.status === 401) {
-    try {
-      localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
-    } catch {
-      // ignore
-    }
+    invalidateAuthSession();
   }
   return response;
 }

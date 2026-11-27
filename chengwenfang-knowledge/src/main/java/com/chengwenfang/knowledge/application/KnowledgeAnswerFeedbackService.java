@@ -70,7 +70,7 @@ public class KnowledgeAnswerFeedbackService {
     ownerScope.assertCanAccess(session.getOwnerUserId());
     KnowledgeAnswerFeedbackEntity row = KnowledgeAnswerFeedbackEntity.builder()
         .id(IdsUtil.newId())
-        .ownerUserId(ownerScope.effectiveOwnerUserId())
+        .ownerUserId(ownerScope.requireOwnerUserIdForWrite().get())
         .messageId(messageId)
         .sessionId(message.getSessionId())
         .rating(rating.getValue())

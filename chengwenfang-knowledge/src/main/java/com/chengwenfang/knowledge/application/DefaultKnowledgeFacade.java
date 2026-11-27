@@ -445,7 +445,7 @@ public class DefaultKnowledgeFacade implements KnowledgeFacade {
         : StrUtil.blankToDefault(request.getTitle(), KnowledgeRagConstants.DEFAULT_SESSION_TITLE);
     KnowledgeChatSessionEntity session = KnowledgeChatSessionEntity.builder()
         .id(IdsUtil.newId())
-        .ownerUserId(ownerScope.effectiveOwnerUserId())
+        .ownerUserId(ownerScope.requireOwnerUserIdForWrite().get())
         .title(title)
         .summary("")
         .memoryEnabled(true)
@@ -537,8 +537,10 @@ public class DefaultKnowledgeFacade implements KnowledgeFacade {
         persistSourceDocument(register);
       }
     }
+    // 重建只作用于当前用户文档（ADMIN 也不替他人切流，避免跨用户 GC）
+    String ownerId = ownerScope.requireOwnerUserIdForWrite().get();
     LambdaQueryWrapper<KnowledgeDocumentEntity> query = new LambdaQueryWrapper<>();
-    applyDocumentOwnerFilter(query);
+    query.eq(KnowledgeDocumentEntity::getOwnerUserId, ownerId);
     if (filter != null) {
       query.eq(KnowledgeDocumentEntity::getSourceKind, filter.getValue());
     }
@@ -550,13 +552,14 @@ public class DefaultKnowledgeFacade implements KnowledgeFacade {
         indexPipeline.indexDocument(document.getId());
       }
       log.info(
-          "知识库按来源重建完成 sourceKind={} documents={}",
+          "知识库按来源重建完成 sourceKind={} documents={} owner={}",
           filter.getValue(),
-          documents.size());
+          documents.size(),
+          ownerId);
       return;
     }
     if (documents.isEmpty()) {
-      log.info("知识库全量重建跳过：无文档，不切流");
+      log.info("知识库全量重建跳过：无文档，不切流 owner={}", ownerId);
       return;
     }
     // 先落库 writing 标记再写，避免首包窗口内增量仍进 active
@@ -567,13 +570,14 @@ public class DefaultKnowledgeFacade implements KnowledgeFacade {
     }
     assertWritingVersionCoversDocuments(writingVersion, documents);
     // shortcut: 尚无金标门禁，覆盖完整即切流；接入金标后改为门禁通过再 promote
-    // promote 内会 GC 旧版图；previousActive 仅用于日志对照
+    // promote 内会按 owner GC 旧版切块/向量/图
     promoteIndexVersion(writingVersion);
     log.info(
-        "知识库全量重建完成 documents={} writingVersion={} previousActive={}",
+        "知识库全量重建完成 documents={} writingVersion={} previousActive={} owner={}",
         documents.size(),
         writingVersion,
-        previousActive);
+        previousActive,
+        ownerId);
   }
 
   /**
@@ -661,7 +665,7 @@ public class DefaultKnowledgeFacade implements KnowledgeFacade {
     if (existing == null) {
       KnowledgeDocumentEntity created = KnowledgeDocumentEntity.builder()
           .id(IdsUtil.newId())
-          .ownerUserId(ownerScope.effectiveOwnerUserId())
+          .ownerUserId(ownerScope.requireOwnerUserIdForWrite().get())
           .sourceKind(request.getSourceKind().getValue())
           .sourceRefId(request.getSourceRefId())
           .mediaKind(ObjectUtil.defaultIfNull(request.getMediaKind(), KnowledgeMediaKind.ARTICLE_MARKDOWN).getValue())
@@ -817,19 +821,19 @@ public class DefaultKnowledgeFacade implements KnowledgeFacade {
       throw new BusinessException(ErrorCodes.INVALID_STATUS, "索引版本不能为空", 400);
     }
     String trimmed = version.trim();
+    String ownerId = indexVersionService.resolveOwnerId();
     String previousActive = indexVersionService.activeVersion();
-    Long chunkCount = chunkMapper.selectCount(new LambdaQueryWrapper<KnowledgeChunkEntity>()
-        .eq(KnowledgeChunkEntity::getIndexVersion, trimmed));
+    Long chunkCount = chunkMapper.countByIndexVersionAndOwner(trimmed, ownerId);
     if (chunkCount == null || chunkCount <= 0) {
       throw new BusinessException(
           ErrorCodes.INVALID_STATUS,
           "目标版本无切块，拒绝切流：" + trimmed,
           400);
     }
-    // 与全量重建同门禁：旧 active 上有切块的文档，目标版本必须覆盖
+    // 与全量重建同门禁：本用户旧 active 上有切块的文档，目标版本必须覆盖
     if (!StrUtil.equals(previousActive, trimmed)) {
       List<String> documentIds =
-          chunkMapper.selectDistinctDocumentIdsByIndexVersion(previousActive);
+          chunkMapper.selectDistinctDocumentIdsByIndexVersionAndOwner(previousActive, ownerId);
       for (String documentId : documentIds) {
         if (StrUtil.isNotBlank(documentId)) {
           assertDocumentCoveredInVersion(documentId, trimmed);
@@ -838,9 +842,13 @@ public class DefaultKnowledgeFacade implements KnowledgeFacade {
     }
     indexVersionService.promoteActiveVersion(trimmed);
     if (!StrUtil.equals(previousActive, trimmed)) {
-      graphStore.deleteByIndexVersion(previousActive);
+      // 仅 GC 本用户旧版，避免与他人同名 vN 互相误删
+      chunkMapper.deleteByIndexVersionAndOwner(previousActive, ownerId);
+      vectorStore.deleteByIndexVersionAndOwner(previousActive, ownerId);
+      graphStore.deleteByIndexVersion(previousActive, ownerId);
     }
-    log.info("知识库索引版本已切流 version={} chunks={}", trimmed, chunkCount);
+    log.info(
+        "知识库索引版本已切流 version={} chunks={} owner={}", trimmed, chunkCount, ownerId);
   }
 
   /** {@inheritDoc} */

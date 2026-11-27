@@ -7,9 +7,16 @@ multi-tenant SaaS). Authentication is **always on**: Sa-Token sessions, RBAC,
 and per-user `owner_user_id` isolation on sensitive tables. See
 [`docs/用户鉴权体系设计.md`](docs/用户鉴权体系设计.md).
 
-Seed admin is `admin` / `admin123` — **change the password** before any network
-exposure. Self-registration defaults to off
+Seed admin (Flyway `V19__identity_users.sql`):
+
+| Username | Password |
+|----------|----------|
+| `admin`  | `admin123` |
+
+**Change the password** after first login (top-right avatar menu) before any
+network exposure. Self-registration defaults to off
 (`chengwenfang.auth.register-enabled` / `CHENGWENFANG_AUTH_REGISTER_ENABLED`).
+Admins can create users under **Settings → 用户管理**.
 
 **Do not** bind the server to a public interface or expose ports through a
 reverse proxy / tunnel without reviewing access control for the app and

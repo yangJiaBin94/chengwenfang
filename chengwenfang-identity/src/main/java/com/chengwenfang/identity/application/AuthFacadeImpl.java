@@ -13,8 +13,11 @@ import com.chengwenfang.identity.domain.entity.UserEntity;
 import com.chengwenfang.identity.domain.entity.UserRoleEntity;
 import com.chengwenfang.identity.facade.AuthFacade;
 import com.chengwenfang.identity.facade.AuthProperties;
+import com.chengwenfang.identity.facade.dto.request.ChangePasswordRequest;
 import com.chengwenfang.identity.facade.dto.request.LoginRequest;
 import com.chengwenfang.identity.facade.dto.request.RegisterRequest;
+import com.chengwenfang.identity.facade.dto.request.UpdateProfileRequest;
+import com.chengwenfang.identity.facade.dto.request.VerifyPasswordRequest;
 import com.chengwenfang.identity.facade.dto.view.CurrentUserView;
 import com.chengwenfang.identity.facade.dto.view.LoginResultView;
 import com.chengwenfang.identity.facade.enums.UserRole;
@@ -48,7 +51,8 @@ public class AuthFacadeImpl implements AuthFacade {
    * {@inheritDoc}
    */
   @Override
-  public LoginResultView login(LoginRequest request) {
+  @Transactional
+  public LoginResultView login(LoginRequest request, String clientIp) {
     String username = StrUtil.trim(request.getUsername());
     UserEntity user = userMapper.selectOne(
         new LambdaQueryWrapper<UserEntity>().eq(UserEntity::getUsername, username).last("LIMIT 1"));
@@ -60,6 +64,8 @@ public class AuthFacadeImpl implements AuthFacade {
       throw new BusinessException(ErrorCodes.UNAUTHORIZED, "用户名或密码错误", 401);
     }
     StpUtil.login(user.getId());
+    // 记录最近登录时间、IP 与属地
+    touchLastLogin(user, clientIp);
     log.info("用户登录成功 userId={} username={}", user.getId(), user.getUsername());
     return toLoginResult(user);
   }
@@ -81,7 +87,7 @@ public class AuthFacadeImpl implements AuthFacade {
    */
   @Override
   @Transactional
-  public LoginResultView register(RegisterRequest request) {
+  public LoginResultView register(RegisterRequest request, String clientIp) {
     if (!authProperties.isRegisterEnabled()) {
       throw new BusinessException(ErrorCodes.FORBIDDEN, "未开放自助注册", 403);
     }
@@ -108,8 +114,47 @@ public class AuthFacadeImpl implements AuthFacade {
         .roleCode(UserRole.EDITOR.getValue())
         .build());
     StpUtil.login(user.getId());
+    // 注册即登录，同步写入最近登录时间、IP 与属地
+    touchLastLogin(user, clientIp);
     log.info("用户注册并登录 userId={} username={}", user.getId(), username);
     return toLoginResult(user);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  @Transactional
+  public void changePassword(ChangePasswordRequest request) {
+    UserEntity user = requireCurrentEnabledUser();
+    assertCurrentPassword(user, request.getCurrentPassword());
+    // 写入新哈希并踢掉该用户全部会话（含当前）
+    user.setPasswordHash(BCrypt.hashpw(request.getNewPassword()));
+    user.setUpdatedAt(LocalDateTime.now());
+    userMapper.updateById(user);
+    StpUtil.logout(user.getId());
+    log.info("用户已修改密码并踢出会话 userId={}", user.getId());
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public void verifyCurrentPassword(VerifyPasswordRequest request) {
+    UserEntity user = requireCurrentEnabledUser();
+    assertCurrentPassword(user, request.getCurrentPassword());
+  }
+
+  /**
+   * 校验明文是否匹配用户密码哈希。
+   *
+   * @param user            用户实体
+   * @param currentPassword 明文密码
+   */
+  private void assertCurrentPassword(UserEntity user, String currentPassword) {
+    if (!BCrypt.checkpw(currentPassword, user.getPasswordHash())) {
+      throw new BusinessException(ErrorCodes.CURRENT_PASSWORD_INVALID, "当前密码错误", 400);
+    }
   }
 
   /**
@@ -126,6 +171,73 @@ public class AuthFacadeImpl implements AuthFacade {
       return null;
     }
     return toCurrentUser(user);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  @Transactional
+  public CurrentUserView updateProfile(UpdateProfileRequest request) {
+    UserEntity user = requireCurrentEnabledUser();
+    String displayName = StrUtil.trim(request.getDisplayName());
+    user.setDisplayName(displayName);
+    user.setUpdatedAt(LocalDateTime.now());
+    userMapper.updateById(user);
+    log.info("用户已更新展示名 userId={}", user.getId());
+    return toCurrentUser(user);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  @Transactional
+  public String replaceAvatarFile(String avatarFileId) {
+    if (StrUtil.isBlank(avatarFileId)) {
+      throw new BusinessException(ErrorCodes.AVATAR_UPLOAD_REJECTED, "头像文件无效", 400);
+    }
+    UserEntity user = requireCurrentEnabledUser();
+    String previousFileId = user.getAvatarFileId();
+    user.setAvatarFileId(StrUtil.trim(avatarFileId));
+    user.setUpdatedAt(LocalDateTime.now());
+    userMapper.updateById(user);
+    log.info("用户已更新头像 userId={} fileId={} previous={}", user.getId(), avatarFileId, previousFileId);
+    return previousFileId;
+  }
+
+  /**
+   * 取当前已登录且启用的用户实体。
+   *
+   * @return 用户实体
+   */
+  private UserEntity requireCurrentEnabledUser() {
+    if (!StpUtil.isLogin()) {
+      throw new BusinessException(ErrorCodes.UNAUTHORIZED, "请先登录", 401);
+    }
+    String userId = String.valueOf(StpUtil.getLoginId());
+    UserEntity user = userMapper.selectById(userId);
+    if (user == null || !Boolean.TRUE.equals(user.getEnabled())) {
+      throw new BusinessException(ErrorCodes.UNAUTHORIZED, "请先登录", 401);
+    }
+    return user;
+  }
+
+  /**
+   * 写入最近登录时间、IP 与市级属地。
+   *
+   * @param user     当前用户实体
+   * @param clientIp 客户端 IP，可空
+   */
+  private void touchLastLogin(UserEntity user, String clientIp) {
+    LocalDateTime now = LocalDateTime.now();
+    String ip = StrUtil.maxLength(StrUtil.trim(clientIp), 64);
+    String region = StrUtil.maxLength(LoginIpRegionLookup.resolveCity(ip), 64);
+    user.setLastLoginAt(now);
+    user.setLastLoginIp(StrUtil.blankToDefault(ip, null));
+    user.setLastLoginRegion(StrUtil.blankToDefault(region, null));
+    user.setUpdatedAt(now);
+    userMapper.updateById(user);
   }
 
   /**
@@ -156,6 +268,7 @@ public class AuthFacadeImpl implements AuthFacade {
         .id(user.getId())
         .username(user.getUsername())
         .displayName(user.getDisplayName())
+        .avatarUrl(AvatarUrls.fromFileId(user.getAvatarFileId()))
         .roles(roles)
         .permissions(permissions)
         .build();

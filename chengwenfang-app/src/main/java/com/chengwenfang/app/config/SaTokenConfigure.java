@@ -42,11 +42,18 @@ public class SaTokenConfigure implements WebMvcConfigurer {
                           "/api/system/health",
                           "/actuator/**")
                       .check(router -> StpUtil.checkLogin());
+                  // 用户管理：读写均需 user:manage（种子上挂在 ADMIN）
+                  SaRouter.match("/api/users", "/api/users/**")
+                      .check(router -> StpUtil.checkPermission(AuthPermissions.USER_MANAGE));
                   // 写操作：设置类需 settings:write；其余需 work:write（ADMIN 角色一并放行）
                   SaRouter.match(SaHttpMethod.POST, SaHttpMethod.PUT, SaHttpMethod.PATCH, SaHttpMethod.DELETE)
                       .match("/api/**")
                       .notMatch(
                           "/api/auth/**",
+                          "/api/me",
+                          "/api/me/**",
+                          "/api/users",
+                          "/api/users/**",
                           "/api/system/**",
                           "/actuator/**")
                       .check(

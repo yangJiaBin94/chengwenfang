@@ -27,7 +27,12 @@ export type AppPage =
   | "knowledge";
 
 /** 设置分区（含旧 key publishing → layoutThemes 归一化后的结果）。 */
-export type SettingsSection = "ai" | "promptPacks" | "layoutThemes" | "wechatMp";
+export type SettingsSection =
+  | "ai"
+  | "promptPacks"
+  | "layoutThemes"
+  | "wechatMp"
+  | "users";
 
 /** 热点主题工作区子视图。 */
 export type HotNewsWorkspaceView = "radar" | "selected" | "sources";
@@ -310,9 +315,14 @@ export function normalizeSettingsSection(
     sectionRaw === "ai" ||
     sectionRaw === "promptPacks" ||
     sectionRaw === "layoutThemes" ||
-    sectionRaw === "wechatMp"
+    sectionRaw === "wechatMp" ||
+    sectionRaw === "users"
   ) {
     return sectionRaw;
+  }
+  // 旧账户安全分区已迁到顶栏头像菜单
+  if (sectionRaw === "account") {
+    return undefined;
   }
   return undefined;
 }

@@ -200,6 +200,14 @@ describe("parseRoute U01–U20", () => {
       page: "settings",
       params: { section: "wechatMp" },
     });
+    expect(parseRoute("/settings", "?section=users")).toEqual({
+      page: "settings",
+      params: { section: "users" },
+    });
+    expect(parseRoute("/settings", "?section=account")).toEqual({
+      page: "settings",
+      params: {},
+    });
     // 旧分区 publishing → layoutThemes
     expect(normalizeSettingsSection("publishing")).toBe("layoutThemes");
     expect(parseRoute("/settings", "?section=publishing")).toEqual({
