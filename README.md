@@ -116,6 +116,22 @@ npm install && npm run dev:frontend
 <details>
 <summary>更多界面</summary>
 
+**知识库走查**
+
+<p align="center">
+  <a href="docs/screenshots/knowledge-walkthrough.gif">
+    <img src="docs/screenshots/knowledge-walkthrough.gif" alt="知识库走查：资料库、带引用问答、长期记忆" width="880" />
+  </a>
+</p>
+
+**知识库对话（带引用）**
+
+<p align="center">
+  <a href="docs/screenshots/07-knowledge-chat.png">
+    <img src="docs/screenshots/07-knowledge-chat.png" alt="知识库对话：混合检索与引用展开" width="880" />
+  </a>
+</p>
+
 **热点雷达**
 
 <p align="center">

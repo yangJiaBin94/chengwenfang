@@ -82,3 +82,6 @@ progress.md
 # Local scratch / decompiled refs
 dev/
 
+# Screenshot capture intermediates (only publish cropped stills / GIFs)
+docs/screenshots/_raw/
+

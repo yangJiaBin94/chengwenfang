@@ -9,6 +9,8 @@ Do not commit shots that show real API keys or private manuscript bodies.
 | Priority | File | Why |
 |----------|------|-----|
 | Hero | `hotnews-walkthrough.gif` | Shows the hot-news loop in motion |
+| Feature | `knowledge-walkthrough.gif` | Knowledge loop: library → cited chat → long-term memory |
+| Feature | `07-knowledge-chat.png` | Cited RAG answer with hybrid retrieval |
 | 2nd hero | `06-course-route.png` | Real curriculum path (7 series) — more representative than an empty theme card |
 | Feature | `05-hotnews-radar.png` | Populated radar (scores, sources, counts) |
 | Details | `01` / `02` / `03` / `04` | Theme overviews, workflows, AI settings |
